@@ -1,0 +1,27 @@
+@import "tailwindcss";
+@import "pretendard/dist/web/variable/pretendardvariable.css";
+
+@theme {
+  --color-primary: #2d64fa;
+  --color-primary-bright: #5985fb;
+  --color-primary-hover: #1f54d6;
+  --color-primary-soft: #eaf0fe;
+  --color-primary-soft-hover: #d6e2fd;
+  --color-gray-50: #f6f7f9; --color-gray-100: #eff1f4; --color-gray-200: #e4e5e8;
+  --color-gray-300: #d1d3d8; --color-gray-400: #9ca0ab; --color-gray-500: #6d717e;
+  --color-gray-600: #4f535d; --color-gray-700: #3c3f47; --color-gray-800: #25272d;
+  --color-gray-900: #16171b;
+  --color-success: #1aa463; --color-success-soft: #e4f6ed;
+  --color-warning: #f5a623; --color-warning-soft: #fdf1dc;
+  --color-danger: #e5484d;  --color-danger-soft: #fce8e9;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, system-ui,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+  --shadow-card: 0 1px 3px rgba(22,23,27,0.06), 0 6px 16px rgba(22,23,27,0.05);
+}
+
+body {
+  background: var(--color-gray-50);
+  color: var(--color-gray-900);
+  font-family: var(--font-sans);
+}
