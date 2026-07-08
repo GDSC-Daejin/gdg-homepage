@@ -5,6 +5,7 @@ import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { ProfileForm } from "./ProfileForm";
+import { formatKst } from "@/lib/format";
 import type { RegistrationStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +54,7 @@ export default async function ProfilePage() {
                   </p>
                   {r.event && (
                     <p className="text-xs text-gray-500">
-                      {new Date(r.event.starts_at).toLocaleString("ko-KR")}
+                      {formatKst(r.event.starts_at)}
                     </p>
                   )}
                 </div>

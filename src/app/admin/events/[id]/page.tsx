@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
+import { AttendancePanel } from "@/components/AttendancePanel";
 import type { Event } from "@/lib/types";
 import { EventForm } from "../EventForm";
 import { DeleteEventButton } from "../DeleteEventButton";
@@ -31,7 +32,7 @@ export default async function AdminEventDetailPage({
       <Card>
         <EventForm event={e} />
       </Card>
-      <div>{/* Task8: AttendancePanel */}</div>
+      <AttendancePanel eventId={e.id} />
     </div>
   );
 }

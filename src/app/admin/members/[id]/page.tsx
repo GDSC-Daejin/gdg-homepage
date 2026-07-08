@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
+import { formatKst } from "@/lib/format";
 import { MemberRoleStatusForm } from "./MemberRoleStatusForm";
 
 interface AttendanceRow {
@@ -67,7 +68,7 @@ export default async function AdminMemberDetailPage({
           <div>
             <p className="text-gray-500">가입일</p>
             <p className="font-medium text-gray-900">
-              {new Date(member.joined_at).toLocaleDateString("ko-KR")}
+              {formatKst(member.joined_at)}
             </p>
           </div>
         </div>
@@ -103,14 +104,10 @@ export default async function AdminMemberDetailPage({
                     {row.events?.title ?? "-"}
                   </td>
                   <td className="py-2 text-gray-500">
-                    {row.events
-                      ? new Date(row.events.starts_at).toLocaleString(
-                          "ko-KR",
-                        )
-                      : "-"}
+                    {row.events ? formatKst(row.events.starts_at) : "-"}
                   </td>
                   <td className="py-2 text-gray-500">
-                    {new Date(row.checked_at).toLocaleString("ko-KR")}
+                    {formatKst(row.checked_at)}
                   </td>
                 </tr>
               ))}

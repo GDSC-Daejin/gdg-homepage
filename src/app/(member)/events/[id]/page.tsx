@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
+import { RegistrationPanel } from "@/components/RegistrationPanel";
 import { formatKst } from "@/lib/format";
 import type { Event, EventType } from "@/lib/types";
 
@@ -26,7 +27,7 @@ export default async function MemberEventDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireProfile();
+  const profile = await requireProfile();
   const { id } = await params;
 
   const supabase = await createClient();
@@ -66,7 +67,7 @@ export default async function MemberEventDetailPage({
           {e.capacity ? ` / ${e.capacity}` : ""}명
         </p>
       </Card>
-      <div>{/* Task7: RegistrationPanel */}</div>
+      <RegistrationPanel eventId={e.id} profile={profile} />
     </div>
   );
 }

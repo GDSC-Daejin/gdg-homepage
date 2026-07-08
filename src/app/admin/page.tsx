@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
+import { formatKst } from "@/lib/format";
 import type { EventType } from "@/lib/types";
 
 const EVENT_TYPE_LABEL: Record<EventType, string> = {
@@ -159,7 +160,7 @@ export default async function AdminDashboardPage() {
                     {EVENT_TYPE_LABEL[row.type]}
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {new Date(row.starts_at).toLocaleString("ko-KR")}
+                    {formatKst(row.starts_at)}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{row.confirmed}</td>
                   <td className="px-4 py-3 text-gray-700">{row.attended}</td>
