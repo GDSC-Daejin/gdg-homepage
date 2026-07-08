@@ -5,6 +5,7 @@ import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
+import { formatKst } from "@/lib/format";
 import type { Event, EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -20,16 +21,6 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
   study: "success",
   devfest: "warning",
 };
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function AdminEventsPage() {
   const supabase = await createClient();
@@ -82,7 +73,7 @@ export default async function AdminEventsPage() {
                       </h2>
                     </div>
                     <p className="mt-1 text-sm text-gray-500">
-                      {formatDateTime(event.starts_at)}
+                      {formatKst(event.starts_at)}
                       {event.location ? ` · ${event.location}` : ""}
                     </p>
                   </div>

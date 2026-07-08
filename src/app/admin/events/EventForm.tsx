@@ -14,10 +14,18 @@ const TYPE_OPTIONS: { value: EventType; label: string }[] = [
   { value: "devfest", label: "데브페스트" },
 ];
 
-function toDatetimeLocal(iso: string): string {
-  const d = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function toKstDatetimeLocal(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? "00";
+  return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
 interface EventFormProps {
@@ -31,6 +39,10 @@ export function EventForm({ event }: EventFormProps) {
 
   function handleSubmit(formData: FormData) {
     setError(undefined);
+    const startsAt = formData.get("starts_at");
+    if (typeof startsAt === "string" && startsAt) {
+      formData.set("starts_at", new Date(startsAt).toISOString());
+    }
     startTransition(async () => {
       const result = event
         ? await updateEvent(event.id, formData)
@@ -69,7 +81,7 @@ export function EventForm({ event }: EventFormProps) {
         type="datetime-local"
         name="starts_at"
         label="일시"
-        defaultValue={event ? toDatetimeLocal(event.starts_at) : ""}
+        defaultValue={event ? toKstDatetimeLocal(event.starts_at) : ""}
         required
       />
       <Input name="location" label="장소" defaultValue={event?.location} />

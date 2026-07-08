@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
+import { formatKst } from "@/lib/format";
 import type { Event, EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,16 +20,6 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
   study: "success",
   devfest: "warning",
 };
-
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default async function MemberEventDetailPage({
   params,
@@ -60,7 +51,7 @@ export default async function MemberEventDetailPage({
         <div className="flex items-center gap-2">
           <Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>
           <span className="text-sm text-gray-500">
-            {formatDateTime(e.starts_at)}
+            {formatKst(e.starts_at)}
           </span>
         </div>
         {e.location && (

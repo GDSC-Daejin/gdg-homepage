@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
+import { formatKst } from "@/lib/format";
 import type { Event, EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -21,15 +22,6 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
   devfest: "warning",
 };
 
-function formatDateTime(iso: string): string {
-  return new Date(iso).toLocaleString("ko-KR", {
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 function EventCard({ event, confirmed }: { event: Event; confirmed: number }) {
   return (
     <Link href={`/events/${event.id}`}>
@@ -41,7 +33,7 @@ function EventCard({ event, confirmed }: { event: Event; confirmed: number }) {
           </h2>
         </div>
         <p className="mt-2 text-sm text-gray-500">
-          {formatDateTime(event.starts_at)}
+          {formatKst(event.starts_at)}
         </p>
         {event.location && (
           <p className="text-sm text-gray-500">{event.location}</p>
