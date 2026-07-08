@@ -1,0 +1,1 @@
+export const ATTENDANCE_WARNING_THRESHOLD = 0.5;
