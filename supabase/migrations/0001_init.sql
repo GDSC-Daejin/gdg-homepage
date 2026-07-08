@@ -150,13 +150,13 @@ returns void language plpgsql security definer set search_path = public as $$
 declare
   v_code text;
 begin
-  select code into v_code from event_codes where event_id = p_event_id;
-  if v_code is null then raise exception 'NO_CODE_ISSUED'; end if;
-  if v_code <> upper(trim(p_code)) then raise exception 'INVALID_CODE'; end if;
   if not exists (select 1 from event_registrations
                  where event_id = p_event_id and user_id = auth.uid() and status = 'confirmed') then
     raise exception 'NOT_REGISTERED';
   end if;
+  select code into v_code from event_codes where event_id = p_event_id;
+  if v_code is null then raise exception 'NO_CODE_ISSUED'; end if;
+  if v_code <> upper(trim(p_code)) then raise exception 'INVALID_CODE'; end if;
   if exists (select 1 from attendances where event_id = p_event_id and user_id = auth.uid()) then
     raise exception 'ALREADY_CHECKED';
   end if;
@@ -206,3 +206,16 @@ begin
     on conflict (event_id) do update set code = excluded.code, updated_at = now();
   return v_code;
 end $$;
+
+-- 함수 EXECUTE 기본 PUBLIC 방어: 전체 revoke 후 필요한 함수만 authenticated에 grant
+revoke execute on all functions in schema public from public, anon;
+grant execute on function
+  public.register_for_event(uuid),
+  public.cancel_registration(uuid),
+  public.check_attendance(uuid, text),
+  public.admin_set_role(uuid, text),
+  public.admin_set_status(uuid, text),
+  public.admin_review_application(uuid, text),
+  public.admin_set_event_code(uuid),
+  public.is_admin()
+to authenticated;
