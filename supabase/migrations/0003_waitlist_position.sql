@@ -11,4 +11,5 @@ returns int language sql stable security definer set search_path = public as $$
     )
 $$;
 
+revoke execute on function public.my_waitlist_position(uuid) from public, anon;
 grant execute on function public.my_waitlist_position(uuid) to authenticated;

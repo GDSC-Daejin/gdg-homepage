@@ -6,6 +6,7 @@ import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile, Role, MemberStatus } from "@/lib/types";
+import { formatKstDate } from "@/lib/format";
 import { MemberFilters } from "./MemberFilters";
 
 const ROLE_LABEL: Record<Role, string> = {
@@ -118,7 +119,7 @@ export default async function AdminMembersPage({
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {new Date(member.joined_at).toLocaleDateString("ko-KR")}
+                    {formatKstDate(member.joined_at)}
                   </td>
                 </tr>
               ))}

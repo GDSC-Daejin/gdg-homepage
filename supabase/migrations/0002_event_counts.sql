@@ -8,4 +8,5 @@ language sql stable security definer set search_path = public as $$
   group by event_id
 $$;
 
+revoke execute on function public.event_confirmed_counts(uuid[]) from public, anon;
 grant execute on function public.event_confirmed_counts(uuid[]) to authenticated;

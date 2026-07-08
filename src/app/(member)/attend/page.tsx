@@ -18,7 +18,7 @@ export default async function AttendPage({ searchParams }: AttendPageProps) {
   const { data: events } = await supabase
     .from("events")
     .select("id, title")
-    .gte("starts_at", new Date().toISOString())
+    .gte("starts_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString())
     .order("starts_at", { ascending: true });
 
   return (
@@ -34,7 +34,7 @@ export default async function AttendPage({ searchParams }: AttendPageProps) {
           defaultCode={params.code}
         />
       ) : (
-        <EmptyState title="다가오는 이벤트가 없어요" />
+        <EmptyState title="진행 중/다가오는 이벤트가 없어요" />
       )}
     </div>
   );

@@ -19,7 +19,7 @@ pnpm dev
 
 1. [supabase.com](https://supabase.com)에서 무료 프로젝트를 생성합니다. 리전은 **Seoul**을 선택하세요.
 2. 프로젝트의 DB 스키마를 적용합니다. 둘 중 편한 방법을 사용하세요.
-   - **Supabase CLI**: `supabase link --project-ref <project-ref>` 실행 후 `supabase db push`
+   - **Supabase CLI**: 저장소에 `config.toml`이 없으므로 먼저 `supabase init`을 실행한 뒤, `supabase link --project-ref <project-ref>` 실행 후 `supabase db push`
    - **SQL Editor**: Supabase 대시보드 > SQL Editor에서 `supabase/migrations/` 폴더의 파일을 `0001_init.sql` → `0002_event_counts.sql` → `0003_waitlist_position.sql` 순서대로 실행합니다.
 3. Supabase 대시보드 > Authentication > Providers에서 **Google**을 활성화합니다. (Client ID/Secret은 3번 단계에서 발급)
 4. Project Settings > API에서 Project URL, anon public key를 확인해 `.env.local`에 채워 넣습니다.
