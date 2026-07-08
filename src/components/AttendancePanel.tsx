@@ -53,8 +53,8 @@ export async function AttendancePanel({ eventId }: AttendancePanelProps) {
   const confirmedCount = registrations.filter(
     (r) => r.status === "confirmed",
   ).length;
-  const attendedCount = registrations.filter((r) =>
-    attendedUserIds.has(r.user_id),
+  const attendedCount = registrations.filter(
+    (r) => r.status === "confirmed" && attendedUserIds.has(r.user_id),
   ).length;
   const code = codeData?.code ?? null;
 

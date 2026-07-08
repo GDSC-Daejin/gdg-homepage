@@ -39,19 +39,23 @@ export default async function AdminAttendancePage() {
     const [{ data: regs }, { data: attends }] = await Promise.all([
       supabase
         .from("event_registrations")
-        .select("user_id")
+        .select("user_id, event_id")
         .eq("status", "confirmed")
         .in("event_id", pastEventIds),
       supabase
         .from("attendances")
-        .select("user_id")
+        .select("user_id, event_id")
         .in("event_id", pastEventIds),
     ]);
+    const confirmedPairs = new Set<string>();
     for (const r of regs ?? []) {
+      confirmedPairs.add(`${r.user_id}:${r.event_id}`);
       confirmedByUser.set(r.user_id, (confirmedByUser.get(r.user_id) ?? 0) + 1);
     }
     for (const a of attends ?? []) {
-      attendedByUser.set(a.user_id, (attendedByUser.get(a.user_id) ?? 0) + 1);
+      if (confirmedPairs.has(`${a.user_id}:${a.event_id}`)) {
+        attendedByUser.set(a.user_id, (attendedByUser.get(a.user_id) ?? 0) + 1);
+      }
     }
   }
 

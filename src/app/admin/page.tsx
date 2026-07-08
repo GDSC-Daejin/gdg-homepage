@@ -64,25 +64,29 @@ export default async function AdminDashboardPage() {
     const [{ data: regs }, { data: attends }] = await Promise.all([
       supabase
         .from("event_registrations")
-        .select("event_id")
+        .select("user_id, event_id")
         .eq("status", "confirmed")
         .in("event_id", recentEventIds),
       supabase
         .from("attendances")
-        .select("event_id")
+        .select("user_id, event_id")
         .in("event_id", recentEventIds),
     ]);
+    const confirmedPairs = new Set<string>();
     for (const r of regs ?? []) {
+      confirmedPairs.add(`${r.user_id}:${r.event_id}`);
       confirmedByEvent.set(
         r.event_id,
         (confirmedByEvent.get(r.event_id) ?? 0) + 1,
       );
     }
     for (const a of attends ?? []) {
-      attendedByEvent.set(
-        a.event_id,
-        (attendedByEvent.get(a.event_id) ?? 0) + 1,
-      );
+      if (confirmedPairs.has(`${a.user_id}:${a.event_id}`)) {
+        attendedByEvent.set(
+          a.event_id,
+          (attendedByEvent.get(a.event_id) ?? 0) + 1,
+        );
+      }
     }
   }
 
