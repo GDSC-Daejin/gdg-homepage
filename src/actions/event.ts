@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { eventSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 function parseEventForm(formData: FormData) {
@@ -21,6 +22,7 @@ function parseEventForm(formData: FormData) {
 
 export async function createEvent(formData: FormData): Promise<ActionResult> {
   const profile = await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const parsed = parseEventForm(formData);
   if (!parsed.success) {
@@ -44,6 +46,7 @@ export async function updateEvent(
   formData: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const parsed = parseEventForm(formData);
   if (!parsed.success) {
@@ -67,6 +70,7 @@ export async function updateEvent(
 
 export async function deleteEvent(id: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase.from("events").delete().eq("id", id);

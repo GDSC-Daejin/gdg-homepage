@@ -5,6 +5,7 @@ import { requireAdmin, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { surveySchema, surveyResponseSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo";
 import type { ActionResult, Survey } from "@/lib/types";
 
 function parseSurveyForm(formData: FormData) {
@@ -22,6 +23,7 @@ function parseSurveyForm(formData: FormData) {
 
 export async function createSurvey(formData: FormData): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const parsed = parseSurveyForm(formData);
   if (!parsed.success) {
@@ -49,6 +51,7 @@ export async function toggleSurveyOpen(
   isOpen: boolean,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -65,6 +68,7 @@ export async function toggleSurveyOpen(
 
 export async function deleteSurvey(id: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase.from("surveys").delete().eq("id", id);

@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { inquirySchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 export async function submitInquiry(formData: FormData): Promise<ActionResult> {
@@ -36,6 +37,7 @@ export async function answerInquiry(
   answer: string,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const trimmed = answer.trim();
   if (trimmed.length < 1) return { error: "답변을 입력해주세요" };

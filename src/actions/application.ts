@@ -7,6 +7,7 @@ import { getProfile, requireAdmin } from "@/lib/auth";
 import { applicationSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { CURRENT_SEASON } from "@/lib/constants";
+import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
@@ -50,6 +51,7 @@ export async function reviewApplication(
   status: "accepted" | "rejected",
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("admin_review_application", {

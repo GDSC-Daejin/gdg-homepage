@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { toKoreanError } from "@/lib/errors";
 import { pointGrantSchema } from "@/lib/schemas";
+import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 function isDuplicateError(error: unknown): boolean {
@@ -23,6 +24,7 @@ export async function grantPoints(
   eventId?: string,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   if (!userId) return { error: "회원을 선택해주세요" };
 
@@ -52,6 +54,7 @@ export async function createBadge(
   icon: string,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   if (!name.trim()) return { error: "이름을 입력해주세요" };
   if (!icon.trim()) return { error: "이모지를 입력해주세요" };
@@ -74,6 +77,7 @@ export async function createBadge(
 
 export async function deleteBadge(badgeId: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase.from("badges").delete().eq("id", badgeId);
@@ -89,6 +93,7 @@ export async function awardBadge(
   badgeId: string,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   if (!userId || !badgeId) return { error: "회원과 뱃지를 선택해주세요" };
 

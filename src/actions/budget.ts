@@ -5,12 +5,14 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { budgetSchema, sponsorSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 export async function createBudgetEntry(
   formData: FormData,
 ): Promise<ActionResult> {
   const profile = await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const parsed = budgetSchema.safeParse({
     entry_date: formData.get("entry_date"),
@@ -36,6 +38,7 @@ export async function createBudgetEntry(
 
 export async function deleteBudgetEntry(id: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -51,6 +54,7 @@ export async function deleteBudgetEntry(id: string): Promise<ActionResult> {
 
 export async function createSponsor(formData: FormData): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const parsed = sponsorSchema.safeParse({
     name: formData.get("name"),
@@ -73,6 +77,7 @@ export async function createSponsor(formData: FormData): Promise<ActionResult> {
 
 export async function deleteSponsor(id: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase.from("sponsors").delete().eq("id", id);

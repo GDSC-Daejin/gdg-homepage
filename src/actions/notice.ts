@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { noticeSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { postSlack } from "@/lib/slack";
+import { isDemoMode } from "@/lib/demo";
 import type { ActionResult, Notice } from "@/lib/types";
 
 type PublishResult = ActionResult & { slack?: string };
@@ -19,6 +20,7 @@ function parseNoticeForm(formData: FormData) {
 
 export async function createNotice(formData: FormData): Promise<ActionResult> {
   const profile = await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const parsed = parseNoticeForm(formData);
   if (!parsed.success) {
@@ -41,6 +43,7 @@ export async function updateNotice(
   formData: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const parsed = parseNoticeForm(formData);
   if (!parsed.success) {
@@ -64,6 +67,7 @@ export async function updateNotice(
 
 export async function deleteNotice(id: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase.from("notices").delete().eq("id", id);
@@ -77,6 +81,7 @@ export async function deleteNotice(id: string): Promise<ActionResult> {
 
 export async function publishNotice(id: string): Promise<PublishResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { slack: "슬랙 전송 완료 (예시)" };
 
   const supabase = await createClient();
   const { data, error: fetchError } = await supabase
