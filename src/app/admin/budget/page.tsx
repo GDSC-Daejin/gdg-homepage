@@ -6,6 +6,8 @@ import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKstDate } from "@/lib/format";
 import type { BudgetEntry, Sponsor } from "@/lib/types";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_BUDGET_ENTRIES, DEMO_SPONSORS } from "@/lib/demoData";
 import { BudgetEntryForm } from "./BudgetEntryForm";
 import { DeleteBudgetEntryButton } from "./DeleteBudgetEntryButton";
 import { SponsorForm } from "./SponsorForm";
@@ -19,21 +21,27 @@ function toWon(amount: number): string {
 
 export default async function AdminBudgetPage() {
   await requireAdmin();
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  const [{ data: entriesData }, { data: sponsorsData }] = await Promise.all([
-    supabase
-      .from("budget_entries")
-      .select("*")
-      .order("entry_date", { ascending: false }),
-    supabase
-      .from("sponsors")
-      .select("*")
-      .order("created_at", { ascending: false }),
-  ]);
+  let entries: BudgetEntry[] = DEMO_BUDGET_ENTRIES;
+  let sponsors: Sponsor[] = DEMO_SPONSORS;
 
-  const entries = (entriesData as BudgetEntry[]) ?? [];
-  const sponsors = (sponsorsData as Sponsor[]) ?? [];
+  if (!demo) {
+    const supabase = await createClient();
+    const [{ data: entriesData }, { data: sponsorsData }] = await Promise.all([
+      supabase
+        .from("budget_entries")
+        .select("*")
+        .order("entry_date", { ascending: false }),
+      supabase
+        .from("sponsors")
+        .select("*")
+        .order("created_at", { ascending: false }),
+    ]);
+
+    entries = (entriesData as BudgetEntry[]) ?? [];
+    sponsors = (sponsorsData as Sponsor[]) ?? [];
+  }
 
   const totalIncome = entries
     .filter((e) => e.type === "income")
