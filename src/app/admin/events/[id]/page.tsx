@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_EVENTS } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { AttendancePanel } from "@/components/AttendancePanel";
@@ -15,16 +17,25 @@ export default async function AdminEventDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  const { data: event } = await supabase
-    .from("events")
-    .select("*")
-    .eq("id", id)
-    .single();
+  let e: Event | undefined;
 
-  if (!event) notFound();
-  const e = event as Event;
+  if (demo) {
+    e = DEMO_EVENTS.find((ev) => ev.id === id) ?? DEMO_EVENTS[0];
+  } else {
+    const supabase = await createClient();
+    const { data: event } = await supabase
+      .from("events")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (!event) notFound();
+    e = event as Event;
+  }
+
+  if (!e) notFound();
 
   return (
     <div className="flex flex-col gap-6">
