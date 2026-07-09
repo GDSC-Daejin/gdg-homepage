@@ -8,30 +8,35 @@ import { Button } from "@/components/Button";
 import { ToggleSurveyButton } from "./ToggleSurveyButton";
 import { DeleteSurveyButton } from "./DeleteSurveyButton";
 import type { Survey } from "@/lib/types";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_SURVEYS, DEMO_SURVEY_RESPONSE_COUNTS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSurveysPage() {
-  const supabase = await createClient();
+  const demo = await isDemoMode();
+  let list: Survey[] = DEMO_SURVEYS;
+  const counts: Record<string, number> = demo ? { ...DEMO_SURVEY_RESPONSE_COUNTS } : {};
 
-  const { data: surveys } = await supabase
-    .from("surveys")
-    .select("*")
-    .order("created_at", { ascending: false });
+  if (!demo) {
+    const supabase = await createClient();
+    const { data: surveys } = await supabase
+      .from("surveys")
+      .select("*")
+      .order("created_at", { ascending: false });
+    list = (surveys ?? []) as Survey[];
 
-  const list = (surveys ?? []) as Survey[];
-
-  const counts: Record<string, number> = {};
-  if (list.length > 0) {
-    const { data: responseRows } = await supabase
-      .from("survey_responses")
-      .select("survey_id")
-      .in(
-        "survey_id",
-        list.map((s) => s.id),
-      );
-    for (const row of responseRows ?? []) {
-      counts[row.survey_id] = (counts[row.survey_id] ?? 0) + 1;
+    if (list.length > 0) {
+      const { data: responseRows } = await supabase
+        .from("survey_responses")
+        .select("survey_id")
+        .in(
+          "survey_id",
+          list.map((s) => s.id),
+        );
+      for (const row of responseRows ?? []) {
+        counts[row.survey_id] = (counts[row.survey_id] ?? 0) + 1;
+      }
     }
   }
 

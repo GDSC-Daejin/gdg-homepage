@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import type { Survey, SurveyResponse } from "@/lib/types";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_SURVEYS, DEMO_SURVEY_RESPONSES } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -13,22 +15,33 @@ export default async function SurveyResultsPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  const { data: survey } = await supabase
-    .from("surveys")
-    .select("*")
-    .eq("id", id)
-    .single();
+  let s: Survey | undefined;
+  let list: SurveyResponse[] = [];
 
-  if (!survey) notFound();
-  const s = survey as Survey;
+  if (demo) {
+    s = DEMO_SURVEYS.find((survey) => survey.id === id) ?? DEMO_SURVEYS[0];
+    list = DEMO_SURVEY_RESPONSES[s.id] ?? [];
+  } else {
+    const supabase = await createClient();
+    const { data: survey } = await supabase
+      .from("surveys")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  const { data: responses } = await supabase
-    .from("survey_responses")
-    .select("*")
-    .eq("survey_id", id);
-  const list = (responses ?? []) as SurveyResponse[];
+    if (!survey) notFound();
+    s = survey as Survey;
+
+    const { data: responses } = await supabase
+      .from("survey_responses")
+      .select("*")
+      .eq("survey_id", id);
+    list = (responses ?? []) as SurveyResponse[];
+  }
+
+  if (!s) notFound();
 
   return (
     <div className="flex flex-col gap-6">
