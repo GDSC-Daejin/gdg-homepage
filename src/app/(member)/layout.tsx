@@ -21,6 +21,10 @@ export default async function MemberLayout({
           <nav className="flex items-center gap-6 text-sm font-medium text-gray-700">
             <Link href="/">홈</Link>
             <Link href="/attend">출석</Link>
+            <Link href="/notices">공지</Link>
+            <Link href="/materials">자료실</Link>
+            <Link href="/surveys">설문</Link>
+            <Link href="/inquiries">문의</Link>
             <Link href="/profile">프로필</Link>
             {profile.role === "admin" && <Link href="/admin">어드민</Link>}
           </nav>

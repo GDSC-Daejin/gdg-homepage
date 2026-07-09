@@ -4,7 +4,7 @@ import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
-import type { EventType } from "@/lib/types";
+import type { EventType, Survey } from "@/lib/types";
 
 const EVENT_TYPE_LABEL: Record<EventType, string> = {
   session: "세션",
@@ -112,6 +112,138 @@ export default async function AdminDashboardPage() {
         ratedRows.length
       : null;
 
+  // 월별 신규 가입 추이 (최근 6개월)
+  const nowDate = new Date();
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - (5 - i), 1);
+    return {
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      label: `${d.getMonth() + 1}월`,
+    };
+  });
+  const sinceDate = new Date(
+    nowDate.getFullYear(),
+    nowDate.getMonth() - 5,
+    1,
+  ).toISOString();
+  const { data: joinRows } = await supabase
+    .from("profiles")
+    .select("joined_at")
+    .gte("joined_at", sinceDate);
+
+  const joinCountByMonth = new Map(months.map((m) => [m.key, 0]));
+  for (const row of joinRows ?? []) {
+    const d = new Date(row.joined_at);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (joinCountByMonth.has(key)) {
+      joinCountByMonth.set(key, (joinCountByMonth.get(key) ?? 0) + 1);
+    }
+  }
+  const maxJoinCount = Math.max(1, ...joinCountByMonth.values());
+
+  // 세션별 만족도 (설문 rating 질문 평균)
+  const { data: eventSurveysData } = await supabase
+    .from("surveys")
+    .select("id, title, event_id, questions")
+    .not("event_id", "is", null);
+  const eventSurveys = (eventSurveysData ?? []) as Survey[];
+  const surveyIds = eventSurveys.map((s) => s.id);
+
+  const { data: surveyResponsesData } =
+    surveyIds.length > 0
+      ? await supabase
+          .from("survey_responses")
+          .select("survey_id, answers")
+          .in("survey_id", surveyIds)
+      : { data: [] as { survey_id: string; answers: Record<string, unknown> }[] };
+  const surveyResponses =
+    (surveyResponsesData as { survey_id: string; answers: Record<string, unknown> }[]) ?? [];
+
+  const eventIdsWithSurvey = Array.from(
+    new Set(eventSurveys.map((s) => s.event_id).filter((id): id is string => !!id)),
+  );
+  const { data: satisfactionEventsData } =
+    eventIdsWithSurvey.length > 0
+      ? await supabase.from("events").select("id, title").in("id", eventIdsWithSurvey)
+      : { data: [] as { id: string; title: string }[] };
+  const eventTitleById = new Map(
+    ((satisfactionEventsData as { id: string; title: string }[] | null) ?? []).map((e) => [
+      e.id,
+      e.title,
+    ]),
+  );
+
+  const ratingSumByEvent = new Map<string, number>();
+  const ratingCountByEvent = new Map<string, number>();
+  for (const survey of eventSurveys) {
+    if (!survey.event_id) continue;
+    const ratingQids = survey.questions
+      .filter((q) => q.type === "rating")
+      .map((q) => q.id);
+    if (ratingQids.length === 0) continue;
+
+    const responsesForSurvey = surveyResponses.filter(
+      (r) => r.survey_id === survey.id,
+    );
+    for (const r of responsesForSurvey) {
+      for (const qid of ratingQids) {
+        const raw = r.answers[qid];
+        if (raw === undefined || raw === "") continue;
+        const n = Number(raw);
+        if (Number.isNaN(n)) continue;
+        ratingSumByEvent.set(
+          survey.event_id,
+          (ratingSumByEvent.get(survey.event_id) ?? 0) + n,
+        );
+        ratingCountByEvent.set(
+          survey.event_id,
+          (ratingCountByEvent.get(survey.event_id) ?? 0) + 1,
+        );
+      }
+    }
+  }
+  const satisfactionRows = eventIdsWithSurvey
+    .map((id) => ({
+      id,
+      title: eventTitleById.get(id) ?? "(삭제된 이벤트)",
+      count: ratingCountByEvent.get(id) ?? 0,
+      avg:
+        ratingCountByEvent.get(id) && ratingCountByEvent.get(id)! > 0
+          ? (ratingSumByEvent.get(id) ?? 0) / ratingCountByEvent.get(id)!
+          : 0,
+    }))
+    .filter((r) => r.count > 0)
+    .sort((a, b) => b.avg - a.avg);
+
+  // 활동 랭킹 Top 10 (포인트 합산)
+  const { data: pointRows } = await supabase
+    .from("point_logs")
+    .select("user_id, amount");
+  const pointSumByUser = new Map<string, number>();
+  for (const p of (pointRows as { user_id: string; amount: number }[] | null) ?? []) {
+    pointSumByUser.set(p.user_id, (pointSumByUser.get(p.user_id) ?? 0) + p.amount);
+  }
+  const topUsers = Array.from(pointSumByUser.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  const topUserIds = topUsers.map(([id]) => id);
+  const { data: topProfilesData } =
+    topUserIds.length > 0
+      ? await supabase.from("profiles").select("id, name").in("id", topUserIds)
+      : { data: [] as { id: string; name: string }[] };
+  const topNameById = new Map(
+    ((topProfilesData as { id: string; name: string }[] | null) ?? []).map((p) => [
+      p.id,
+      p.name,
+    ]),
+  );
+  const rankingRows = topUsers.map(([id, total], i) => ({
+    rank: i + 1,
+    id,
+    name: topNameById.get(id) ?? "(탈퇴)",
+    total,
+  }));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="대시보드" description="동아리 현황을 한눈에 확인해요" />
@@ -167,6 +299,99 @@ export default async function AdminDashboardPage() {
                   <td className="px-4 py-3 text-gray-700">
                     {row.rate !== null ? `${Math.round(row.rate * 100)}%` : "-"}
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <Card>
+          <p className="mb-4 text-sm font-semibold text-gray-900">
+            월별 신규 가입 추이
+          </p>
+          <div className="flex h-32 items-end gap-3">
+            {months.map((m) => {
+              const count = joinCountByMonth.get(m.key) ?? 0;
+              const height = Math.max(4, (count / maxJoinCount) * 100);
+              return (
+                <div
+                  key={m.key}
+                  className="flex flex-1 flex-col items-center gap-1"
+                >
+                  <span className="text-xs font-medium text-gray-700">
+                    {count}
+                  </span>
+                  <div className="flex h-24 w-full items-end">
+                    <div
+                      className="w-full rounded-t-sm bg-primary"
+                      style={{ height: `${height}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500">{m.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+
+        <Card>
+          <p className="mb-4 text-sm font-semibold text-gray-900">
+            세션별 만족도
+          </p>
+          {satisfactionRows.length === 0 ? (
+            <EmptyState title="설문 응답 데이터가 없어요" />
+          ) : (
+            <div className="flex flex-col gap-3">
+              {satisfactionRows.map((r) => (
+                <div key={r.id} className="flex items-center gap-3">
+                  <span className="w-24 shrink-0 truncate text-sm text-gray-700">
+                    {r.title}
+                  </span>
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="h-full rounded-full bg-primary"
+                      style={{ width: `${(r.avg / 5) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-16 shrink-0 text-right text-xs text-gray-500">
+                    {r.avg.toFixed(1)}점 ({r.count})
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </div>
+
+      <Card className="overflow-x-auto p-0">
+        <div className="border-b border-gray-200 px-4 py-3">
+          <p className="text-sm font-semibold text-gray-900">
+            활동 랭킹 Top 10
+          </p>
+        </div>
+        {rankingRows.length === 0 ? (
+          <div className="p-6">
+            <EmptyState title="포인트 내역이 없어요" />
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-200 text-left text-gray-500">
+                <th className="px-4 py-3 font-medium">순위</th>
+                <th className="px-4 py-3 font-medium">이름</th>
+                <th className="px-4 py-3 font-medium">포인트</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankingRows.map((r) => (
+                <tr key={r.id} className="border-b border-gray-100 last:border-0">
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {r.rank}
+                  </td>
+                  <td className="px-4 py-3 text-gray-700">{r.name}</td>
+                  <td className="px-4 py-3 text-gray-700">{r.total}</td>
                 </tr>
               ))}
             </tbody>

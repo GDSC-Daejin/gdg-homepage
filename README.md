@@ -61,6 +61,29 @@ pnpm dev
 - [ ] 관리자 페이지에서 출석 코드 발급 → 회원이 코드 입력 후 출석 처리되는지 확인
 - [ ] 잘못된 출석 코드 입력 시 거부되는지 확인
 
+## Phase 2
+
+Phase 2에서 공지사항, 설문, 문의/건의, 포인트/뱃지, 예산/후원, 자료실(노션 연동), 출석 경고 크론(슬랙 알림), 감사 로그 기능이 추가되었습니다.
+
+### DB 마이그레이션
+
+Phase 2 기능을 쓰려면 `supabase/migrations/0004_phase2.sql`을 추가로 적용해야 합니다. Supabase CLI 또는 SQL Editor에서 `0001` → `0002` → `0003` 다음 순서로 `0004_phase2.sql`을 실행하세요.
+
+### 슬랙 웹훅 만들기 (출석 경고 알림)
+
+1. [api.slack.com/messaging/webhooks](https://api.slack.com/messaging/webhooks)에서 안내에 따라 워크스페이스에 인커밍 웹훅 앱을 추가합니다.
+2. 알림을 받을 채널을 선택하고 발급된 웹훅 URL을 `SLACK_WEBHOOK_URL` 환경 변수에 등록합니다.
+
+### 노션 연동 (자료실)
+
+1. [notion.so/my-integrations](https://www.notion.so/my-integrations)에서 internal integration을 생성하고 API 키를 발급받습니다.
+2. 자료실로 사용할 노션 DB 페이지(`https://app.notion.com/p/bab8396dca104b5fa94a90ffcb09ebb2`)에서 `⋯` 메뉴 > 연결에서 방금 만든 integration을 추가합니다.
+3. `NOTION_API_KEY`에 발급받은 API 키를, `NOTION_DATABASE_ID`에 `bab8396dca104b5fa94a90ffcb09ebb2`를 등록합니다.
+
+### Vercel Cron (출석 경고)
+
+`vercel.json`에 크론 설정이 이미 포함되어 있어 Vercel에 배포하면 매주 월요일 자정에 `/api/cron/attendance-warning`이 자동으로 호출됩니다. Vercel 프로젝트 환경 변수에 `CRON_SECRET`(임의의 랜덤 문자열)과 `SUPABASE_SERVICE_ROLE_KEY`를 등록해야 정상 동작합니다.
+
 ## 7. 주의사항
 
 - Supabase 무료 프로젝트는 **7일간 활동이 없으면 자동으로 일시정지**됩니다. Supabase 대시보드에서 프로젝트를 열어 복구할 수 있습니다.

@@ -6,7 +6,7 @@ import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
-import type { Event, EventType } from "@/lib/types";
+import type { Event, EventType, Notice } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +51,14 @@ export default async function MemberHomePage() {
   await requireProfile();
   const supabase = await createClient();
 
+  const { data: latestNotice } = await supabase
+    .from("notices")
+    .select("id, title")
+    .eq("published", true)
+    .order("published_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
   const { data: events } = await supabase
     .from("events")
     .select("*")
@@ -74,8 +82,18 @@ export default async function MemberHomePage() {
     .reverse();
   const past = list.filter((e) => new Date(e.starts_at).getTime() < now);
 
+  const notice = latestNotice as Pick<Notice, "id" | "title"> | null;
+
   return (
     <div className="flex flex-col gap-8">
+      {notice && (
+        <Link href={`/notices/${notice.id}`}>
+          <Card className="flex items-center gap-2 bg-primary-soft transition-shadow hover:shadow-md">
+            <Badge tone="primary">공지</Badge>
+            <p className="text-sm font-medium text-gray-900">{notice.title}</p>
+          </Card>
+        </Link>
+      )}
       <div>
         <PageHeader title="다가오는 이벤트" />
         {upcoming.length === 0 ? (

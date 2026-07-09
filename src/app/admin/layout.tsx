@@ -44,6 +44,42 @@ export default async function AdminLayout({
           >
             출석
           </Link>
+          <Link
+            href="/admin/notices"
+            className="rounded-md px-3 py-2 hover:bg-gray-100"
+          >
+            공지
+          </Link>
+          <Link
+            href="/admin/surveys"
+            className="rounded-md px-3 py-2 hover:bg-gray-100"
+          >
+            설문
+          </Link>
+          <Link
+            href="/admin/inquiries"
+            className="rounded-md px-3 py-2 hover:bg-gray-100"
+          >
+            문의
+          </Link>
+          <Link
+            href="/admin/points"
+            className="rounded-md px-3 py-2 hover:bg-gray-100"
+          >
+            포인트
+          </Link>
+          <Link
+            href="/admin/budget"
+            className="rounded-md px-3 py-2 hover:bg-gray-100"
+          >
+            예산
+          </Link>
+          <Link
+            href="/admin/audit"
+            className="rounded-md px-3 py-2 hover:bg-gray-100"
+          >
+            감사 로그
+          </Link>
         </nav>
       </aside>
       <main className="flex-1 px-8 py-8">{children}</main>
