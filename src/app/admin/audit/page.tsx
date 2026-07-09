@@ -4,6 +4,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_AUDIT_LOGS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -29,15 +31,20 @@ interface AuditLogRow {
 
 export default async function AdminAuditPage() {
   await requireAdmin();
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("audit_logs")
-    .select("id, actor, action, target, detail, created_at, profiles(name)")
-    .order("created_at", { ascending: false })
-    .limit(100);
+  let logs: AuditLogRow[] = DEMO_AUDIT_LOGS;
 
-  const logs = (data as unknown as AuditLogRow[] | null) ?? [];
+  if (!demo) {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("audit_logs")
+      .select("id, actor, action, target, detail, created_at, profiles(name)")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    logs = (data as unknown as AuditLogRow[] | null) ?? [];
+  }
 
   return (
     <div className="flex flex-col gap-6">
