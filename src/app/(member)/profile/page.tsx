@@ -3,10 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
+import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ProfileForm } from "./ProfileForm";
 import { formatKst } from "@/lib/format";
-import type { RegistrationStatus } from "@/lib/types";
+import type { RegistrationStatus, PointLog } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +17,21 @@ interface RegistrationHistoryItem {
   event: { id: string; title: string; starts_at: string } | null;
 }
 
+interface MyBadgeItem {
+  id: string;
+  badge: { id: string; name: string; icon: string } | null;
+}
+
 export default async function ProfilePage() {
   const profile = await requireProfile();
 
   const supabase = await createClient();
-  const [{ data: registrations }, { data: attendances }] = await Promise.all([
+  const [
+    { data: registrations },
+    { data: attendances },
+    { data: pointLogs },
+    { data: myBadges },
+  ] = await Promise.all([
     supabase
       .from("event_registrations")
       .select("id, status, event:events(id, title, starts_at)")
@@ -28,9 +39,24 @@ export default async function ProfilePage() {
       .order("created_at", { ascending: false })
       .returns<RegistrationHistoryItem[]>(),
     supabase.from("attendances").select("event_id").eq("user_id", profile.id),
+    supabase
+      .from("point_logs")
+      .select("*")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .returns<PointLog[]>(),
+    supabase
+      .from("user_badges")
+      .select("id, badge:badges(id, name, icon)")
+      .eq("user_id", profile.id)
+      .order("awarded_at", { ascending: false })
+      .returns<MyBadgeItem[]>(),
   ]);
 
   const attendedEventIds = new Set((attendances ?? []).map((a) => a.event_id));
+  const pointLogList = pointLogs ?? [];
+  const pointTotal = pointLogList.reduce((sum, log) => sum + log.amount, 0);
+  const badgeList = myBadges ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
@@ -71,6 +97,64 @@ export default async function ProfilePage() {
           </div>
         ) : (
           <EmptyState title="신청 내역이 없어요" />
+        )}
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-gray-900">내 포인트</h2>
+        <StatCard label="누적 포인트" value={pointTotal} />
+        {pointLogList.length > 0 ? (
+          <div className="mt-3 flex flex-col gap-2">
+            {pointLogList.slice(0, 10).map((log) => (
+              <Card
+                key={log.id}
+                className="flex items-center justify-between gap-4 p-4"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {log.reason}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {formatKst(log.created_at)}
+                  </p>
+                </div>
+                <p
+                  className={
+                    log.amount >= 0
+                      ? "text-sm font-semibold text-success"
+                      : "text-sm font-semibold text-danger"
+                  }
+                >
+                  {log.amount >= 0 ? `+${log.amount}` : log.amount}
+                </p>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <EmptyState title="포인트 내역이 없어요" />
+        )}
+      </div>
+
+      <div>
+        <h2 className="mb-3 text-sm font-semibold text-gray-900">내 뱃지</h2>
+        {badgeList.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {badgeList.map((ub) =>
+              ub.badge ? (
+                <Card
+                  key={ub.id}
+                  className="flex items-center gap-2 px-4 py-2"
+                >
+                  <span className="text-lg">{ub.badge.icon}</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {ub.badge.name}
+                  </span>
+                </Card>
+              ) : null,
+            )}
+          </div>
+        ) : (
+          <EmptyState title="아직 받은 뱃지가 없어요" />
         )}
       </div>
     </div>
