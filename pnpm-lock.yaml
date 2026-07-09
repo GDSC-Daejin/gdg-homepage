@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@notionhq/client':
+        specifier: ^5.23.0
+        version: 5.23.0
       '@supabase/ssr':
         specifier: ^0.12.0
         version: 0.12.0(@supabase/supabase-js@2.110.1)
@@ -285,6 +288,10 @@ packages:
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [win32]
+
+  '@notionhq/client@5.23.0':
+    resolution: {integrity: sha512-vTlkart40A89+l7+aRGNXLr+z3Af94dbaj/PFtommcwqCxWF9aByXmKgCGteD77It8u4ePE1DSL8eIVSANFGPg==}
+    engines: {node: '>=18'}
 
   '@oxc-project/types@0.139.0':
     resolution: {integrity: sha512-r9gHphtCs+1M7J0pw6Sn/hh/Wpa/iQrOOkrNAlVLF/gHq+/CJmHIWKKUUhdWjcD6CIa8idarspCsASiXCXvFUw==}
@@ -1217,6 +1224,8 @@ snapshots:
 
   '@next/swc-win32-x64-msvc@16.2.10':
     optional: true
+
+  '@notionhq/client@5.23.0': {}
 
   '@oxc-project/types@0.139.0': {}
 

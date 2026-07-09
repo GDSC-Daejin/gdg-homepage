@@ -56,3 +56,118 @@ export interface Attendance {
 }
 
 export type ActionResult = { error?: string };
+
+export interface Notice {
+  id: string;
+  title: string;
+  body: string;
+  published: boolean;
+  published_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export type SurveyQuestionType = "rating" | "text";
+
+export interface SurveyQuestion {
+  id: string;
+  type: SurveyQuestionType;
+  label: string;
+}
+
+export interface Survey {
+  id: string;
+  title: string;
+  event_id: string | null;
+  questions: SurveyQuestion[];
+  is_open: boolean;
+  created_at: string;
+}
+
+export interface SurveyResponse {
+  id: string;
+  survey_id: string;
+  user_id: string;
+  answers: Record<string, number | string>;
+  created_at: string;
+}
+
+export type InquiryStatus = "pending" | "answered";
+
+export interface Inquiry {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  status: InquiryStatus;
+  answer: string | null;
+  answered_by: string | null;
+  answered_at: string | null;
+  created_at: string;
+}
+
+export interface PointLog {
+  id: string;
+  user_id: string;
+  amount: number;
+  reason: string;
+  ref_event: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface UserBadge {
+  id: string;
+  badge_id: string;
+  user_id: string;
+  awarded_by: string | null;
+  awarded_at: string;
+}
+
+export type BudgetEntryType = "income" | "expense";
+
+export interface BudgetEntry {
+  id: string;
+  entry_date: string;
+  type: BudgetEntryType;
+  category: string;
+  amount: number;
+  memo: string;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface Sponsor {
+  id: string;
+  name: string;
+  amount: number;
+  season: string;
+  note: string;
+  created_at: string;
+}
+
+export interface AuditLog {
+  id: number;
+  actor: string | null;
+  action: string;
+  target: string | null;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface Material {
+  id: string;
+  title: string;
+  type: string;
+  event: string;
+  url: string;
+  date: string;
+  notionUrl: string;
+}
