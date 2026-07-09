@@ -1,5 +1,10 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
+import { signOut } from "@/actions/profile";
+import { Badge } from "@/components/Badge";
+import { ThemeToggle } from "@/app/(member)/ThemeToggle";
+import { AdminSidebarNav } from "./AdminSidebarNav";
+import { TourModeToggle } from "./TourModeToggle";
+import { isDemoMode } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -8,81 +13,60 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  await requireAdmin();
+  const profile = await requireAdmin();
+  const demo = await isDemoMode();
 
   return (
-    <div className="flex min-h-full">
-      <aside className="w-56 shrink-0 border-r border-gray-200 bg-white px-4 py-6">
-        <nav className="flex flex-col gap-1 text-sm font-medium text-gray-700">
-          <Link
-            href="/admin"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            대시보드
-          </Link>
-          <Link
-            href="/admin/members"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            회원
-          </Link>
-          <Link
-            href="/admin/applications"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            지원서
-          </Link>
-          <Link
-            href="/admin/events"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            이벤트
-          </Link>
-          <Link
-            href="/admin/attendance"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            출석
-          </Link>
-          <Link
-            href="/admin/notices"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            공지
-          </Link>
-          <Link
-            href="/admin/surveys"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            설문
-          </Link>
-          <Link
-            href="/admin/inquiries"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            문의
-          </Link>
-          <Link
-            href="/admin/points"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            포인트
-          </Link>
-          <Link
-            href="/admin/budget"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            예산
-          </Link>
-          <Link
-            href="/admin/audit"
-            className="rounded-md px-3 py-2 hover:bg-gray-100"
-          >
-            감사 로그
-          </Link>
-        </nav>
+    <div className="flex min-h-screen">
+      <aside className="flex w-60 shrink-0 flex-col border-r border-gray-200 bg-white dark:bg-gray-100 px-4 py-6">
+        <div className="px-3 pb-6">
+          <p className="text-base font-bold text-gray-900">GDG DJU</p>
+          <p className="text-xs text-gray-500">동아리 관리 시스템</p>
+        </div>
+        <AdminSidebarNav />
+        <div className="mt-auto flex flex-col gap-3 pt-6">
+          <TourModeToggle active={demo} />
+          <ThemeToggle />
+          <div className="flex items-center gap-2 rounded-md px-1 py-2">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+              {profile.name.slice(0, 1)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-gray-900">
+                {profile.name}
+              </p>
+              <Badge tone="primary">관리자</Badge>
+            </div>
+            <form action={signOut}>
+              <button
+                type="submit"
+                aria-label="로그아웃"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.75}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4"
+                >
+                  <path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
       </aside>
-      <main className="flex-1 px-8 py-8">{children}</main>
+      <main className="flex-1 px-8 py-8">
+        {demo && (
+          <div className="mb-6 rounded-md bg-amber-50 px-4 py-2 text-sm text-amber-800">
+            둘러보기 모드 · 모든 데이터는 예시입니다
+          </div>
+        )}
+        {children}
+      </main>
     </div>
   );
 }
