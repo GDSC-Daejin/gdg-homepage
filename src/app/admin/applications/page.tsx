@@ -9,6 +9,8 @@ import { EmptyState } from "@/components/EmptyState";
 import type { Application, ApplicationStatus, Profile } from "@/lib/types";
 import { ReviewButtons } from "./ReviewButtons";
 import { SeasonFilter } from "./SeasonFilter";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_APPLICATION_SEASONS, DEMO_APPLICATIONS, DEMO_APPLICANTS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -41,40 +43,52 @@ export default async function AdminApplicationsPage({
   await requireAdmin();
   const params = await searchParams;
   const status = params.status ?? "all";
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-
-  const { data: seasonRows } = await supabase
-    .from("applications")
-    .select("season")
-    .order("season", { ascending: false });
-  const seasons = Array.from(
-    new Set(
-      ((seasonRows as { season: string }[] | null) ?? []).map((row) => row.season),
-    ),
+  let seasons: string[] = DEMO_APPLICATION_SEASONS;
+  let season = params.season ?? seasons[0] ?? CURRENT_SEASON;
+  let applications: Application[] = DEMO_APPLICATIONS.filter(
+    (a) => a.season === season && (status === "all" || a.status === status),
   );
-  const season = params.season ?? seasons[0] ?? CURRENT_SEASON;
-
-  let query = supabase
-    .from("applications")
-    .select("*")
-    .eq("season", season)
-    .order("created_at", { ascending: false });
-  if (status !== "all") query = query.eq("status", status);
-
-  const { data: appData } = await query;
-  const applications = (appData as Application[] | null) ?? [];
-
-  const applicantIds = Array.from(new Set(applications.map((a) => a.applicant_id)));
-  const { data: profileData } = applicantIds.length
-    ? await supabase
-        .from("profiles")
-        .select("id, name, student_no, major")
-        .in("id", applicantIds)
-    : { data: [] as ApplicantInfo[] };
-  const applicantMap = new Map(
-    ((profileData as ApplicantInfo[] | null) ?? []).map((p) => [p.id, p]),
+  let applicantMap = new Map(
+    Object.values(DEMO_APPLICANTS).map((p) => [p.id, p]),
   );
+
+  if (!demo) {
+    const supabase = await createClient();
+
+    const { data: seasonRows } = await supabase
+      .from("applications")
+      .select("season")
+      .order("season", { ascending: false });
+    seasons = Array.from(
+      new Set(
+        ((seasonRows as { season: string }[] | null) ?? []).map((row) => row.season),
+      ),
+    );
+    season = params.season ?? seasons[0] ?? CURRENT_SEASON;
+
+    let query = supabase
+      .from("applications")
+      .select("*")
+      .eq("season", season)
+      .order("created_at", { ascending: false });
+    if (status !== "all") query = query.eq("status", status);
+
+    const { data: appData } = await query;
+    applications = (appData as Application[] | null) ?? [];
+
+    const applicantIds = Array.from(new Set(applications.map((a) => a.applicant_id)));
+    const { data: profileData } = applicantIds.length
+      ? await supabase
+          .from("profiles")
+          .select("id, name, student_no, major")
+          .in("id", applicantIds)
+      : { data: [] as ApplicantInfo[] };
+    applicantMap = new Map(
+      ((profileData as ApplicantInfo[] | null) ?? []).map((p) => [p.id, p]),
+    );
+  }
 
   return (
     <div>
