@@ -1,12 +1,12 @@
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
 import { formatKst } from "@/lib/format";
 import { MemberRoleStatusForm } from "./MemberRoleStatusForm";
+import { MemberProfileForm } from "./MemberProfileForm";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEMBERS, DEMO_MEMBER_ATTENDANCE } from "@/lib/demoData";
 
@@ -57,34 +57,35 @@ export default async function AdminMemberDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title={member.name || "(이름 없음)"}
-        description={`학번 ${member.student_no || "-"}`}
-      />
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-soft text-lg font-semibold text-primary">
+          {(member.name || "?").slice(0, 1)}
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">
+            {member.name || "(이름 없음)"}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {member.student_no || "-"} · {member.major || "-"}
+          </p>
+        </div>
+      </div>
 
       <Card className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-gray-500">전공</p>
-            <p className="font-medium text-gray-900">{member.major || "-"}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">전화번호</p>
-            <p className="font-medium text-gray-900">{member.phone || "-"}</p>
-          </div>
-          <div>
-            <p className="text-gray-500">관심 분야</p>
-            <p className="font-medium text-gray-900">
-              {member.interests.length > 0 ? member.interests.join(", ") : "-"}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-500">가입일</p>
-            <p className="font-medium text-gray-900">
-              {formatKst(member.joined_at)}
-            </p>
-          </div>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-semibold text-gray-900">프로필</p>
+          <p className="text-xs text-gray-400">
+            가입일 {formatKst(member.joined_at)} (KST)
+          </p>
         </div>
+        <MemberProfileForm
+          userId={member.id}
+          name={member.name}
+          studentNo={member.student_no}
+          major={member.major}
+          phone={member.phone}
+          interests={member.interests}
+        />
         <MemberRoleStatusForm
           userId={member.id}
           role={member.role}
@@ -93,9 +94,14 @@ export default async function AdminMemberDetailPage({
       </Card>
 
       <Card>
-        <h2 className="mb-4 text-sm font-semibold text-gray-900">
-          출석 기록
-        </h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-900">
+            출석 기록
+          </h2>
+          <p className="text-xs text-gray-400">
+            최근순 · 총 {attendances.length}건
+          </p>
+        </div>
         {attendances.length === 0 ? (
           <EmptyState title="출석 기록이 없어요" />
         ) : (
@@ -103,8 +109,8 @@ export default async function AdminMemberDetailPage({
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
                 <th className="py-2 font-medium">이벤트</th>
-                <th className="py-2 font-medium">일시</th>
-                <th className="py-2 font-medium">출석 시각</th>
+                <th className="py-2 font-medium">이벤트 일시 (KST)</th>
+                <th className="py-2 font-medium">출석 체크 (KST)</th>
               </tr>
             </thead>
             <tbody>
@@ -114,7 +120,7 @@ export default async function AdminMemberDetailPage({
                   className="border-b border-gray-100 last:border-0"
                 >
                   <td className="py-2 text-gray-900">
-                    {row.events?.title ?? "-"}
+                    {row.events?.title ?? "(삭제된 이벤트)"}
                   </td>
                   <td className="py-2 text-gray-500">
                     {row.events ? formatKst(row.events.starts_at) : "-"}
