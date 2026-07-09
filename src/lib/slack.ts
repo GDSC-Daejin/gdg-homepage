@@ -11,6 +11,7 @@ export async function postSlack(text: string): Promise<{ error?: string }> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text }),
+      signal: AbortSignal.timeout(5000),
     });
 
     if (!res.ok) {
@@ -18,7 +19,10 @@ export async function postSlack(text: string): Promise<{ error?: string }> {
     }
 
     return {};
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.name === "TimeoutError") {
+      return { error: "슬랙 웹훅 응답이 시간 초과됐어요" };
+    }
     return { error: "슬랙 메시지 전송에 실패했어요" };
   }
 }

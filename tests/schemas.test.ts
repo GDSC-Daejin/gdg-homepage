@@ -96,6 +96,11 @@ describe("inquirySchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("빈 내용은 reject한다", () => {
+    const result = inquirySchema.safeParse({ title: "문의", body: "" });
+    expect(result.success).toBe(false);
+  });
+
   it("정상 입력은 통과한다", () => {
     const result = inquirySchema.safeParse({ title: "문의", body: "내용" });
     expect(result.success).toBe(true);

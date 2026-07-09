@@ -4,6 +4,13 @@ import { computeAttendanceWarnings } from "@/lib/attendance-stats";
 import { postSlack } from "@/lib/slack";
 
 export async function GET(request: NextRequest) {
+  if (!process.env.CRON_SECRET) {
+    return NextResponse.json(
+      { error: "CRON_SECRET이 설정되지 않았어요" },
+      { status: 401 },
+    );
+  }
+
   if (
     request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
   ) {
@@ -19,7 +26,9 @@ export async function GET(request: NextRequest) {
     });
   }
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey);
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
   const warnings = await computeAttendanceWarnings(supabase);
 
   if (warnings.length === 0) {

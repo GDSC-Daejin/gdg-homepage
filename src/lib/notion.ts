@@ -72,11 +72,24 @@ export async function fetchMaterials(): Promise<{
       return { materials: [], error: "노션 자료를 불러오지 못했어요" };
     }
 
-    const response = await notion.dataSources.query({
-      data_source_id: dataSourceId,
-    });
+    const results = [];
+    let cursor: string | undefined;
+    let hasMore = true;
+    let pageCount = 0;
+    const MAX_PAGES = 10;
 
-    const materials: Material[] = response.results
+    while (hasMore && pageCount < MAX_PAGES) {
+      const response = await notion.dataSources.query({
+        data_source_id: dataSourceId,
+        start_cursor: cursor,
+      });
+      results.push(...response.results);
+      hasMore = response.has_more;
+      cursor = response.next_cursor ?? undefined;
+      pageCount += 1;
+    }
+
+    const materials: Material[] = results
       .filter(isFullPage)
       .map((page) => ({
         id: page.id,

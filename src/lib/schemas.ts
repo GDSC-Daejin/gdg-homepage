@@ -51,7 +51,7 @@ export const surveyResponseSchema = z.object({
 
 export const inquirySchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),
-  body: z.string(),
+  body: z.string().min(1, "내용을 입력해주세요"),
 });
 
 export const pointGrantSchema = z.object({
@@ -67,7 +67,7 @@ export const budgetSchema = z.object({
   type: z.enum(["income", "expense"]),
   category: z.string().min(1, "분류를 입력해주세요"),
   amount: z.coerce.number().int().positive("금액은 양수여야 해요"),
-  memo: z.string(),
+  memo: z.string().default(""),
 });
 
 export const sponsorSchema = z.object({
