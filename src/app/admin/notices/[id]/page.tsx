@@ -6,6 +6,8 @@ import type { Notice } from "@/lib/types";
 import { NoticeForm } from "../NoticeForm";
 import { DeleteNoticeButton } from "../DeleteNoticeButton";
 import { PublishNoticeButton } from "../PublishNoticeButton";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_NOTICES } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -15,16 +17,25 @@ export default async function AdminNoticeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  const { data: notice } = await supabase
-    .from("notices")
-    .select("*")
-    .eq("id", id)
-    .single();
+  let n: Notice | undefined;
 
-  if (!notice) notFound();
-  const n = notice as Notice;
+  if (demo) {
+    n = DEMO_NOTICES.find((notice) => notice.id === id) ?? DEMO_NOTICES[0];
+  } else {
+    const supabase = await createClient();
+    const { data: notice } = await supabase
+      .from("notices")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (!notice) notFound();
+    n = notice as Notice;
+  }
+
+  if (!n) notFound();
 
   return (
     <div className="flex flex-col gap-6">

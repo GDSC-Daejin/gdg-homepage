@@ -7,18 +7,23 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { formatKst } from "@/lib/format";
 import type { Notice } from "@/lib/types";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_NOTICES } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminNoticesPage() {
-  const supabase = await createClient();
+  const demo = await isDemoMode();
+  let list: Notice[] = DEMO_NOTICES;
 
-  const { data: notices } = await supabase
-    .from("notices")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  const list = (notices ?? []) as Notice[];
+  if (!demo) {
+    const supabase = await createClient();
+    const { data: notices } = await supabase
+      .from("notices")
+      .select("*")
+      .order("created_at", { ascending: false });
+    list = (notices ?? []) as Notice[];
+  }
 
   return (
     <div>
