@@ -130,6 +130,7 @@ export default async function AdminDashboardPage() {
       };
     });
 
+    // 월별 신규 가입 추이 (최근 6개월)
     const nowDate = new Date();
     const sinceDate = new Date(
       nowDate.getFullYear(),
@@ -155,6 +156,7 @@ export default async function AdminDashboardPage() {
     }
     joinCounts = monthKeys.map((k) => joinCountByMonthReal.get(k) ?? 0);
 
+    // 세션별 만족도 (설문 rating 질문 평균)
     const { data: eventSurveysData } = await supabase
       .from("surveys")
       .select("id, title, event_id, questions")
@@ -228,6 +230,7 @@ export default async function AdminDashboardPage() {
       .filter((r) => r.count > 0)
       .sort((a, b) => b.avg - a.avg);
 
+    // 활동 랭킹 Top 10 (포인트 합산)
     const { data: pointRows } = await supabase
       .from("point_logs")
       .select("user_id, amount");
@@ -280,25 +283,19 @@ export default async function AdminDashboardPage() {
       <PageHeader title="대시보드" description="동아리 현황을 한눈에 확인해요" />
 
       <div className="grid grid-cols-4 gap-4">
-        <StatCard label="전체 회원 수" value={totalMembers ?? 0} hint="role = member" />
-        <StatCard label="활동 회원 수" value={activeMembers ?? 0} hint="status = active" />
-        <StatCard
-          label="다가오는 이벤트 수"
-          value={upcomingEvents ?? 0}
-          hint="시작일 기준 미래"
-        />
+        <StatCard label="전체 회원 수" value={totalMembers ?? 0} />
+        <StatCard label="활동 회원 수" value={activeMembers ?? 0} />
+        <StatCard label="다가오는 이벤트 수" value={upcomingEvents ?? 0} />
         <StatCard
           label="최근 이벤트 평균 출석률"
           value={avgRate !== null ? `${Math.round(avgRate * 100)}%` : "-"}
           hint="최근 지난 이벤트 5개 기준"
-          emphasis
         />
       </div>
 
       <Card className="overflow-x-auto p-0">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+        <div className="border-b border-gray-200 px-4 py-3">
           <p className="text-sm font-semibold text-gray-900">최근 이벤트</p>
-          <p className="text-xs text-gray-400">최근 종료일 순</p>
         </div>
         {rows.length === 0 ? (
           <div className="p-6">
@@ -310,7 +307,7 @@ export default async function AdminDashboardPage() {
               <tr className="border-b border-gray-200 text-left text-gray-500">
                 <th className="px-4 py-3 font-medium">제목</th>
                 <th className="px-4 py-3 font-medium">유형</th>
-                <th className="px-4 py-3 font-medium">일시 (KST)</th>
+                <th className="px-4 py-3 font-medium">일시</th>
                 <th className="px-4 py-3 font-medium">확정 인원</th>
                 <th className="px-4 py-3 font-medium">출석 인원</th>
                 <th className="px-4 py-3 font-medium">출석률</th>
@@ -325,7 +322,7 @@ export default async function AdminDashboardPage() {
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {row.title}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">
+                  <td className="px-4 py-3 text-gray-700">
                     {EVENT_TYPE_LABEL[row.type]}
                   </td>
                   <td className="px-4 py-3 text-gray-500">
@@ -333,7 +330,7 @@ export default async function AdminDashboardPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-700">{row.confirmed}</td>
                   <td className="px-4 py-3 text-gray-700">{row.attended}</td>
-                  <td className="px-4 py-3 font-semibold text-primary">
+                  <td className="px-4 py-3 text-gray-700">
                     {row.rate !== null ? `${Math.round(row.rate * 100)}%` : "-"}
                   </td>
                 </tr>
@@ -345,26 +342,24 @@ export default async function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <p className="text-sm font-semibold text-gray-900">월별 신규 가입 추이</p>
-          <p className="mb-4 text-xs text-gray-400">최근 6개월</p>
+          <p className="mb-4 text-sm font-semibold text-gray-900">
+            월별 신규 가입 추이
+          </p>
           <div className="flex h-32 items-end gap-3">
-            {months.map((m, i) => {
+            {months.map((m) => {
               const count = joinCountByMonth.get(m.key) ?? 0;
               const height = Math.max(4, (count / maxJoinCount) * 100);
-              const isCurrent = i === months.length - 1;
               return (
                 <div
                   key={m.key}
                   className="flex flex-1 flex-col items-center gap-1"
                 >
-                  <span
-                    className={`text-xs font-medium ${isCurrent ? "text-primary" : "text-gray-700"}`}
-                  >
+                  <span className="text-xs font-medium text-gray-700">
                     {count}
                   </span>
                   <div className="flex h-24 w-full items-end">
                     <div
-                      className={`w-full rounded-t-sm ${isCurrent ? "bg-primary" : "bg-gray-200"}`}
+                      className="w-full rounded-t-sm bg-primary"
                       style={{ height: `${height}%` }}
                     />
                   </div>
@@ -376,15 +371,16 @@ export default async function AdminDashboardPage() {
         </Card>
 
         <Card>
-          <p className="text-sm font-semibold text-gray-900">세션별 만족도</p>
-          <p className="mb-4 text-xs text-gray-400">설문 평점 평균 · 높은 순</p>
+          <p className="mb-4 text-sm font-semibold text-gray-900">
+            세션별 만족도
+          </p>
           {satisfactionRows.length === 0 ? (
             <EmptyState title="설문 응답 데이터가 없어요" />
           ) : (
             <div className="flex flex-col gap-3">
               {satisfactionRows.map((r) => (
                 <div key={r.id} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 truncate text-sm text-gray-700">
+                  <span className="w-24 shrink-0 truncate text-sm text-gray-700">
                     {r.title}
                   </span>
                   <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
@@ -393,8 +389,8 @@ export default async function AdminDashboardPage() {
                       style={{ width: `${(r.avg / 5) * 100}%` }}
                     />
                   </div>
-                  <span className="w-20 shrink-0 text-right text-xs font-medium text-gray-500">
-                    {r.avg.toFixed(1)} · {r.count}명
+                  <span className="w-16 shrink-0 text-right text-xs text-gray-500">
+                    {r.avg.toFixed(1)}점 ({r.count})
                   </span>
                 </div>
               ))}
@@ -404,11 +400,10 @@ export default async function AdminDashboardPage() {
       </div>
 
       <Card className="overflow-x-auto p-0">
-        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+        <div className="border-b border-gray-200 px-4 py-3">
           <p className="text-sm font-semibold text-gray-900">
             활동 랭킹 Top 10
           </p>
-          <p className="text-xs text-gray-400">누적 포인트 기준</p>
         </div>
         {rankingRows.length === 0 ? (
           <div className="p-6">
@@ -420,31 +415,17 @@ export default async function AdminDashboardPage() {
               <tr className="border-b border-gray-200 text-left text-gray-500">
                 <th className="px-4 py-3 font-medium">순위</th>
                 <th className="px-4 py-3 font-medium">이름</th>
-                <th className="px-4 py-3 text-right font-medium">누적 포인트</th>
+                <th className="px-4 py-3 font-medium">포인트</th>
               </tr>
             </thead>
             <tbody>
               {rankingRows.map((r) => (
                 <tr key={r.id} className="border-b border-gray-100 last:border-0">
-                  <td className="px-4 py-3">
-                    {r.rank <= 3 ? (
-                      <span
-                        className={`inline-flex h-6 w-6 items-center justify-center rounded-md text-xs font-bold ${
-                          r.rank === 1
-                            ? "bg-primary text-white"
-                            : "bg-primary-soft text-primary"
-                        }`}
-                      >
-                        {r.rank}
-                      </span>
-                    ) : (
-                      <span className="pl-1 text-gray-400">{r.rank}</span>
-                    )}
+                  <td className="px-4 py-3 font-medium text-gray-900">
+                    {r.rank}
                   </td>
                   <td className="px-4 py-3 text-gray-700">{r.name}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                    {r.total.toLocaleString()}
-                  </td>
+                  <td className="px-4 py-3 text-gray-700">{r.total}</td>
                 </tr>
               ))}
             </tbody>
