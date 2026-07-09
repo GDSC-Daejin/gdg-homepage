@@ -8,52 +8,65 @@ import { GrantPointsForm } from "./GrantPointsForm";
 import { AwardBadgeForm } from "./AwardBadgeForm";
 import { BadgeManager } from "./BadgeManager";
 import type { Profile, Event, Badge as BadgeType, PointLog } from "@/lib/types";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_MEMBERS, DEMO_EVENTS, DEMO_BADGES, DEMO_POINT_LOGS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPointsPage() {
   await requireAdmin();
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  const [
-    { data: members },
-    { data: events },
-    { data: badges },
-    { data: logs },
-  ] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*")
-      .in("role", ["member", "admin"])
-      .eq("status", "active")
-      .order("name", { ascending: true }),
-    supabase
-      .from("events")
-      .select("*")
-      .order("starts_at", { ascending: false }),
-    supabase.from("badges").select("*").order("name", { ascending: true }),
-    supabase
-      .from("point_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(50),
-  ]);
-
-  const memberList = (members as Profile[]) ?? [];
-  const eventList = (events as Event[]) ?? [];
-  const badgeList = (badges as BadgeType[]) ?? [];
-  const logList = (logs as PointLog[]) ?? [];
-
-  const logUserIds = Array.from(new Set(logList.map((l) => l.user_id)));
-  const { data: logProfiles } = logUserIds.length
-    ? await supabase.from("profiles").select("id, name").in("id", logUserIds)
-    : { data: [] as { id: string; name: string }[] };
-  const nameById = new Map(
-    ((logProfiles as { id: string; name: string }[] | null) ?? []).map((p) => [
-      p.id,
-      p.name,
-    ]),
+  let memberList: Profile[] = DEMO_MEMBERS.filter(
+    (m) => (m.role === "member" || m.role === "admin") && m.status === "active",
   );
+  let eventList: Event[] = DEMO_EVENTS;
+  let badgeList: BadgeType[] = DEMO_BADGES;
+  let logList: PointLog[] = DEMO_POINT_LOGS;
+  let nameById = new Map(DEMO_MEMBERS.map((m) => [m.id, m.name]));
+
+  if (!demo) {
+    const supabase = await createClient();
+    const [
+      { data: members },
+      { data: events },
+      { data: badges },
+      { data: logs },
+    ] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("*")
+        .in("role", ["member", "admin"])
+        .eq("status", "active")
+        .order("name", { ascending: true }),
+      supabase
+        .from("events")
+        .select("*")
+        .order("starts_at", { ascending: false }),
+      supabase.from("badges").select("*").order("name", { ascending: true }),
+      supabase
+        .from("point_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(50),
+    ]);
+
+    memberList = (members as Profile[]) ?? [];
+    eventList = (events as Event[]) ?? [];
+    badgeList = (badges as BadgeType[]) ?? [];
+    logList = (logs as PointLog[]) ?? [];
+
+    const logUserIds = Array.from(new Set(logList.map((l) => l.user_id)));
+    const { data: logProfiles } = logUserIds.length
+      ? await supabase.from("profiles").select("id, name").in("id", logUserIds)
+      : { data: [] as { id: string; name: string }[] };
+    nameById = new Map(
+      ((logProfiles as { id: string; name: string }[] | null) ?? []).map((p) => [
+        p.id,
+        p.name,
+      ]),
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
