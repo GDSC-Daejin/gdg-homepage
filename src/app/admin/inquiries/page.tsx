@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
 import type { Inquiry, InquiryStatus, Profile } from "@/lib/types";
 import { AnswerForm } from "./AnswerForm";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_INQUIRIES, DEMO_INQUIRY_AUTHORS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -37,25 +39,33 @@ export default async function AdminInquiriesPage({
   await requireAdmin();
   const params = await searchParams;
   const status = params.status ?? "all";
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("inquiries")
-    .select("*")
-    .order("created_at", { ascending: false });
-  if (status !== "all") query = query.eq("status", status);
-
-  const { data: inquiryData } = await query;
-  const inquiries = (inquiryData as Inquiry[] | null) ?? [];
-
-  const userIds = Array.from(new Set(inquiries.map((i) => i.user_id)));
-  const { data: profileData } = userIds.length
-    ? await supabase.from("profiles").select("id, name").in("id", userIds)
-    : { data: [] as AuthorInfo[] };
-  const authorMap = new Map(
-    ((profileData as AuthorInfo[] | null) ?? []).map((p) => [p.id, p]),
+  let inquiries: Inquiry[] = DEMO_INQUIRIES.filter(
+    (i) => status === "all" || i.status === status,
   );
+  let authorMap = new Map(Object.entries(DEMO_INQUIRY_AUTHORS));
+
+  if (!demo) {
+    const supabase = await createClient();
+
+    let query = supabase
+      .from("inquiries")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (status !== "all") query = query.eq("status", status);
+
+    const { data: inquiryData } = await query;
+    inquiries = (inquiryData as Inquiry[] | null) ?? [];
+
+    const userIds = Array.from(new Set(inquiries.map((i) => i.user_id)));
+    const { data: profileData } = userIds.length
+      ? await supabase.from("profiles").select("id, name").in("id", userIds)
+      : { data: [] as AuthorInfo[] };
+    authorMap = new Map(
+      ((profileData as AuthorInfo[] | null) ?? []).map((p) => [p.id, p]),
+    );
+  }
 
   return (
     <div>
