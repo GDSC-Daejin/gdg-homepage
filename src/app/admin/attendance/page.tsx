@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
 import { ATTENDANCE_WARNING_THRESHOLD } from "./constants";
 import { SendWarningButton } from "./SendWarningButton";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_ATTENDANCE_ROWS } from "@/lib/demoData";
 
 interface MemberAttendanceRow {
   member: Profile;
@@ -17,59 +19,65 @@ interface MemberAttendanceRow {
 export const dynamic = "force-dynamic";
 
 export default async function AdminAttendancePage() {
-  const supabase = await createClient();
-  const now = new Date().toISOString();
+  const demo = await isDemoMode();
 
-  const [{ data: membersData }, { data: pastEventsData }] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "member")
-      .eq("status", "active")
-      .order("name"),
-    supabase.from("events").select("id").lt("starts_at", now),
-  ]);
+  let rows: MemberAttendanceRow[] = DEMO_ATTENDANCE_ROWS;
 
-  const members = (membersData as Profile[]) ?? [];
-  const pastEventIds = (pastEventsData ?? []).map((e) => e.id);
+  if (!demo) {
+    const supabase = await createClient();
+    const now = new Date().toISOString();
 
-  const confirmedByUser = new Map<string, number>();
-  const attendedByUser = new Map<string, number>();
-
-  if (pastEventIds.length > 0) {
-    const [{ data: regs }, { data: attends }] = await Promise.all([
+    const [{ data: membersData }, { data: pastEventsData }] = await Promise.all([
       supabase
-        .from("event_registrations")
-        .select("user_id, event_id")
-        .eq("status", "confirmed")
-        .in("event_id", pastEventIds),
-      supabase
-        .from("attendances")
-        .select("user_id, event_id")
-        .in("event_id", pastEventIds),
+        .from("profiles")
+        .select("*")
+        .eq("role", "member")
+        .eq("status", "active")
+        .order("name"),
+      supabase.from("events").select("id").lt("starts_at", now),
     ]);
-    const confirmedPairs = new Set<string>();
-    for (const r of regs ?? []) {
-      confirmedPairs.add(`${r.user_id}:${r.event_id}`);
-      confirmedByUser.set(r.user_id, (confirmedByUser.get(r.user_id) ?? 0) + 1);
-    }
-    for (const a of attends ?? []) {
-      if (confirmedPairs.has(`${a.user_id}:${a.event_id}`)) {
-        attendedByUser.set(a.user_id, (attendedByUser.get(a.user_id) ?? 0) + 1);
+
+    const members = (membersData as Profile[]) ?? [];
+    const pastEventIds = (pastEventsData ?? []).map((e) => e.id);
+
+    const confirmedByUser = new Map<string, number>();
+    const attendedByUser = new Map<string, number>();
+
+    if (pastEventIds.length > 0) {
+      const [{ data: regs }, { data: attends }] = await Promise.all([
+        supabase
+          .from("event_registrations")
+          .select("user_id, event_id")
+          .eq("status", "confirmed")
+          .in("event_id", pastEventIds),
+        supabase
+          .from("attendances")
+          .select("user_id, event_id")
+          .in("event_id", pastEventIds),
+      ]);
+      const confirmedPairs = new Set<string>();
+      for (const r of regs ?? []) {
+        confirmedPairs.add(`${r.user_id}:${r.event_id}`);
+        confirmedByUser.set(r.user_id, (confirmedByUser.get(r.user_id) ?? 0) + 1);
+      }
+      for (const a of attends ?? []) {
+        if (confirmedPairs.has(`${a.user_id}:${a.event_id}`)) {
+          attendedByUser.set(a.user_id, (attendedByUser.get(a.user_id) ?? 0) + 1);
+        }
       }
     }
-  }
 
-  const rows: MemberAttendanceRow[] = members.map((member) => {
-    const confirmed = confirmedByUser.get(member.id) ?? 0;
-    const attended = attendedByUser.get(member.id) ?? 0;
-    return {
-      member,
-      confirmed,
-      attended,
-      rate: confirmed > 0 ? attended / confirmed : null,
-    };
-  });
+    rows = members.map((member) => {
+      const confirmed = confirmedByUser.get(member.id) ?? 0;
+      const attended = attendedByUser.get(member.id) ?? 0;
+      return {
+        member,
+        confirmed,
+        attended,
+        rate: confirmed > 0 ? attended / confirmed : null,
+      };
+    });
+  }
 
   return (
     <div className="flex flex-col gap-6">
