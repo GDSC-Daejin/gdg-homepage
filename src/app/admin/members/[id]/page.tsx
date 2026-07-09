@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
 import { formatKst } from "@/lib/format";
 import { MemberRoleStatusForm } from "./MemberRoleStatusForm";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_MEMBERS, DEMO_MEMBER_ATTENDANCE } from "@/lib/demoData";
 
 interface AttendanceRow {
   id: string;
@@ -23,24 +25,35 @@ export default async function AdminMemberDetailPage({
 }) {
   await requireAdmin();
   const { id } = await params;
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  const { data: memberData } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", id)
-    .single();
+  let member: Profile | undefined;
+  let attendances: AttendanceRow[] = [];
 
-  if (!memberData) notFound();
-  const member = memberData as Profile;
+  if (demo) {
+    member = DEMO_MEMBERS.find((m) => m.id === id) ?? DEMO_MEMBERS[0];
+    attendances = DEMO_MEMBER_ATTENDANCE[member.id] ?? [];
+  } else {
+    const supabase = await createClient();
+    const { data: memberData } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-  const { data: attendanceData } = await supabase
-    .from("attendances")
-    .select("id, checked_at, events(id, title, starts_at)")
-    .eq("user_id", id)
-    .order("checked_at", { ascending: false });
+    if (!memberData) notFound();
+    member = memberData as Profile;
 
-  const attendances = (attendanceData as unknown as AttendanceRow[]) ?? [];
+    const { data: attendanceData } = await supabase
+      .from("attendances")
+      .select("id, checked_at, events(id, title, starts_at)")
+      .eq("user_id", id)
+      .order("checked_at", { ascending: false });
+
+    attendances = (attendanceData as unknown as AttendanceRow[]) ?? [];
+  }
+
+  if (!member) notFound();
 
   return (
     <div className="flex flex-col gap-6">

@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/EmptyState";
 import type { Profile, Role, MemberStatus } from "@/lib/types";
 import { formatKstDate } from "@/lib/format";
 import { MemberFilters } from "./MemberFilters";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_MEMBERS } from "@/lib/demoData";
 
 const ROLE_LABEL: Record<Role, string> = {
   admin: "관리자",
@@ -42,22 +44,27 @@ export default async function AdminMembersPage({
 }) {
   await requireAdmin();
   const { q, role, status } = await searchParams;
+  const demo = await isDemoMode();
 
-  const supabase = await createClient();
-  let query = supabase
-    .from("profiles")
-    .select("*")
-    .order("joined_at", { ascending: false });
+  let members: Profile[] = DEMO_MEMBERS;
 
-  if (q) {
-    const term = q.replace(/[%,]/g, "");
-    query = query.or(`name.ilike.%${term}%,student_no.ilike.%${term}%`);
+  if (!demo) {
+    const supabase = await createClient();
+    let query = supabase
+      .from("profiles")
+      .select("*")
+      .order("joined_at", { ascending: false });
+
+    if (q) {
+      const term = q.replace(/[%,]/g, "");
+      query = query.or(`name.ilike.%${term}%,student_no.ilike.%${term}%`);
+    }
+    if (role) query = query.eq("role", role);
+    if (status) query = query.eq("status", status);
+
+    const { data } = await query;
+    members = (data as Profile[]) ?? [];
   }
-  if (role) query = query.eq("role", role);
-  if (status) query = query.eq("status", status);
-
-  const { data } = await query;
-  const members = (data as Profile[]) ?? [];
 
   return (
     <div>
