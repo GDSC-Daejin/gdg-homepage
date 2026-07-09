@@ -5,6 +5,7 @@ import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
 import { ATTENDANCE_WARNING_THRESHOLD } from "./constants";
+import { SendWarningButton } from "./SendWarningButton";
 
 interface MemberAttendanceRow {
   member: Profile;
@@ -75,6 +76,7 @@ export default async function AdminAttendancePage() {
       <PageHeader
         title="출석 관리"
         description="활동 회원의 이벤트 출석률을 확인해요"
+        action={<SendWarningButton />}
       />
 
       {rows.length === 0 ? (
