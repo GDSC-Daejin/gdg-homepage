@@ -21,9 +21,10 @@ export async function GET(request: NextRequest) {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return NextResponse.json({
-      error: "Supabase 서비스 롤 연동이 설정되지 않았어요",
-    });
+    return NextResponse.json(
+      { error: "Supabase 서비스 롤 연동이 설정되지 않았어요" },
+      { status: 500 },
+    );
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {

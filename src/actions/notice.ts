@@ -79,12 +79,17 @@ export async function publishNotice(id: string): Promise<PublishResult> {
   await requireAdmin();
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error: fetchError } = await supabase
     .from("notices")
-    .update({ published: true, published_at: new Date().toISOString() })
-    .eq("id", id)
     .select("*")
+    .eq("id", id)
     .single();
+
+  if (fetchError) return { error: toKoreanError(fetchError) };
+
+  const { error } = await supabase.rpc("admin_publish_notice", {
+    p_notice: id,
+  });
 
   if (error) return { error: toKoreanError(error) };
 
