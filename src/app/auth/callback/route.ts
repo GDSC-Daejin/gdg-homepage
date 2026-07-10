@@ -17,12 +17,14 @@ export async function GET(request: NextRequest) {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("name")
+          .select("name, role")
           .eq("id", user.id)
           .single();
 
         if (profile && profile.name !== "") {
-          return NextResponse.redirect(`${origin}/`);
+          return NextResponse.redirect(
+            profile.role === "admin" ? `${origin}/admin` : `${origin}/`,
+          );
         }
       }
 
