@@ -10,3 +10,16 @@ insert into public.events (type, title, description, starts_at, location, speake
 --   2. on_auth_user_created 트리거가 public.profiles 행을 자동 생성함 (role='applicant', status='active')
 --   3. Table Editor > profiles 에서 role을 'member' 또는 'admin'으로 수동 변경
 --   4. admin 계정으로 admin_set_event_code(event_id)를 실행해 출석 코드 발급 후 흐름 검증
+
+-- 기본 뱃지 세트 (획득 조건은 description에 서술, 수여는 관리자 수동)
+insert into public.badges (icon, name, description) values
+  ('🌱', '첫 출석', '첫 이벤트 출석'),
+  ('🔥', '개근', '한 시즌 확정 이벤트 출석률 100%'),
+  ('🎤', '스피커', '세션/스터디에서 발표'),
+  ('📚', '스터디 리더', '스터디 1회 이상 리드'),
+  ('🎉', 'DevFest', 'DevFest 참가'),
+  ('💡', '아이디어 뱅크', '채택된 건의 3회')
+on conflict (name) do nothing;
+
+-- 어드민 부트스트랩: 아래에 운영진 구글 이메일을 등록하면 가입 시 자동으로 admin 역할
+-- insert into public.admin_emails (email) values ('lead@gmail.com');
