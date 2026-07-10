@@ -19,7 +19,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-gray-200 bg-white dark:bg-gray-100 px-4 py-6">
+      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white dark:bg-gray-100 px-4 py-6">
         <div className="px-3 pb-6">
           <p className="text-base font-bold text-gray-900">GDG DJU</p>
           <p className="text-xs text-gray-500">동아리 관리 시스템</p>
