@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@import "pretendard/dist/web/variable/pretendardvariable.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #2d64fa;
+  --color-primary-bright: #5985fb;
+  --color-primary-hover: #1f54d6;
+  --color-primary-soft: #eaf0fe;
+  --color-primary-soft-hover: #d6e2fd;
+  --color-gray-50: #f6f7f9; --color-gray-100: #eff1f4; --color-gray-200: #e4e5e8;
+  --color-gray-300: #d1d3d8; --color-gray-400: #9ca0ab; --color-gray-500: #6d717e;
+  --color-gray-600: #4f535d; --color-gray-700: #3c3f47; --color-gray-800: #25272d;
+  --color-gray-900: #16171b;
+  --color-success: #1aa463; --color-success-soft: #e4f6ed;
+  --color-warning: #f5a623; --color-warning-soft: #fdf1dc;
+  --color-danger: #e5484d;  --color-danger-soft: #fce8e9;
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, system-ui,
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
+  --shadow-card: 0 1px 3px rgba(22,23,27,0.06), 0 6px 16px rgba(22,23,27,0.05);
+}
+
+/* ponytail: gray 스케일을 .dark 아래서 반전시켜 gray-* 유틸을 쓰는 모든 화면이 자동으로 다크 대응됨 */
+.dark {
+  --color-gray-50: #16171b; --color-gray-100: #25272d; --color-gray-200: #3c3f47;
+  --color-gray-300: #4f535d; --color-gray-400: #6d717e; --color-gray-500: #9ca0ab;
+  --color-gray-600: #d1d3d8; --color-gray-700: #e4e5e8; --color-gray-800: #eff1f4;
+  --color-gray-900: #f6f7f9;
+  --color-primary-soft: rgba(45, 100, 250, 0.18);
+  --color-primary-soft-hover: rgba(45, 100, 250, 0.28);
+  --color-success-soft: rgba(26, 164, 99, 0.16);
+  --color-warning-soft: rgba(245, 166, 35, 0.16);
+  --color-danger-soft: rgba(229, 72, 77, 0.16);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.24), 0 6px 16px rgba(0,0,0,0.2);
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-gray-50);
+  color: var(--color-gray-900);
+  font-family: var(--font-sans);
+}
