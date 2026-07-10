@@ -16,7 +16,7 @@ export default function AboutPage() {
         </Link>
         <h1 className="mt-6 text-4xl font-extrabold">ABOUT</h1>
         <p className="mt-4 text-white/70 leading-relaxed">
-          GDG on Campus DJU는 대전대학교 학생 개발자들이 구글 기술을 함께 배우고,
+          GDG on Campus DJU는 대진대학교 학생 개발자들이 구글 기술을 함께 배우고,
           실제 서비스를 만들어보고, 서로의 성장을 돕는 커뮤니티입니다. 매주 스터디와
           코드리뷰, 정기 해커톤과 DevFest를 통해 아이디어를 제품으로 완성하는 경험을
           제공합니다.

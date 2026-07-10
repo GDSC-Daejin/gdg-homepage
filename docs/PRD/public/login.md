@@ -33,7 +33,7 @@
    - KOR/ENG pill 토글 (본문 카피 언어 전환용, 현재 하단 카피 문단에만 영향)
 6. **하단 카피 문단** — 언어 토글에 따라 한/영 전환되는 짧은 소개 문장
 7. **최종 CTA** — "Google로 로그인하기" 버튼 (Google 로고 + 텍스트 + 화살표 아이콘), 클릭 시 Supabase OAuth(Google) 실행
-8. **푸터 문구** — "© 2026 GDG on Campus · Daejeon University"
+8. **푸터 문구** — "© 2026 GDG on Campus · Daejin University"
 
 ## 주요 UI 요소 · 표시 데이터
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Space_Grotesk, Archivo } from "next/font/google";
 import { createClient } from "@/lib/supabase/client";
@@ -38,25 +37,16 @@ const NAV_ITEMS = [
   { label: "TEAM", href: "/team" },
 ];
 
-const COPY = {
-  kor: "대전대학교 구글 개발자 그룹. 함께 배우고 만들고 성장하는 학생 개발자 커뮤니티에 합류하세요.",
-  eng: "Google Developer Group at Daejeon University. Join a student community that learns, builds, and grows together.",
-};
-const CTA = {
-  kor: "Google로 로그인하기",
-  eng: "Sign in with Google",
-};
+const COPY_LINES = ["대진대학교 구글 개발자 커뮤니티", "함께 배우고 만들고 성장하는 학생 개발자 커뮤니티에 합류하세요."];
+const CTA = "Google로 로그인하기";
 
-const LEDE =
-  "함께 코드를 짜고 서로의 프로젝트를 리뷰하며, 구글 기술로 아이디어를 실제 제품으로 만들어 가는 대전대학교 학생 개발자 커뮤니티입니다.";
+const LEDE = "구글 기술로 아이디어를 제품으로 만드는 대진대학교 학생 개발자 커뮤니티.";
 
 const BADGES: { label: string; accent?: "red" | "yellow" }[] = [
-  { label: "Web" },
-  { label: "Android" },
+  { label: "FrontEnd" },
+  { label: "BackEnd" },
   { label: "AI / ML", accent: "red" },
-  { label: "Cloud", accent: "yellow" },
-  { label: "Flutter" },
-  { label: "UX" },
+  { label: "Design", accent: "yellow" },
 ];
 
 const FEATURES = [
@@ -84,24 +74,12 @@ const PROJECTS = [
 
 const TESTIMONIAL = {
   quote: "혼자 공부할 때보다 훨씬 멀리 왔어요. 첫 커밋부터 배포까지 같이 했거든요.",
-  name: "김도현",
-  track: "웹트랙 · 3기",
-  initials: "DH",
+  name: "아쿠아",
+  track: "프론트엔드 · 2기",
+  initials: "AQ",
 };
 
-const HOOK = "혼자면 막막했던 아이디어도, 여기선 팀이 되어 완성됩니다.";
-
-const TECH_STACK = ["Android", "Firebase", "Cloud", "Flutter", "Gemini"];
-
-function pillStyle(active: boolean): React.CSSProperties {
-  return active
-    ? { padding: "6px 13px", borderRadius: 6, fontSize: 12, fontWeight: 600, letterSpacing: ".05em", background: "#fff", color: "#111" }
-    : { padding: "6px 13px", borderRadius: 6, fontSize: 12, fontWeight: 600, letterSpacing: ".05em", color: "rgba(255,255,255,.55)" };
-}
-
 export default function LoginPage() {
-  const [lang, setLang] = useState<"kor" | "eng">("kor");
-
   async function handleGoogleLogin() {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -379,17 +357,6 @@ export default function LoginPage() {
 
       {/* right column: hook line + tech stack, next meetup, featured projects, testimonial */}
       <div className="login-g-r login-right-panel" style={{ animationDelay: ".46s" }}>
-        <div className="login-center-bottom">
-          <p className="login-hook">{HOOK}</p>
-          <div className="login-stack-row">
-            {TECH_STACK.map((t) => (
-              <span key={t} className="login-stack-pill">
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-
         <div>
           <div className="login-meetup-badge">
             <span className="login-meetup-label">NEXT MEETUP</span>
@@ -443,19 +410,13 @@ export default function LoginPage() {
           ))}
         </div>
 
-        <div className="login-g-f login-langrow" style={{ animationDelay: ".7s" }}>
-          <span className="login-langpill" onClick={() => setLang("kor")} style={pillStyle(lang === "kor")}>
-            KOR
-          </span>
-          <span className="login-langpill" onClick={() => setLang("eng")} style={pillStyle(lang === "eng")}>
-            ENG
-          </span>
-        </div>
       </div>
 
       {/* copy */}
       <p className="login-g-r login-copy" style={{ animationDelay: ".55s", fontFamily: "var(--font-sans)" }}>
-        {COPY[lang]}
+        {COPY_LINES[0]}
+        <br />
+        {COPY_LINES[1]}
       </p>
 
       {/* CTA */}
@@ -484,32 +445,13 @@ export default function LoginPage() {
           </svg>
         </span>
         <span style={{ flex: 1, textAlign: "left", fontWeight: 800, fontSize: "clamp(17px,2vw,24px)", letterSpacing: "-.01em", color: "#fff" }}>
-          {CTA[lang]}
-        </span>
-        <span
-          className="login-btnG-arw"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 42,
-            height: 42,
-            borderRadius: "50%",
-            border: "1.5px solid rgba(255,255,255,.45)",
-            color: "#fff",
-            flex: "none",
-            transition: "transform .18s ease",
-          }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14M13 6l6 6-6 6" />
-          </svg>
+          {CTA}
         </span>
       </button>
 
       {/* footnote */}
       <div className="login-g-f login-footnote" style={{ animationDelay: ".8s" }}>
-        © 2026 GDG on Campus · Daejeon University
+        © 2026 GDG on Campus · Daejin University
       </div>
     </div>
   );

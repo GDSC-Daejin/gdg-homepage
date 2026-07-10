@@ -417,7 +417,8 @@
     bottom: clamp(112px, 18vh, 150px);
     right: clamp(24px, 4vw, 56px);
     padding: 0;
-    max-width: 400px;
+    max-width: none;
+    white-space: nowrap;
     text-align: right;
     font-size: clamp(13px, 1.1vw, 15px);
   }
@@ -447,7 +448,8 @@
   }
   .login-lede {
     font-size: clamp(15px, 1.15vw, 18px);
-    max-width: 42ch;
+    max-width: none;
+    white-space: nowrap;
   }
   .login-badge {
     padding: 8px 17px;
