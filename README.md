@@ -4,6 +4,7 @@ GDG on Campus 대전대학교 운영진을 위한 동아리 관리 웹앱입니�
 
 - **스택**: Next.js (App Router) + Supabase (Auth/DB) + Tailwind CSS
 - **배포**: Vercel(무료 플랜) + Supabase(무료 프로젝트)로 비용 없이 운영 가능합니다.
+- **유저플로우 맵**: [docs/superpowers/specs/2026-07-09-userflow-map-design.md](docs/superpowers/specs/2026-07-09-userflow-map-design.md)
 
 ## 1. 로컬 실행
 
