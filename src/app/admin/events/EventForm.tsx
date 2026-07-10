@@ -4,8 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createEvent, updateEvent } from "@/actions/event";
 import { Input } from "@/components/Input";
+import { Textarea } from "@/components/Textarea";
 import { Select } from "@/components/Select";
+import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/components/Button";
+import { cn } from "@/lib/cn";
 import type { Event, EventType } from "@/lib/types";
 
 const TYPE_OPTIONS: { value: EventType; label: string }[] = [
@@ -13,6 +16,41 @@ const TYPE_OPTIONS: { value: EventType; label: string }[] = [
   { value: "study", label: "스터디" },
   { value: "devfest", label: "데브페스트" },
 ];
+
+const TYPE_DOT: Record<EventType, string> = {
+  session: "bg-primary",
+  study: "bg-success",
+  devfest: "bg-warning",
+};
+
+const TYPE_SELECTED: Record<EventType, string> = {
+  session: "border-primary bg-primary-soft text-primary",
+  study: "border-success bg-success-soft text-success",
+  devfest: "border-warning bg-warning-soft text-warning",
+};
+
+function RequiredMark() {
+  return <span className="text-danger">*</span>;
+}
+
+function OptionalMark({ children }: { children?: React.ReactNode }) {
+  return <span className="font-normal text-gray-400">{children ?? "선택"}</span>;
+}
+
+function Spinner() {
+  return (
+    <svg
+      className="h-4 w-4 animate-spin"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={3}
+    >
+      <circle cx="12" cy="12" r="9" strokeOpacity={0.3} />
+      <path d="M21 12a9 9 0 0 0-9-9" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 function toKstDatetimeLocal(iso: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -34,6 +72,8 @@ interface EventFormProps {
 
 export function EventForm({ event }: EventFormProps) {
   const router = useRouter();
+  const isEdit = Boolean(event);
+  const [type, setType] = useState<EventType>(event?.type ?? "session");
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
@@ -63,44 +103,149 @@ export function EventForm({ event }: EventFormProps) {
 
   return (
     <form action={handleSubmit} className="flex flex-col gap-4">
-      <Select
-        name="type"
-        label="유형"
-        defaultValue={event?.type ?? "session"}
-        required
-      >
-        {TYPE_OPTIONS.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </Select>
-      <Input name="title" label="제목" defaultValue={event?.title} required />
-      <Input name="description" label="설명" defaultValue={event?.description} />
+      {isEdit ? (
+        <Select
+          name="type"
+          label="유형"
+          value={type}
+          onChange={(e) => setType(e.target.value as EventType)}
+          required
+        >
+          {TYPE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </Select>
+      ) : (
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700">
+            유형 <RequiredMark />
+          </label>
+          <div className="flex gap-2">
+            {TYPE_OPTIONS.map((opt) => (
+              <label
+                key={opt.value}
+                className={cn(
+                  "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium",
+                  type === opt.value
+                    ? TYPE_SELECTED[opt.value]
+                    : "border-gray-300 text-gray-700 hover:bg-gray-50",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="type"
+                  value={opt.value}
+                  checked={type === opt.value}
+                  onChange={() => setType(opt.value)}
+                  className="sr-only"
+                />
+                <span className={cn("h-2 w-2 rounded-full", TYPE_DOT[opt.value])} />
+                {opt.label}
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400">유형에 따라 목록의 배지 색이 달라져요.</p>
+        </div>
+      )}
+
       <Input
-        type="datetime-local"
-        name="starts_at"
-        label="일시"
-        defaultValue={event ? toKstDatetimeLocal(event.starts_at) : ""}
+        name="title"
+        label={isEdit ? "제목" : <>제목 <RequiredMark /></>}
+        placeholder="예) Flutter로 앱 만들기 4주차"
+        defaultValue={event?.title}
         required
       />
-      <Input name="location" label="장소" defaultValue={event?.location} />
-      <Input name="speaker" label="발표자" defaultValue={event?.speaker} />
-      <Input
-        type="number"
-        name="capacity"
-        label="정원 (선택, 비우면 무제한)"
-        min={1}
-        defaultValue={event?.capacity ?? undefined}
+
+      <Textarea
+        name="description"
+        label={isEdit ? "설명" : <>설명 <OptionalMark /></>}
+        placeholder="이벤트를 한두 문장으로 소개해요."
+        defaultValue={event?.description}
+        rows={3}
       />
-      {error && <p className="text-xs text-danger">{error}</p>}
+
+      <div className="grid grid-cols-2 gap-4">
+        <DatePicker
+          withTime
+          name="starts_at"
+          label={
+            isEdit ? (
+              "일시"
+            ) : (
+              <>
+                일시 <RequiredMark /> <OptionalMark>KST 기준</OptionalMark>
+              </>
+            )
+          }
+          defaultValue={event ? toKstDatetimeLocal(event.starts_at) : ""}
+          required
+        />
+        <Input
+          type="number"
+          name="capacity"
+          label={
+            isEdit ? (
+              "정원"
+            ) : (
+              <>
+                정원 <OptionalMark>선택 · 비우면 무제한</OptionalMark>
+              </>
+            )
+          }
+          placeholder="예) 30"
+          min={1}
+          defaultValue={event?.capacity ?? undefined}
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Input
+          name="location"
+          label={isEdit ? "장소" : <>장소 <OptionalMark /></>}
+          placeholder="예) 대전 유성구 공학2호관"
+          defaultValue={event?.location}
+        />
+        <Input
+          name="speaker"
+          label={isEdit ? "발표자" : <>발표자 <OptionalMark /></>}
+          placeholder="예) 김도현"
+          defaultValue={event?.speaker}
+        />
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-soft px-3 py-2.5 text-sm text-danger">
+          <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            className="h-4 w-4 shrink-0"
+          >
+            <circle cx="10" cy="10" r="8" />
+            <path d="M10 6v5M10 14h.01" strokeLinecap="round" />
+          </svg>
+          {error}
+        </div>
+      )}
       <Button
         type="submit"
         variant="primary"
         className="mt-2"
         disabled={pending}
       >
-        {event ? "수정" : "생성"}
+        {pending ? (
+          <span className="flex items-center gap-2">
+            <Spinner />
+            {event ? "수정 중..." : "생성 중..."}
+          </span>
+        ) : event ? (
+          "수정"
+        ) : (
+          "생성"
+        )}
       </Button>
     </form>
   );

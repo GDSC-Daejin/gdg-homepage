@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { createBudgetEntry } from "@/actions/budget";
 import { Input } from "@/components/Input";
+import { DatePicker } from "@/components/DatePicker";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 
@@ -26,7 +27,7 @@ export function BudgetEntryForm() {
   return (
     <form ref={formRef} action={handleSubmit} className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-3">
-        <Input type="date" name="entry_date" label="날짜" required />
+        <DatePicker name="entry_date" label="날짜" className="w-44" required />
         <Select name="type" label="구분" defaultValue="income" required>
           <option value="income">수입</option>
           <option value="expense">지출</option>

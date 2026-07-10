@@ -32,7 +32,19 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
         size="sm"
         onClick={handleDelete}
         disabled={pending}
+        className="gap-1.5"
       >
+        <svg
+          viewBox="0 0 20 20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.75}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-3.5 w-3.5"
+        >
+          <path d="M4 6h12M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6M6 6v9.5A1.5 1.5 0 0 0 7.5 17h5a1.5 1.5 0 0 0 1.5-1.5V6" />
+        </svg>
         삭제
       </Button>
       {error && <p className="text-xs text-danger">{error}</p>}

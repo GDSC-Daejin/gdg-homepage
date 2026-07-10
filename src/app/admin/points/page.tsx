@@ -1,12 +1,11 @@
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
-import { formatKst } from "@/lib/format";
 import { GrantPointsForm } from "./GrantPointsForm";
 import { AwardBadgeForm } from "./AwardBadgeForm";
 import { BadgeManager } from "./BadgeManager";
+import { PointLogTable } from "./PointLogTable";
 import type { Profile, Event, Badge as BadgeType, PointLog } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEMBERS, DEMO_EVENTS, DEMO_BADGES, DEMO_POINT_LOGS } from "@/lib/demoData";
@@ -76,70 +75,50 @@ export default async function AdminPointsPage() {
       />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-4 text-sm font-semibold text-gray-900">
-            포인트 부여
-          </h2>
-          <GrantPointsForm members={memberList} events={eventList} />
-        </Card>
-
-        <Card>
-          <h2 className="mb-4 text-sm font-semibold text-gray-900">
-            뱃지 수여
-          </h2>
-          <AwardBadgeForm members={memberList} badges={badgeList} />
-        </Card>
+        <GrantPointsForm members={memberList} events={eventList} />
+        <AwardBadgeForm members={memberList} badges={badgeList} />
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">뱃지 관리</h2>
         <BadgeManager badges={badgeList} />
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">
-          최근 포인트 로그
-        </h2>
+        <div className="mb-3 flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">
+              최근 포인트 로그
+            </h2>
+            <p className="text-sm text-gray-500">
+              최근 지급·차감 내역을 참고용으로 확인해요
+            </p>
+          </div>
+          <p className="text-xs text-gray-400">최근 50건 표시</p>
+        </div>
         {logList.length === 0 ? (
-          <EmptyState title="포인트 내역이 없어요" />
+          <EmptyState
+            icon={
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-6 w-6"
+              >
+                <path d="M4 5.5h12M4 10h12M4 14.5h8" />
+                <circle cx="16" cy="14.5" r="1" />
+              </svg>
+            }
+            title="포인트 내역이 없어요"
+            description="포인트를 부여하면 이곳에 지급·차감 기록이 쌓여요."
+          />
         ) : (
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="px-4 py-3 font-medium">회원</th>
-                  <th className="px-4 py-3 font-medium">포인트</th>
-                  <th className="px-4 py-3 font-medium">사유</th>
-                  <th className="px-4 py-3 font-medium">일시</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logList.map((log) => (
-                  <tr
-                    key={log.id}
-                    className="border-b border-gray-100 last:border-0 hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-3 text-gray-900">
-                      {nameById.get(log.user_id) || "(탈퇴)"}
-                    </td>
-                    <td
-                      className={
-                        log.amount >= 0
-                          ? "px-4 py-3 font-medium text-success"
-                          : "px-4 py-3 font-medium text-danger"
-                      }
-                    >
-                      {log.amount >= 0 ? `+${log.amount}` : log.amount}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{log.reason}</td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {formatKst(log.created_at)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
+          <PointLogTable
+            logs={logList}
+            nameById={Object.fromEntries(nameById)}
+          />
         )}
       </div>
     </div>

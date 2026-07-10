@@ -89,7 +89,7 @@ export default async function AdminInquiriesPage({
       {inquiries.length === 0 ? (
         <EmptyState title="문의가 없어요" description="선택한 조건에 해당하는 문의가 없어요" />
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {inquiries.map((inquiry) => {
             const author = authorMap.get(inquiry.user_id);
             return (

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
@@ -23,6 +24,13 @@ export default async function NewSurveyPage() {
 
   return (
     <div>
+      <nav className="mb-2 flex items-center gap-1 text-xs text-gray-400">
+        <Link href="/admin/surveys" className="hover:text-gray-600">
+          설문
+        </Link>
+        <span>›</span>
+        <span className="text-gray-500">새 설문</span>
+      </nav>
       <PageHeader title="설문 생성" />
       <Card>
         <SurveyForm events={events} />

@@ -1,11 +1,12 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { answerInquiry } from "@/actions/inquiry";
+import { Textarea } from "@/components/Textarea";
 import { Button } from "@/components/Button";
 
 export function AnswerForm({ id }: { id: string }) {
-  const textareaId = useId();
+  const [open, setOpen] = useState(false);
   const [answer, setAnswer] = useState("");
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
@@ -19,29 +20,45 @@ export function AnswerForm({ id }: { id: string }) {
     });
   }
 
+  if (!open) {
+    return (
+      <div className="mt-4 border-t border-gray-100 pt-4">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => setOpen(true)}
+        >
+          답변하기
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <form action={handleSubmit} className="mt-4 flex flex-col gap-2 border-t border-gray-100 pt-4">
-      <label htmlFor={textareaId} className="text-sm font-medium text-gray-700">
-        답변 작성
-      </label>
-      <textarea
-        id={textareaId}
+      <Textarea
         name="answer"
+        label="답변 작성"
         rows={3}
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
-        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-50 disabled:text-gray-400"
+        error={error}
       />
-      {error && <p className="text-xs text-danger">{error}</p>}
-      <Button
-        type="submit"
-        variant="primary"
-        size="sm"
-        className="self-end"
-        disabled={pending}
-      >
-        답변 등록
-      </Button>
+      <div className="flex justify-end gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => setOpen(false)}
+          disabled={pending}
+        >
+          취소
+        </Button>
+        <Button type="submit" variant="primary" size="sm" disabled={pending}>
+          답변 등록
+        </Button>
+      </div>
     </form>
   );
 }

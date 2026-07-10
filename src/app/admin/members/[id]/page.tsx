@@ -119,7 +119,11 @@ export default async function AdminMemberDetailPage({
                   key={row.id}
                   className="border-b border-gray-100 last:border-0"
                 >
-                  <td className="py-2 text-gray-900">
+                  <td
+                    className={
+                      row.events ? "py-2 text-gray-900" : "py-2 text-gray-400"
+                    }
+                  >
                     {row.events?.title ?? "(삭제된 이벤트)"}
                   </td>
                   <td className="py-2 text-gray-500">

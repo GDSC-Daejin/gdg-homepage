@@ -2,14 +2,28 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_EVENTS } from "@/lib/demoData";
-import { PageHeader } from "@/components/PageHeader";
+import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
-import { AttendancePanel } from "@/components/AttendancePanel";
-import type { Event } from "@/lib/types";
+import { AttendanceStatusCard } from "@/components/AttendanceStatusCard";
+import { RegistrantsTable } from "@/components/RegistrantsTable";
+import { formatKst } from "@/lib/format";
+import type { Event, EventType } from "@/lib/types";
 import { EventForm } from "../EventForm";
 import { DeleteEventButton } from "../DeleteEventButton";
 
 export const dynamic = "force-dynamic";
+
+const TYPE_LABELS: Record<EventType, string> = {
+  session: "세션",
+  study: "스터디",
+  devfest: "데브페스트",
+};
+
+const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
+  session: "primary",
+  study: "success",
+  devfest: "warning",
+};
 
 export default async function AdminEventDetailPage({
   params,
@@ -39,11 +53,41 @@ export default async function AdminEventDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="이벤트 수정" action={<DeleteEventButton eventId={e.id} />} />
-      <Card>
-        <EventForm event={e} />
-      </Card>
-      <AttendancePanel eventId={e.id} />
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>
+            <h1 className="text-xl font-bold text-gray-900">이벤트 수정</h1>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">
+            {e.title} · {formatKst(e.starts_at)}
+          </p>
+        </div>
+        <DeleteEventButton eventId={e.id} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <Card className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 border-b border-gray-100 pb-4">
+            <svg
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.75}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4 text-gray-500"
+            >
+              <path d="M13.5 3.5a1.5 1.5 0 0 1 2 2L6 15l-3 1 1-3Z" />
+            </svg>
+            <p className="text-sm font-semibold text-gray-900">이벤트 정보 수정</p>
+          </div>
+          <EventForm event={e} />
+        </Card>
+        <AttendanceStatusCard eventId={e.id} />
+      </div>
+
+      <RegistrantsTable eventId={e.id} />
     </div>
   );
 }
