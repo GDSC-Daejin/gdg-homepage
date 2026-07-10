@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { submitSurveyResponse } from "@/actions/survey";
 import { Button } from "@/components/Button";
+import { Textarea } from "@/components/Textarea";
 import type { SurveyQuestion } from "@/lib/types";
 
 interface SurveyResponseFormProps {
@@ -53,11 +54,7 @@ export function SurveyResponseForm({ surveyId, questions }: SurveyResponseFormPr
               ))}
             </div>
           ) : (
-            <textarea
-              name={`answer_${q.id}`}
-              rows={3}
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
-            />
+            <Textarea name={`answer_${q.id}`} rows={3} />
           )}
         </div>
       ))}

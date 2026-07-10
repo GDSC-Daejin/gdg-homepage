@@ -7,7 +7,7 @@ import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ProfileForm } from "./ProfileForm";
 import { formatKst } from "@/lib/format";
-import type { RegistrationStatus, PointLog } from "@/lib/types";
+import type { RegistrationStatus, PointLog, Badge as BadgeType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ interface RegistrationHistoryItem {
 
 interface MyBadgeItem {
   id: string;
-  badge: { id: string; name: string; icon: string } | null;
+  badge: { id: string } | null;
 }
 
 export default async function ProfilePage() {
@@ -31,6 +31,7 @@ export default async function ProfilePage() {
     { data: attendances },
     { data: pointLogs },
     { data: myBadges },
+    { data: allBadges },
   ] = await Promise.all([
     supabase
       .from("event_registrations")
@@ -47,16 +48,23 @@ export default async function ProfilePage() {
       .returns<PointLog[]>(),
     supabase
       .from("user_badges")
-      .select("id, badge:badges(id, name, icon)")
+      .select("id, badge:badges(id)")
       .eq("user_id", profile.id)
-      .order("awarded_at", { ascending: false })
       .returns<MyBadgeItem[]>(),
+    supabase
+      .from("badges")
+      .select("*")
+      .order("name", { ascending: true })
+      .returns<BadgeType[]>(),
   ]);
 
   const attendedEventIds = new Set((attendances ?? []).map((a) => a.event_id));
   const pointLogList = pointLogs ?? [];
   const pointTotal = pointLogList.reduce((sum, log) => sum + log.amount, 0);
-  const badgeList = myBadges ?? [];
+  const ownedBadgeIds = new Set(
+    (myBadges ?? []).map((ub) => ub.badge?.id).filter(Boolean),
+  );
+  const badgeCatalog = allBadges ?? [];
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
@@ -136,25 +144,38 @@ export default async function ProfilePage() {
       </div>
 
       <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">내 뱃지</h2>
-        {badgeList.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {badgeList.map((ub) =>
-              ub.badge ? (
+        <h2 className="mb-3 text-sm font-semibold text-gray-900">뱃지</h2>
+        {badgeCatalog.length > 0 ? (
+          <div className="grid gap-2 sm:grid-cols-2">
+            {badgeCatalog.map((b) => {
+              const owned = ownedBadgeIds.has(b.id);
+              return (
                 <Card
-                  key={ub.id}
-                  className="flex items-center gap-2 px-4 py-2"
+                  key={b.id}
+                  className={`flex items-center gap-3 px-4 py-3 ${
+                    owned ? "" : "opacity-45 grayscale"
+                  }`}
                 >
-                  <span className="text-lg">{ub.badge.icon}</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {ub.badge.name}
-                  </span>
+                  <span className="text-xl">{b.icon}</span>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {b.name}
+                      {owned && (
+                        <span className="ml-1.5 text-xs font-normal text-success">
+                          획득
+                        </span>
+                      )}
+                    </p>
+                    {b.description && (
+                      <p className="text-xs text-gray-500">{b.description}</p>
+                    )}
+                  </div>
                 </Card>
-              ) : null,
-            )}
+              );
+            })}
           </div>
         ) : (
-          <EmptyState title="아직 받은 뱃지가 없어요" />
+          <EmptyState title="등록된 뱃지가 없어요" />
         )}
       </div>
     </div>

@@ -5,7 +5,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
-import { formatKst } from "@/lib/format";
+import { MonthFilter } from "@/components/MonthFilter";
+import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
 import type { Event, EventType, Notice } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -47,8 +48,13 @@ function EventCard({ event, confirmed }: { event: Event; confirmed: number }) {
   );
 }
 
-export default async function MemberHomePage() {
+export default async function MemberHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
   await requireProfile();
+  const { month } = await searchParams;
   const supabase = await createClient();
 
   const { data: latestNotice } = await supabase
@@ -80,7 +86,23 @@ export default async function MemberHomePage() {
   const upcoming = list
     .filter((e) => new Date(e.starts_at).getTime() >= now)
     .reverse();
-  const past = list.filter((e) => new Date(e.starts_at).getTime() < now);
+  const allPast = list.filter((e) => new Date(e.starts_at).getTime() < now);
+
+  const pastMonths = Array.from(new Set(allPast.map((e) => monthKst(e.starts_at))));
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const past =
+    month === "all"
+      ? allPast
+      : month
+        ? allPast.filter((e) => monthKst(e.starts_at) === month)
+        : allPast.filter((e) => new Date(e.starts_at) >= threeMonthsAgo);
+
+  const monthOptions = [
+    { value: "", label: "최근 3개월" },
+    { value: "all", label: "전체" },
+    ...pastMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
+  ];
 
   const notice = latestNotice as Pick<Notice, "id" | "title"> | null;
 
@@ -111,7 +133,16 @@ export default async function MemberHomePage() {
         )}
       </div>
       <div>
-        <PageHeader title="지난 이벤트" />
+        <PageHeader
+          title="지난 이벤트"
+          action={
+            <MonthFilter
+              options={monthOptions}
+              value={month ?? ""}
+              basePath="/"
+            />
+          }
+        />
         {past.length === 0 ? (
           <EmptyState title="지난 이벤트가 없어요" />
         ) : (
