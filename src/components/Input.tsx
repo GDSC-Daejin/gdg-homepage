@@ -1,8 +1,8 @@
-import { InputHTMLAttributes, useId } from "react";
+import { InputHTMLAttributes, ReactNode, useId } from "react";
 import { cn } from "@/lib/cn";
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "label"> {
+  label?: ReactNode;
   error?: string;
 }
 
@@ -20,7 +20,7 @@ export function Input({ label, error, id, className, ...props }: InputProps) {
       <input
         id={inputId}
         className={cn(
-          "h-10 w-full rounded-md border bg-white px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:bg-gray-50 disabled:text-gray-400",
+          "h-10 w-full rounded-md border bg-white dark:bg-gray-100 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 disabled:bg-gray-50 disabled:text-gray-400",
           error
             ? "border-danger focus:border-danger focus:ring-danger"
             : "border-gray-300 focus:border-primary focus:ring-primary",

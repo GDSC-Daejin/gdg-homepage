@@ -5,6 +5,7 @@ type BadgeTone = "primary" | "success" | "warning" | "danger" | "neutral";
 
 interface BadgeProps {
   tone: BadgeTone;
+  solid?: boolean;
   children: ReactNode;
   className?: string;
 }
@@ -17,12 +18,20 @@ const toneClasses: Record<BadgeTone, string> = {
   neutral: "bg-gray-100 text-gray-700",
 };
 
-export function Badge({ tone, children, className }: BadgeProps) {
+const solidToneClasses: Record<BadgeTone, string> = {
+  primary: "bg-primary text-white",
+  success: "bg-success text-white",
+  warning: "bg-warning text-white",
+  danger: "bg-danger text-white",
+  neutral: "bg-gray-600 text-white",
+};
+
+export function Badge({ tone, solid, children, className }: BadgeProps) {
   return (
     <span
       className={cn(
         "inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium",
-        toneClasses[tone],
+        solid ? solidToneClasses[tone] : toneClasses[tone],
         className,
       )}
     >
