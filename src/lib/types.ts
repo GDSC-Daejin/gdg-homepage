@@ -109,9 +109,44 @@ export interface SurveyResponse {
 
 export type InquiryStatus = "pending" | "answered";
 
+export type InquiryCategory =
+  | "general"
+  | "suggestion"
+  | "bug"
+  | "activity"
+  | "etc";
+
+export const INQUIRY_CATEGORIES: InquiryCategory[] = [
+  "general",
+  "suggestion",
+  "bug",
+  "activity",
+  "etc",
+];
+
+export const INQUIRY_CATEGORY_LABEL: Record<InquiryCategory, string> = {
+  general: "일반",
+  suggestion: "건의",
+  bug: "버그",
+  activity: "활동",
+  etc: "기타",
+};
+
+export const INQUIRY_CATEGORY_TONE: Record<
+  InquiryCategory,
+  "primary" | "success" | "warning" | "danger" | "neutral"
+> = {
+  general: "neutral",
+  suggestion: "primary",
+  bug: "danger",
+  activity: "success",
+  etc: "neutral",
+};
+
 export interface Inquiry {
   id: string;
   user_id: string;
+  category: InquiryCategory;
   title: string;
   body: string;
   status: InquiryStatus;

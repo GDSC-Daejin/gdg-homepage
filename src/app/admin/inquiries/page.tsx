@@ -7,6 +7,7 @@ import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
 import type { Inquiry, InquiryStatus, Profile } from "@/lib/types";
+import { INQUIRY_CATEGORY_LABEL, INQUIRY_CATEGORY_TONE } from "@/lib/types";
 import { AnswerForm } from "./AnswerForm";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_INQUIRIES, DEMO_INQUIRY_AUTHORS } from "@/lib/demoData";
@@ -96,7 +97,12 @@ export default async function AdminInquiriesPage({
               <Card key={inquiry.id}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-semibold text-gray-900">{inquiry.title}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge tone={INQUIRY_CATEGORY_TONE[inquiry.category]}>
+                        {INQUIRY_CATEGORY_LABEL[inquiry.category]}
+                      </Badge>
+                      <p className="font-semibold text-gray-900">{inquiry.title}</p>
+                    </div>
                     <p className="mt-1 text-xs text-gray-500">
                       {author?.name ?? "알 수 없음"} · {formatKst(inquiry.created_at)}
                     </p>

@@ -65,6 +65,7 @@ export const surveyResponseSchema = z.object({
 });
 
 export const inquirySchema = z.object({
+  category: z.enum(["general", "suggestion", "bug", "activity", "etc"]),
   title: z.string().min(1, "제목을 입력해주세요"),
   body: z.string().min(1, "내용을 입력해주세요"),
 });

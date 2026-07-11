@@ -12,6 +12,7 @@ export async function submitInquiry(formData: FormData): Promise<ActionResult> {
   const profile = await requireProfile();
 
   const parsed = inquirySchema.safeParse({
+    category: String(formData.get("category") ?? ""),
     title: String(formData.get("title") ?? "").trim(),
     body: String(formData.get("body") ?? "").trim(),
   });
@@ -22,6 +23,7 @@ export async function submitInquiry(formData: FormData): Promise<ActionResult> {
   const supabase = await createClient();
   const { error } = await supabase.from("inquiries").insert({
     user_id: profile.id,
+    category: parsed.data.category,
     title: parsed.data.title,
     body: parsed.data.body,
   });

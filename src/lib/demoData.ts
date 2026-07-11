@@ -196,11 +196,11 @@ export const DEMO_SURVEY_EVENT_OPTIONS: Pick<Event, "id" | "title">[] = DEMO_EVE
 );
 
 export const DEMO_INQUIRIES: Inquiry[] = [
-  { id: "demo-iq1", user_id: "demo-m3", title: "포인트는 어떻게 적립되나요?", body: "세션 참여 외에 포인트를 받을 수 있는 방법이 궁금합니다.", status: "answered", answer: "스터디 발표, 운영 봉사 등에도 포인트가 부여돼요. 자세한 기준은 공지사항을 참고해주세요.", answered_by: "demo-m1", answered_at: "2026-07-03T00:00:00.000Z", created_at: "2026-07-02T00:00:00.000Z" },
-  { id: "demo-iq2", user_id: "demo-m5", title: "동아리방 예약은 어떻게 하나요?", body: "스터디 목적으로 동아리방을 예약하고 싶습니다.", status: "pending", answer: null, answered_by: null, answered_at: null, created_at: "2026-07-07T00:00:00.000Z" },
-  { id: "demo-iq3", user_id: "demo-m6", title: "휴면 회원 전환 문의", body: "이번 학기 휴학으로 휴면 회원 전환을 요청드립니다.", status: "pending", answer: null, answered_by: null, answered_at: null, created_at: "2026-07-08T00:00:00.000Z" },
-  { id: "demo-iq4", user_id: "demo-m4", title: "지난 세션 자료를 다시 받고 싶어요", body: "AI 세션 자료 링크가 만료된 것 같습니다.", status: "answered", answer: "자료 링크를 갱신해서 공지사항에 다시 올려드렸어요.", answered_by: "demo-m2", answered_at: "2026-04-22T00:00:00.000Z", created_at: "2026-04-21T00:00:00.000Z" },
-  { id: "demo-iq5", user_id: "demo-m7", title: "복귀 절차가 궁금합니다", body: "휴면 상태인데 다시 활동하고 싶습니다. 어떻게 해야 하나요?", status: "pending", answer: null, answered_by: null, answered_at: null, created_at: "2026-07-09T00:00:00.000Z" },
+  { id: "demo-iq1", user_id: "demo-m3", category: "general", title: "포인트는 어떻게 적립되나요?", body: "세션 참여 외에 포인트를 받을 수 있는 방법이 궁금합니다.", status: "answered", answer: "스터디 발표, 운영 봉사 등에도 포인트가 부여돼요. 자세한 기준은 공지사항을 참고해주세요.", answered_by: "demo-m1", answered_at: "2026-07-03T00:00:00.000Z", created_at: "2026-07-02T00:00:00.000Z" },
+  { id: "demo-iq2", user_id: "demo-m5", category: "activity", title: "동아리방 예약은 어떻게 하나요?", body: "스터디 목적으로 동아리방을 예약하고 싶습니다.", status: "pending", answer: null, answered_by: null, answered_at: null, created_at: "2026-07-07T00:00:00.000Z" },
+  { id: "demo-iq3", user_id: "demo-m6", category: "general", title: "휴면 회원 전환 문의", body: "이번 학기 휴학으로 휴면 회원 전환을 요청드립니다.", status: "pending", answer: null, answered_by: null, answered_at: null, created_at: "2026-07-08T00:00:00.000Z" },
+  { id: "demo-iq4", user_id: "demo-m4", category: "bug", title: "지난 세션 자료를 다시 받고 싶어요", body: "AI 세션 자료 링크가 만료된 것 같습니다.", status: "answered", answer: "자료 링크를 갱신해서 공지사항에 다시 올려드렸어요.", answered_by: "demo-m2", answered_at: "2026-04-22T00:00:00.000Z", created_at: "2026-04-21T00:00:00.000Z" },
+  { id: "demo-iq5", user_id: "demo-m7", category: "general", title: "복귀 절차가 궁금합니다", body: "휴면 상태인데 다시 활동하고 싶습니다. 어떻게 해야 하나요?", status: "pending", answer: null, answered_by: null, answered_at: null, created_at: "2026-07-09T00:00:00.000Z" },
 ];
 
 export const DEMO_INQUIRY_AUTHORS: Record<string, { id: string; name: string }> = {
