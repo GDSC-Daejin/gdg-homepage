@@ -7,7 +7,7 @@ import { applicationSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { CURRENT_SEASON } from "@/lib/constants";
 import { isDemoMode } from "@/lib/demo";
-import type { ActionResult } from "@/lib/types";
+import type { ActionResult, ApplicationStatus } from "@/lib/types";
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
   const answers = {
@@ -53,15 +53,15 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
   return {};
 }
 
-export async function reviewApplication(
+export async function setApplicationStatus(
   id: string,
-  status: "accepted" | "rejected",
+  status: ApplicationStatus,
 ): Promise<ActionResult> {
   await requireAdmin();
   if (await isDemoMode()) return {};
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("admin_review_application", {
+  const { error } = await supabase.rpc("admin_set_application_status", {
     p_application: id,
     p_status: status,
   });
@@ -69,5 +69,6 @@ export async function reviewApplication(
   if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/applications");
+  revalidatePath(`/admin/applications/${id}`);
   return {};
 }

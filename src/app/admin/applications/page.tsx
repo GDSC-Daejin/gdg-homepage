@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 
 const STATUS_TABS: { value: string; label: string }[] = [
   { value: "all", label: "전체" },
+  { value: "waiting", label: "심사 대기" },
   { value: "pending", label: "심사 중" },
   { value: "accepted", label: "합격" },
   { value: "rejected", label: "불합격" },
@@ -59,6 +60,7 @@ export default async function AdminApplicationsPage({
 
   const statusCounts: Record<"all" | ApplicationStatus, number> = {
     all: seasonApplications.length,
+    waiting: seasonApplications.filter((a) => a.status === "waiting").length,
     pending: seasonApplications.filter((a) => a.status === "pending").length,
     accepted: seasonApplications.filter((a) => a.status === "accepted").length,
     rejected: seasonApplications.filter((a) => a.status === "rejected").length,

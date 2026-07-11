@@ -15,7 +15,7 @@ const toneClasses: Record<BadgeTone, string> = {
   success: "bg-success-soft text-success",
   warning: "bg-warning-soft text-warning",
   danger: "bg-danger-soft text-danger",
-  neutral: "bg-gray-100 text-gray-700",
+  neutral: "bg-gray-100 dark:bg-gray-200 text-gray-700",
 };
 
 const solidToneClasses: Record<BadgeTone, string> = {

@@ -7,7 +7,7 @@ export const POSITION_LABELS: Record<Position, string> = {
   designer: "디자이너",
 };
 export type MemberStatus = "active" | "dormant" | "withdrawn";
-export type ApplicationStatus = "pending" | "accepted" | "rejected";
+export type ApplicationStatus = "waiting" | "pending" | "accepted" | "rejected";
 export type EventType = "session" | "study" | "mogakco";
 export type RegistrationStatus = "confirmed" | "waitlisted";
 
