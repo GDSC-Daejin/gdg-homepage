@@ -3,10 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { surveySchema, surveyResponseSchema } from "@/lib/schemas";
+import {
+  surveySchema,
+  surveyResponseSchema,
+  surveyPresetSchema,
+} from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
-import type { ActionResult, Survey } from "@/lib/types";
+import type { ActionResult, Survey, SurveyPreset } from "@/lib/types";
 
 function parseSurveyForm(formData: FormData) {
   let questions: unknown = [];
@@ -43,6 +47,51 @@ export async function createSurvey(formData: FormData): Promise<ActionResult> {
   if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/surveys");
+  return {};
+}
+
+export async function createSurveyPreset(
+  formData: FormData,
+): Promise<{ error?: string; preset?: SurveyPreset }> {
+  const profile = await requireAdmin();
+  if (await isDemoMode()) return { error: "둘러보기 모드에서는 저장할 수 없어요" };
+
+  let questions: unknown = [];
+  try {
+    questions = JSON.parse(String(formData.get("questions") ?? "[]"));
+  } catch {
+    questions = [];
+  }
+  const parsed = surveyPresetSchema.safeParse({
+    name: String(formData.get("name") ?? "").trim(),
+    questions,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("survey_presets")
+    .insert({
+      name: parsed.data.name,
+      questions: parsed.data.questions,
+      created_by: profile.id,
+    })
+    .select("*")
+    .single();
+
+  if (error) return { error: toKoreanError(error) };
+  return { preset: data as SurveyPreset };
+}
+
+export async function deleteSurveyPreset(id: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("survey_presets").delete().eq("id", id);
+  if (error) return { error: toKoreanError(error) };
   return {};
 }
 

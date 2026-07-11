@@ -60,6 +60,13 @@ export const surveySchema = z.object({
     .min(1, "질문을 1개 이상 입력해주세요"),
 });
 
+export const surveyPresetSchema = z.object({
+  name: z.string().min(1, "프리셋 이름을 입력해주세요"),
+  questions: z
+    .array(surveyQuestionSchema)
+    .min(1, "질문을 1개 이상 추가해주세요"),
+});
+
 export const surveyResponseSchema = z.object({
   answers: z.record(z.string(), z.union([z.number(), z.string()])),
 });

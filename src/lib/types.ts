@@ -99,6 +99,14 @@ export interface Survey {
   created_at: string;
 }
 
+export interface SurveyPreset {
+  id: string;
+  name: string;
+  questions: SurveyQuestion[];
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface SurveyResponse {
   id: string;
   survey_id: string;

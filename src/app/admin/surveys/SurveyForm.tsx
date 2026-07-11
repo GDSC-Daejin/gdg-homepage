@@ -2,16 +2,23 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createSurvey } from "@/actions/survey";
+import { createSurvey, createSurveyPreset } from "@/actions/survey";
 import { Input } from "@/components/Input";
+import { Textarea } from "@/components/Textarea";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/cn";
-import type { Event, SurveyQuestion, SurveyQuestionType } from "@/lib/types";
+import type {
+  Event,
+  SurveyPreset,
+  SurveyQuestion,
+  SurveyQuestionType,
+} from "@/lib/types";
 
 interface SurveyFormProps {
   events: Pick<Event, "id" | "title">[];
+  presets: SurveyPreset[];
 }
 
 const TYPE_LABEL: Record<SurveyQuestionType, string> = {
@@ -47,11 +54,17 @@ function Spinner() {
   );
 }
 
-export function SurveyForm({ events }: SurveyFormProps) {
+export function SurveyForm({ events, presets: initialPresets }: SurveyFormProps) {
   const router = useRouter();
   const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
+
+  const [presets, setPresets] = useState<SurveyPreset[]>(initialPresets);
+  const [selectedPresetId, setSelectedPresetId] = useState("");
+  const [presetName, setPresetName] = useState("");
+  const [presetMsg, setPresetMsg] = useState<{ text: string; error: boolean }>();
+  const [presetSaving, startPresetSave] = useTransition();
 
   function addQuestion(type: SurveyQuestionType) {
     setQuestions((prev) => [
@@ -68,6 +81,35 @@ export function SurveyForm({ events }: SurveyFormProps) {
     setQuestions((prev) =>
       prev.map((q) => (q.id === id ? { ...q, label } : q)),
     );
+  }
+
+  function loadPreset() {
+    const preset = presets.find((p) => p.id === selectedPresetId);
+    if (!preset) return;
+    setQuestions((prev) => [
+      ...prev,
+      ...preset.questions.map((q) => ({ ...q, id: crypto.randomUUID() })),
+    ]);
+    setPresetMsg({ text: `'${preset.name}' 질문을 추가했어요`, error: false });
+  }
+
+  function savePreset() {
+    setPresetMsg(undefined);
+    const formData = new FormData();
+    formData.set("name", presetName.trim());
+    formData.set("questions", JSON.stringify(questions));
+    startPresetSave(async () => {
+      const result = await createSurveyPreset(formData);
+      if (result.error) {
+        setPresetMsg({ text: result.error, error: true });
+        return;
+      }
+      if (result.preset) {
+        setPresets((prev) => [result.preset!, ...prev]);
+        setPresetName("");
+        setPresetMsg({ text: "프리셋으로 저장했어요", error: false });
+      }
+    });
   }
 
   function handleSubmit(formData: FormData) {
@@ -117,6 +159,64 @@ export function SurveyForm({ events }: SurveyFormProps) {
         </p>
       </div>
 
+      <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+        <span className="text-sm font-medium text-gray-700">질문 프리셋</span>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Select
+            value={selectedPresetId}
+            onChange={(e) => setSelectedPresetId(e.target.value)}
+            className="flex-1"
+          >
+            <option value="" disabled>
+              {presets.length ? "저장된 프리셋 선택" : "저장된 프리셋이 없어요"}
+            </option>
+            {presets.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.questions.length}문항)
+              </option>
+            ))}
+          </Select>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="shrink-0"
+            onClick={loadPreset}
+            disabled={!selectedPresetId}
+          >
+            불러오기
+          </Button>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            className="flex-1"
+            placeholder="현재 질문을 프리셋으로 저장 (이름)"
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value)}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="shrink-0 border border-gray-300"
+            onClick={savePreset}
+            disabled={presetSaving || !presetName.trim() || questions.length === 0}
+          >
+            {presetSaving ? "저장 중..." : "프리셋 저장"}
+          </Button>
+        </div>
+        {presetMsg && (
+          <p
+            className={cn(
+              "text-xs",
+              presetMsg.error ? "text-danger" : "text-success",
+            )}
+          >
+            {presetMsg.text}
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-col gap-3">
         <span className="flex items-center justify-between text-sm font-medium text-gray-700">
           <span>
@@ -150,45 +250,47 @@ export function SurveyForm({ events }: SurveyFormProps) {
             {questions.map((q, i) => (
               <div
                 key={q.id}
-                className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 dark:bg-gray-100"
+                className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white px-3 py-3 dark:bg-gray-100"
               >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
-                  {i + 1}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
-                    TYPE_BADGE[q.type],
-                  )}
-                >
-                  {TYPE_LABEL[q.type]}
-                </span>
-                <Input
-                  className="flex-1"
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
+                    {i + 1}
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium",
+                      TYPE_BADGE[q.type],
+                    )}
+                  >
+                    {TYPE_LABEL[q.type]}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto shrink-0 border border-gray-300 px-2"
+                    onClick={() => removeQuestion(q.id)}
+                    aria-label="질문 삭제"
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.75}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M4.5 6h11M8.5 6V4.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1V6M6 6l.6 9a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9L14 6" />
+                    </svg>
+                  </Button>
+                </div>
+                <Textarea
+                  rows={2}
                   placeholder="질문 내용"
                   value={q.label}
                   onChange={(e) => updateLabel(q.id, e.target.value)}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0 border border-gray-300 px-2"
-                  onClick={() => removeQuestion(q.id)}
-                  aria-label="질문 삭제"
-                >
-                  <svg
-                    className="h-3.5 w-3.5"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.75}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M4.5 6h11M8.5 6V4.5a1 1 0 0 1 1-1h1a1 1 0 0 1 1 1V6M6 6l.6 9a1 1 0 0 0 1 .9h4.8a1 1 0 0 0 1-.9L14 6" />
-                  </svg>
-                </Button>
               </div>
             ))}
           </div>
