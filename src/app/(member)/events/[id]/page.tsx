@@ -5,7 +5,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
-import { formatKst } from "@/lib/format";
+import { formatKstRange } from "@/lib/format";
+import { EventLocation } from "@/components/EventLocation";
 import type { Event, EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -52,11 +53,11 @@ export default async function MemberEventDetailPage({
         <div className="flex items-center gap-2">
           <Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>
           <span className="text-sm text-gray-500">
-            {formatKst(e.starts_at)}
+            {formatKstRange(e.starts_at, e.ends_at)}
           </span>
         </div>
-        {e.location && (
-          <p className="text-sm text-gray-700">장소: {e.location}</p>
+        {(e.location || e.address) && (
+          <EventLocation location={e.location} address={e.address} />
         )}
         {e.speaker && (
           <p className="text-sm text-gray-700">발표자: {e.speaker}</p>
