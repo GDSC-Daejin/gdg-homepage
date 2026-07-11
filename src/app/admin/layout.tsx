@@ -9,6 +9,13 @@ import { isDemoMode } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
+const roleLabel: Record<string, string> = {
+  organizer: "오거나이저",
+  team_member: "팀 멤버",
+  member: "멤버",
+  applicant: "지원자",
+};
+
 export default async function AdminLayout({
   children,
 }: {
@@ -42,13 +49,13 @@ export default async function AdminLayout({
               <p className="truncate text-sm font-medium text-gray-900">
                 {profile.name}
               </p>
-              <Badge tone="primary">관리자</Badge>
+              <Badge tone="primary">{roleLabel[profile.role]}</Badge>
             </div>
             <form action={signOut}>
               <button
                 type="submit"
                 aria-label="로그아웃"
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
               >
                 <svg
                   viewBox="0 0 24 24"
