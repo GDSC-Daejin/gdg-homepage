@@ -14,7 +14,9 @@ function parseEventForm(formData: FormData) {
     title: formData.get("title"),
     description: formData.get("description"),
     starts_at: formData.get("starts_at"),
+    ends_at: formData.get("ends_at") || null,
     location: formData.get("location"),
+    address: formData.get("address"),
     speaker: formData.get("speaker"),
     capacity: formData.get("capacity") || null,
   });
