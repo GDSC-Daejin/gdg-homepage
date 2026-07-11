@@ -25,11 +25,14 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
 
 export default async function MemberEventDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ code?: string }>;
 }) {
   const profile = await requireProfile();
   const { id } = await params;
+  const { code } = await searchParams;
 
   const supabase = await createClient();
   const { data: event } = await supabase
@@ -68,7 +71,7 @@ export default async function MemberEventDetailPage({
           {e.capacity ? ` / ${e.capacity}` : ""}명
         </p>
       </Card>
-      <RegistrationPanel eventId={e.id} profile={profile} />
+      <RegistrationPanel eventId={e.id} profile={profile} code={code} />
     </div>
   );
 }

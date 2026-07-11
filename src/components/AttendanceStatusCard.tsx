@@ -59,7 +59,7 @@ export async function AttendanceStatusCard({ eventId }: AttendanceStatusCardProp
     if (host) siteUrl = `${proto}://${host}`;
   }
   const attendUrl = code
-    ? `${siteUrl}/attend?event=${eventId}&code=${code}`
+    ? `${siteUrl}/events/${eventId}?code=${code}`
     : null;
   const qrDataUrl = attendUrl ? await QRCode.toDataURL(attendUrl) : null;
 

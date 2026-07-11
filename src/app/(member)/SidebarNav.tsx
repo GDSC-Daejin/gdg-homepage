@@ -51,7 +51,7 @@ const baseGroups: NavGroup[] = [
   {
     title: "활동",
     items: [
-      { href: "/attend", label: "출석", icon: "attend" },
+      { href: "/attend", label: "출석 이력", icon: "attend" },
       { href: "/notices", label: "공지", icon: "notices" },
       { href: "/surveys", label: "설문", icon: "surveys" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
