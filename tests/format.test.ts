@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
+import { formatKst, formatKstRange, formatMonthLabel, monthKst } from "@/lib/format";
 
 describe("formatKst", () => {
   it("UTC 시각을 KST(UTC+9)로 옮겨 표시한다", () => {
@@ -27,5 +27,26 @@ describe("monthKst", () => {
 describe("formatMonthLabel", () => {
   it("YYYY-MM을 한국어 라벨로 바꾼다", () => {
     expect(formatMonthLabel("2026-07")).toBe("2026년 7월");
+  });
+});
+
+describe("formatKstRange", () => {
+  it("종료가 없으면 시작 일시만 반환한다", () => {
+    const s = "2026-07-23T03:00:00.000Z"; // KST 12:00
+    expect(formatKstRange(s, null)).toBe("2026. 7. 23. 오후 12:00");
+  });
+
+  it("같은 날이면 시작 일시 + 종료 시각만 붙인다", () => {
+    const s = "2026-07-23T03:00:00.000Z"; // KST 12:00
+    const e = "2026-07-23T07:00:00.000Z"; // KST 16:00
+    expect(formatKstRange(s, e)).toBe("2026. 7. 23. 오후 12:00 ~ 오후 4:00");
+  });
+
+  it("다른 날이면 시작·종료 전체를 표시한다", () => {
+    const s = "2026-07-23T15:00:00.000Z"; // KST 07-24 00:00
+    const e = "2026-07-24T03:00:00.000Z"; // KST 07-24 12:00
+    const out = formatKstRange(s, e);
+    expect(out).toContain("~");
+    expect(out).toContain("7. 24.");
   });
 });
