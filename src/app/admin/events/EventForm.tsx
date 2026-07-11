@@ -83,6 +83,10 @@ export function EventForm({ event }: EventFormProps) {
     if (typeof startsAt === "string" && startsAt) {
       formData.set("starts_at", new Date(startsAt).toISOString());
     }
+    const endsAt = formData.get("ends_at");
+    if (typeof endsAt === "string" && endsAt) {
+      formData.set("ends_at", new Date(endsAt).toISOString());
+    }
     startTransition(async () => {
       const result = event
         ? await updateEvent(event.id, formData)
@@ -172,33 +176,32 @@ export function EventForm({ event }: EventFormProps) {
           name="starts_at"
           label={
             isEdit ? (
-              "일시"
+              "시작"
             ) : (
               <>
-                일시 <RequiredMark /> <OptionalMark>KST 기준</OptionalMark>
+                시작 <RequiredMark /> <OptionalMark>KST 기준</OptionalMark>
               </>
             )
           }
           defaultValue={event ? toKstDatetimeLocal(event.starts_at) : ""}
           required
         />
-        <Input
-          type="number"
-          name="capacity"
-          label={
-            isEdit ? (
-              "정원"
-            ) : (
-              <>
-                정원 <OptionalMark>선택 · 비우면 무제한</OptionalMark>
-              </>
-            )
-          }
-          placeholder="예) 30"
-          min={1}
-          defaultValue={event?.capacity ?? undefined}
+        <DatePicker
+          withTime
+          name="ends_at"
+          label={isEdit ? "종료" : <>종료 <OptionalMark /></>}
+          defaultValue={event?.ends_at ? toKstDatetimeLocal(event.ends_at) : ""}
         />
       </div>
+
+      <Input
+        type="number"
+        name="capacity"
+        label={isEdit ? "정원" : <>정원 <OptionalMark>선택 · 비우면 무제한</OptionalMark></>}
+        placeholder="예) 30"
+        min={1}
+        defaultValue={event?.capacity ?? undefined}
+      />
 
       <div className="grid grid-cols-2 gap-4">
         <Input
@@ -214,6 +217,13 @@ export function EventForm({ event }: EventFormProps) {
           defaultValue={event?.speaker}
         />
       </div>
+
+      <Input
+        name="address"
+        label={isEdit ? "주소" : <>주소 <OptionalMark>도로명주소</OptionalMark></>}
+        placeholder="예) 서울특별시 도봉구 마들로11길 75"
+        defaultValue={event?.address}
+      />
 
       {error && (
         <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-soft px-3 py-2.5 text-sm text-danger">
