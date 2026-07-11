@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   profileSchema,
+  eventSchema,
   applicationSchema,
   attendCodeSchema,
   noticeSchema,
@@ -209,5 +210,36 @@ describe("budgetSchema", () => {
       amount: 15000,
     });
     expect(result.success).toBe(true);
+  });
+});
+
+describe("eventSchema", () => {
+  const base = {
+    type: "session" as const,
+    title: "정기세션",
+    description: "",
+    starts_at: "2026-07-23T03:00:00.000Z",
+    location: "서울 청년센터 도봉 1층",
+    address: "서울특별시 도봉구 마들로11길 75",
+    speaker: "",
+    capacity: null,
+  };
+
+  it("ends_at 없이 통과한다", () => {
+    expect(eventSchema.safeParse(base).success).toBe(true);
+  });
+
+  it("ends_at이 starts_at보다 뒤면 통과한다", () => {
+    const r = eventSchema.safeParse({ ...base, ends_at: "2026-07-23T07:00:00.000Z" });
+    expect(r.success).toBe(true);
+  });
+
+  it("ends_at이 starts_at보다 앞이면 reject한다", () => {
+    const r = eventSchema.safeParse({ ...base, ends_at: "2026-07-23T01:00:00.000Z" });
+    expect(r.success).toBe(false);
+  });
+
+  it("ends_at이 null이면 통과한다", () => {
+    expect(eventSchema.safeParse({ ...base, ends_at: null }).success).toBe(true);
   });
 });

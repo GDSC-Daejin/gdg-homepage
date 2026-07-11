@@ -11,15 +11,22 @@ export const profileSchema = z.object({
   }),
 });
 
-export const eventSchema = z.object({
-  type: z.enum(["session", "study", "mogakco"]),
-  title: z.string().min(1, "제목을 입력해주세요"),
-  description: z.string(),
-  starts_at: z.string().min(1, "일시를 입력해주세요"),
-  location: z.string(),
-  speaker: z.string(),
-  capacity: z.coerce.number().int().positive().nullable(),
-});
+export const eventSchema = z
+  .object({
+    type: z.enum(["session", "study", "mogakco"]),
+    title: z.string().min(1, "제목을 입력해주세요"),
+    description: z.string(),
+    starts_at: z.string().min(1, "일시를 입력해주세요"),
+    ends_at: z.string().nullable().optional(),
+    location: z.string(),
+    address: z.string(),
+    speaker: z.string(),
+    capacity: z.coerce.number().int().positive().nullable(),
+  })
+  .refine(
+    (v) => !v.ends_at || new Date(v.ends_at) > new Date(v.starts_at),
+    { message: "종료 일시는 시작 일시보다 뒤여야 해요", path: ["ends_at"] },
+  );
 
 export const applicationSchema = z.object({
   applicant_name: z.string().min(1, "이름을 입력해주세요"),
