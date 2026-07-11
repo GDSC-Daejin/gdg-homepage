@@ -14,27 +14,27 @@ import type { Event, EventType } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const TYPE_LABELS: Record<EventType, string> = {
-  session: "세션",
+  session: "정기세션",
   study: "스터디",
-  devfest: "데브페스트",
+  mogakco: "모각코",
 };
 
 const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
   session: "primary",
   study: "success",
-  devfest: "warning",
+  mogakco: "warning",
 };
 
 const TYPE_BAR: Record<EventType, string> = {
   session: "bg-primary",
   study: "bg-success",
-  devfest: "bg-warning",
+  mogakco: "bg-warning",
 };
 
 const TYPE_TEXT: Record<EventType, string> = {
   session: "text-primary",
   study: "text-success",
-  devfest: "text-warning",
+  mogakco: "text-warning",
 };
 
 function CalendarIcon() {
@@ -109,7 +109,7 @@ export default async function AdminEventsPage({
     <div>
       <PageHeader
         title="이벤트"
-        description="세션·스터디·데브페스트를 관리해요"
+        description="정기세션·스터디·모각코를 관리해요"
         action={
           <div className="flex items-center gap-2">
             <MonthFilter
@@ -138,7 +138,7 @@ export default async function AdminEventsPage({
       {list.length === 0 ? (
         <EmptyState
           title="등록된 이벤트가 없어요"
-          description="첫 세션·스터디·데브페스트를 만들어 신청을 받아보세요."
+          description="첫 정기세션·스터디·모각코를 만들어 신청을 받아보세요."
           action={
             <Link href="/admin/events/new">
               <Button type="button" variant="primary">

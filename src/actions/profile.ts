@@ -18,6 +18,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
     major: formData.get("major"),
     phone: formData.get("phone"),
     interests: formData.getAll("interests"),
+    position: formData.get("position"),
   });
 
   if (!parsed.success) {

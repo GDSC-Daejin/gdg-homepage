@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition, type FormEvent } from "reac
 import { createPortal } from "react-dom";
 import {
   setMemberRole,
+  setMemberPosition,
   setMemberStatus,
   updateMemberProfile,
 } from "@/actions/member";
@@ -13,10 +14,17 @@ import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { formatKstDate } from "@/lib/format";
-import type { Profile, Role, MemberStatus } from "@/lib/types";
+import {
+  POSITION_LABELS,
+  type Profile,
+  type Role,
+  type Position,
+  type MemberStatus,
+} from "@/lib/types";
 
 const roleLabel: Record<Role, string> = {
-  admin: "관리자",
+  organizer: "오거나이저",
+  team_member: "팀 멤버",
   member: "회원",
   applicant: "지원자",
 };
@@ -33,17 +41,25 @@ const statusTone: Record<MemberStatus, "success" | "neutral" | "danger"> = {
   withdrawn: "danger",
 };
 
-const roleTone: Record<Role, "primary" | "neutral" | "warning"> = {
-  admin: "primary",
+const roleTone: Record<Role, "primary" | "success" | "neutral" | "warning"> = {
+  organizer: "primary",
+  team_member: "success",
   member: "neutral",
   applicant: "warning",
 };
 
-export function MemberRow({ member }: { member: Profile }) {
+export function MemberRow({
+  member,
+  organizerTaken,
+}: {
+  member: Profile;
+  organizerTaken: boolean;
+}) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const [role, setRole] = useState(member.role);
+  const [position, setPosition] = useState<Position | "">(member.position ?? "");
   const [status, setStatus] = useState(member.status);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
@@ -90,6 +106,19 @@ export function MemberRow({ member }: { member: Profile }) {
     });
   }
 
+  function handlePositionChange(e: SelectChangeEvent) {
+    const next = e.target.value as Position;
+    setPosition(next);
+    setError(undefined);
+    startTransition(async () => {
+      const result = await setMemberPosition(member.id, next);
+      if (result?.error) {
+        setError(result.error);
+        setPosition(member.position ?? "");
+      }
+    });
+  }
+
   function handleStatusChange(e: SelectChangeEvent) {
     const next = e.target.value as MemberStatus;
     setStatus(next);
@@ -122,6 +151,9 @@ export function MemberRow({ member }: { member: Profile }) {
         <td className="px-4 py-3 text-gray-700">{member.major || "-"}</td>
         <td className="px-4 py-3">
           <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>
+        </td>
+        <td className="px-4 py-3 text-gray-700">
+          {position ? POSITION_LABELS[position] : "-"}
         </td>
         <td className="px-4 py-3">
           <Badge tone={statusTone[status]}>{statusLabel[status]}</Badge>
@@ -202,9 +234,25 @@ export function MemberRow({ member }: { member: Profile }) {
                   onChange={handleRoleChange}
                   disabled={pending}
                 >
-                  <option value="admin">관리자</option>
+                  <option value="organizer" disabled={organizerTaken}>
+                    오거나이저{organizerTaken ? " (이미 지정됨)" : ""}
+                  </option>
+                  <option value="team_member">팀 멤버</option>
                   <option value="member">회원</option>
                   <option value="applicant">지원자</option>
+                </Select>
+                <Select
+                  label="포지션"
+                  value={position}
+                  onChange={handlePositionChange}
+                  disabled={pending}
+                >
+                  <option value="" disabled>
+                    선택
+                  </option>
+                  <option value="frontend">프론트엔드</option>
+                  <option value="backend">백엔드</option>
+                  <option value="designer">디자이너</option>
                 </Select>
                 <Select
                   label="상태"

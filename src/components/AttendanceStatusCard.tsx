@@ -112,9 +112,6 @@ export async function AttendanceStatusCard({ eventId }: AttendanceStatusCardProp
             <p className="text-sm text-gray-300">미발급</p>
           </div>
           <IssueCodeButton eventId={eventId} hasCode={false} />
-          <p className="text-xs text-gray-400">
-            코드를 발급하면 QR과 출석 URL이 함께 만들어져요.
-          </p>
         </>
       )}
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   profileSchema,
+  applicationSchema,
   attendCodeSchema,
   noticeSchema,
   surveySchema,
@@ -29,8 +30,63 @@ describe("profileSchema", () => {
       major: "컴퓨터공학과",
       phone: "010-1234-5678",
       interests: ["Android", "Web"],
+      position: "frontend",
     });
     expect(result.success).toBe(true);
+  });
+
+  it("포지션 미선택은 reject한다", () => {
+    const result = profileSchema.safeParse({
+      name: "홍길동",
+      student_no: "202012345",
+      major: "컴퓨터공학과",
+      phone: "010-1234-5678",
+      interests: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("학번·전공·전화번호가 비면 reject한다", () => {
+    for (const empty of ["student_no", "major", "phone"] as const) {
+      const result = profileSchema.safeParse({
+        name: "홍길동",
+        student_no: "202012345",
+        major: "컴퓨터공학과",
+        phone: "010-1234-5678",
+        interests: [],
+        position: "frontend",
+        [empty]: "",
+      });
+      expect(result.success).toBe(false);
+    }
+  });
+});
+
+describe("applicationSchema", () => {
+  const valid = {
+    applicant_name: "홍길동",
+    student_no: "20241001",
+    major: "컴퓨터공학과",
+    phone: "010-1234-5678",
+    email: "hong@dju.ac.kr",
+    season: "2026-2",
+    answers: { intro: "a", motivation: "b", interest: "c" },
+  };
+
+  it("정상 입력은 통과한다", () => {
+    expect(applicationSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("이메일 형식이 틀리면 reject한다", () => {
+    expect(applicationSchema.safeParse({ ...valid, email: "nope" }).success).toBe(
+      false,
+    );
+  });
+
+  it("이름이 비면 reject한다", () => {
+    expect(
+      applicationSchema.safeParse({ ...valid, applicant_name: "" }).success,
+    ).toBe(false);
   });
 });
 

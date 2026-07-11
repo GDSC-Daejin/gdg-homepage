@@ -15,9 +15,9 @@ import {
 } from "@/lib/demoData";
 
 const EVENT_TYPE_LABEL: Record<EventType, string> = {
-  session: "세션",
+  session: "정기세션",
   study: "스터디",
-  devfest: "데브페스트",
+  mogakco: "모각코",
 };
 
 interface RecentEventRow {

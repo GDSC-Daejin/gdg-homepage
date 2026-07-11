@@ -1,7 +1,14 @@
-export type Role = "admin" | "member" | "applicant";
+export type Role = "organizer" | "team_member" | "member" | "applicant";
+export type Position = "frontend" | "backend" | "designer";
+export const ADMIN_ROLES: Role[] = ["organizer", "team_member"];
+export const POSITION_LABELS: Record<Position, string> = {
+  frontend: "프론트엔드",
+  backend: "백엔드",
+  designer: "디자이너",
+};
 export type MemberStatus = "active" | "dormant" | "withdrawn";
 export type ApplicationStatus = "pending" | "accepted" | "rejected";
-export type EventType = "session" | "study" | "devfest";
+export type EventType = "session" | "study" | "mogakco";
 export type RegistrationStatus = "confirmed" | "waitlisted";
 
 export interface Profile {
@@ -12,13 +19,19 @@ export interface Profile {
   phone: string;
   interests: string[];
   role: Role;
+  position: Position | null;
   status: MemberStatus;
   joined_at: string;
 }
 
 export interface Application {
   id: string;
-  applicant_id: string;
+  applicant_id: string | null;
+  applicant_name: string;
+  student_no: string;
+  major: string;
+  phone: string;
+  email: string;
   season: string;
   answers: Record<string, string>;
   status: ApplicationStatus;

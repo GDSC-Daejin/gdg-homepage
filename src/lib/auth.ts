@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import type { Profile } from "@/lib/types";
+import { ADMIN_ROLES, type Profile } from "@/lib/types";
 
 export async function getProfile(): Promise<Profile | null> {
   const supabase = await createClient();
@@ -27,6 +27,6 @@ export async function requireProfile(): Promise<Profile> {
 
 export async function requireAdmin(): Promise<Profile> {
   const profile = await requireProfile();
-  if (profile.role !== "admin") redirect("/");
+  if (!ADMIN_ROLES.includes(profile.role)) redirect("/");
   return profile;
 }

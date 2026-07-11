@@ -11,15 +11,15 @@ import type { Event, EventType } from "@/lib/types";
 export const dynamic = "force-dynamic";
 
 const TYPE_LABELS: Record<EventType, string> = {
-  session: "세션",
+  session: "정기세션",
   study: "스터디",
-  devfest: "데브페스트",
+  mogakco: "모각코",
 };
 
 const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
   session: "primary",
   study: "success",
-  devfest: "warning",
+  mogakco: "warning",
 };
 
 export default async function MemberEventDetailPage({

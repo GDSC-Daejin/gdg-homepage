@@ -47,7 +47,8 @@ export function MemberFilters({
         className="w-36"
       >
         <option value="">전체</option>
-        <option value="admin">관리자</option>
+        <option value="organizer">오거나이저</option>
+        <option value="team_member">팀 멤버</option>
         <option value="member">회원</option>
         <option value="applicant">지원자</option>
       </Select>

@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 
 const ACTION_LABEL: Record<string, string> = {
   set_role: "역할 변경",
+  set_position: "포지션 변경",
   set_status: "상태 변경",
   review_application: "지원서 심사",
   issue_code: "출석 코드 발급",

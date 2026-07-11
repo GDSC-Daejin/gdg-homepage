@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const PROJECTS = [
   { title: "Campus Map AI", desc: "캠퍼스 길찾기 · Gemini 기반", color: "#4285F4" },
-  { title: "DevFest Hub", desc: "행사 등록 플랫폼 · Firebase", color: "#EA4335" },
+  { title: "Event Hub", desc: "행사 등록 플랫폼 · Firebase", color: "#EA4335" },
   { title: "StudyMate", desc: "스터디 매칭 앱 · Flutter", color: "#FBBC04" },
   { title: "GDG Bot", desc: "커뮤니티 슬랙 봇 · Cloud Functions", color: "#34A853" },
 ];

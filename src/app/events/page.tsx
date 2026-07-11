@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const EVENTS = [
-  { date: "2026.03.14", title: "DevFest Warm-up", desc: "매주 목요일 저녁, 세미나실 B · 웹·AI·클라우드 스터디" },
+  { date: "2026.03.14", title: "3월 정기세션", desc: "매주 목요일 저녁, 세미나실 B · 웹·AI·클라우드 스터디" },
   { date: "2026.04.02", title: "Android 핸즈온", desc: "Jetpack Compose로 만드는 첫 앱 · 초급 환영" },
   { date: "2026.04.25", title: "교내 해커톤", desc: "48시간 팀 프로젝트 · 대진대학교 창업지원센터" },
-  { date: "2026.05.16", title: "DevFest DJU", desc: "연례 컨퍼런스 · 외부 개발자 초청 세션" },
+  { date: "2026.05.16", title: "모각코 데이", desc: "모두 각자 코딩 · 다같이 모여 각자 할 일을 하는 자율 세션" },
 ];
 
 export default function EventsPage() {

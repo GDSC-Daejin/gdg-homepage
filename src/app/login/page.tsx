@@ -52,7 +52,7 @@ const BADGES: { label: string; accent?: "red" | "yellow" }[] = [
 const FEATURES = [
   { color: "#4285F4", title: "LEARN", desc: "매주 스터디와 코드리뷰로 함께 성장" },
   { color: "#EA4335", title: "BUILD", desc: "구글 기술 핸즈온으로 실제 서비스 개발" },
-  { color: "#34A853", title: "CONNECT", desc: "DevFest·해커톤으로 넓어지는 네트워크" },
+  { color: "#34A853", title: "CONNECT", desc: "모각코·해커톤으로 넓어지는 네트워크" },
 ];
 
 const STATS = [
@@ -62,13 +62,13 @@ const STATS = [
 ];
 
 const MEETUP = {
-  date: "03.14 · DevFest Warm-up",
+  date: "03.14 · 3월 정기세션",
   lines: ["매주 목요일 저녁, 세미나실 B", "웹·AI·클라우드 스터디 진행 중"],
 };
 
 const PROJECTS = [
   { title: "Campus Map AI", desc: "캠퍼스 길찾기 · Gemini 기반", color: "#4285F4" },
-  { title: "DevFest Hub", desc: "행사 등록 플랫폼 · Firebase", color: "#EA4335" },
+  { title: "Event Hub", desc: "행사 등록 플랫폼 · Firebase", color: "#EA4335" },
   { title: "StudyMate", desc: "스터디 매칭 앱 · Flutter", color: "#FBBC04" },
 ];
 

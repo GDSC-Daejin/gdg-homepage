@@ -54,26 +54,18 @@ const STATUS_ICON: Record<ApplicationStatus, React.ReactNode> = {
   ),
 };
 
-type ApplicantInfo = {
-  name: string;
-  student_no: string | null;
-  major: string | null;
-};
-
 export function ApplicationCard({
   application,
-  applicant,
 }: {
   application: Application;
-  applicant: ApplicantInfo | undefined;
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const name = applicant?.name ?? "알 수 없음";
-  const studentNo = applicant?.student_no ?? "정보 없음";
-  const major = applicant?.major ?? "정보 없음";
-  const initial = applicant?.name ? applicant.name.charAt(0) : "?";
-  const isUnknown = !applicant?.name;
+  const name = application.applicant_name || "알 수 없음";
+  const studentNo = application.student_no || "정보 없음";
+  const major = application.major || "정보 없음";
+  const initial = application.applicant_name ? application.applicant_name.charAt(0) : "?";
+  const isUnknown = !application.applicant_name;
 
   const toggleButton = (
     <button
@@ -124,6 +116,13 @@ export function ApplicationCard({
             <>
               <dl className="mt-4 flex flex-col gap-3">
                 <div>
+                  <dt className="text-xs font-medium text-gray-500">연락처</dt>
+                  <dd className="mt-1 text-sm text-gray-700">
+                    {application.phone || "전화번호 없음"}
+                    {application.email && ` · ${application.email}`}
+                  </dd>
+                </div>
+                <div>
                   <dt className="text-xs font-medium text-gray-500">자기소개</dt>
                   <dd className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
                     {application.answers.intro}
@@ -147,7 +146,7 @@ export function ApplicationCard({
                 <ReviewButtons
                   id={application.id}
                   status={application.status}
-                  applicant={{ name, student_no: applicant?.student_no ?? null, major: applicant?.major ?? null }}
+                  applicant={{ name, student_no: studentNo, major }}
                 />
               </div>
             </>
@@ -177,7 +176,7 @@ export function ApplicationCard({
                 <circle cx="10" cy="10" r="7.5" />
                 <path d="M10 13.5v-4M10 6.5h.01" />
               </svg>
-              회원 프로필이 연결되지 않아 이름 표시만 가능해요. 답변만 확인해 심사할 수 있어요.
+              지원자 정보가 없어요. 답변만 확인해 심사할 수 있어요.
             </p>
           )}
         </div>

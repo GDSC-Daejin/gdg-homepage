@@ -17,7 +17,7 @@ export default async function AdminPointsPage() {
   const demo = await isDemoMode();
 
   let memberList: Profile[] = DEMO_MEMBERS.filter(
-    (m) => (m.role === "member" || m.role === "admin") && m.status === "active",
+    (m) => m.role !== "applicant" && m.status === "active",
   );
   let eventList: Event[] = DEMO_EVENTS;
   let badgeList: BadgeType[] = DEMO_BADGES;
@@ -35,7 +35,7 @@ export default async function AdminPointsPage() {
       supabase
         .from("profiles")
         .select("*")
-        .in("role", ["member", "admin"])
+        .in("role", ["member", "organizer", "team_member"])
         .eq("status", "active")
         .order("name", { ascending: true }),
       supabase

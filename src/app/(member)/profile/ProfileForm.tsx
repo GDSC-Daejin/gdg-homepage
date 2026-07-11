@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { updateProfile } from "@/actions/profile";
 import { Input } from "@/components/Input";
+import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import type { Profile } from "@/lib/types";
 
@@ -33,6 +34,19 @@ export function ProfileForm({ profile }: ProfileFormProps) {
       <Input name="student_no" label="학번" defaultValue={profile.student_no} />
       <Input name="major" label="전공" defaultValue={profile.major} />
       <Input name="phone" label="전화번호" defaultValue={profile.phone} />
+      <Select
+        name="position"
+        label="포지션"
+        defaultValue={profile.position ?? ""}
+        required
+      >
+        <option value="" disabled>
+          선택
+        </option>
+        <option value="frontend">프론트엔드</option>
+        <option value="backend">백엔드</option>
+        <option value="designer">디자이너</option>
+      </Select>
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium text-gray-700">관심 분야</span>
         <div className="flex flex-wrap gap-x-4 gap-y-2">

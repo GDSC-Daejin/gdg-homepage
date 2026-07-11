@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
+import { ADMIN_ROLES } from "@/lib/types";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
 import { SidebarNav } from "./SidebarNav";
@@ -8,7 +9,8 @@ import { ThemeToggle } from "./ThemeToggle";
 export const dynamic = "force-dynamic";
 
 const roleLabel: Record<string, string> = {
-  admin: "관리자",
+  organizer: "오거나이저",
+  team_member: "팀 멤버",
   member: "멤버",
   applicant: "지원자",
 };
@@ -28,7 +30,7 @@ export default async function MemberLayout({
           <p className="text-base font-bold text-gray-900">GDG DJU</p>
           <p className="text-xs text-gray-500">동아리 관리 시스템</p>
         </div>
-        <SidebarNav isAdmin={profile.role === "admin"} />
+        <SidebarNav isAdmin={ADMIN_ROLES.includes(profile.role)} />
         <div className="mt-auto flex flex-col gap-3 pt-6">
           <ThemeToggle />
           <div className="flex items-center gap-2 rounded-md px-1 py-2">

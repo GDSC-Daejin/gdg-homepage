@@ -1,9 +1,8 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile, requireAdmin } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { applicationSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { CURRENT_SEASON } from "@/lib/constants";
@@ -11,10 +10,6 @@ import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
-  const profile = await getProfile();
-  if (!profile) redirect("/login");
-  if (profile.role !== "applicant") return { error: "이미 회원입니다" };
-
   const answers = {
     intro: String(formData.get("intro") ?? "").trim(),
     motivation: String(formData.get("motivation") ?? "").trim(),
@@ -25,24 +20,36 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
     return { error: "모든 항목을 입력해주세요" };
   }
 
-  const parsed = applicationSchema.safeParse({ season: CURRENT_SEASON, answers });
+  const parsed = applicationSchema.safeParse({
+    applicant_name: String(formData.get("applicant_name") ?? "").trim(),
+    student_no: String(formData.get("student_no") ?? "").trim(),
+    major: String(formData.get("major") ?? "").trim(),
+    phone: String(formData.get("phone") ?? "").trim(),
+    email: String(formData.get("email") ?? "").trim(),
+    season: CURRENT_SEASON,
+    answers,
+  });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.from("applications").insert({
-    applicant_id: profile.id,
+    applicant_id: null,
+    applicant_name: parsed.data.applicant_name,
+    student_no: parsed.data.student_no,
+    major: parsed.data.major,
+    phone: parsed.data.phone,
+    email: parsed.data.email,
     season: parsed.data.season,
     answers: parsed.data.answers,
   });
 
   if (error) {
-    if (error.code === "23505") return { error: "이번 시즌에 이미 지원했어요" };
+    if (error.code === "23505") return { error: "이미 지원한 이메일이에요" };
     return { error: toKoreanError(error) };
   }
 
-  revalidatePath("/apply");
   return {};
 }
 

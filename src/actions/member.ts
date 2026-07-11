@@ -5,7 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
-import type { ActionResult, Role, MemberStatus, Profile } from "@/lib/types";
+import type {
+  ActionResult,
+  Role,
+  Position,
+  MemberStatus,
+  Profile,
+} from "@/lib/types";
 
 export async function setMemberRole(
   userId: string,
@@ -18,6 +24,26 @@ export async function setMemberRole(
   const { error } = await supabase.rpc("admin_set_role", {
     p_user: userId,
     p_role: role,
+  });
+
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath("/admin/members");
+  revalidatePath(`/admin/members/${userId}`);
+  return {};
+}
+
+export async function setMemberPosition(
+  userId: string,
+  position: Position,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_position", {
+    p_user: userId,
+    p_position: position,
   });
 
   if (error) return { error: toKoreanError(error) };

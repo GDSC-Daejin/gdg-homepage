@@ -9,6 +9,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   FORBIDDEN: "권한이 없어요",
   INVALID_INPUT: "입력값이 올바르지 않아요",
   NOT_FOUND: "대상을 찾을 수 없어요",
+  ORGANIZER_EXISTS: "오거나이저는 1명만 지정할 수 있어요",
 };
 
 export function toKoreanError(e: unknown): string {

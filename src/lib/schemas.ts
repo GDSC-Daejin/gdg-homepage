@@ -2,14 +2,17 @@ import { z } from "zod";
 
 export const profileSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요"),
-  student_no: z.string(),
-  major: z.string(),
-  phone: z.string(),
+  student_no: z.string().min(1, "학번을 입력해주세요"),
+  major: z.string().min(1, "전공을 입력해주세요"),
+  phone: z.string().min(1, "전화번호를 입력해주세요"),
   interests: z.array(z.string()),
+  position: z.enum(["frontend", "backend", "designer"], {
+    message: "포지션을 선택해주세요",
+  }),
 });
 
 export const eventSchema = z.object({
-  type: z.enum(["session", "study", "devfest"]),
+  type: z.enum(["session", "study", "mogakco"]),
   title: z.string().min(1, "제목을 입력해주세요"),
   description: z.string(),
   starts_at: z.string().min(1, "일시를 입력해주세요"),
@@ -19,6 +22,11 @@ export const eventSchema = z.object({
 });
 
 export const applicationSchema = z.object({
+  applicant_name: z.string().min(1, "이름을 입력해주세요"),
+  student_no: z.string().min(1, "학번을 입력해주세요"),
+  major: z.string().min(1, "전공을 입력해주세요"),
+  phone: z.string().min(1, "전화번호를 입력해주세요"),
+  email: z.email("이메일 형식이 올바르지 않아요"),
   season: z.string().min(1),
   answers: z.record(z.string(), z.string()),
 });

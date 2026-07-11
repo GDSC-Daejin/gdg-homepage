@@ -29,10 +29,14 @@ export default async function AdminMemberDetailPage({
 
   let member: Profile | undefined;
   let attendances: AttendanceRow[] = [];
+  let organizerTaken = false;
 
   if (demo) {
     member = DEMO_MEMBERS.find((m) => m.id === id) ?? DEMO_MEMBERS[0];
     attendances = DEMO_MEMBER_ATTENDANCE[member.id] ?? [];
+    organizerTaken = DEMO_MEMBERS.some(
+      (m) => m.role === "organizer" && m.id !== member!.id,
+    );
   } else {
     const supabase = await createClient();
     const { data: memberData } = await supabase
@@ -43,6 +47,13 @@ export default async function AdminMemberDetailPage({
 
     if (!memberData) notFound();
     member = memberData as Profile;
+
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "organizer")
+      .neq("id", id);
+    organizerTaken = (count ?? 0) > 0;
 
     const { data: attendanceData } = await supabase
       .from("attendances")
@@ -89,7 +100,9 @@ export default async function AdminMemberDetailPage({
         <MemberRoleStatusForm
           userId={member.id}
           role={member.role}
+          position={member.position}
           status={member.status}
+          organizerTaken={organizerTaken}
         />
       </Card>
 

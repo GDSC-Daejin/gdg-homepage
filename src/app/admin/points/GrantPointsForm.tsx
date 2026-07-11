@@ -111,7 +111,7 @@ export function GrantPointsForm({ members, events }: GrantPointsFormProps) {
           <Input
             name="reason"
             label="사유"
-            placeholder="예) DevFest 스태프로 참여했어요"
+            placeholder="예) 모각코 운영을 도왔어요"
             required
           />
           {error && (

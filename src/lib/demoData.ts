@@ -14,27 +14,27 @@ import type {
 } from "@/lib/types";
 
 export const DEMO_MEMBERS: Profile[] = [
-  { id: "demo-m1", name: "김도윤", student_no: "20231234", major: "컴퓨터공학과", phone: "010-1111-1111", interests: ["백엔드", "클라우드"], role: "admin", status: "active", joined_at: "2023-02-01T00:00:00.000Z" },
-  { id: "demo-m2", name: "이서연", student_no: "20221111", major: "소프트웨어학과", phone: "010-1111-1112", interests: ["프론트엔드", "디자인"], role: "admin", status: "active", joined_at: "2022-03-01T00:00:00.000Z" },
-  { id: "demo-m3", name: "박지훈", student_no: "20241111", major: "정보통신공학과", phone: "010-1111-1113", interests: ["안드로이드"], role: "member", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
-  { id: "demo-m4", name: "최유나", student_no: "20241234", major: "컴퓨터공학과", phone: "010-1111-1114", interests: ["iOS", "UX"], role: "member", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
-  { id: "demo-m5", name: "정민준", student_no: "20241999", major: "산업공학과", phone: "010-1111-1115", interests: ["데이터"], role: "member", status: "active", joined_at: "2024-09-01T00:00:00.000Z" },
-  { id: "demo-m6", name: "한소희", student_no: "20251111", major: "컴퓨터공학과", phone: "010-1111-1116", interests: ["AI"], role: "member", status: "active", joined_at: "2025-03-01T00:00:00.000Z" },
-  { id: "demo-m7", name: "오지훈", student_no: "20231999", major: "전자공학과", phone: "010-1111-1117", interests: ["임베디드"], role: "member", status: "dormant", joined_at: "2023-09-01T00:00:00.000Z" },
-  { id: "demo-m8", name: "배수아", student_no: "20221999", major: "경영학과", phone: "010-1111-1118", interests: ["기획"], role: "member", status: "dormant", joined_at: "2022-09-01T00:00:00.000Z" },
-  { id: "demo-m9", name: "강하늘", student_no: "20220111", major: "컴퓨터공학과", phone: "010-1111-1119", interests: [], role: "member", status: "withdrawn", joined_at: "2022-03-01T00:00:00.000Z" },
-  { id: "demo-m10", name: "윤태경", student_no: "20230111", major: "수학과", phone: "010-1111-1120", interests: [], role: "member", status: "withdrawn", joined_at: "2023-03-01T00:00:00.000Z" },
+  { id: "demo-m1", name: "김도윤", student_no: "20231234", major: "컴퓨터공학과", phone: "010-1111-1111", interests: ["백엔드", "클라우드"], role: "organizer", position: "backend", status: "active", joined_at: "2023-02-01T00:00:00.000Z" },
+  { id: "demo-m2", name: "이서연", student_no: "20221111", major: "소프트웨어학과", phone: "010-1111-1112", interests: ["프론트엔드", "디자인"], role: "team_member", position: "frontend", status: "active", joined_at: "2022-03-01T00:00:00.000Z" },
+  { id: "demo-m3", name: "박지훈", student_no: "20241111", major: "정보통신공학과", phone: "010-1111-1113", interests: ["안드로이드"], role: "member", position: "backend", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
+  { id: "demo-m4", name: "최유나", student_no: "20241234", major: "컴퓨터공학과", phone: "010-1111-1114", interests: ["iOS", "UX"], role: "member", position: "designer", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
+  { id: "demo-m5", name: "정민준", student_no: "20241999", major: "산업공학과", phone: "010-1111-1115", interests: ["데이터"], role: "member", position: "backend", status: "active", joined_at: "2024-09-01T00:00:00.000Z" },
+  { id: "demo-m6", name: "한소희", student_no: "20251111", major: "컴퓨터공학과", phone: "010-1111-1116", interests: ["AI"], role: "member", position: "backend", status: "active", joined_at: "2025-03-01T00:00:00.000Z" },
+  { id: "demo-m7", name: "오지훈", student_no: "20231999", major: "전자공학과", phone: "010-1111-1117", interests: ["임베디드"], role: "member", position: "backend", status: "dormant", joined_at: "2023-09-01T00:00:00.000Z" },
+  { id: "demo-m8", name: "배수아", student_no: "20221999", major: "경영학과", phone: "010-1111-1118", interests: ["기획"], role: "member", position: "designer", status: "dormant", joined_at: "2022-09-01T00:00:00.000Z" },
+  { id: "demo-m9", name: "강하늘", student_no: "20220111", major: "컴퓨터공학과", phone: "010-1111-1119", interests: [], role: "member", position: "frontend", status: "withdrawn", joined_at: "2022-03-01T00:00:00.000Z" },
+  { id: "demo-m10", name: "윤태경", student_no: "20230111", major: "수학과", phone: "010-1111-1120", interests: [], role: "member", position: "frontend", status: "withdrawn", joined_at: "2023-03-01T00:00:00.000Z" },
 ];
 
 export const DEMO_EVENTS: Event[] = [
-  { id: "demo-e1", type: "devfest", title: "DevFest DJU 2026", description: "연말 데브페스트, 트랙별 세션과 네트워킹", starts_at: "2026-08-20T05:00:00.000Z", location: "대전 컨벤션센터", speaker: "GDG DJU 운영진", capacity: 200, created_by: "demo-m1", created_at: "2026-06-01T00:00:00.000Z" },
+  { id: "demo-e1", type: "mogakco", title: "8월 모각코", description: "모두 각자 코딩 — 다같이 모여 각자 할 일을 하는 자율 세션", starts_at: "2026-08-20T05:00:00.000Z", location: "공학관 401호", speaker: "", capacity: 30, created_by: "demo-m1", created_at: "2026-06-01T00:00:00.000Z" },
   { id: "demo-e2", type: "study", title: "Next.js 스터디 6기", description: "App Router 기반 실전 프로젝트 스터디", starts_at: "2026-07-25T10:00:00.000Z", location: "온라인", speaker: "이서연", capacity: 30, created_by: "demo-m2", created_at: "2026-06-15T00:00:00.000Z" },
   { id: "demo-e3", type: "session", title: "React 19 세션", description: "React 19 신규 기능과 마이그레이션 가이드", starts_at: "2026-06-10T09:00:00.000Z", location: "공학관 401호", speaker: "김도윤", capacity: 60, created_by: "demo-m1", created_at: "2026-05-20T00:00:00.000Z" },
   { id: "demo-e4", type: "study", title: "클라우드 스터디 3기", description: "AWS 기초부터 배포까지", starts_at: "2026-05-15T09:00:00.000Z", location: "공학관 302호", speaker: "박지훈", capacity: 30, created_by: "demo-m1", created_at: "2026-04-20T00:00:00.000Z" },
   { id: "demo-e5", type: "session", title: "AI 세션", description: "LLM 기반 서비스 개발 사례 공유", starts_at: "2026-04-20T09:00:00.000Z", location: "공학관 401호", speaker: "한소희", capacity: 60, created_by: "demo-m2", created_at: "2026-03-25T00:00:00.000Z" },
   { id: "demo-e6", type: "study", title: "알고리즘 스터디 2기", description: "코딩 테스트 대비 알고리즘 스터디", starts_at: "2026-03-10T09:00:00.000Z", location: "공학관 302호", speaker: "정민준", capacity: 25, created_by: "demo-m1", created_at: "2026-02-15T00:00:00.000Z" },
   { id: "demo-e7", type: "session", title: "신입 회원 OT", description: "동아리 소개 및 신입 회원 오리엔테이션", starts_at: "2026-02-15T09:00:00.000Z", location: "학생회관 대강당", speaker: "김도윤", capacity: 100, created_by: "demo-m1", created_at: "2026-01-20T00:00:00.000Z" },
-  { id: "demo-e8", type: "session", title: "DevFest 회고 세션", description: "지난 데브페스트 회고 및 다음 시즌 준비", starts_at: "2026-01-10T09:00:00.000Z", location: "공학관 401호", speaker: "이서연", capacity: 60, created_by: "demo-m2", created_at: "2025-12-20T00:00:00.000Z" },
+  { id: "demo-e8", type: "session", title: "연말 회고 정기세션", description: "지난 시즌 회고 및 다음 시즌 준비", starts_at: "2026-01-10T09:00:00.000Z", location: "공학관 401호", speaker: "이서연", capacity: 60, created_by: "demo-m2", created_at: "2025-12-20T00:00:00.000Z" },
 ];
 
 export const DEMO_DASHBOARD_STATS = {
@@ -96,25 +96,13 @@ export const DEMO_MEMBER_ATTENDANCE: Record<
 export const DEMO_APPLICATION_SEASONS = ["2026-1", "2025-2"];
 
 export const DEMO_APPLICATIONS: Application[] = [
-  { id: "demo-ap1", applicant_id: "demo-ap-user-1", season: "2026-1", answers: { intro: "안녕하세요, 컴퓨터공학과 24학번 김하은입니다.", motivation: "웹 개발을 실전 프로젝트로 배우고 싶어 지원했습니다.", interest: "프론트엔드" }, status: "pending", reviewed_by: null, reviewed_at: null, created_at: "2026-07-01T00:00:00.000Z" },
-  { id: "demo-ap2", applicant_id: "demo-ap-user-2", season: "2026-1", answers: { intro: "소프트웨어학과 23학번 이준서입니다.", motivation: "백엔드 개발 역량을 키우고 싶습니다.", interest: "백엔드" }, status: "pending", reviewed_by: null, reviewed_at: null, created_at: "2026-07-02T00:00:00.000Z" },
-  { id: "demo-ap3", applicant_id: "demo-ap-user-3", season: "2026-1", answers: { intro: "정보통신공학과 24학번 최지우입니다.", motivation: "동아리 활동을 통해 팀 프로젝트 경험을 쌓고 싶습니다.", interest: "안드로이드" }, status: "accepted", reviewed_by: "demo-m1", reviewed_at: "2026-07-03T00:00:00.000Z", created_at: "2026-06-28T00:00:00.000Z" },
-  { id: "demo-ap4", applicant_id: "demo-ap-user-4", season: "2026-1", answers: { intro: "전자공학과 22학번 한서준입니다.", motivation: "임베디드와 웹을 함께 다뤄보고 싶습니다.", interest: "임베디드" }, status: "rejected", reviewed_by: "demo-m2", reviewed_at: "2026-07-03T00:00:00.000Z", created_at: "2026-06-29T00:00:00.000Z" },
-  { id: "demo-ap5", applicant_id: "demo-ap-user-5", season: "2025-2", answers: { intro: "경영학과 23학번 정예린입니다.", motivation: "IT 동아리 경험을 통해 시야를 넓히고 싶습니다.", interest: "기획" }, status: "accepted", reviewed_by: "demo-m1", reviewed_at: "2025-09-05T00:00:00.000Z", created_at: "2025-09-01T00:00:00.000Z" },
-  { id: "demo-ap6", applicant_id: "demo-ap-user-6", season: "2025-2", answers: { intro: "수학과 24학번 임도현입니다.", motivation: "알고리즘 스터디에 참여하고 싶습니다.", interest: "AI" }, status: "rejected", reviewed_by: "demo-m2", reviewed_at: "2025-09-05T00:00:00.000Z", created_at: "2025-09-02T00:00:00.000Z" },
+  { id: "demo-ap1", applicant_id: null, applicant_name: "김하은", student_no: "20241001", major: "컴퓨터공학과", phone: "010-1000-0001", email: "haeun@dju.ac.kr", season: "2026-1", answers: { intro: "안녕하세요, 컴퓨터공학과 24학번 김하은입니다.", motivation: "웹 개발을 실전 프로젝트로 배우고 싶어 지원했습니다.", interest: "프론트엔드" }, status: "pending", reviewed_by: null, reviewed_at: null, created_at: "2026-07-01T00:00:00.000Z" },
+  { id: "demo-ap2", applicant_id: null, applicant_name: "이준서", student_no: "20231002", major: "소프트웨어학과", phone: "010-1000-0002", email: "junseo@dju.ac.kr", season: "2026-1", answers: { intro: "소프트웨어학과 23학번 이준서입니다.", motivation: "백엔드 개발 역량을 키우고 싶습니다.", interest: "백엔드" }, status: "pending", reviewed_by: null, reviewed_at: null, created_at: "2026-07-02T00:00:00.000Z" },
+  { id: "demo-ap3", applicant_id: null, applicant_name: "최지우", student_no: "20241003", major: "정보통신공학과", phone: "010-1000-0003", email: "jiwoo@dju.ac.kr", season: "2026-1", answers: { intro: "정보통신공학과 24학번 최지우입니다.", motivation: "동아리 활동을 통해 팀 프로젝트 경험을 쌓고 싶습니다.", interest: "안드로이드" }, status: "accepted", reviewed_by: "demo-m1", reviewed_at: "2026-07-03T00:00:00.000Z", created_at: "2026-06-28T00:00:00.000Z" },
+  { id: "demo-ap4", applicant_id: null, applicant_name: "한서준", student_no: "20221004", major: "전자공학과", phone: "010-1000-0004", email: "seojun@dju.ac.kr", season: "2026-1", answers: { intro: "전자공학과 22학번 한서준입니다.", motivation: "임베디드와 웹을 함께 다뤄보고 싶습니다.", interest: "임베디드" }, status: "rejected", reviewed_by: "demo-m2", reviewed_at: "2026-07-03T00:00:00.000Z", created_at: "2026-06-29T00:00:00.000Z" },
+  { id: "demo-ap5", applicant_id: null, applicant_name: "정예린", student_no: "20231005", major: "경영학과", phone: "010-1000-0005", email: "yerin@dju.ac.kr", season: "2025-2", answers: { intro: "경영학과 23학번 정예린입니다.", motivation: "IT 동아리 경험을 통해 시야를 넓히고 싶습니다.", interest: "기획" }, status: "accepted", reviewed_by: "demo-m1", reviewed_at: "2025-09-05T00:00:00.000Z", created_at: "2025-09-01T00:00:00.000Z" },
+  { id: "demo-ap6", applicant_id: null, applicant_name: "임도현", student_no: "20241006", major: "수학과", phone: "010-1000-0006", email: "dohyun@dju.ac.kr", season: "2025-2", answers: { intro: "수학과 24학번 임도현입니다.", motivation: "알고리즘 스터디에 참여하고 싶습니다.", interest: "AI" }, status: "rejected", reviewed_by: "demo-m2", reviewed_at: "2025-09-05T00:00:00.000Z", created_at: "2025-09-02T00:00:00.000Z" },
 ];
-
-export const DEMO_APPLICANTS: Record<
-  string,
-  { id: string; name: string; student_no: string; major: string }
-> = {
-  "demo-ap-user-1": { id: "demo-ap-user-1", name: "김하은", student_no: "20241001", major: "컴퓨터공학과" },
-  "demo-ap-user-2": { id: "demo-ap-user-2", name: "이준서", student_no: "20231002", major: "소프트웨어학과" },
-  "demo-ap-user-3": { id: "demo-ap-user-3", name: "최지우", student_no: "20241003", major: "정보통신공학과" },
-  "demo-ap-user-4": { id: "demo-ap-user-4", name: "한서준", student_no: "20221004", major: "전자공학과" },
-  "demo-ap-user-5": { id: "demo-ap-user-5", name: "정예린", student_no: "20231005", major: "경영학과" },
-  "demo-ap-user-6": { id: "demo-ap-user-6", name: "임도현", student_no: "20241006", major: "수학과" },
-};
 
 export const DEMO_EVENT_CONFIRMED_COUNTS: Record<string, number> = {
   "demo-e1": 120,
@@ -141,7 +129,7 @@ export const DEMO_ATTENDANCE_ROWS: {
 
 export const DEMO_NOTICES: Notice[] = [
   { id: "demo-n1", title: "2026년 하계 정기 모임 안내", body: "안녕하세요, GDG DJU입니다. 하계 정기 모임 일정을 안내드립니다.", published: true, published_at: "2026-07-05T00:00:00.000Z", created_by: "demo-m1", created_at: "2026-07-04T00:00:00.000Z" },
-  { id: "demo-n2", title: "DevFest DJU 2026 스태프 모집", body: "8월 데브페스트 운영진을 모집합니다. 관심 있는 분은 신청해주세요.", published: true, published_at: "2026-06-20T00:00:00.000Z", created_by: "demo-m2", created_at: "2026-06-18T00:00:00.000Z" },
+  { id: "demo-n2", title: "8월 모각코 안내", body: "8월 모각코를 진행합니다. 다같이 모여 각자 할 일을 하는 자율 세션이에요. 관심 있는 분은 신청해주세요.", published: true, published_at: "2026-06-20T00:00:00.000Z", created_by: "demo-m2", created_at: "2026-06-18T00:00:00.000Z" },
   { id: "demo-n3", title: "동아리방 이용 규칙 변경 안내", body: "동아리방 이용 시간이 오전 9시부터 오후 10시로 변경됩니다.", published: true, published_at: "2026-05-01T00:00:00.000Z", created_by: "demo-m1", created_at: "2026-04-28T00:00:00.000Z" },
   { id: "demo-n4", title: "2026-2 시즌 지원서 양식 초안", body: "다음 시즌 지원서 문항 초안입니다. 검토 부탁드립니다.", published: false, published_at: null, created_by: "demo-m2", created_at: "2026-07-08T00:00:00.000Z" },
   { id: "demo-n5", title: "알고리즘 스터디 2기 모집 마감", body: "알고리즘 스터디 2기 모집이 마감되었습니다. 참여해주신 분들 감사합니다.", published: true, published_at: "2026-03-05T00:00:00.000Z", created_by: "demo-m1", created_at: "2026-03-04T00:00:00.000Z" },
@@ -255,7 +243,7 @@ export const DEMO_BUDGET_ENTRIES: BudgetEntry[] = [
 ];
 
 export const DEMO_SPONSORS: Sponsor[] = [
-  { id: "demo-sp1", name: "테크노바 주식회사", amount: 500000, season: "2026-1", note: "데브페스트 메인 스폰서", created_at: "2026-04-01T00:00:00.000Z" },
+  { id: "demo-sp1", name: "테크노바 주식회사", amount: 500000, season: "2026-1", note: "정기세션 메인 스폰서", created_at: "2026-04-01T00:00:00.000Z" },
   { id: "demo-sp2", name: "클라우드베이스", amount: 300000, season: "2026-1", note: "클라우드 스터디 서버 비용 지원", created_at: "2026-03-15T00:00:00.000Z" },
   { id: "demo-sp3", name: "카페드림", amount: 100000, season: "2025-2", note: "정기 모임 다과 지원", created_at: "2025-10-01T00:00:00.000Z" },
   { id: "demo-sp4", name: "북스토어대전", amount: 150000, season: "2025-2", note: "도서 지원", created_at: "2025-09-10T00:00:00.000Z" },

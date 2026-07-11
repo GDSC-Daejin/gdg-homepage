@@ -42,6 +42,7 @@ export default async function AdminMembersPage({
   }
 
   const hasFilter = Boolean(q || role || status);
+  const organizerExists = members.some((m) => m.role === "organizer");
 
   return (
     <div>
@@ -85,13 +86,18 @@ export default async function AdminMembersPage({
                 <th className="px-4 py-3 font-medium">학번</th>
                 <th className="px-4 py-3 font-medium">전공</th>
                 <th className="px-4 py-3 font-medium">역할</th>
+                <th className="px-4 py-3 font-medium">포지션</th>
                 <th className="px-4 py-3 font-medium">상태</th>
                 <th className="px-4 py-3 font-medium">가입일</th>
               </tr>
             </thead>
             <tbody>
               {members.map((member) => (
-                <MemberRow key={member.id} member={member} />
+                <MemberRow
+                  key={member.id}
+                  member={member}
+                  organizerTaken={organizerExists && member.role !== "organizer"}
+                />
               ))}
             </tbody>
           </table>

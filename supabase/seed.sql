@@ -17,7 +17,7 @@ insert into public.badges (icon, name, description) values
   ('🔥', '개근', '한 시즌 확정 이벤트 출석률 100%'),
   ('🎤', '스피커', '세션/스터디에서 발표'),
   ('📚', '스터디 리더', '스터디 1회 이상 리드'),
-  ('🎉', 'DevFest', 'DevFest 참가'),
+  ('🎉', '모각코', '모각코 참여'),
   ('💡', '아이디어 뱅크', '채택된 건의 3회')
 on conflict (name) do nothing;
 

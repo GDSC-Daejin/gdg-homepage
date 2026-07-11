@@ -4,11 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 import { CURRENT_SEASON } from "@/lib/constants";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
-import type { Application, ApplicationStatus, Profile } from "@/lib/types";
+import type { Application, ApplicationStatus } from "@/lib/types";
 import { ApplicationCard } from "./ApplicationCard";
 import { SeasonFilter } from "./SeasonFilter";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_APPLICATION_SEASONS, DEMO_APPLICATIONS, DEMO_APPLICANTS } from "@/lib/demoData";
+import { DEMO_APPLICATION_SEASONS, DEMO_APPLICATIONS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +18,6 @@ const STATUS_TABS: { value: string; label: string }[] = [
   { value: "accepted", label: "합격" },
   { value: "rejected", label: "불합격" },
 ];
-
-type ApplicantInfo = Pick<Profile, "id" | "name" | "student_no" | "major">;
 
 export default async function AdminApplicationsPage({
   searchParams,
@@ -35,9 +33,6 @@ export default async function AdminApplicationsPage({
   let season = params.season ?? seasons[0] ?? CURRENT_SEASON;
   let seasonApplications: Application[] = DEMO_APPLICATIONS.filter(
     (a) => a.season === season,
-  );
-  let applicantMap = new Map(
-    Object.values(DEMO_APPLICANTS).map((p) => [p.id, p]),
   );
 
   if (!demo) {
@@ -60,19 +55,6 @@ export default async function AdminApplicationsPage({
       .eq("season", season)
       .order("created_at", { ascending: false });
     seasonApplications = (appData as Application[] | null) ?? [];
-
-    const applicantIds = Array.from(
-      new Set(seasonApplications.map((a) => a.applicant_id)),
-    );
-    const { data: profileData } = applicantIds.length
-      ? await supabase
-          .from("profiles")
-          .select("id, name, student_no, major")
-          .in("id", applicantIds)
-      : { data: [] as ApplicantInfo[] };
-    applicantMap = new Map(
-      ((profileData as ApplicantInfo[] | null) ?? []).map((p) => [p.id, p]),
-    );
   }
 
   const statusCounts: Record<"all" | ApplicationStatus, number> = {
@@ -169,11 +151,7 @@ export default async function AdminApplicationsPage({
         <div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {applications.map((app) => (
-              <ApplicationCard
-                key={app.id}
-                application={app}
-                applicant={applicantMap.get(app.applicant_id)}
-              />
+              <ApplicationCard key={app.id} application={app} />
             ))}
           </div>
           {isDecidedView && (

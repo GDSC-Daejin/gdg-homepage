@@ -12,21 +12,21 @@ import { cn } from "@/lib/cn";
 import type { Event, EventType } from "@/lib/types";
 
 const TYPE_OPTIONS: { value: EventType; label: string }[] = [
-  { value: "session", label: "세션" },
+  { value: "session", label: "정기세션" },
   { value: "study", label: "스터디" },
-  { value: "devfest", label: "데브페스트" },
+  { value: "mogakco", label: "모각코" },
 ];
 
 const TYPE_DOT: Record<EventType, string> = {
   session: "bg-primary",
   study: "bg-success",
-  devfest: "bg-warning",
+  mogakco: "bg-warning",
 };
 
 const TYPE_SELECTED: Record<EventType, string> = {
   session: "border-primary bg-primary-soft text-primary",
   study: "border-success bg-success-soft text-success",
-  devfest: "border-warning bg-warning-soft text-warning",
+  mogakco: "border-warning bg-warning-soft text-warning",
 };
 
 function RequiredMark() {
