@@ -157,16 +157,25 @@ export async function submitSurveyResponse(
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
   }
 
-  const { error } = await supabase.from("survey_responses").insert({
-    survey_id: surveyId,
-    user_id: profile.id,
-    answers: parsed.data.answers,
-  });
+  const { data: existing } = await supabase
+    .from("survey_responses")
+    .select("id")
+    .eq("survey_id", surveyId)
+    .eq("user_id", profile.id)
+    .maybeSingle<{ id: string }>();
 
-  if (error) {
-    if (error.code === "23505") return { error: "이미 응답한 설문이에요" };
-    return { error: toKoreanError(error) };
-  }
+  const { error } = existing
+    ? await supabase
+        .from("survey_responses")
+        .update({ answers: parsed.data.answers })
+        .eq("id", existing.id)
+    : await supabase.from("survey_responses").insert({
+        survey_id: surveyId,
+        user_id: profile.id,
+        answers: parsed.data.answers,
+      });
+
+  if (error) return { error: toKoreanError(error) };
 
   revalidatePath(`/surveys/${surveyId}`);
   revalidatePath("/surveys");
