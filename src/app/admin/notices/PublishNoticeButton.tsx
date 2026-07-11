@@ -107,7 +107,8 @@ export function PublishNoticeButton({
   const slackFailed = slackMessage?.startsWith("슬랙 전송 실패");
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    // relative: 상태 안내는 아래 absolute 오버레이로 띄워 헤더/폼 레이아웃을 밀지 않음
+    <div className="relative flex flex-col items-end gap-1">
       {!published && (
         <Button
           type="button"
@@ -121,42 +122,44 @@ export function PublishNoticeButton({
           {pending ? "발행 중" : "발행"}
         </Button>
       )}
-      {pending && (
-        <p className="max-w-[220px] text-right text-[11px] text-gray-400">
-          슬랙 전송을 기다리는 동안 두 버튼 모두 비활성화돼 중복 발행을 막아요.
-        </p>
-      )}
-      {error && (
-        <div className="flex items-start gap-1.5 rounded-md bg-danger-soft px-2 py-1 text-xs text-danger">
-          <StatusIcon tone="danger" />
-          <p>발행 실패: {error}</p>
-        </div>
-      )}
-      {slackMessage && (
-        <div
-          className={cn(
-            "flex items-start gap-1.5 rounded-md px-2 py-1 text-xs",
-            slackFailed ? "bg-danger-soft text-danger" : "bg-success-soft text-success",
-          )}
-        >
-          <StatusIcon tone={slackFailed ? "danger" : "success"} />
-          <div>
-            <p className="font-medium">
-              {slackFailed ? "슬랙 전송에 실패했어요" : "발행이 완료됐어요"}
-            </p>
-            <p className="mt-0.5 opacity-80">
-              {slackFailed ? (
-                "잠시 후 다시 시도해 주세요."
-              ) : (
-                <>
-                  슬랙 <span className="font-medium">#공지</span> 채널로 공지가 전달됐어요. 이제
-                  회원에게도 노출돼요.
-                </>
-              )}
-            </p>
+      <div className="absolute right-0 top-full z-20 mt-2 flex w-max max-w-[280px] flex-col items-end gap-1">
+        {pending && (
+          <p className="rounded-md bg-gray-100 px-2 py-1 text-right text-[11px] text-gray-500">
+            슬랙 전송을 기다리는 동안 두 버튼 모두 비활성화돼 중복 발행을 막아요.
+          </p>
+        )}
+        {error && (
+          <div className="flex items-start gap-1.5 rounded-md bg-danger-soft px-2 py-1 text-xs text-danger shadow-sm">
+            <StatusIcon tone="danger" />
+            <p>발행 실패: {error}</p>
           </div>
-        </div>
-      )}
+        )}
+        {slackMessage && (
+          <div
+            className={cn(
+              "flex items-start gap-1.5 rounded-md px-2 py-1 text-xs shadow-sm",
+              slackFailed ? "bg-danger-soft text-danger" : "bg-success-soft text-success",
+            )}
+          >
+            <StatusIcon tone={slackFailed ? "danger" : "success"} />
+            <div>
+              <p className="font-medium">
+                {slackFailed ? "슬랙 전송에 실패했어요" : "발행이 완료됐어요"}
+              </p>
+              <p className="mt-0.5 opacity-80">
+                {slackFailed ? (
+                  "잠시 후 다시 시도해 주세요."
+                ) : (
+                  <>
+                    슬랙 <span className="font-medium">#공지</span> 채널로 공지가 전달됐어요. 이제
+                    회원에게도 노출돼요.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
