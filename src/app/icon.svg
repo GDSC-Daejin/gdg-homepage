@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" stroke-width="60" stroke-linecap="round">
+  <!-- left chevron "<" : red top arm, blue bottom arm -->
+  <line x1="80" y1="256" x2="210" y2="182" stroke="#EA4335" />
+  <line x1="80" y1="256" x2="210" y2="330" stroke="#4285F4" />
+  <!-- right chevron ">" : yellow bottom arm, green top arm -->
+  <line x1="432" y1="256" x2="302" y2="330" stroke="#FBBC04" />
+  <line x1="432" y1="256" x2="302" y2="182" stroke="#34A853" />
+</svg>

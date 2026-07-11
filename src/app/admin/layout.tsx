@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
+import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/app/(member)/ThemeToggle";
 import { AdminSidebarNav } from "./AdminSidebarNav";
 import { TourModeToggle } from "./TourModeToggle";
@@ -27,9 +28,12 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen">
       <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white dark:bg-gray-50 px-4 py-6">
-        <div className="px-3 pb-6">
-          <p className="text-base font-bold text-gray-900">GDG DJU</p>
-          <p className="text-xs text-gray-500">동아리 관리 시스템</p>
+        <div className="flex items-center gap-2.5 px-3 pb-6">
+          <Logo className="h-8 w-8 shrink-0" />
+          <div>
+            <p className="text-base font-bold text-gray-900">GDG DJU</p>
+            <p className="text-xs text-gray-500">동아리 관리 시스템</p>
+          </div>
         </div>
         <AdminSidebarNav />
         <div className="mt-auto flex flex-col gap-3 border-t border-gray-200 pt-6">
