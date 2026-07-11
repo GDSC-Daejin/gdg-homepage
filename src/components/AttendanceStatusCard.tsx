@@ -1,4 +1,5 @@
 import QRCode from "qrcode";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_DASHBOARD_ROWS } from "@/lib/demoData";
@@ -49,7 +50,14 @@ export async function AttendanceStatusCard({ eventId }: AttendanceStatusCardProp
 
   const rate = confirmedCount > 0 ? Math.round((attendedCount / confirmedCount) * 100) : 0;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  let siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  if (!siteUrl) {
+    // env 미설정 시 요청 헤더에서 origin 복구 (QR에 상대경로가 들어가는 것 방지)
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host");
+    const proto = h.get("x-forwarded-proto") ?? "https";
+    if (host) siteUrl = `${proto}://${host}`;
+  }
   const attendUrl = code
     ? `${siteUrl}/attend?event=${eventId}&code=${code}`
     : null;
