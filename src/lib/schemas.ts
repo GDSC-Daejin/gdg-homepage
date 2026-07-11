@@ -92,10 +92,3 @@ export const budgetSchema = z.object({
   amount: z.coerce.number().int().positive("금액은 양수여야 해요"),
   memo: z.string().default(""),
 });
-
-export const sponsorSchema = z.object({
-  name: z.string().min(1, "이름을 입력해주세요"),
-  amount: z.coerce.number().int().positive("금액은 양수여야 해요"),
-  season: z.string(),
-  note: z.string(),
-});

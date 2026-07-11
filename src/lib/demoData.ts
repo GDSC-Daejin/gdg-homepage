@@ -10,7 +10,6 @@ import type {
   PointLog,
   Badge,
   BudgetEntry,
-  Sponsor,
 } from "@/lib/types";
 
 export const DEMO_MEMBERS: Profile[] = [
@@ -240,13 +239,6 @@ export const DEMO_BUDGET_ENTRIES: BudgetEntry[] = [
   { id: "demo-be6", entry_date: "2026-03-20", type: "expense", category: "다과", amount: 60000, memo: "알고리즘 스터디 다과비", created_by: "demo-m2", created_at: "2026-03-20T00:00:00.000Z" },
   { id: "demo-be7", entry_date: "2026-02-10", type: "income", category: "회비", amount: 280000, memo: "2025-2 회비 납부", created_by: "demo-m1", created_at: "2026-02-10T00:00:00.000Z" },
   { id: "demo-be8", entry_date: "2026-01-15", type: "expense", category: "굿즈", amount: 150000, memo: "신입 회원 웰컴 키트", created_by: "demo-m2", created_at: "2026-01-15T00:00:00.000Z" },
-];
-
-export const DEMO_SPONSORS: Sponsor[] = [
-  { id: "demo-sp1", name: "테크노바 주식회사", amount: 500000, season: "2026-1", note: "정기세션 메인 스폰서", created_at: "2026-04-01T00:00:00.000Z" },
-  { id: "demo-sp2", name: "클라우드베이스", amount: 300000, season: "2026-1", note: "클라우드 스터디 서버 비용 지원", created_at: "2026-03-15T00:00:00.000Z" },
-  { id: "demo-sp3", name: "카페드림", amount: 100000, season: "2025-2", note: "정기 모임 다과 지원", created_at: "2025-10-01T00:00:00.000Z" },
-  { id: "demo-sp4", name: "북스토어대전", amount: 150000, season: "2025-2", note: "도서 지원", created_at: "2025-09-10T00:00:00.000Z" },
 ];
 
 export const DEMO_AUDIT_LOGS: {

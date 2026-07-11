@@ -202,15 +202,6 @@ export interface BudgetEntry {
   created_at: string;
 }
 
-export interface Sponsor {
-  id: string;
-  name: string;
-  amount: number;
-  season: string;
-  note: string;
-  created_at: string;
-}
-
 export interface AuditLog {
   id: number;
   actor: string | null;
