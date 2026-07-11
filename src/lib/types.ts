@@ -46,7 +46,9 @@ export interface Event {
   title: string;
   description: string;
   starts_at: string;
+  ends_at: string | null;
   location: string;
+  address: string;
   speaker: string;
   capacity: number | null;
   created_by: string | null;

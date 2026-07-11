@@ -27,14 +27,14 @@ export const DEMO_MEMBERS: Profile[] = [
 ];
 
 export const DEMO_EVENTS: Event[] = [
-  { id: "demo-e1", type: "mogakco", title: "8월 모각코", description: "모두 각자 코딩 — 다같이 모여 각자 할 일을 하는 자율 세션", starts_at: "2026-08-20T05:00:00.000Z", location: "공학관 401호", speaker: "", capacity: 30, created_by: "demo-m1", created_at: "2026-06-01T00:00:00.000Z" },
-  { id: "demo-e2", type: "study", title: "Next.js 스터디 6기", description: "App Router 기반 실전 프로젝트 스터디", starts_at: "2026-07-25T10:00:00.000Z", location: "온라인", speaker: "이서연", capacity: 30, created_by: "demo-m2", created_at: "2026-06-15T00:00:00.000Z" },
-  { id: "demo-e3", type: "session", title: "React 19 세션", description: "React 19 신규 기능과 마이그레이션 가이드", starts_at: "2026-06-10T09:00:00.000Z", location: "공학관 401호", speaker: "김도윤", capacity: 60, created_by: "demo-m1", created_at: "2026-05-20T00:00:00.000Z" },
-  { id: "demo-e4", type: "study", title: "클라우드 스터디 3기", description: "AWS 기초부터 배포까지", starts_at: "2026-05-15T09:00:00.000Z", location: "공학관 302호", speaker: "박지훈", capacity: 30, created_by: "demo-m1", created_at: "2026-04-20T00:00:00.000Z" },
-  { id: "demo-e5", type: "session", title: "AI 세션", description: "LLM 기반 서비스 개발 사례 공유", starts_at: "2026-04-20T09:00:00.000Z", location: "공학관 401호", speaker: "한소희", capacity: 60, created_by: "demo-m2", created_at: "2026-03-25T00:00:00.000Z" },
-  { id: "demo-e6", type: "study", title: "알고리즘 스터디 2기", description: "코딩 테스트 대비 알고리즘 스터디", starts_at: "2026-03-10T09:00:00.000Z", location: "공학관 302호", speaker: "정민준", capacity: 25, created_by: "demo-m1", created_at: "2026-02-15T00:00:00.000Z" },
-  { id: "demo-e7", type: "session", title: "신입 회원 OT", description: "동아리 소개 및 신입 회원 오리엔테이션", starts_at: "2026-02-15T09:00:00.000Z", location: "학생회관 대강당", speaker: "김도윤", capacity: 100, created_by: "demo-m1", created_at: "2026-01-20T00:00:00.000Z" },
-  { id: "demo-e8", type: "session", title: "연말 회고 정기세션", description: "지난 시즌 회고 및 다음 시즌 준비", starts_at: "2026-01-10T09:00:00.000Z", location: "공학관 401호", speaker: "이서연", capacity: 60, created_by: "demo-m2", created_at: "2025-12-20T00:00:00.000Z" },
+  { id: "demo-e1", type: "mogakco", title: "8월 모각코", description: "모두 각자 코딩 — 다같이 모여 각자 할 일을 하는 자율 세션", starts_at: "2026-08-20T05:00:00.000Z", ends_at: null, location: "공학관 401호", address: "", speaker: "", capacity: 30, created_by: "demo-m1", created_at: "2026-06-01T00:00:00.000Z" },
+  { id: "demo-e2", type: "study", title: "Next.js 스터디 6기", description: "App Router 기반 실전 프로젝트 스터디", starts_at: "2026-07-25T10:00:00.000Z", ends_at: null, location: "온라인", address: "", speaker: "이서연", capacity: 30, created_by: "demo-m2", created_at: "2026-06-15T00:00:00.000Z" },
+  { id: "demo-e3", type: "session", title: "React 19 세션", description: "React 19 신규 기능과 마이그레이션 가이드", starts_at: "2026-06-10T09:00:00.000Z", ends_at: null, location: "공학관 401호", address: "", speaker: "김도윤", capacity: 60, created_by: "demo-m1", created_at: "2026-05-20T00:00:00.000Z" },
+  { id: "demo-e4", type: "study", title: "클라우드 스터디 3기", description: "AWS 기초부터 배포까지", starts_at: "2026-05-15T09:00:00.000Z", ends_at: null, location: "공학관 302호", address: "", speaker: "박지훈", capacity: 30, created_by: "demo-m1", created_at: "2026-04-20T00:00:00.000Z" },
+  { id: "demo-e5", type: "session", title: "AI 세션", description: "LLM 기반 서비스 개발 사례 공유", starts_at: "2026-04-20T09:00:00.000Z", ends_at: null, location: "공학관 401호", address: "", speaker: "한소희", capacity: 60, created_by: "demo-m2", created_at: "2026-03-25T00:00:00.000Z" },
+  { id: "demo-e6", type: "study", title: "알고리즘 스터디 2기", description: "코딩 테스트 대비 알고리즘 스터디", starts_at: "2026-03-10T09:00:00.000Z", ends_at: null, location: "공학관 302호", address: "", speaker: "정민준", capacity: 25, created_by: "demo-m1", created_at: "2026-02-15T00:00:00.000Z" },
+  { id: "demo-e7", type: "session", title: "신입 회원 OT", description: "동아리 소개 및 신입 회원 오리엔테이션", starts_at: "2026-02-15T09:00:00.000Z", ends_at: null, location: "학생회관 대강당", address: "", speaker: "김도윤", capacity: 100, created_by: "demo-m1", created_at: "2026-01-20T00:00:00.000Z" },
+  { id: "demo-e8", type: "session", title: "연말 회고 정기세션", description: "지난 시즌 회고 및 다음 시즌 준비", starts_at: "2026-01-10T09:00:00.000Z", ends_at: null, location: "공학관 401호", address: "", speaker: "이서연", capacity: 60, created_by: "demo-m2", created_at: "2025-12-20T00:00:00.000Z" },
 ];
 
 export const DEMO_DASHBOARD_STATS = {
