@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
-import { PostForm } from "@/components/board/PostForm";
+import { PostComposer } from "@/components/board/PostComposer";
 import { formatKst } from "@/lib/format";
 import type { BoardType } from "@/lib/types";
 
@@ -47,9 +47,7 @@ export async function PostListPage({
     <div className="flex flex-col gap-6">
       <PageHeader title={title} description={description} />
 
-      <Card>
-        <PostForm board={board} eventOptions={eventOptions} />
-      </Card>
+      <PostComposer board={board} eventOptions={eventOptions} />
 
       {posts.length === 0 ? (
         <EmptyState title="아직 글이 없어요" description="첫 글을 남겨보세요" />

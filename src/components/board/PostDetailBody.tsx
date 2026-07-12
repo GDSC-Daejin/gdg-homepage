@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/Button";
 import { PostForm } from "@/components/board/PostForm";
+import { Markdown } from "@/components/Markdown";
 import type { BoardType } from "@/lib/types";
 
 interface EventOption {
@@ -24,7 +25,14 @@ export function PostDetailBody({
   const [editing, setEditing] = useState(false);
 
   if (editing) {
-    return <PostForm board={board} eventOptions={eventOptions} editing={post} />;
+    return (
+      <PostForm
+        board={board}
+        eventOptions={eventOptions}
+        editing={post}
+        onCancel={() => setEditing(false)}
+      />
+    );
   }
 
   return (
@@ -37,7 +45,7 @@ export function PostDetailBody({
           </Button>
         )}
       </div>
-      <p className="whitespace-pre-wrap text-sm text-gray-700">{post.body}</p>
+      <Markdown>{post.body}</Markdown>
     </div>
   );
 }
