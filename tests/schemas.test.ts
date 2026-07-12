@@ -184,17 +184,29 @@ describe("surveyResponseSchema", () => {
 
 describe("inquirySchema", () => {
   it("빈 제목은 reject한다", () => {
-    const result = inquirySchema.safeParse({ title: "", body: "내용" });
+    const result = inquirySchema.safeParse({
+      category: "general",
+      title: "",
+      body: "내용",
+    });
     expect(result.success).toBe(false);
   });
 
   it("빈 내용은 reject한다", () => {
-    const result = inquirySchema.safeParse({ title: "문의", body: "" });
+    const result = inquirySchema.safeParse({
+      category: "general",
+      title: "문의",
+      body: "",
+    });
     expect(result.success).toBe(false);
   });
 
   it("정상 입력은 통과한다", () => {
-    const result = inquirySchema.safeParse({ title: "문의", body: "내용" });
+    const result = inquirySchema.safeParse({
+      category: "general",
+      title: "문의",
+      body: "내용",
+    });
     expect(result.success).toBe(true);
   });
 });
