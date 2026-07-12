@@ -19,6 +19,7 @@ const ACTION_LABEL: Record<string, string> = {
   grant_points: "포인트 부여",
   award_badge: "뱃지 수여",
   publish_notice: "공지 발행",
+  update_recruiting_settings: "모집 설정 변경",
 };
 
 const ROLE_LABEL: Record<string, string> = {
