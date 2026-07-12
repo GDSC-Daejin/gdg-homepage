@@ -36,7 +36,8 @@ interface RecruitingCounts {
   total: number;
   waiting: number;
   pending: number;
-  decided: number;
+  accepted: number;
+  rejected: number;
   frontend: number;
   backend: number;
   designer: number;
@@ -54,7 +55,8 @@ const DEMO_RECRUITING_COUNTS: RecruitingCounts = {
   total: 12,
   waiting: 5,
   pending: 3,
-  decided: 4,
+  accepted: 3,
+  rejected: 1,
   frontend: 4,
   backend: 5,
   designer: 2,
@@ -312,7 +314,8 @@ export default async function AdminDashboardPage() {
         total: apps.length,
         waiting: apps.filter((a) => a.status === "waiting").length,
         pending: apps.filter((a) => a.status === "pending").length,
-        decided: apps.filter((a) => a.status === "accepted" || a.status === "rejected").length,
+        accepted: apps.filter((a) => a.status === "accepted").length,
+        rejected: apps.filter((a) => a.status === "rejected").length,
         frontend: apps.filter((a) => a.position === "frontend").length,
         backend: apps.filter((a) => a.position === "backend").length,
         designer: apps.filter((a) => a.position === "designer").length,

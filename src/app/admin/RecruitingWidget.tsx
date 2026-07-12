@@ -9,7 +9,8 @@ interface RecruitingWidgetCounts {
   total: number;
   waiting: number;
   pending: number;
-  decided: number;
+  accepted: number;
+  rejected: number;
   frontend: number;
   backend: number;
   designer: number;
@@ -62,7 +63,7 @@ export function RecruitingWidget({ season, counts, todayEvents }: RecruitingWidg
           <Badge tone="neutral">{season}</Badge>
           <Badge tone="success">모집 중</Badge>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Link href={`/admin/applications?season=${season}&status=all`} className="transition hover:opacity-80">
             <StatCard label="전체 지원자" value={counts.total} />
           </Link>
@@ -73,7 +74,10 @@ export function RecruitingWidget({ season, counts, todayEvents }: RecruitingWidg
             <StatCard label="심사 중" value={counts.pending} />
           </Link>
           <Link href={`/admin/applications?season=${season}&status=accepted`} className="transition hover:opacity-80">
-            <StatCard label="합격·불합격" value={counts.decided} />
+            <StatCard label="합격" value={counts.accepted} />
+          </Link>
+          <Link href={`/admin/applications?season=${season}&status=rejected`} className="transition hover:opacity-80">
+            <StatCard label="불합격" value={counts.rejected} />
           </Link>
         </div>
         <p className="mt-3 text-xs text-gray-500">
