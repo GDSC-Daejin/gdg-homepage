@@ -1,44 +1,20 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { CURRENT_SEASON } from "@/lib/constants";
-import { PageHeader } from "@/components/PageHeader";
-import { EmptyState } from "@/components/EmptyState";
-import type { Application, ApplicationStatus } from "@/lib/types";
-import { ApplicationCard } from "./ApplicationCard";
-import { SeasonFilter } from "./SeasonFilter";
-import { SearchFilter } from "./SearchFilter";
+import type { Application } from "@/lib/types";
+import { ApplicationsView } from "./ApplicationsView";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_APPLICATION_SEASONS, DEMO_APPLICATIONS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
-const STATUS_TABS: { value: string; label: string }[] = [
-  { value: "all", label: "전체" },
-  { value: "waiting", label: "심사 대기" },
-  { value: "pending", label: "심사 중" },
-  { value: "accepted", label: "합격" },
-  { value: "rejected", label: "불합격" },
-];
-
-const POSITION_TABS: { value: string; label: string }[] = [
-  { value: "all", label: "전체" },
-  { value: "frontend", label: "프론트엔드" },
-  { value: "backend", label: "백엔드" },
-  { value: "designer", label: "디자이너" },
-  { value: "none", label: "미지정" },
-];
-
 export default async function AdminApplicationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ season?: string; status?: string; q?: string; position?: string }>;
+  searchParams: Promise<{ season?: string }>;
 }) {
   await requireAdmin();
   const params = await searchParams;
-  const status = params.status ?? "all";
-  const position = params.position ?? "all";
-  const q = (params.q ?? "").trim().toLowerCase();
   const demo = await isDemoMode();
 
   let seasons: string[] = DEMO_APPLICATION_SEASONS;
@@ -69,174 +45,11 @@ export default async function AdminApplicationsPage({
     seasonApplications = (appData as Application[] | null) ?? [];
   }
 
-  const statusCounts: Record<"all" | ApplicationStatus, number> = {
-    all: seasonApplications.length,
-    waiting: seasonApplications.filter((a) => a.status === "waiting").length,
-    pending: seasonApplications.filter((a) => a.status === "pending").length,
-    accepted: seasonApplications.filter((a) => a.status === "accepted").length,
-    rejected: seasonApplications.filter((a) => a.status === "rejected").length,
-  };
-  const positionCounts: Record<"all" | "frontend" | "backend" | "designer" | "none", number> = {
-    all: seasonApplications.length,
-    frontend: seasonApplications.filter((a) => a.position === "frontend").length,
-    backend: seasonApplications.filter((a) => a.position === "backend").length,
-    designer: seasonApplications.filter((a) => a.position === "designer").length,
-    none: seasonApplications.filter((a) => a.position === null).length,
-  };
-
-  let applications =
-    status === "all"
-      ? seasonApplications
-      : seasonApplications.filter((a) => a.status === status);
-  if (position !== "all") {
-    applications = applications.filter((a) =>
-      position === "none" ? a.position === null : a.position === position,
-    );
-  }
-  if (q) {
-    applications = applications.filter(
-      (a) =>
-        a.applicant_name.toLowerCase().includes(q) ||
-        a.student_no.toLowerCase().includes(q),
-    );
-  }
-
-  const isDecidedView = status === "accepted" || status === "rejected";
-
-  function hrefFor(overrides: { status?: string; position?: string }) {
-    const sp = new URLSearchParams();
-    sp.set("season", season);
-    sp.set("status", overrides.status ?? status);
-    const pos = overrides.position ?? position;
-    if (pos !== "all") sp.set("position", pos);
-    if (params.q) sp.set("q", params.q);
-    return `/admin/applications?${sp.toString()}`;
-  }
-
   return (
-    <div>
-      <PageHeader
-        title="지원서 심사"
-        description={`${season} 리크루팅 · 지원자의 답변을 읽고 합격/불합격을 결정해요`}
-        action={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-500">
-            <svg
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.75}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-3.5 w-3.5"
-            >
-              <circle cx="10" cy="10" r="7.5" />
-              <circle cx="10" cy="10" r="2.5" />
-            </svg>
-            GDG DJU 운영진 · 시즌별 지원서 심사
-          </span>
-        }
-      />
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex gap-2">
-          {STATUS_TABS.map((tab) => {
-            const active = status === tab.value;
-            return (
-              <Link
-                key={tab.value}
-                href={hrefFor({ status: tab.value })}
-                className={
-                  active
-                    ? "inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
-                    : "inline-flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
-                }
-              >
-                {tab.label}
-                <span
-                  className={
-                    active
-                      ? "rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-semibold leading-none"
-                      : "rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold leading-none text-gray-500"
-                  }
-                >
-                  {statusCounts[tab.value as "all" | ApplicationStatus]}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-        <div className="flex items-center gap-3">
-          <SearchFilter season={season} status={status} position={position} q={params.q} />
-          <SeasonFilter
-            seasons={seasons.length ? seasons : [CURRENT_SEASON]}
-            value={season}
-            status={status}
-            position={position}
-            q={params.q}
-          />
-        </div>
-      </div>
-
-      <div className="mb-4 flex flex-wrap gap-2">
-        {POSITION_TABS.map((tab) => {
-          const active = position === tab.value;
-          return (
-            <Link
-              key={tab.value}
-              href={hrefFor({ position: tab.value })}
-              className={
-                active
-                  ? "inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
-                  : "inline-flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
-              }
-            >
-              {tab.label}
-              <span
-                className={
-                  active
-                    ? "rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-semibold leading-none"
-                    : "rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold leading-none text-gray-500"
-                }
-              >
-                {positionCounts[tab.value as "all" | "frontend" | "backend" | "designer" | "none"]}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-
-      {applications.length === 0 ? (
-        <EmptyState
-          title="지원서가 없어요"
-          description="선택한 조건에 해당하는 지원서가 없어요. 다른 상태 탭이나 시즌을 확인해 보세요."
-          icon={
-            <svg
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.75}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6"
-            >
-              <path d="M3.5 6.5 10 3l6.5 3.5v9L10 19l-6.5-3.5v-9Z" />
-              <path d="M3.5 6.5 10 10l6.5-3.5M10 10v9" />
-            </svg>
-          }
-        />
-      ) : (
-        <div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {applications.map((app) => (
-              <ApplicationCard key={app.id} application={app} />
-            ))}
-          </div>
-          {isDecidedView && (
-            <p className="mt-4 text-sm text-gray-500">
-              한 번 심사한 지원서는 다시 심사할 수 없어요
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+    <ApplicationsView
+      applications={seasonApplications}
+      seasons={seasons.length ? seasons : [CURRENT_SEASON]}
+      season={season}
+    />
   );
 }
