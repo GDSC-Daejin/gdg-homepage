@@ -2,6 +2,18 @@
 
 개선 작업 착수 전 현재 상태 브리핑. 코드 변경 없음, 조사만 진행.
 
+> **반영 현황 (업데이트: 2026-07-12 오후)** — 아래 진단은 오전 시점 기준이며, 이후 커밋에서 원인 1~7이 모두 처리됐다. 각 원인 절 상단에 `[반영됨]` 콜아웃으로 현재 상태를 표시한다. 측정 수치는 진단 시점의 기록으로 그대로 보존한다.
+>
+> | 원인 | 반영 | 근거 |
+> |---|---|---|
+> | 1. 미들웨어 부재 | ✅ | `src/proxy.ts` (Next 16 `proxy.ts` 규약, 커밋 `da5473e`). 죽은 루트 `proxy.ts` 사본은 `fce63d6`에서 제거 |
+> | 2. `getProfile()` 중복 호출 | ✅ | `da5473e`에서 `React cache()` 적용 — 요청당 dedupe. (진단 당시 서술은 이 커밋 이전 상태) |
+> | 3. 전면 `force-dynamic` | ➖ | 공개 정적 페이지(about/team/events)엔 이미 미적용. 남은 선언은 전부 `(member)/*`·`admin/*` 인증 개인화 라우트라 동적이 타당 |
+> | 4. 콜백 중복 `getUser()` | ✅ | `da5473e`에서 `exchangeCodeForSession` 반환값 재사용으로 제거 |
+> | 5. Pretendard 2MB 폰트 | ✅ | `globals.css`가 `pretendardvariable-dynamic-subset.css` 사용 |
+> | 6. 로그인/랜딩 전체 클라 컴포넌트 | ✅ | 서버 컴포넌트로 전환, 버튼만 `GoogleLoginButton` 클라 아일랜드로 분리 |
+> | 7. `loading.tsx` 전무 | ✅ | `(member)/loading.tsx`·`admin/loading.tsx` 추가 (커밋 `7093ffd`) |
+
 ## 환경
 
 - Next.js 16.2.10 (App Router, Cache Components 모델 지원 버전)
@@ -32,11 +44,15 @@ TTFB를 dev 서버(`next dev`, Turbopack)에서 정적/동적 페이지 간 비�
 
 ### 1. `middleware.ts` 부재 — 세션 갱신을 매 요청마다 수행
 
+> **[반영됨]** `src/proxy.ts`가 세션 갱신을 담당한다 (Next 16은 `middleware.ts`를 `proxy.ts`로 이름 변경). `src/app` 구조라 `src/proxy.ts`만 유효하며, 루트에 있던 죽은 사본은 제거했다. `server.ts` 주석이 가리키는 "proxy.ts"가 이 파일이다.
+
 `src/lib/supabase/server.ts`의 주석은 "미들웨어가 세션 갱신을 담당하므로 무시"라고 되어 있지만, 실제로 `middleware.ts` 파일이 프로젝트에 **존재하지 않는다**. Supabase `getAll/setAll` 쿠키 훅에서 `setAll` 실패를 조용히 무시하도록 되어 있어 증상이 드러나지 않고 있었을 뿐이다.
 
 미들웨어가 없으면 세션 갱신·쿠키 refresh를 매 요청의 서버 컴포넌트 렌더링 경로에서 떠안게 되어, 매 페이지 요청마다 `auth.getUser()`가 Supabase Auth 서버에 매번 검증 왕복(네트워크 호출)을 한다. (`getUser()`는 로컬 JWT 디코드가 아니라 항상 원격 검증을 수행하는 API — 의도된 보안 동작이지만 미들웨어 없이는 매 페이지에서 반복된다.)
 
 ### 2. 인증 확인 함수가 요청당 중복 호출됨 (N+1)
+
+> **[반영됨]** `getProfile()`이 `React cache()`로 감싸져 요청당 1회로 dedupe된다 ([auth.ts:6](../src/lib/auth.ts)). 레이아웃+페이지가 같은 요청에서 렌더되므로 아래 "왕복 ×2 / ×4"는 현재 발생하지 않는다 — 아래 서술은 `cache()` 적용 이전 기준.
 
 `(member)/layout.tsx`와 그 하위 거의 모든 `page.tsx`(예: [attend/page.tsx](src/app/(member)/attend/page.tsx), [profile/page.tsx](src/app/(member)/profile/page.tsx))가 각각 `getProfile()` / `requireProfile()`을 **따로** 호출한다. `admin/layout.tsx`와 그 하위 페이지들도 동일한 패턴.
 
@@ -49,9 +65,13 @@ TTFB를 dev 서버(`next dev`, Turbopack)에서 정적/동적 페이지 간 비�
 
 ### 3. 전체 라우트가 `force-dynamic` — 정적 렌더링/캐시 전무
 
+> **[부분 해당 — 조치 불필요]** 실제로는 공개 정적 페이지(about/team/events 목록)엔 `force-dynamic`이 걸려있지 않다. 현재 `force-dynamic` 선언이 남은 라우트는 전부 `(member)/*`·`admin/*` 인증 개인화 페이지로, 개인 데이터를 렌더하므로 동적이 타당하다. 아래 "35/41" 수치는 진단 시점 기준.
+
 41개 page/layout 중 **35개**가 `export const dynamic = "force-dynamic"`을 선언. Next.js 16의 Cache Components(`use cache`, `<Suspense>` 기반 부분 사전 렌더링)를 전혀 사용하지 않아, about/team/events처럼 로그인과 무관한 정적 콘텐츠까지 매번 서버에서 처음부터 다시 렌더링한다. `next.config.ts`에도 `cacheComponents: true` 설정이 없다.
 
 ### 4. OAuth 콜백에 불필요한 왕복 추가
+
+> **[반영됨]** `exchangeCodeForSession(code)`의 반환값에서 바로 `user`를 꺼내 쓰도록 바뀌어 중복 `getUser()` 호출이 제거됐다 ([callback/route.ts](../src/app/auth/callback/route.ts)).
 
 [`auth/callback/route.ts`](src/app/auth/callback/route.ts)에서 `exchangeCodeForSession(code)` 직후 곧바로 `auth.getUser()`를 다시 호출한다. `exchangeCodeForSession`이 이미 세션/유저 정보를 반환하므로 이 추가 호출은 로그인 리다이렉트 경로에 왕복 1회를 더 얹는다.
 
@@ -68,6 +88,8 @@ TTFB를 dev 서버(`next dev`, Turbopack)에서 정적/동적 페이지 간 비�
 
 ### 5. Pretendard 가변 폰트 2.06MB를 서브셋 없이 전체 로드
 
+> **[반영됨]** `globals.css`가 `pretendardvariable-dynamic-subset.css`(유니코드 범위별 서브셋)를 import하도록 교체됐다. 초기 로드 폰트 용량이 2MB → 화면에 쓰이는 글자 기준 수십 KB로 줄었다.
+
 [`globals.css:2`](src/app/globals.css:2)에서 `@import "pretendard/dist/web/variable/pretendardvariable.css"`로 로드하는데, 이 CSS가 가리키는 실제 폰트 파일은:
 
 ```
@@ -82,6 +104,8 @@ weight 45~920 전체 축을 담은 서브셋 없는 단일 파일이다. `font-d
 
 ### 6. 첫 진입 페이지(로그인/랜딩)가 통째로 클라이언트 컴포넌트
 
+> **[반영됨]** `login/page.tsx`가 서버 컴포넌트로 전환됐고, 클라이언트가 필요한 Google 로그인 버튼만 `GoogleLoginButton`(42줄 `"use client"` 아일랜드)으로 분리됐다. 나머지 정적 콘텐츠는 서버에서 렌더된다.
+
 [`src/app/login/page.tsx`](src/app/login/page.tsx) 전체(456줄)가 `"use client"`. 실제로 클라이언트가 필요한 지점은 Google 로그인 버튼의 `onClick` 핸들러(`handleGoogleLogin`, 84·422번 줄) 하나뿐이고, 나머지(히어로 카피, 컨페티 장식, 기능 카드, 통계, `next/font/google`로 불러오는 Space Grotesk·Archivo 등)는 전부 정적 콘텐츠다.
 
 게다가 [`src/app/page.tsx`](src/app/page.tsx)는 비로그인 사용자에게 `/login`으로 리다이렉트하는 대신 이 `LoginPage`를 **루트 경로에서 직접 import해 렌더링**한다 — 즉 이 무거운 클라이언트 컴포넌트가 서비스의 첫 진입점(`/`) 자체다. 서버에서 정적 HTML로 그려낼 수 있는 콘텐츠가 전부 클라이언트 JS 번들과 하이드레이션 비용으로 나간다. 버튼 하나만 별도 클라이언트 아일랜드로 분리하면 나머지는 서버 컴포넌트로 되돌릴 수 있는 구조다.
@@ -90,14 +114,18 @@ weight 45~920 전체 축을 담은 서브셋 없는 단일 파일이다. `font-d
 
 ### 7. `loading.tsx` 전무 — 라우트 전환 시 로딩 스켈레톤 없음
 
+> **[반영됨]** `(member)/loading.tsx`·`admin/loading.tsx` 스켈레톤이 추가됐다 (커밋 `7093ffd`).
+
 41개 라우트 전체에 `loading.tsx`가 **0개**. 원인 3(35개 라우트가 `force-dynamic`)과 결합하면, 서버가 인증 확인(원인 1·2, 페이지당 최대 378ms) + 데이터 조회를 마칠 때까지 사용자는 흰 화면만 본다. 백엔드 지연을 못 없애더라도 `loading.tsx`만 추가하면 체감 속도는 즉시 개선된다 — 프론트 단독으로 가능한 수정.
 
-## 다음 단계 (미착수, 승인 대기)
+## 다음 단계 — 처리 결과
 
-1. `middleware.ts` 추가해 세션 갱신을 미들웨어로 이관
-2. `getProfile()`을 React `cache()`로 감싸 요청당 1회로 dedupe, 레이아웃에서 가져온 profile을 페이지로 prop 전달(중복 호출 제거)
-3. 콜백에서 중복 `getUser()` 제거 — `exchangeCodeForSession` 반환값 재사용
-4. 정적/비개인화 콘텐츠(about, team, events 목록 등)에 `force-dynamic` 제거 검토 후 캐시 적용
-5. Pretendard를 `pretendardvariable-dynamic-subset.css` 서브셋 방식으로 교체 (또는 `next/font/local`로 자체 호스팅 + preload)
-6. 로그인/랜딩 페이지에서 버튼만 클라이언트 아일랜드로 분리, 나머지는 서버 컴포넌트로 전환
-7. 라우트별 `loading.tsx` 추가 (최소 루트 레이아웃 그룹 단위부터)
+1. ✅ `proxy.ts`(Next 16)로 세션 갱신 이관 — 커밋 `da5473e`
+2. ✅ `getProfile()` `React cache()` dedupe — `da5473e`. (`cache()`가 요청당 dedupe하므로 별도 prop 전달은 불필요)
+3. ✅ 콜백 중복 `getUser()` 제거 — `da5473e`
+4. ➖ 조치 불필요 — 공개 정적 페이지엔 이미 `force-dynamic` 미적용, 남은 선언은 인증 개인화 라우트로 동적이 타당
+5. ✅ Pretendard `pretendardvariable-dynamic-subset.css` 서브셋 교체
+6. ✅ 로그인/랜딩 서버 컴포넌트화 + `GoogleLoginButton` 클라 아일랜드 분리
+7. ✅ `(member)`·`admin` `loading.tsx` 추가 — `7093ffd`
+
+추가로, Next 16 `proxy.ts` 규약상 무효였던 루트 `proxy.ts` 죽은 사본을 제거했다 (`fce63d6`).
