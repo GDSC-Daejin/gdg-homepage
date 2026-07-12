@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
@@ -8,8 +7,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { MonthFilter } from "@/components/MonthFilter";
 import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
 import type { Event, EventType, Notice } from "@/lib/types";
-
-export const dynamic = "force-dynamic";
 
 const TYPE_LABELS: Record<EventType, string> = {
   session: "정기세션",
@@ -48,13 +45,7 @@ function EventCard({ event, confirmed }: { event: Event; confirmed: number }) {
   );
 }
 
-export default async function MemberHomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
-  await requireProfile();
-  const { month } = await searchParams;
+export async function HomeDashboard({ month }: { month?: string }) {
   const supabase = await createClient();
 
   const { data: latestNotice } = await supabase
