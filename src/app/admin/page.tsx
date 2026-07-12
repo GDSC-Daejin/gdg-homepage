@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
@@ -78,8 +79,13 @@ export default async function AdminDashboardPage() {
   let upcomingEvents = DEMO_DASHBOARD_STATS.upcomingEvents;
   let rows: RecentEventRow[] = DEMO_DASHBOARD_ROWS;
   let joinCounts: number[] = DEMO_DASHBOARD_JOIN_COUNTS;
-  let satisfactionRows: { id: string; title: string; count: number; avg: number }[] =
-    DEMO_DASHBOARD_SATISFACTION;
+  let satisfactionRows: {
+    id: string;
+    surveyId: string | null;
+    title: string;
+    count: number;
+    avg: number;
+  }[] = DEMO_DASHBOARD_SATISFACTION;
   let rankingRows: { rank: number; id: string; name: string; total: number }[] =
     DEMO_DASHBOARD_RANKING;
   let recruitingSettings: RecruitingSettings = DEMO_RECRUITING_SETTINGS;
@@ -259,9 +265,16 @@ export default async function AdminDashboardPage() {
         }
       }
     }
+    const surveyIdByEventId = new Map<string, string>();
+    for (const survey of eventSurveys) {
+      if (survey.event_id && !surveyIdByEventId.has(survey.event_id)) {
+        surveyIdByEventId.set(survey.event_id, survey.id);
+      }
+    }
     satisfactionRows = eventIdsWithSurvey
       .map((id) => ({
         id,
+        surveyId: surveyIdByEventId.get(id) ?? null,
         title: eventTitleById.get(id) ?? "(삭제된 이벤트)",
         count: ratingCountByEvent.get(id) ?? 0,
         avg:
@@ -470,22 +483,37 @@ export default async function AdminDashboardPage() {
             <EmptyState title="설문 응답 데이터가 없어요" />
           ) : (
             <div className="flex flex-col gap-3">
-              {satisfactionRows.map((r) => (
-                <div key={r.id} className="flex items-center gap-3">
-                  <span className="w-24 shrink-0 truncate text-sm text-gray-700">
-                    {r.title}
-                  </span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${(r.avg / 5) * 100}%` }}
-                    />
+              {satisfactionRows.map((r) => {
+                const content = (
+                  <>
+                    <span className="w-24 shrink-0 truncate text-sm text-gray-700">
+                      {r.title}
+                    </span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${(r.avg / 5) * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-16 shrink-0 text-right text-xs text-gray-500">
+                      {r.avg.toFixed(1)}점 ({r.count})
+                    </span>
+                  </>
+                );
+                return r.surveyId ? (
+                  <Link
+                    key={r.id}
+                    href={`/admin/surveys/${r.surveyId}/results`}
+                    className="flex items-center gap-3 rounded-md hover:bg-gray-50"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={r.id} className="flex items-center gap-3">
+                    {content}
                   </div>
-                  <span className="w-16 shrink-0 text-right text-xs text-gray-500">
-                    {r.avg.toFixed(1)}점 ({r.count})
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>

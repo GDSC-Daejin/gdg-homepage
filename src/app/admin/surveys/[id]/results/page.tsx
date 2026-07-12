@@ -108,9 +108,9 @@ export default async function SurveyResultsPage({
         </Link>
         <div className="mt-2 flex items-center gap-2">
           <Badge tone={s.is_open ? "success" : "neutral"}>
-            {s.is_open ? "열림" : "닫힘"}
+            {s.is_open ? "게시됨" : "닫힘"}
           </Badge>
-          <h1 className="text-2xl font-bold text-gray-900">{s.title}</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">{s.title}</h1>
         </div>
         <p className="mt-1 text-sm text-gray-500">
           응답 {list.length}건 · 질문 {s.questions.length}개

@@ -61,9 +61,9 @@ export const DEMO_DASHBOARD_ROWS: {
 export const DEMO_DASHBOARD_JOIN_COUNTS = [1, 2, 1, 3, 2, 4];
 
 export const DEMO_DASHBOARD_SATISFACTION = [
-  { id: "demo-e7", title: "신입 회원 OT", count: 42, avg: 4.6 },
-  { id: "demo-e5", title: "AI 세션", count: 30, avg: 4.3 },
-  { id: "demo-e3", title: "React 19 세션", count: 28, avg: 4.1 },
+  { id: "demo-e7", surveyId: null, title: "신입 회원 OT", count: 42, avg: 4.6 },
+  { id: "demo-e5", surveyId: null, title: "AI 세션", count: 30, avg: 4.3 },
+  { id: "demo-e3", surveyId: null, title: "React 19 세션", count: 28, avg: 4.1 },
 ];
 
 export const DEMO_DASHBOARD_RANKING = [

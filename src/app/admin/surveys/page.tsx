@@ -136,8 +136,13 @@ export default async function AdminSurveysPage() {
           {list.map((survey) => {
             const responseCount = counts[survey.id] ?? 0;
             return (
-              <Card key={survey.id} className="flex items-center justify-between gap-4">
-                <div>
+              <Card key={survey.id} className="relative flex items-center justify-between gap-4">
+                <Link
+                  href={`/admin/surveys/${survey.id}/results`}
+                  className="absolute inset-0 z-0 rounded-xl"
+                  aria-label={survey.title}
+                />
+                <div className="relative z-10 pointer-events-none">
                   <div className="flex items-center gap-2">
                     <Badge
                       tone={survey.is_open ? "success" : "neutral"}
@@ -145,22 +150,19 @@ export default async function AdminSurveysPage() {
                       className="gap-1"
                     >
                       {!survey.is_open && <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />}
-                      {survey.is_open ? "열림" : "닫힘"}
+                      {survey.is_open ? "게시됨" : "닫힘"}
                     </Badge>
-                    <Link
-                      href={`/admin/surveys/${survey.id}/results`}
-                      className="inline-flex items-center gap-1 text-base font-semibold text-gray-900 hover:underline"
-                    >
+                    <span className="inline-flex items-center gap-1 text-base font-semibold text-gray-900">
                       {survey.title}
                       <ExternalLinkIcon />
-                    </Link>
+                    </span>
                   </div>
                   <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
                     <ResponseIcon />
                     응답 {responseCount}건 · {formatKstDate(survey.created_at)}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="relative z-10 flex shrink-0 items-center gap-2">
                   <ToggleSurveyButton surveyId={survey.id} isOpen={survey.is_open} />
                   <DeleteSurveyButton surveyId={survey.id} responseCount={responseCount} />
                 </div>
