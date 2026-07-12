@@ -101,10 +101,10 @@ export function AdminSidebarNav() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium ${
+                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-100 ${
                   active
                     ? "bg-primary-soft text-primary"
-                    : "text-gray-700 hover:bg-gray-100"
+                    : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
                 }`}
               >
                 <Icon d={icons[item.icon]} />

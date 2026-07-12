@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "pretendard/dist/web/variable/pretendardvariable.css";
+@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -20,6 +20,18 @@
     "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   --radius-md: 8px; --radius-lg: 12px; --radius-xl: 16px;
   --shadow-card: 0 1px 3px rgba(22,23,27,0.06), 0 6px 16px rgba(22,23,27,0.05);
+  --shadow-material: 0 4px 24px rgba(22,23,27,0.10), 0 1px 3px rgba(22,23,27,0.06);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  /* response(§4): 값 자체가 settle time. fast=탭/토글, base=모달/드로어, slow=큰 재배치 */
+  --duration-fast: 100ms;
+  --duration-base: 220ms;
+  --duration-slow: 300ms;
+  /* 재질(§12): 반투명 크롬. bg 는 light 기본, .dark 에서 반전 */
+  --material-blur: 20px;
+  --material-bg: rgba(255, 255, 255, 0.72);
+  --material-edge: rgba(255, 255, 255, 0.5);
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: var(--ease-out-quart);
 }
 
 /* ponytail: gray 스케일을 .dark 아래서 반전시켜 gray-* 유틸을 쓰는 모든 화면이 자동으로 다크 대응됨 */
@@ -34,11 +46,124 @@
   --color-warning-soft: rgba(245, 166, 35, 0.16);
   --color-danger-soft: rgba(229, 72, 77, 0.16);
   --shadow-card: 0 1px 3px rgba(0,0,0,0.24), 0 6px 16px rgba(0,0,0,0.2);
+  --shadow-material: 0 4px 24px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3);
+  --material-bg: rgba(22, 23, 27, 0.7);
+  --material-edge: rgba(255, 255, 255, 0.08);
   color-scheme: dark;
+}
+
+/* 필터/탭 전환으로 콘텐츠 높이가 바뀔 때 스크롤바가 생겼다 사라지며 레이아웃이 좌우로 흔들리는 것 방지 */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* 재질(§12): 반투명 크롬. 콘텐츠가 아래로 스크롤되며 비침. 밝은 상단 엣지 = 빛 반사.
+   reduced-transparency / contrast 에선 불투명·보더로 대체(§14) */
+.material {
+  background: var(--material-bg);
+  backdrop-filter: blur(var(--material-blur)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--material-blur)) saturate(180%);
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .material {
+    background: var(--color-gray-50);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* reduced-motion 전역 baseline(§14): 모션 제거하되 opacity 크로스페이드는 컴포넌트가 유지 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 body {
   background: var(--color-gray-50);
   color: var(--color-gray-900);
   font-family: var(--font-sans);
+}
+
+/* 재질 오버레이(§12): 조건부 mount 되는 div 모달용. @starting-style 로 등장만 애니메이션
+   (React unmount 이라 퇴장은 즉시 — 기존 동작과 동일). 백드롭은 blur 로 배경을 뒤로 민다. */
+.material-overlay {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition:
+    background var(--duration-base) var(--ease-out-quart),
+    backdrop-filter var(--duration-base) var(--ease-out-quart);
+}
+@starting-style {
+  .material-overlay {
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+  }
+}
+.material-panel {
+  transition:
+    opacity var(--duration-base) var(--ease-out-quart),
+    scale var(--duration-base) var(--ease-out-quart);
+}
+@starting-style {
+  .material-panel {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+/* apple-design 파일럿(회원 탭): 네이티브 <dialog> 를 재질처럼 등장/퇴장시킴.
+   CSS scale 프로퍼티를 써서 Tailwind 의 translate 중앙정렬(transform)과 독립적으로 확대/축소.
+   response ~0.22s, 오버슈트 없음(critically damped) — 모달은 모멘텀 인터랙션이 아님(§4). */
+.member-modal {
+  display: flex;
+  /* max-height + 넘치는 flex 컨텐츠가 있으면 dialog computed overflow 가 auto 로 잡혀
+     portal 된 fixed 드롭다운(Select)이 잘리고 스크롤바가 생긴다. visible 로 덮어써
+     메뉴가 모달 밖으로 자유롭게 넘치게 한다. 안쪽 그리드는 자체 overflow-y-auto 유지. */
+  overflow: visible;
+  opacity: 0;
+  scale: 0.96;
+  transition:
+    opacity 0.22s var(--ease-out-quart),
+    scale 0.22s var(--ease-out-quart),
+    display 0.22s var(--ease-out-quart) allow-discrete,
+    overlay 0.22s var(--ease-out-quart) allow-discrete;
+}
+.member-modal:not([open]) {
+  display: none;
+}
+.member-modal[open] {
+  opacity: 1;
+  scale: 1;
+}
+@starting-style {
+  .member-modal[open] {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+.member-modal::backdrop {
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  transition:
+    background 0.22s var(--ease-out-quart),
+    backdrop-filter 0.22s var(--ease-out-quart),
+    display 0.22s var(--ease-out-quart) allow-discrete,
+    overlay 0.22s var(--ease-out-quart) allow-discrete;
+}
+.member-modal[open]::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+@starting-style {
+  .member-modal[open]::backdrop {
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+  }
 }

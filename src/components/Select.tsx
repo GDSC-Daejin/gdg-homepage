@@ -7,8 +7,10 @@ import {
   useId,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/cn";
 import { useDismiss } from "@/lib/useDismiss";
 
@@ -52,6 +54,16 @@ function readOptions(children: ReactNode): Opt[] {
   return opts;
 }
 
+function createsContainingBlock(el: HTMLElement): boolean {
+  const s = getComputedStyle(el);
+  return (
+    s.transform !== "none" ||
+    s.translate !== "none" ||
+    s.scale !== "none" ||
+    s.rotate !== "none"
+  );
+}
+
 export function Select({
   label,
   error,
@@ -75,6 +87,65 @@ export function Select({
 
   const { ref, open, setOpen } = useDismiss<HTMLDivElement>();
   const hiddenRef = useRef<HTMLInputElement>(null);
+
+  // overflow 컨테이너(모달 스크롤 영역 등) 안에서 드롭다운을 아래로 펼치면
+  // 그 컨테이너의 스크롤 영역이 늘어나 스크롤바가 생기고 레이아웃이 흔들린다.
+  // → 클릭 시 위치를 재서 fixed 로 컨테이너를 탈출시키고, top-layer <dialog> 가
+  //   있으면 그 안으로 portal 해 모달 위에 그려지게 한다(모달 밖으로 넘쳐도 OK).
+  const [portal, setPortal] = useState<{
+    target: HTMLElement;
+    style: CSSProperties;
+  } | null>(null);
+
+  function openMenu() {
+    const trigger = ref.current;
+    if (!trigger) {
+      setOpen(true);
+      return;
+    }
+    let dialog: HTMLElement | null = null;
+    let clipped = false;
+    for (let n = trigger.parentElement; n; n = n.parentElement) {
+      if (n.tagName === "DIALOG") {
+        dialog = n;
+        break;
+      }
+      const oy = getComputedStyle(n).overflowY;
+      if (oy === "auto" || oy === "scroll" || oy === "hidden") clipped = true;
+    }
+    if (dialog || clipped) {
+      const r = trigger.getBoundingClientRect();
+      let top = r.bottom + 4;
+      let left = r.left;
+      // transform/translate/scale/rotate 된 dialog 는 fixed 자식의 containing block 이
+      // 되므로 dialog 기준으로 보정. (Tailwind v4 는 translate/scale 을 개별 CSS 속성으로
+      // 컴파일해 getComputedStyle().transform 엔 안 잡히지만 containing block 은 만든다.)
+      if (dialog && createsContainingBlock(dialog)) {
+        const d = dialog.getBoundingClientRect();
+        top = r.bottom - d.top + 4;
+        left = r.left - d.left;
+      }
+      setPortal({
+        target: dialog ?? document.body,
+        style: { position: "fixed", top, left, width: r.width },
+      });
+    } else {
+      setPortal(null);
+    }
+    setOpen(true);
+  }
+
+  // 스크롤/리사이즈 시 portal 위치가 어긋나므로 닫는다.
+  useEffect(() => {
+    if (!open || !portal) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open, portal, setOpen]);
 
   // 네이티브 form.reset() 에 반응 (uncontrolled)
   useEffect(() => {
@@ -121,7 +192,7 @@ export function Select({
           id={selectId}
           type="button"
           disabled={disabled}
-          onClick={() => setOpen((o) => !o)}
+          onClick={() => (open ? setOpen(false) : openMenu())}
           aria-haspopup="listbox"
           aria-expanded={open}
           className={cn(
@@ -147,12 +218,9 @@ export function Select({
             <path d="M6 8l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        {open && (
-          <ul
-            role="listbox"
-            className="absolute z-50 mt-1 max-h-60 w-full min-w-max overflow-auto rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-1 shadow-card"
-          >
-            {options
+        {open &&
+          (() => {
+            const items = options
               .filter((o) => !(o.value === "" && o.disabled))
               .map((opt) => {
                 const active = opt.value === current;
@@ -190,9 +258,32 @@ export function Select({
                     )}
                   </li>
                 );
-              })}
-          </ul>
-        )}
+              });
+
+            // portal: 스크롤 컨테이너를 탈출한 fixed 메뉴 (모달 등)
+            if (portal) {
+              return createPortal(
+                <ul
+                  role="listbox"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  style={portal.style}
+                  className="z-50 max-h-60 min-w-max overflow-auto rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-1 shadow-card"
+                >
+                  {items}
+                </ul>,
+                portal.target,
+              );
+            }
+            // 일반: 인라인 absolute 메뉴
+            return (
+              <ul
+                role="listbox"
+                className="absolute top-full z-50 mt-1 max-h-60 w-full min-w-max overflow-auto rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-1 shadow-card"
+              >
+                {items}
+              </ul>
+            );
+          })()}
       </div>
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>
