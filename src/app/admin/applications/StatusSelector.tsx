@@ -21,11 +21,13 @@ export function StatusSelector({
 }) {
   const [current, setCurrent] = useState(status);
   const [error, setError] = useState<string>();
+  const [warning, setWarning] = useState<string>();
   const [pending, startTransition] = useTransition();
 
   function change(next: ApplicationStatus) {
     if (next === current || pending) return;
     setError(undefined);
+    setWarning(undefined);
     const prev = current;
     setCurrent(next);
     startTransition(async () => {
@@ -33,6 +35,8 @@ export function StatusSelector({
       if (result?.error) {
         setCurrent(prev);
         setError(result.error);
+      } else if (result?.warning) {
+        setWarning(result.warning);
       }
     });
   }
@@ -58,6 +62,7 @@ export function StatusSelector({
         ))}
       </div>
       {error && <p className="text-xs text-danger">{error}</p>}
+      {warning && <p className="text-xs text-warning">{warning}</p>}
     </div>
   );
 }

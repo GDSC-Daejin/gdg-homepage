@@ -82,7 +82,7 @@ export async function setApplicationStatus(
   revalidatePath("/admin/applications");
   revalidatePath(`/admin/applications/${id}`);
 
-  let emailError: string | undefined;
+  let emailWarning: string | undefined;
   if (status === "accepted" || status === "rejected") {
     const { data: application } = await supabase
       .from("applications")
@@ -106,12 +106,12 @@ export async function setApplicationStatus(
       }
 
       if (!result.sent && !result.skipped) {
-        emailError = "상태는 변경됐지만 결과 이메일 발송에 실패했어요";
+        emailWarning = "상태는 변경됐지만 결과 이메일 발송에 실패했어요";
       }
     }
   }
 
-  if (emailError) return { error: emailError };
+  if (emailWarning) return { warning: emailWarning };
   return {};
 }
 

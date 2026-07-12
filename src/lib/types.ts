@@ -78,7 +78,7 @@ export interface Attendance {
   checked_at: string;
 }
 
-export type ActionResult = { error?: string };
+export type ActionResult = { error?: string; warning?: string };
 
 export interface Notice {
   id: string;
