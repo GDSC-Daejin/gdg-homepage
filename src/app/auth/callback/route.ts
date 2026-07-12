@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("name, role")
+          .select("student_no, role")
           .eq("id", user.id)
           .single();
 
-        if (profile && profile.name !== "") {
+        if (profile && profile.student_no !== "") {
           return NextResponse.redirect(
             ADMIN_ROLES.includes(profile.role as Role)
               ? `${origin}/admin`

@@ -15,7 +15,7 @@ export default async function RootPage({
 }) {
   const profile = await getProfile();
   if (!profile) return <LoginPage />;
-  if (profile.name === "") redirect("/onboarding");
+  if (profile.student_no === "") redirect("/onboarding");
   const { month } = await searchParams;
 
   return (

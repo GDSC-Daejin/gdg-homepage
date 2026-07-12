@@ -35,7 +35,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 
   revalidatePath("/", "layout");
 
-  if (profile.name === "") redirect("/");
+  if (profile.student_no === "") redirect("/");
   return {};
 }
 

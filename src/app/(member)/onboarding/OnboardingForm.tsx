@@ -8,7 +8,7 @@ import { Button } from "@/components/Button";
 
 const INTEREST_OPTIONS = ["Android", "Web", "iOS", "ML", "Cloud", "Design"];
 
-export function OnboardingForm() {
+export function OnboardingForm({ defaultName }: { defaultName?: string }) {
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
@@ -22,7 +22,7 @@ export function OnboardingForm() {
 
   return (
     <form action={handleSubmit} className="flex flex-col gap-4">
-      <Input name="name" label="이름" required />
+      <Input name="name" label="이름" defaultValue={defaultName} required />
       <Input name="student_no" label="학번" required />
       <Input name="major" label="전공" required />
       <Input name="phone" label="전화번호" type="tel" required />
