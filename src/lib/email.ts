@@ -3,10 +3,20 @@ function buildSubject(season: string): string {
   return `[GDG DJU] ${season} 리크루팅 결과 안내`;
 }
 
+function escapeHtml(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function buildHtml(name: string, accepted: boolean): string {
+  const safeName = escapeHtml(name);
   const body = accepted
-    ? `<p>${name}님, GDG DJU 리크루팅에 합격하셨어요! 축하드려요.</p><p>오리엔테이션 등 추후 안내는 별도로 연락드릴게요.</p>`
-    : `<p>${name}님, GDG DJU 리크루팅에 지원해주셔서 감사해요.</p><p>아쉽게도 이번에는 함께하지 못하게 됐어요. 다음 시즌에도 재지원을 환영해요.</p>`;
+    ? `<p>${safeName}님, GDG DJU 리크루팅에 합격하셨어요! 축하드려요.</p><p>오리엔테이션 등 추후 안내는 별도로 연락드릴게요.</p>`
+    : `<p>${safeName}님, GDG DJU 리크루팅에 지원해주셔서 감사해요.</p><p>아쉽게도 이번에는 함께하지 못하게 됐어요. 다음 시즌에도 재지원을 환영해요.</p>`;
 
   return `<div style="font-family: sans-serif; line-height: 1.6;">${body}</div>`;
 }

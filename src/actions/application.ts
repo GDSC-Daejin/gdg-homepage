@@ -105,7 +105,7 @@ export async function setApplicationStatus(
         });
       }
 
-      if (!result.sent) {
+      if (!result.sent && !result.skipped) {
         emailError = "상태는 변경됐지만 결과 이메일 발송에 실패했어요";
       }
     }
