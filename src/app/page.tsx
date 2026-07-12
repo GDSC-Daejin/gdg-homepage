@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
 import { MemberShell } from "./(member)/MemberShell";
 import { HomeDashboard } from "./(member)/HomeDashboard";
-import { Landing } from "./Landing";
+import LoginPage from "./login/page";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +14,7 @@ export default async function RootPage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const profile = await getProfile();
-  if (!profile) return <Landing />;
+  if (!profile) return <LoginPage />;
   if (profile.name === "") redirect("/onboarding");
   const { month } = await searchParams;
 
