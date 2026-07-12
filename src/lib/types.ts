@@ -219,6 +219,29 @@ export interface AuditLog {
   created_at: string;
 }
 
+export type BoardType = "free" | "qna";
+
+export interface Post {
+  id: string;
+  board: BoardType;
+  author_id: string;
+  title: string;
+  body: string;
+  event_id: string | null;
+  accepted_comment_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Comment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Material {
   id: string;
   title: string;

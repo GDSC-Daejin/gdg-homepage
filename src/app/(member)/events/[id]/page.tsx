@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
@@ -5,9 +6,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
-import { formatKstRange } from "@/lib/format";
+import { formatKst, formatKstRange } from "@/lib/format";
 import { EventLocation } from "@/components/EventLocation";
-import type { Event, EventType } from "@/lib/types";
+import type { BoardType, Event, EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,16 @@ export default async function MemberEventDetailPage({
   });
   const confirmed = Number(countRows?.[0]?.confirmed ?? 0);
 
+  const { data: postRows } = await supabase
+    .from("posts")
+    .select("id, board, title, created_at")
+    .eq("event_id", e.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  const relatedPosts = (postRows as
+    | { id: string; board: BoardType; title: string; created_at: string }[]
+    | null) ?? [];
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={e.title} />
@@ -74,6 +85,23 @@ export default async function MemberEventDetailPage({
         </p>
       </Card>
       <RegistrationPanel eventId={e.id} profile={profile} code={code} />
+      {relatedPosts.length > 0 && (
+        <Card className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-gray-900">이 이벤트 관련 글</p>
+          {relatedPosts.map((post) => (
+            <Link
+              key={post.id}
+              href={`${post.board === "qna" ? "/qna" : "/board"}/${post.id}`}
+              className="flex items-center justify-between gap-4 text-sm hover:text-primary"
+            >
+              <span className="truncate text-gray-700">{post.title}</span>
+              <span className="shrink-0 text-xs text-gray-500">
+                {formatKst(post.created_at)}
+              </span>
+            </Link>
+          ))}
+        </Card>
+      )}
     </div>
   );
 }

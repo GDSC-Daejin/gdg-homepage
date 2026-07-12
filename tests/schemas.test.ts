@@ -8,6 +8,8 @@ import {
   surveySchema,
   surveyResponseSchema,
   inquirySchema,
+  postSchema,
+  commentSchema,
   pointGrantSchema,
   budgetSchema,
   recruitingSettingsSchema,
@@ -274,5 +276,44 @@ describe("eventSchema", () => {
 
   it("ends_at이 null이면 통과한다", () => {
     expect(eventSchema.safeParse({ ...base, ends_at: null }).success).toBe(true);
+  });
+});
+
+describe("postSchema", () => {
+  it("free/qna 외 board는 reject한다", () => {
+    const result = postSchema.safeParse({
+      board: "notice",
+      title: "제목",
+      body: "내용",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("event_id 없이 통과한다", () => {
+    const result = postSchema.safeParse({
+      board: "free",
+      title: "제목",
+      body: "내용",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("빈 제목은 reject한다", () => {
+    const result = postSchema.safeParse({
+      board: "qna",
+      title: "",
+      body: "내용",
+    });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("commentSchema", () => {
+  it("빈 내용은 reject한다", () => {
+    expect(commentSchema.safeParse({ body: "" }).success).toBe(false);
+  });
+
+  it("내용이 있으면 통과한다", () => {
+    expect(commentSchema.safeParse({ body: "댓글" }).success).toBe(true);
   });
 });

@@ -82,6 +82,17 @@ export const surveyResponseSchema = z.object({
   answers: z.record(z.string(), z.union([z.number(), z.string()])),
 });
 
+export const postSchema = z.object({
+  board: z.enum(["free", "qna"]),
+  title: z.string().min(1, "제목을 입력해주세요"),
+  body: z.string().min(1, "내용을 입력해주세요"),
+  event_id: z.string().nullable().optional(),
+});
+
+export const commentSchema = z.object({
+  body: z.string().min(1, "내용을 입력해주세요"),
+});
+
 export const inquirySchema = z.object({
   category: z.enum(["general", "suggestion", "bug", "activity", "etc"]),
   title: z.string().min(1, "제목을 입력해주세요"),
