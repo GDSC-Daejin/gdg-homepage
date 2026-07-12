@@ -10,6 +10,7 @@ import {
   inquirySchema,
   pointGrantSchema,
   budgetSchema,
+  recruitingSettingsSchema,
 } from "@/lib/schemas";
 
 describe("profileSchema", () => {
@@ -72,6 +73,7 @@ describe("applicationSchema", () => {
     email: "hong@dju.ac.kr",
     season: "2026-2",
     answers: { intro: "a", motivation: "b", interest: "c" },
+    position: "frontend",
   };
 
   it("정상 입력은 통과한다", () => {
@@ -88,6 +90,37 @@ describe("applicationSchema", () => {
     expect(
       applicationSchema.safeParse({ ...valid, applicant_name: "" }).success,
     ).toBe(false);
+  });
+
+  it("지원 파트가 없으면 reject한다", () => {
+    const { position: _position, ...withoutPosition } = valid;
+    expect(applicationSchema.safeParse(withoutPosition).success).toBe(false);
+  });
+
+  it("지원 파트가 잘못된 값이면 reject한다", () => {
+    expect(
+      applicationSchema.safeParse({ ...valid, position: "planning" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("recruitingSettingsSchema", () => {
+  it("모집 파트가 0개면 reject한다", () => {
+    const result = recruitingSettingsSchema.safeParse({
+      season: "2026-2",
+      is_open: true,
+      open_positions: [],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("정상 입력은 통과한다", () => {
+    const result = recruitingSettingsSchema.safeParse({
+      season: "2026-2",
+      is_open: true,
+      open_positions: ["frontend", "backend"],
+    });
+    expect(result.success).toBe(true);
   });
 });
 

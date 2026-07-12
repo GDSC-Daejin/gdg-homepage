@@ -38,6 +38,14 @@ export interface Application {
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+  position: Position | null;
+  review_note: string;
+}
+
+export interface RecruitingSettings {
+  season: string;
+  is_open: boolean;
+  open_positions: Position[];
 }
 
 export interface Event {

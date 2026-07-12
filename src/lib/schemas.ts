@@ -36,6 +36,17 @@ export const applicationSchema = z.object({
   email: z.email("이메일 형식이 올바르지 않아요"),
   season: z.string().min(1),
   answers: z.record(z.string(), z.string()),
+  position: z.enum(["frontend", "backend", "designer"], {
+    message: "지원 파트를 선택해주세요",
+  }),
+});
+
+export const recruitingSettingsSchema = z.object({
+  season: z.string().min(1, "시즌명을 입력해주세요"),
+  is_open: z.boolean(),
+  open_positions: z
+    .array(z.enum(["frontend", "backend", "designer"]))
+    .min(1, "모집 파트를 1개 이상 선택해주세요"),
 });
 
 export const attendCodeSchema = z
