@@ -1,8 +1,6 @@
-"use client";
-
 import Link from "next/link";
 import { Space_Grotesk, Archivo } from "next/font/google";
-import { createClient } from "@/lib/supabase/client";
+import { GoogleLoginButton } from "./GoogleLoginButton";
 import "./login.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -38,7 +36,6 @@ const NAV_ITEMS = [
 ];
 
 const COPY_LINES = ["대진대학교 구글 개발자 커뮤니티", "함께 배우고 만들고 성장하는 학생 개발자 커뮤니티에 합류하세요."];
-const CTA = "Google로 로그인하기";
 
 const LEDE = "구글 기술로 아이디어를 제품으로 만드는 대진대학교 학생 개발자 커뮤니티.";
 
@@ -80,16 +77,6 @@ const TESTIMONIAL = {
 };
 
 export default function LoginPage() {
-  async function handleGoogleLogin() {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
-  }
-
   return (
     <div
       className={`${spaceGrotesk.className} login-stage`}
@@ -224,13 +211,12 @@ export default function LoginPage() {
       <div className="login-left">
         <div className="login-hero">
           <div
-            className="login-g-r"
+            className="login-g-r login-eyebrow"
             style={{
               animationDelay: ".2s",
               display: "inline-flex",
               alignItems: "center",
               gap: 9,
-              marginBottom: 22,
               padding: "7px 14px",
               border: "1px solid rgba(255,255,255,.14)",
               borderRadius: 999,
@@ -296,6 +282,21 @@ export default function LoginPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* stats: kept inside login-left so desktop can bottom-anchor without overlapping the list above */}
+        <div className="login-bottom-left">
+          <div className="login-g-r login-stats" style={{ animationDelay: ".5s" }}>
+            {STATS.map((s) => (
+              <div key={s.label}>
+                <div className="login-stat-value">
+                  {s.value}
+                  {s.suffix && <span>{s.suffix}</span>}
+                </div>
+                <div className="login-stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -396,22 +397,6 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* bottom-left: stats + lang toggle */}
-      <div className="login-bottom-left">
-        <div className="login-g-r login-stats" style={{ animationDelay: ".5s" }}>
-          {STATS.map((s) => (
-            <div key={s.label}>
-              <div className="login-stat-value">
-                {s.value}
-                {s.suffix && <span>{s.suffix}</span>}
-              </div>
-              <div className="login-stat-label">{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-      </div>
-
       {/* copy */}
       <p className="login-g-r login-copy" style={{ animationDelay: ".55s", fontFamily: "var(--font-sans)" }}>
         {COPY_LINES[0]}
@@ -420,34 +405,7 @@ export default function LoginPage() {
       </p>
 
       {/* CTA */}
-      <button
-        onClick={handleGoogleLogin}
-        className={`login-g-r login-btnG login-cta ${archivo.className}`}
-        style={{ animationDelay: ".6s" }}
-      >
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 38,
-            height: 38,
-            borderRadius: "50%",
-            background: "#fff",
-            flex: "none",
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
-            <path fill="#4285F4" d="M45.12 24.5c0-1.56-.14-3.06-.4-4.5H24v8.51h11.84c-.51 2.75-2.06 5.08-4.39 6.64v5.52h7.11c4.16-3.83 6.56-9.47 6.56-16.17z" />
-            <path fill="#34A853" d="M24 46c5.94 0 10.92-1.97 14.56-5.33l-7.11-5.52c-1.97 1.32-4.49 2.1-7.45 2.1-5.73 0-10.58-3.87-12.31-9.07H4.34v5.7C7.96 41.07 15.4 46 24 46z" />
-            <path fill="#FBBC05" d="M11.69 28.18c-.44-1.32-.69-2.73-.69-4.18s.25-2.86.69-4.18v-5.7H4.34C2.85 17.09 2 20.45 2 24s.85 6.91 2.34 9.88l7.35-5.7z" />
-            <path fill="#EA4335" d="M24 10.75c3.23 0 6.13 1.11 8.41 3.29l6.31-6.31C34.91 4.18 29.93 2 24 2 15.4 2 7.96 6.93 4.34 14.12l7.35 5.7c1.73-5.2 6.58-9.07 12.31-9.07z" />
-          </svg>
-        </span>
-        <span style={{ flex: 1, textAlign: "left", fontWeight: 800, fontSize: "clamp(17px,2vw,24px)", letterSpacing: "-.01em", color: "#fff" }}>
-          {CTA}
-        </span>
-      </button>
+      <GoogleLoginButton className={`login-g-r login-btnG login-cta ${archivo.className}`} />
 
       {/* footnote */}
       <div className="login-g-f login-footnote" style={{ animationDelay: ".8s" }}>

@@ -30,6 +30,9 @@
   flex-direction: column;
   align-items: flex-start;
 }
+.login-eyebrow {
+  margin-bottom: 22px;
+}
 .login-lede {
   margin: 0;
   max-width: 46ch;
@@ -362,15 +365,14 @@
   .login-left {
     position: absolute;
     top: clamp(90px, 13vh, 124px);
+    bottom: clamp(40px, 7vh, 60px);
     left: clamp(24px, 4vw, 56px);
     width: clamp(340px, 36vw, 520px);
     gap: 26px;
     padding: 0;
   }
   .login-bottom-left {
-    position: absolute;
-    bottom: clamp(40px, 7vh, 60px);
-    left: clamp(24px, 4vw, 56px);
+    margin-top: auto;
     gap: 22px;
     padding: 0;
   }
@@ -512,6 +514,21 @@
   }
 }
 
+/* short desktop viewports: compress left-column vertical rhythm so the stats stay inside the stage */
+@media (min-width: 1024px) and (max-height: 780px) {
+  .login-left {
+    top: 88px;
+    bottom: 32px;
+    gap: 12px;
+  }
+  .login-eyebrow {
+    margin-bottom: 10px;
+  }
+  .login-features {
+    gap: 8px;
+  }
+}
+
 .login-g-r {
   opacity: 0;
   animation: loginGRise 0.85s cubic-bezier(0.2, 0.75, 0.2, 1) forwards;
@@ -576,4 +593,15 @@
 .login-langpill {
   transition: background 0.16s ease, color 0.16s ease;
   cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-orb > div,
+  .login-g-f:not(.login-nav):not(.login-footnote):not(.login-orb) {
+    animation: none !important;
+  }
+  .login-g-r,
+  .login-g-f {
+    animation: loginGFade 0.2s ease forwards;
+  }
 }
