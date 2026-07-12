@@ -4,8 +4,10 @@ import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
-import type { EventType, Survey } from "@/lib/types";
+import type { EventType, Survey, RecruitingSettings, ApplicationStatus, Position } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
+import { getRecruitingSettings } from "@/lib/recruiting";
+import { RecruitingWidget } from "./RecruitingWidget";
 import {
   DEMO_DASHBOARD_STATS,
   DEMO_DASHBOARD_ROWS,
@@ -30,6 +32,39 @@ interface RecentEventRow {
   rate: number | null;
 }
 
+interface RecruitingCounts {
+  total: number;
+  waiting: number;
+  pending: number;
+  decided: number;
+  frontend: number;
+  backend: number;
+  designer: number;
+  unassigned: number;
+}
+
+// demo(둘러보기) 모드 전용 인라인 상수 — demoData.ts는 수정하지 않는다
+const DEMO_RECRUITING_SETTINGS: RecruitingSettings = {
+  season: "2026-2",
+  is_open: true,
+  open_positions: ["frontend", "backend", "designer"],
+};
+
+const DEMO_RECRUITING_COUNTS: RecruitingCounts = {
+  total: 12,
+  waiting: 5,
+  pending: 3,
+  decided: 4,
+  frontend: 4,
+  backend: 5,
+  designer: 2,
+  unassigned: 1,
+};
+
+const DEMO_RECRUITING_TODAY_EVENTS: { id: string; title: string; starts_at: string }[] = [
+  { id: "demo-re1", title: "리크루팅 설명회", starts_at: "2026-01-01T09:00:00.000Z" },
+];
+
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
@@ -44,6 +79,10 @@ export default async function AdminDashboardPage() {
     DEMO_DASHBOARD_SATISFACTION;
   let rankingRows: { rank: number; id: string; name: string; total: number }[] =
     DEMO_DASHBOARD_RANKING;
+  let recruitingSettings: RecruitingSettings = DEMO_RECRUITING_SETTINGS;
+  let recruitingCounts: RecruitingCounts = DEMO_RECRUITING_COUNTS;
+  let recruitingTodayEvents: { id: string; title: string; starts_at: string }[] =
+    DEMO_RECRUITING_TODAY_EVENTS;
 
   if (!demo) {
     const supabase = await createClient();
@@ -258,6 +297,47 @@ export default async function AdminDashboardPage() {
       name: topNameById.get(id) ?? "(탈퇴)",
       total,
     }));
+
+    // 리크루팅 위젯
+    recruitingSettings = await getRecruitingSettings();
+    if (recruitingSettings.is_open) {
+      const { data: applicationRows } = await supabase
+        .from("applications")
+        .select("status, position")
+        .eq("season", recruitingSettings.season);
+      const apps =
+        (applicationRows as { status: ApplicationStatus; position: Position | null }[] | null) ??
+        [];
+      recruitingCounts = {
+        total: apps.length,
+        waiting: apps.filter((a) => a.status === "waiting").length,
+        pending: apps.filter((a) => a.status === "pending").length,
+        decided: apps.filter((a) => a.status === "accepted" || a.status === "rejected").length,
+        frontend: apps.filter((a) => a.position === "frontend").length,
+        backend: apps.filter((a) => a.position === "backend").length,
+        designer: apps.filter((a) => a.position === "designer").length,
+        unassigned: apps.filter((a) => a.position === null).length,
+      };
+
+      // 오늘(KST) 00:00~24:00 사이 시작하는 이벤트
+      const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+      const todayStartUtc = new Date(
+        Date.UTC(
+          kstNow.getUTCFullYear(),
+          kstNow.getUTCMonth(),
+          kstNow.getUTCDate(),
+        ) -
+          9 * 60 * 60 * 1000,
+      );
+      const todayEndUtc = new Date(todayStartUtc.getTime() + 24 * 60 * 60 * 1000);
+      const { data: todayEventRows } = await supabase
+        .from("events")
+        .select("id, title, starts_at")
+        .gte("starts_at", todayStartUtc.toISOString())
+        .lt("starts_at", todayEndUtc.toISOString());
+      recruitingTodayEvents =
+        (todayEventRows as { id: string; title: string; starts_at: string }[] | null) ?? [];
+    }
   }
 
   const ratedRows = rows.filter((r) => r.rate !== null);
@@ -281,6 +361,14 @@ export default async function AdminDashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="대시보드" description="동아리 현황을 한눈에 확인해요" />
+
+      {recruitingSettings.is_open && (
+        <RecruitingWidget
+          season={recruitingSettings.season}
+          counts={recruitingCounts}
+          todayEvents={recruitingTodayEvents}
+        />
+      )}
 
       <div className="grid grid-cols-4 gap-4">
         <StatCard label="전체 회원 수" value={totalMembers ?? 0} />
