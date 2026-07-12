@@ -82,8 +82,8 @@ export function DeleteNoticeButton({
         <p className="rounded-md bg-danger-soft px-2 py-1 text-xs text-danger">{error}</p>
       )}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div ref={ref} className="w-full max-w-sm rounded-xl bg-white p-6 shadow-card">
+        <div className="material-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div ref={ref} className="material-panel w-full max-w-sm rounded-xl bg-white p-6 shadow-card">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
               <TrashIcon className="h-6 w-6 text-danger" />
             </div>

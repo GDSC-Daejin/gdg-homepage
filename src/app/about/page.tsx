@@ -26,7 +26,7 @@ export default function AboutPage() {
     <div className="min-h-dvh bg-[#060608] text-white">
       <PublicHeader />
       <div className="mx-auto max-w-2xl px-6 py-16">
-        <h1 className="text-4xl font-extrabold">ABOUT</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight">ABOUT</h1>
         <p className="mt-4 text-white/70 leading-relaxed">
           GDG on Campus DJU는 대진대학교 학생 개발자들이 구글 기술을 함께 배우고,
           실제 서비스를 만들어보고, 서로의 성장을 돕는 커뮤니티입니다. 매주 스터디와

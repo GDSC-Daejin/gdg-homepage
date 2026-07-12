@@ -14,7 +14,7 @@ export default function ProjectsPage() {
         <Link href="/login" className="text-sm text-white/50 hover:text-white">
           ← 로그인으로 돌아가기
         </Link>
-        <h1 className="mt-6 text-4xl font-extrabold">PROJECTS</h1>
+        <h1 className="mt-6 text-4xl font-extrabold tracking-tight">PROJECTS</h1>
         <p className="mt-4 text-white/70">멤버들이 진행 중인 프로젝트입니다.</p>
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
           {PROJECTS.map((p) => (

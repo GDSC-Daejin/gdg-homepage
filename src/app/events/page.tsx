@@ -14,7 +14,7 @@ export default function EventsPage() {
         <Link href="/login" className="text-sm text-white/50 hover:text-white">
           ← 로그인으로 돌아가기
         </Link>
-        <h1 className="mt-6 text-4xl font-extrabold">EVENTS</h1>
+        <h1 className="mt-6 text-4xl font-extrabold tracking-tight">EVENTS</h1>
         <p className="mt-4 text-white/70">다가오는 모임과 행사 일정입니다.</p>
         <ul className="mt-10 space-y-6">
           {EVENTS.map((e) => (

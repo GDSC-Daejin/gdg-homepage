@@ -83,8 +83,8 @@ function BadgeCard({
       )}
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div ref={ref} className="w-full max-w-sm rounded-xl bg-white p-6 text-left shadow-card">
+        <div className="material-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div ref={ref} className="material-panel w-full max-w-sm rounded-xl bg-white p-6 text-left shadow-card">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
               <svg
                 viewBox="0 0 20 20"

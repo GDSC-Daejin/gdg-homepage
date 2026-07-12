@@ -14,6 +14,7 @@ import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { formatKstDate } from "@/lib/format";
+import { cn } from "@/lib/cn";
 import {
   POSITION_LABELS,
   type Profile,
@@ -62,7 +63,15 @@ export function MemberRow({
   const [position, setPosition] = useState<Position | "">(member.position ?? "");
   const [status, setStatus] = useState(member.status);
   const [error, setError] = useState<string>();
+  const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function flashSaved() {
+    setSaved(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSaved(false), 1600);
+  }
 
   const [name, setName] = useState(member.name);
   const [studentNo, setStudentNo] = useState(member.student_no);
@@ -97,12 +106,13 @@ export function MemberRow({
     const next = e.target.value as Role;
     setRole(next);
     setError(undefined);
+    setSaved(false);
     startTransition(async () => {
       const result = await setMemberRole(member.id, next);
       if (result?.error) {
         setError(result.error);
         setRole(member.role);
-      }
+      } else flashSaved();
     });
   }
 
@@ -110,12 +120,13 @@ export function MemberRow({
     const next = e.target.value as Position;
     setPosition(next);
     setError(undefined);
+    setSaved(false);
     startTransition(async () => {
       const result = await setMemberPosition(member.id, next);
       if (result?.error) {
         setError(result.error);
         setPosition(member.position ?? "");
-      }
+      } else flashSaved();
     });
   }
 
@@ -123,19 +134,20 @@ export function MemberRow({
     const next = e.target.value as MemberStatus;
     setStatus(next);
     setError(undefined);
+    setSaved(false);
     startTransition(async () => {
       const result = await setMemberStatus(member.id, next);
       if (result?.error) {
         setError(result.error);
         setStatus(member.status);
-      }
+      } else flashSaved();
     });
   }
 
   return (
     <>
       <tr
-        className="cursor-pointer border-b border-gray-100 last:border-0 hover:bg-gray-50"
+        className="cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-100 hover:bg-gray-50 active:bg-gray-100"
         onClick={() => dialogRef.current?.showModal()}
       >
         <td className="px-4 py-3">
@@ -170,9 +182,9 @@ export function MemberRow({
             onClick={(e) =>
               e.target === dialogRef.current && dialogRef.current.close()
             }
-            className="fixed top-1/2 left-[calc(50%+7.5rem)] m-0 hidden max-h-[85vh] w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 open:flex flex-col overflow-hidden rounded-xl border border-gray-200 shadow-card backdrop:bg-black/40"
+            className="member-modal fixed top-1/2 left-[calc(50%+7.5rem)] m-0 max-h-[85vh] w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-gray-200 shadow-card"
           >
-            <div className="grid flex-1 grid-cols-[3fr_2fr] overflow-y-auto">
+            <div className="grid flex-1 grid-cols-[3fr_2fr] overflow-y-auto rounded-xl">
               <form
                 onSubmit={handleProfileSubmit}
                 className="flex flex-col gap-3 p-6"
@@ -264,9 +276,30 @@ export function MemberRow({
                   <option value="dormant">휴면</option>
                   <option value="withdrawn">탈퇴</option>
                 </Select>
-                <p className="text-xs text-gray-400">
-                  변경 즉시 사이트에 반영돼요.
-                </p>
+                <div className="flex items-center gap-2 text-xs text-gray-400">
+                  <span>변경 즉시 사이트에 반영돼요.</span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 text-success transition-opacity duration-200",
+                      saved ? "opacity-100" : "opacity-0",
+                    )}
+                  >
+                    <svg
+                      className="h-3.5 w-3.5"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        d="M5 10l3 3 7-7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    저장했어요
+                  </span>
+                </div>
                 {error && <p className="text-xs text-danger">{error}</p>}
               </div>
             </div>

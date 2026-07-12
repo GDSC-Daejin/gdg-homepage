@@ -40,29 +40,31 @@ export function MemberFilters({
         onChange={(e) => setQValue(e.target.value)}
         className="w-56"
       />
-      <Select
-        label="역할"
-        value={roleValue}
-        onChange={(e) => setRoleValue(e.target.value)}
-        className="w-36"
-      >
-        <option value="">전체</option>
-        <option value="organizer">오거나이저</option>
-        <option value="team_member">팀 멤버</option>
-        <option value="member">회원</option>
-        <option value="applicant">지원자</option>
-      </Select>
-      <Select
-        label="상태"
-        value={statusValue}
-        onChange={(e) => setStatusValue(e.target.value)}
-        className="w-36"
-      >
-        <option value="">전체</option>
-        <option value="active">활동</option>
-        <option value="dormant">휴면</option>
-        <option value="withdrawn">탈퇴</option>
-      </Select>
+      <div className="w-36 shrink-0">
+        <Select
+          label="역할"
+          value={roleValue}
+          onChange={(e) => setRoleValue(e.target.value)}
+        >
+          <option value="">전체</option>
+          <option value="organizer">오거나이저</option>
+          <option value="team_member">팀 멤버</option>
+          <option value="member">회원</option>
+          <option value="applicant">지원자</option>
+        </Select>
+      </div>
+      <div className="w-36 shrink-0">
+        <Select
+          label="상태"
+          value={statusValue}
+          onChange={(e) => setStatusValue(e.target.value)}
+        >
+          <option value="">전체</option>
+          <option value="active">활동</option>
+          <option value="dormant">휴면</option>
+          <option value="withdrawn">탈퇴</option>
+        </Select>
+      </div>
       <Button type="submit" variant="primary">
         검색
       </Button>

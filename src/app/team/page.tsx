@@ -43,7 +43,7 @@ export default function TeamPage() {
     <div className="min-h-dvh bg-[#060608] text-white">
       <PublicHeader />
       <div className="mx-auto max-w-2xl px-6 py-16">
-        <h1 className="text-4xl font-extrabold">TEAM</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight">TEAM</h1>
         <p className="mt-4 text-white/70">GDG on Campus DJU 운영진입니다.</p>
 
         <h2 className="mt-14 text-sm font-bold tracking-widest text-white/40">

@@ -25,7 +25,7 @@ export default async function ApplyPage() {
         <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
           ← GDG DJU
         </Link>
-        <h1 className="mt-3 text-2xl font-bold text-gray-900">지원하기</h1>
+        <h1 className="mt-3 text-2xl font-bold tracking-tight text-gray-900">지원하기</h1>
         <p className="mt-1 text-sm text-gray-500">
           {settings.season} 리크루팅 · 로그인 없이 바로 지원할 수 있어요
         </p>
