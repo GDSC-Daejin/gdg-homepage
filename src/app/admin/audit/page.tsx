@@ -15,6 +15,7 @@ const ACTION_LABEL: Record<string, string> = {
   set_status: "상태 변경",
   review_application: "지원서 심사",
   note_application: "심사 메모 작성",
+  send_result_email: "합불 이메일 발송",
   issue_code: "출석 코드 발급",
   answer_inquiry: "문의 답변",
   grant_points: "포인트 부여",

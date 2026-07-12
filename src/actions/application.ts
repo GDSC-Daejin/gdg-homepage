@@ -7,6 +7,7 @@ import { applicationSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { getRecruitingSettings } from "@/lib/recruiting";
 import { isDemoMode } from "@/lib/demo";
+import { sendResultEmail } from "@/lib/email";
 import type { ActionResult, ApplicationStatus } from "@/lib/types";
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
@@ -80,6 +81,37 @@ export async function setApplicationStatus(
 
   revalidatePath("/admin/applications");
   revalidatePath(`/admin/applications/${id}`);
+
+  let emailError: string | undefined;
+  if (status === "accepted" || status === "rejected") {
+    const { data: application } = await supabase
+      .from("applications")
+      .select("applicant_name, email, season")
+      .eq("id", id)
+      .single();
+
+    if (application?.email) {
+      const result = await sendResultEmail({
+        to: application.email,
+        name: application.applicant_name,
+        season: application.season,
+        accepted: status === "accepted",
+      });
+
+      if (!result.skipped) {
+        await supabase.rpc("admin_log_result_email", {
+          p_application: id,
+          p_detail: { status, to: application.email, sent: result.sent },
+        });
+      }
+
+      if (!result.sent) {
+        emailError = "상태는 변경됐지만 결과 이메일 발송에 실패했어요";
+      }
+    }
+  }
+
+  if (emailError) return { error: emailError };
   return {};
 }
 
