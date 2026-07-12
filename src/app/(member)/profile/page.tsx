@@ -61,122 +61,139 @@ export default async function ProfilePage() {
   const attendedEventIds = new Set((attendances ?? []).map((a) => a.event_id));
   const pointLogList = pointLogs ?? [];
   const pointTotal = pointLogList.reduce((sum, log) => sum + log.amount, 0);
+  const now = new Date();
+  const monthTotal = pointLogList
+    .filter((log) => {
+      const d = new Date(log.created_at);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    })
+    .reduce((sum, log) => sum + log.amount, 0);
   const ownedBadgeIds = new Set(
     (myBadges ?? []).map((ub) => ub.badge?.id).filter(Boolean),
   );
   const badgeCatalog = allBadges ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-8">
-      <div>
-        <PageHeader title="내 프로필" description="개인 정보를 수정할 수 있어요" />
-        <ProfileForm profile={profile} />
-      </div>
+    <div className="mx-auto w-full max-w-6xl">
+      <PageHeader title="내 프로필" description="개인 정보를 수정할 수 있어요" />
 
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">신청/출석 이력</h2>
-        {registrations && registrations.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            {registrations.map((r) => (
-              <Card
-                key={r.id}
-                className="flex items-center justify-between gap-4 p-4"
-              >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {r.event?.title ?? "삭제된 이벤트"}
-                  </p>
-                  {r.event && (
-                    <p className="text-xs text-gray-500">
-                      {formatKst(r.event.starts_at)}
-                    </p>
-                  )}
-                </div>
-                <div className="flex gap-1.5">
-                  <Badge tone={r.status === "confirmed" ? "success" : "warning"}>
-                    {r.status === "confirmed" ? "확정" : "대기"}
-                  </Badge>
-                  {r.event && attendedEventIds.has(r.event.id) && (
-                    <Badge tone="primary">출석완료</Badge>
-                  )}
-                </div>
-              </Card>
-            ))}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[400px_1fr] lg:items-start">
+        <div className="lg:sticky lg:top-8">
+          <ProfileForm profile={profile} />
+        </div>
+
+        <div className="flex flex-col gap-8">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatCard label="누적 포인트" value={pointTotal} emphasis />
+            <StatCard label="이번 달 획득" value={monthTotal} />
+            <StatCard label="출석 횟수" value={attendedEventIds.size} />
           </div>
-        ) : (
-          <EmptyState title="신청 내역이 없어요" />
-        )}
-      </div>
 
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">내 포인트</h2>
-        <StatCard label="누적 포인트" value={pointTotal} />
-        {pointLogList.length > 0 ? (
-          <div className="mt-3 flex flex-col gap-2">
-            {pointLogList.slice(0, 10).map((log) => (
-              <Card
-                key={log.id}
-                className="flex items-center justify-between gap-4 p-4"
-              >
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {log.reason}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatKst(log.created_at)}
-                  </p>
-                </div>
-                <p
-                  className={
-                    log.amount >= 0
-                      ? "text-sm font-semibold text-success"
-                      : "text-sm font-semibold text-danger"
-                  }
-                >
-                  {log.amount >= 0 ? `+${log.amount}` : log.amount}
-                </p>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <EmptyState title="포인트 내역이 없어요" />
-        )}
-      </div>
-
-      <div>
-        <h2 className="mb-3 text-sm font-semibold text-gray-900">뱃지</h2>
-        {badgeCatalog.length > 0 ? (
-          <div className="grid gap-2 sm:grid-cols-2">
-            {badgeCatalog.map((b) => {
-              const owned = ownedBadgeIds.has(b.id);
-              return (
-                <Card
-                  key={b.id}
-                  className={`flex items-center gap-3 px-4 py-3 ${
-                    owned ? "" : "opacity-45 grayscale"
-                  }`}
-                >
-                  <span className="text-xl">{b.icon}</span>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {b.name}
-                      {owned && (
-                        <span className="ml-1.5 text-xs font-normal text-success">
-                          획득
-                        </span>
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">신청/출석 이력</h2>
+            {registrations && registrations.length > 0 ? (
+              <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
+                {registrations.map((r) => (
+                  <Card
+                    key={r.id}
+                    className="flex items-center justify-between gap-4 p-4"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {r.event?.title ?? "삭제된 이벤트"}
+                      </p>
+                      {r.event && (
+                        <p className="text-xs text-gray-500">
+                          {formatKst(r.event.starts_at)}
+                        </p>
                       )}
-                    </p>
-                    {b.description && (
-                      <p className="text-xs text-gray-500">{b.description}</p>
-                    )}
-                  </div>
-                </Card>
-              );
-            })}
+                    </div>
+                    <div className="flex shrink-0 gap-1.5">
+                      <Badge tone={r.status === "confirmed" ? "success" : "warning"}>
+                        {r.status === "confirmed" ? "확정" : "대기"}
+                      </Badge>
+                      {r.event && attendedEventIds.has(r.event.id) && (
+                        <Badge tone="primary">출석완료</Badge>
+                      )}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="신청 내역이 없어요" />
+            )}
           </div>
-        ) : (
-          <EmptyState title="등록된 뱃지가 없어요" />
-        )}
+
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">포인트 내역</h2>
+            {pointLogList.length > 0 ? (
+              <div className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
+                {pointLogList.slice(0, 10).map((log) => (
+                  <Card
+                    key={log.id}
+                    className="flex items-center justify-between gap-4 p-4"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">
+                        {log.reason}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {formatKst(log.created_at)}
+                      </p>
+                    </div>
+                    <p
+                      className={
+                        log.amount >= 0
+                          ? "text-sm font-semibold text-success"
+                          : "text-sm font-semibold text-danger"
+                      }
+                    >
+                      {log.amount >= 0 ? `+${log.amount}` : log.amount}
+                    </p>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="포인트 내역이 없어요" />
+            )}
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">뱃지</h2>
+            {badgeCatalog.length > 0 ? (
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {badgeCatalog.map((b) => {
+                  const owned = ownedBadgeIds.has(b.id);
+                  return (
+                    <Card
+                      key={b.id}
+                      className={`flex items-center gap-3 px-4 py-3 ${
+                        owned ? "" : "opacity-45 grayscale"
+                      }`}
+                    >
+                      <span className="text-xl">{b.icon}</span>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {b.name}
+                          {owned && (
+                            <span className="ml-1.5 text-xs font-normal text-success">
+                              획득
+                            </span>
+                          )}
+                        </p>
+                        {b.description && (
+                          <p className="text-xs text-gray-500">{b.description}</p>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <EmptyState title="등록된 뱃지가 없어요" />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

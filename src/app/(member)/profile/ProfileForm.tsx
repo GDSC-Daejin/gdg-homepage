@@ -5,7 +5,9 @@ import { updateProfile } from "@/actions/profile";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
-import type { Profile } from "@/lib/types";
+import { Badge } from "@/components/Badge";
+import { cn } from "@/lib/cn";
+import { POSITION_LABELS, type Profile } from "@/lib/types";
 
 const INTEREST_OPTIONS = ["Android", "Web", "iOS", "ML", "Cloud", "Design"];
 
@@ -29,53 +31,85 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-4">
-      <Input name="name" label="이름" defaultValue={profile.name} required />
-      <Input name="student_no" label="학번" defaultValue={profile.student_no} />
-      <Input name="major" label="전공" defaultValue={profile.major} />
-      <Input name="phone" label="전화번호" defaultValue={profile.phone} />
-      <Select
-        name="position"
-        label="포지션"
-        defaultValue={profile.position ?? ""}
-        required
-      >
-        <option value="" disabled>
-          선택
-        </option>
-        <option value="frontend">프론트엔드</option>
-        <option value="backend">백엔드</option>
-        <option value="designer">디자이너</option>
-      </Select>
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-gray-700">관심 분야</span>
-        <div className="flex flex-wrap gap-x-4 gap-y-2">
-          {INTEREST_OPTIONS.map((interest) => (
-            <label
-              key={interest}
-              className="flex items-center gap-1.5 text-sm text-gray-700"
-            >
-              <input
-                type="checkbox"
-                name="interests"
-                value={interest}
-                defaultChecked={profile.interests.includes(interest)}
-              />
-              {interest}
-            </label>
-          ))}
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-card dark:bg-gray-100">
+      <div className="mb-6 flex items-center gap-4">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xl font-bold text-primary">
+          {profile.name.charAt(0)}
         </div>
+        <div className="min-w-0">
+          <p className="truncate text-lg font-bold tracking-tight text-gray-900">
+            {profile.name}
+          </p>
+          <p className="truncate text-sm text-gray-500">
+            {[profile.student_no, profile.major].filter(Boolean).join(" · ")}
+          </p>
+        </div>
+        {profile.position && (
+          <Badge tone="primary" className="ml-auto shrink-0">
+            {POSITION_LABELS[profile.position]}
+          </Badge>
+        )}
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {saved && !error && <p className="text-xs text-success">저장됐어요</p>}
-      <Button
-        type="submit"
-        variant="primary"
-        className="mt-2 w-full"
-        disabled={pending}
-      >
-        저장
-      </Button>
-    </form>
+
+      <form action={handleSubmit} className="flex flex-col gap-4">
+        <Input name="name" label="이름" defaultValue={profile.name} required />
+        <Input name="student_no" label="학번" defaultValue={profile.student_no} />
+        <Input name="major" label="전공" defaultValue={profile.major} />
+        <Input name="phone" label="전화번호" defaultValue={profile.phone} />
+        <Select
+          name="position"
+          label="포지션"
+          defaultValue={profile.position ?? ""}
+          required
+        >
+          <option value="" disabled>
+            선택
+          </option>
+          <option value="frontend">프론트엔드</option>
+          <option value="backend">백엔드</option>
+          <option value="designer">디자이너</option>
+        </Select>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm font-medium text-gray-700">관심 분야</span>
+          <div className="flex flex-wrap gap-2">
+            {INTEREST_OPTIONS.map((interest) => (
+              <label key={interest} className="group">
+                <input
+                  type="checkbox"
+                  name="interests"
+                  value={interest}
+                  defaultChecked={profile.interests.includes(interest)}
+                  className="peer sr-only"
+                />
+                <span
+                  className={cn(
+                    "inline-flex cursor-pointer select-none items-center rounded-full border px-3 py-1.5 text-sm font-medium text-gray-600 transition-[color,background-color,border-color,scale]",
+                    "border-gray-300 hover:bg-gray-50 active:scale-95",
+                    "peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:text-primary",
+                    "peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary",
+                  )}
+                >
+                  {interest}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
+        {error && <p className="text-xs text-danger">{error}</p>}
+        <div className="mt-2 flex flex-col items-center gap-2">
+          <Button type="submit" variant="primary" className="w-full" disabled={pending}>
+            저장
+          </Button>
+          <p
+            className={cn(
+              "text-xs font-medium text-success transition-opacity",
+              saved && !error ? "opacity-100" : "opacity-0",
+            )}
+          >
+            저장됐어요
+          </p>
+        </div>
+      </form>
+    </div>
   );
 }
