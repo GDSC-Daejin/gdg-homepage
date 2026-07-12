@@ -5,6 +5,8 @@ import { submitApplication } from "@/actions/application";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
 import { Button } from "@/components/Button";
+import { cn } from "@/lib/cn";
+import { POSITION_LABELS, type Position } from "@/lib/types";
 
 const QUESTIONS = [
   { name: "intro", label: "자기소개" },
@@ -12,9 +14,14 @@ const QUESTIONS = [
   { name: "interest", label: "관심 분야" },
 ] as const;
 
-export function ApplyForm() {
+interface ApplyFormProps {
+  openPositions: Position[];
+}
+
+export function ApplyForm({ openPositions }: ApplyFormProps) {
   const [error, setError] = useState<string>();
   const [done, setDone] = useState(false);
+  const [position, setPosition] = useState<Position | "">("");
   const [pending, startTransition] = useTransition();
 
   function handleSubmit(formData: FormData) {
@@ -60,6 +67,33 @@ export function ApplyForm() {
         <Input name="phone" label="전화번호" type="tel" required />
       </div>
       <Input name="email" label="이메일" type="email" required />
+      <div className="flex flex-col gap-1">
+        <span className="text-sm font-medium text-gray-700">지원 파트</span>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          {openPositions.map((opt) => (
+            <label
+              key={opt}
+              className={cn(
+                "flex cursor-pointer items-center justify-center rounded-md border px-3 py-2.5 text-sm font-medium",
+                position === opt
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50",
+              )}
+            >
+              <input
+                type="radio"
+                name="position"
+                value={opt}
+                checked={position === opt}
+                onChange={() => setPosition(opt)}
+                required
+                className="sr-only"
+              />
+              {POSITION_LABELS[opt]}
+            </label>
+          ))}
+        </div>
+      </div>
       {QUESTIONS.map((q) => (
         <Textarea key={q.name} name={q.name} label={q.label} required rows={4} />
       ))}

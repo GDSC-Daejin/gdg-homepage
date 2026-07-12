@@ -5,11 +5,16 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { applicationSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
-import { CURRENT_SEASON } from "@/lib/constants";
+import { getRecruitingSettings } from "@/lib/recruiting";
 import { isDemoMode } from "@/lib/demo";
 import type { ActionResult, ApplicationStatus } from "@/lib/types";
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
+  const settings = await getRecruitingSettings();
+  if (!settings.is_open) {
+    return { error: "지금은 모집 기간이 아니에요" };
+  }
+
   const answers = {
     intro: String(formData.get("intro") ?? "").trim(),
     motivation: String(formData.get("motivation") ?? "").trim(),
@@ -26,11 +31,15 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
     major: String(formData.get("major") ?? "").trim(),
     phone: String(formData.get("phone") ?? "").trim(),
     email: String(formData.get("email") ?? "").trim(),
-    season: CURRENT_SEASON,
+    season: settings.season,
     answers,
+    position: String(formData.get("position") ?? ""),
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
+  }
+  if (!settings.open_positions.includes(parsed.data.position)) {
+    return { error: "지금은 모집하지 않는 파트예요" };
   }
 
   const supabase = await createClient();
@@ -43,6 +52,7 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
     email: parsed.data.email,
     season: parsed.data.season,
     answers: parsed.data.answers,
+    position: parsed.data.position,
   });
 
   if (error) {
