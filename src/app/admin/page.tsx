@@ -20,6 +20,7 @@ const EVENT_TYPE_LABEL: Record<EventType, string> = {
   session: "정기세션",
   study: "스터디",
   mogakco: "모각코",
+  party: "파티",
 };
 
 interface RecentEventRow {

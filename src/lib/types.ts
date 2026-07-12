@@ -8,7 +8,7 @@ export const POSITION_LABELS: Record<Position, string> = {
 };
 export type MemberStatus = "active" | "dormant" | "withdrawn";
 export type ApplicationStatus = "waiting" | "pending" | "accepted" | "rejected";
-export type EventType = "session" | "study" | "mogakco";
+export type EventType = "session" | "study" | "mogakco" | "party";
 export type RegistrationStatus = "confirmed" | "waitlisted";
 
 export interface Profile {

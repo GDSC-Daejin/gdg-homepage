@@ -17,12 +17,14 @@ const TYPE_LABELS: Record<EventType, string> = {
   session: "정기세션",
   study: "스터디",
   mogakco: "모각코",
+  party: "파티",
 };
 
-const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
+const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"> = {
   session: "primary",
   study: "success",
   mogakco: "warning",
+  party: "danger",
 };
 
 export default async function AdminEventDetailPage({

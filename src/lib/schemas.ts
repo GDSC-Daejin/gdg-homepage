@@ -13,7 +13,7 @@ export const profileSchema = z.object({
 
 export const eventSchema = z
   .object({
-    type: z.enum(["session", "study", "mogakco"]),
+    type: z.enum(["session", "study", "mogakco", "party"]),
     title: z.string().min(1, "제목을 입력해주세요"),
     description: z.string(),
     starts_at: z.string().min(1, "일시를 입력해주세요"),

@@ -17,24 +17,28 @@ const TYPE_LABELS: Record<EventType, string> = {
   session: "정기세션",
   study: "스터디",
   mogakco: "모각코",
+  party: "파티",
 };
 
-const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
+const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"> = {
   session: "primary",
   study: "success",
   mogakco: "warning",
+  party: "danger",
 };
 
 const TYPE_BAR: Record<EventType, string> = {
   session: "bg-primary",
   study: "bg-success",
   mogakco: "bg-warning",
+  party: "bg-danger",
 };
 
 const TYPE_TEXT: Record<EventType, string> = {
   session: "text-primary",
   study: "text-success",
   mogakco: "text-warning",
+  party: "text-danger",
 };
 
 function CalendarIcon() {
@@ -164,7 +168,7 @@ export default async function AdminEventsPage({
 
             return (
               <Link key={event.id} href={`/admin/events/${event.id}`}>
-                <Card className="h-full transition-shadow hover:shadow-md">
+                <Card className="h-full transition-[transform,box-shadow] duration-150 hover:shadow-md active:scale-[0.98]">
                   <div className="flex items-start justify-between gap-2">
                     <Badge tone={TYPE_TONES[event.type]}>
                       {TYPE_LABELS[event.type]}

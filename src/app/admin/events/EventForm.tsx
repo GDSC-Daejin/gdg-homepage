@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createEvent, updateEvent } from "@/actions/event";
 import { Input } from "@/components/Input";
@@ -15,19 +15,24 @@ const TYPE_OPTIONS: { value: EventType; label: string }[] = [
   { value: "session", label: "정기세션" },
   { value: "study", label: "스터디" },
   { value: "mogakco", label: "모각코" },
+  { value: "party", label: "파티" },
 ];
 
 const TYPE_DOT: Record<EventType, string> = {
   session: "bg-primary",
   study: "bg-success",
   mogakco: "bg-warning",
+  party: "bg-danger",
 };
 
 const TYPE_SELECTED: Record<EventType, string> = {
   session: "border-primary bg-primary-soft text-primary",
   study: "border-success bg-success-soft text-success",
   mogakco: "border-warning bg-warning-soft text-warning",
+  party: "border-danger bg-danger-soft text-danger",
 };
+
+const DAY_TRIP_TYPES: EventType[] = ["session", "study", "mogakco"];
 
 function RequiredMark() {
   return <span className="text-danger">*</span>;
@@ -66,6 +71,14 @@ function toKstDatetimeLocal(iso: string): string {
   return `${get("year")}-${get("month")}-${get("day")}T${get("hour")}:${get("minute")}`;
 }
 
+function toKstDateOnly(iso: string): string {
+  return toKstDatetimeLocal(iso).split("T")[0];
+}
+
+function toKstTimeOnly(iso: string): string {
+  return toKstDatetimeLocal(iso).split("T")[1];
+}
+
 interface EventFormProps {
   event?: Event;
 }
@@ -75,17 +88,43 @@ export function EventForm({ event }: EventFormProps) {
   const isEdit = Boolean(event);
   const [type, setType] = useState<EventType>(event?.type ?? "session");
   const [error, setError] = useState<string>();
+  const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function flashSaved() {
+    setSaved(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSaved(false), 1600);
+  }
 
   function handleSubmit(formData: FormData) {
     setError(undefined);
-    const startsAt = formData.get("starts_at");
-    if (typeof startsAt === "string" && startsAt) {
-      formData.set("starts_at", new Date(startsAt).toISOString());
-    }
-    const endsAt = formData.get("ends_at");
-    if (typeof endsAt === "string" && endsAt) {
-      formData.set("ends_at", new Date(endsAt).toISOString());
+    setSaved(false);
+    if (DAY_TRIP_TYPES.includes(type)) {
+      const eventDate = formData.get("event_date");
+      const startTime = formData.get("start_time");
+      const endTime = formData.get("end_time");
+      if (typeof eventDate === "string" && eventDate && typeof startTime === "string" && startTime) {
+        formData.set("starts_at", new Date(`${eventDate}T${startTime}`).toISOString());
+      }
+      if (typeof eventDate === "string" && eventDate && typeof endTime === "string" && endTime) {
+        formData.set("ends_at", new Date(`${eventDate}T${endTime}`).toISOString());
+      } else {
+        formData.delete("ends_at");
+      }
+      formData.delete("event_date");
+      formData.delete("start_time");
+      formData.delete("end_time");
+    } else {
+      const startsAt = formData.get("starts_at");
+      if (typeof startsAt === "string" && startsAt) {
+        formData.set("starts_at", new Date(startsAt).toISOString());
+      }
+      const endsAt = formData.get("ends_at");
+      if (typeof endsAt === "string" && endsAt) {
+        formData.set("ends_at", new Date(endsAt).toISOString());
+      }
     }
     startTransition(async () => {
       const result = event
@@ -99,6 +138,7 @@ export function EventForm({ event }: EventFormProps) {
 
       if (event) {
         router.refresh();
+        flashSaved();
       } else {
         router.push("/admin/events");
       }
@@ -131,7 +171,7 @@ export function EventForm({ event }: EventFormProps) {
               <label
                 key={opt.value}
                 className={cn(
-                  "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium",
+                  "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.98]",
                   type === opt.value
                     ? TYPE_SELECTED[opt.value]
                     : "border-gray-300 text-gray-700 hover:bg-gray-50",
@@ -170,29 +210,63 @@ export function EventForm({ event }: EventFormProps) {
         rows={3}
       />
 
-      <div className="grid grid-cols-2 gap-4">
-        <DatePicker
-          withTime
-          name="starts_at"
-          label={
-            isEdit ? (
-              "시작"
-            ) : (
-              <>
-                시작 <RequiredMark /> <OptionalMark>KST 기준</OptionalMark>
-              </>
-            )
-          }
-          defaultValue={event ? toKstDatetimeLocal(event.starts_at) : ""}
-          required
-        />
-        <DatePicker
-          withTime
-          name="ends_at"
-          label={isEdit ? "종료" : <>종료 <OptionalMark /></>}
-          defaultValue={event?.ends_at ? toKstDatetimeLocal(event.ends_at) : ""}
-        />
-      </div>
+      {DAY_TRIP_TYPES.includes(type) ? (
+        <>
+          <DatePicker
+            name="event_date"
+            label={
+              isEdit ? (
+                "날짜"
+              ) : (
+                <>
+                  날짜 <RequiredMark /> <OptionalMark>KST 기준</OptionalMark>
+                </>
+              )
+            }
+            defaultValue={event ? toKstDateOnly(event.starts_at) : ""}
+            required
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              type="time"
+              name="start_time"
+              label={isEdit ? "시작 시간" : <>시작 시간 <RequiredMark /></>}
+              defaultValue={event ? toKstTimeOnly(event.starts_at) : ""}
+              required
+            />
+            <Input
+              type="time"
+              name="end_time"
+              label={isEdit ? "종료 시간" : <>종료 시간 <OptionalMark /></>}
+              defaultValue={event?.ends_at ? toKstTimeOnly(event.ends_at) : ""}
+            />
+          </div>
+        </>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          <DatePicker
+            withTime
+            name="starts_at"
+            label={
+              isEdit ? (
+                "시작"
+              ) : (
+                <>
+                  시작 <RequiredMark /> <OptionalMark>KST 기준</OptionalMark>
+                </>
+              )
+            }
+            defaultValue={event ? toKstDatetimeLocal(event.starts_at) : ""}
+            required
+          />
+          <DatePicker
+            withTime
+            name="ends_at"
+            label={isEdit ? "종료" : <>종료 <OptionalMark /></>}
+            defaultValue={event?.ends_at ? toKstDatetimeLocal(event.ends_at) : ""}
+          />
+        </div>
+      )}
 
       <Input
         type="number"
@@ -240,23 +314,39 @@ export function EventForm({ event }: EventFormProps) {
           {error}
         </div>
       )}
-      <Button
-        type="submit"
-        variant="primary"
-        className="mt-2"
-        disabled={pending}
-      >
-        {pending ? (
-          <span className="flex items-center gap-2">
-            <Spinner />
-            {event ? "수정 중..." : "생성 중..."}
+      <div className="mt-2 flex items-center gap-3">
+        <Button type="submit" variant="primary" disabled={pending}>
+          {pending ? (
+            <span className="flex items-center gap-2">
+              <Spinner />
+              {event ? "수정 중..." : "생성 중..."}
+            </span>
+          ) : event ? (
+            "수정"
+          ) : (
+            "생성"
+          )}
+        </Button>
+        {event && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1 text-sm text-success transition-opacity duration-200",
+              saved ? "opacity-100" : "opacity-0",
+            )}
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path d="M5 10l3 3 7-7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            저장했어요
           </span>
-        ) : event ? (
-          "수정"
-        ) : (
-          "생성"
         )}
-      </Button>
+      </div>
     </form>
   );
 }
