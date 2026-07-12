@@ -32,7 +32,9 @@ export default async function AdminMembersPage({
 
     if (q) {
       const term = q.replace(/[%,]/g, "");
-      query = query.or(`name.ilike.%${term}%,student_no.ilike.%${term}%`);
+      query = query.or(
+        `name.ilike.%${term}%,nickname.ilike.%${term}%,student_no.ilike.%${term}%`,
+      );
     }
     if (role) query = query.eq("role", role);
     if (status) query = query.eq("status", status);
@@ -83,6 +85,7 @@ export default async function AdminMembersPage({
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
                 <th className="px-4 py-3 font-medium">이름</th>
+                <th className="px-4 py-3 font-medium">닉네임</th>
                 <th className="px-4 py-3 font-medium">학번</th>
                 <th className="px-4 py-3 font-medium">전공</th>
                 <th className="px-4 py-3 font-medium">역할</th>

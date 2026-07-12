@@ -75,7 +75,7 @@ export async function setMemberStatus(
 
 export async function updateMemberProfile(
   userId: string,
-  profile: Pick<Profile, "name" | "student_no" | "major" | "phone" | "interests">,
+  profile: Pick<Profile, "name" | "nickname" | "student_no" | "major" | "phone" | "interests">,
 ): Promise<ActionResult> {
   await requireAdmin();
   if (await isDemoMode()) return {};
@@ -84,6 +84,7 @@ export async function updateMemberProfile(
   const { error } = await supabase.rpc("admin_update_profile", {
     p_user: userId,
     p_name: profile.name,
+    p_nickname: profile.nickname,
     p_student_no: profile.student_no,
     p_major: profile.major,
     p_phone: profile.phone,

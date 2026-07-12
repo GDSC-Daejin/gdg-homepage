@@ -75,6 +75,11 @@ export default async function AdminMemberDetailPage({
         <div>
           <h1 className="text-xl font-bold text-gray-900">
             {member.name || "(이름 없음)"}
+            {member.nickname && (
+              <span className="ml-1.5 text-base font-medium text-gray-500">
+                ({member.nickname})
+              </span>
+            )}
           </h1>
           <p className="text-sm text-gray-500">
             {member.student_no || "-"} · {member.major || "-"}
@@ -92,6 +97,7 @@ export default async function AdminMemberDetailPage({
         <MemberProfileForm
           userId={member.id}
           name={member.name}
+          nickname={member.nickname}
           studentNo={member.student_no}
           major={member.major}
           phone={member.phone}

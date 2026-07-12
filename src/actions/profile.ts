@@ -14,6 +14,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 
   const parsed = profileSchema.safeParse({
     name: formData.get("name"),
+    nickname: formData.get("nickname"),
     student_no: formData.get("student_no"),
     major: formData.get("major"),
     phone: formData.get("phone"),

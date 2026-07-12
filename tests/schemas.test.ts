@@ -30,6 +30,7 @@ describe("profileSchema", () => {
   it("정상 입력은 통과한다", () => {
     const result = profileSchema.safeParse({
       name: "홍길동",
+      nickname: "Gildong",
       student_no: "202012345",
       major: "컴퓨터공학과",
       phone: "010-1234-5678",

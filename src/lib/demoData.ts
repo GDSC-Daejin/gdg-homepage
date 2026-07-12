@@ -14,16 +14,16 @@ import type {
 } from "@/lib/types";
 
 export const DEMO_MEMBERS: Profile[] = [
-  { id: "demo-m1", name: "김도윤", student_no: "20231234", major: "컴퓨터공학과", phone: "010-1111-1111", interests: ["백엔드", "클라우드"], role: "organizer", position: "backend", status: "active", joined_at: "2023-02-01T00:00:00.000Z" },
-  { id: "demo-m2", name: "이서연", student_no: "20221111", major: "소프트웨어학과", phone: "010-1111-1112", interests: ["프론트엔드", "디자인"], role: "team_member", position: "frontend", status: "active", joined_at: "2022-03-01T00:00:00.000Z" },
-  { id: "demo-m3", name: "박지훈", student_no: "20241111", major: "정보통신공학과", phone: "010-1111-1113", interests: ["안드로이드"], role: "member", position: "backend", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
-  { id: "demo-m4", name: "최유나", student_no: "20241234", major: "컴퓨터공학과", phone: "010-1111-1114", interests: ["iOS", "UX"], role: "member", position: "designer", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
-  { id: "demo-m5", name: "정민준", student_no: "20241999", major: "산업공학과", phone: "010-1111-1115", interests: ["데이터"], role: "member", position: "backend", status: "active", joined_at: "2024-09-01T00:00:00.000Z" },
-  { id: "demo-m6", name: "한소희", student_no: "20251111", major: "컴퓨터공학과", phone: "010-1111-1116", interests: ["AI"], role: "member", position: "backend", status: "active", joined_at: "2025-03-01T00:00:00.000Z" },
-  { id: "demo-m7", name: "오지훈", student_no: "20231999", major: "전자공학과", phone: "010-1111-1117", interests: ["임베디드"], role: "member", position: "backend", status: "dormant", joined_at: "2023-09-01T00:00:00.000Z" },
-  { id: "demo-m8", name: "배수아", student_no: "20221999", major: "경영학과", phone: "010-1111-1118", interests: ["기획"], role: "member", position: "designer", status: "dormant", joined_at: "2022-09-01T00:00:00.000Z" },
-  { id: "demo-m9", name: "강하늘", student_no: "20220111", major: "컴퓨터공학과", phone: "010-1111-1119", interests: [], role: "member", position: "frontend", status: "withdrawn", joined_at: "2022-03-01T00:00:00.000Z" },
-  { id: "demo-m10", name: "윤태경", student_no: "20230111", major: "수학과", phone: "010-1111-1120", interests: [], role: "member", position: "frontend", status: "withdrawn", joined_at: "2023-03-01T00:00:00.000Z" },
+  { id: "demo-m1", name: "김도윤", nickname: "Ryan", student_no: "20231234", major: "컴퓨터공학과", phone: "010-1111-1111", interests: ["백엔드", "클라우드"], role: "organizer", position: "backend", status: "active", joined_at: "2023-02-01T00:00:00.000Z" },
+  { id: "demo-m2", name: "이서연", nickname: "Sunny", student_no: "20221111", major: "소프트웨어학과", phone: "010-1111-1112", interests: ["프론트엔드", "디자인"], role: "team_member", position: "frontend", status: "active", joined_at: "2022-03-01T00:00:00.000Z" },
+  { id: "demo-m3", name: "박지훈", nickname: "Jason", student_no: "20241111", major: "정보통신공학과", phone: "010-1111-1113", interests: ["안드로이드"], role: "member", position: "backend", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
+  { id: "demo-m4", name: "최유나", nickname: "Una", student_no: "20241234", major: "컴퓨터공학과", phone: "010-1111-1114", interests: ["iOS", "UX"], role: "member", position: "designer", status: "active", joined_at: "2024-03-01T00:00:00.000Z" },
+  { id: "demo-m5", name: "정민준", nickname: "Kevin", student_no: "20241999", major: "산업공학과", phone: "010-1111-1115", interests: ["데이터"], role: "member", position: "backend", status: "active", joined_at: "2024-09-01T00:00:00.000Z" },
+  { id: "demo-m6", name: "한소희", nickname: "Sophie", student_no: "20251111", major: "컴퓨터공학과", phone: "010-1111-1116", interests: ["AI"], role: "member", position: "backend", status: "active", joined_at: "2025-03-01T00:00:00.000Z" },
+  { id: "demo-m7", name: "오지훈", nickname: "Leo", student_no: "20231999", major: "전자공학과", phone: "010-1111-1117", interests: ["임베디드"], role: "member", position: "backend", status: "dormant", joined_at: "2023-09-01T00:00:00.000Z" },
+  { id: "demo-m8", name: "배수아", nickname: "Sua", student_no: "20221999", major: "경영학과", phone: "010-1111-1118", interests: ["기획"], role: "member", position: "designer", status: "dormant", joined_at: "2022-09-01T00:00:00.000Z" },
+  { id: "demo-m9", name: "강하늘", nickname: "Sky", student_no: "20220111", major: "컴퓨터공학과", phone: "010-1111-1119", interests: [], role: "member", position: "frontend", status: "withdrawn", joined_at: "2022-03-01T00:00:00.000Z" },
+  { id: "demo-m10", name: "윤태경", nickname: "Ted", student_no: "20230111", major: "수학과", phone: "010-1111-1120", interests: [], role: "member", position: "frontend", status: "withdrawn", joined_at: "2023-03-01T00:00:00.000Z" },
 ];
 
 export const DEMO_EVENTS: Event[] = [
@@ -68,14 +68,14 @@ export const DEMO_DASHBOARD_SATISFACTION = [
 ];
 
 export const DEMO_DASHBOARD_RANKING = [
-  { rank: 1, id: "demo-m6", name: "한소희", total: 320 },
-  { rank: 2, id: "demo-m3", name: "박지훈", total: 280 },
-  { rank: 3, id: "demo-m4", name: "최유나", total: 260 },
-  { rank: 4, id: "demo-m5", name: "정민준", total: 210 },
-  { rank: 5, id: "demo-m1", name: "김도윤", total: 190 },
-  { rank: 6, id: "demo-m2", name: "이서연", total: 170 },
-  { rank: 7, id: "demo-m7", name: "오지훈", total: 90 },
-  { rank: 8, id: "demo-m8", name: "배수아", total: 60 },
+  { rank: 1, id: "demo-m6", name: "한소희", nickname: "Sophie", total: 320 },
+  { rank: 2, id: "demo-m3", name: "박지훈", nickname: "Jason", total: 280 },
+  { rank: 3, id: "demo-m4", name: "최유나", nickname: "Una", total: 260 },
+  { rank: 4, id: "demo-m5", name: "정민준", nickname: "Kevin", total: 210 },
+  { rank: 5, id: "demo-m1", name: "김도윤", nickname: "Ryan", total: 190 },
+  { rank: 6, id: "demo-m2", name: "이서연", nickname: "Sunny", total: 170 },
+  { rank: 7, id: "demo-m7", name: "오지훈", nickname: "Leo", total: 90 },
+  { rank: 8, id: "demo-m8", name: "배수아", nickname: "Sua", total: 60 },
 ];
 
 export const DEMO_MEMBER_ATTENDANCE: Record<

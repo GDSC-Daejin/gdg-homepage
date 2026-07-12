@@ -74,6 +74,7 @@ export function MemberRow({
   }
 
   const [name, setName] = useState(member.name);
+  const [nickname, setNickname] = useState(member.nickname);
   const [studentNo, setStudentNo] = useState(member.student_no);
   const [major, setMajor] = useState(member.major);
   const [phone, setPhone] = useState(member.phone);
@@ -89,6 +90,7 @@ export function MemberRow({
     startProfileTransition(async () => {
       const result = await updateMemberProfile(member.id, {
         name,
+        nickname,
         student_no: studentNo,
         major,
         phone,
@@ -159,6 +161,7 @@ export function MemberRow({
             {member.name || "(이름 없음)"}
           </Link>
         </td>
+        <td className="px-4 py-3 text-gray-700">{member.nickname || "-"}</td>
         <td className="px-4 py-3 text-gray-700">{member.student_no || "-"}</td>
         <td className="px-4 py-3 text-gray-700">{member.major || "-"}</td>
         <td className="px-4 py-3">
@@ -195,6 +198,12 @@ export function MemberRow({
                     label="이름"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    disabled={profilePending}
+                  />
+                  <Input
+                    label="영어 닉네임"
+                    value={nickname}
+                    onChange={(e) => setNickname(e.target.value)}
                     disabled={profilePending}
                   />
                   <Input

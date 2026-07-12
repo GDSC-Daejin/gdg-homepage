@@ -39,6 +39,11 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         <div className="min-w-0">
           <p className="truncate text-lg font-bold tracking-tight text-gray-900">
             {profile.name}
+            {profile.nickname && (
+              <span className="ml-1.5 font-medium text-gray-500">
+                ({profile.nickname})
+              </span>
+            )}
           </p>
           <p className="truncate text-sm text-gray-500">
             {[profile.student_no, profile.major].filter(Boolean).join(" · ")}
@@ -53,6 +58,13 @@ export function ProfileForm({ profile }: ProfileFormProps) {
 
       <form action={handleSubmit} className="flex flex-col gap-4">
         <Input name="name" label="이름" defaultValue={profile.name} required />
+        <Input
+          name="nickname"
+          label="영어 닉네임"
+          defaultValue={profile.nickname}
+          placeholder="활동에 사용할 영어 닉네임"
+          required
+        />
         <Input name="student_no" label="학번" defaultValue={profile.student_no} />
         <Input name="major" label="전공" defaultValue={profile.major} />
         <Input name="phone" label="전화번호" defaultValue={profile.phone} />

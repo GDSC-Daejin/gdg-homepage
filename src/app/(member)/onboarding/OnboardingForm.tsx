@@ -23,6 +23,12 @@ export function OnboardingForm({ defaultName }: { defaultName?: string }) {
   return (
     <form action={handleSubmit} className="flex flex-col gap-4">
       <Input name="name" label="이름" defaultValue={defaultName} required />
+      <Input
+        name="nickname"
+        label="영어 닉네임"
+        placeholder="활동에 사용할 영어 닉네임"
+        required
+      />
       <Input name="student_no" label="학번" required />
       <Input name="major" label="전공" required />
       <Input name="phone" label="전화번호" type="tel" required />

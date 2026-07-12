@@ -20,8 +20,8 @@ export function MemberShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[1600px]">
-      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-x border-gray-200 bg-white dark:bg-gray-100 px-4 py-6">
+    <div className="flex min-h-screen w-full">
+      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white dark:bg-gray-100 px-4 py-6">
         <div className="flex items-center gap-2.5 px-3 pb-6">
           <Logo className="h-8 w-8 shrink-0" />
           <div>
@@ -84,7 +84,9 @@ export function MemberShell({
           </div>
         </div>
       </aside>
-      <main className="flex-1 px-8 py-8">{children}</main>
+      <main className="flex-1 px-8 py-8">
+        <div className="mx-auto w-full max-w-[1100px]">{children}</div>
+      </main>
     </div>
   );
 }
