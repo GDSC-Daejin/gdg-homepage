@@ -1,8 +1,9 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ADMIN_ROLES, type Profile } from "@/lib/types";
 
-export async function getProfile(): Promise<Profile | null> {
+export const getProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -16,7 +17,7 @@ export async function getProfile(): Promise<Profile | null> {
     .single();
 
   return (data as Profile) ?? null;
-}
+});
 
 export async function requireProfile(): Promise<Profile> {
   const profile = await getProfile();
