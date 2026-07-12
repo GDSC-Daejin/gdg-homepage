@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import type { Application, ApplicationStatus } from "@/lib/types";
+import { POSITION_LABELS } from "@/lib/types";
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
   waiting: "심사 대기",
@@ -97,10 +98,15 @@ export function ApplicationCard({
                   {isUnknown ? "프로필 정보 없음" : `${studentNo} · ${major}`}
                 </span>
               </p>
-              <Badge tone={STATUS_TONE[application.status]} className="mt-0.5 shrink-0 gap-1">
-                {STATUS_ICON[application.status]}
-                {STATUS_LABEL[application.status]}
-              </Badge>
+              <div className="mt-0.5 flex shrink-0 flex-col items-end gap-1">
+                <Badge tone={STATUS_TONE[application.status]} className="gap-1">
+                  {STATUS_ICON[application.status]}
+                  {STATUS_LABEL[application.status]}
+                </Badge>
+                <Badge tone={application.position ? "primary" : "neutral"}>
+                  {application.position ? POSITION_LABELS[application.position] : "미지정"}
+                </Badge>
+              </div>
             </div>
 
             <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-sm">

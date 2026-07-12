@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import type { Application, ApplicationStatus } from "@/lib/types";
 import { ApplicationCard } from "./ApplicationCard";
 import { SeasonFilter } from "./SeasonFilter";
+import { SearchFilter } from "./SearchFilter";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_APPLICATION_SEASONS, DEMO_APPLICATIONS } from "@/lib/demoData";
 
@@ -20,14 +21,24 @@ const STATUS_TABS: { value: string; label: string }[] = [
   { value: "rejected", label: "불합격" },
 ];
 
+const POSITION_TABS: { value: string; label: string }[] = [
+  { value: "all", label: "전체" },
+  { value: "frontend", label: "프론트엔드" },
+  { value: "backend", label: "백엔드" },
+  { value: "designer", label: "디자이너" },
+  { value: "none", label: "미지정" },
+];
+
 export default async function AdminApplicationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ season?: string; status?: string }>;
+  searchParams: Promise<{ season?: string; status?: string; q?: string; position?: string }>;
 }) {
   await requireAdmin();
   const params = await searchParams;
   const status = params.status ?? "all";
+  const position = params.position ?? "all";
+  const q = (params.q ?? "").trim().toLowerCase();
   const demo = await isDemoMode();
 
   let seasons: string[] = DEMO_APPLICATION_SEASONS;
@@ -65,12 +76,42 @@ export default async function AdminApplicationsPage({
     accepted: seasonApplications.filter((a) => a.status === "accepted").length,
     rejected: seasonApplications.filter((a) => a.status === "rejected").length,
   };
-  const applications =
+  const positionCounts: Record<"all" | "frontend" | "backend" | "designer" | "none", number> = {
+    all: seasonApplications.length,
+    frontend: seasonApplications.filter((a) => a.position === "frontend").length,
+    backend: seasonApplications.filter((a) => a.position === "backend").length,
+    designer: seasonApplications.filter((a) => a.position === "designer").length,
+    none: seasonApplications.filter((a) => a.position === null).length,
+  };
+
+  let applications =
     status === "all"
       ? seasonApplications
       : seasonApplications.filter((a) => a.status === status);
+  if (position !== "all") {
+    applications = applications.filter((a) =>
+      position === "none" ? a.position === null : a.position === position,
+    );
+  }
+  if (q) {
+    applications = applications.filter(
+      (a) =>
+        a.applicant_name.toLowerCase().includes(q) ||
+        a.student_no.toLowerCase().includes(q),
+    );
+  }
 
   const isDecidedView = status === "accepted" || status === "rejected";
+
+  function hrefFor(overrides: { status?: string; position?: string }) {
+    const sp = new URLSearchParams();
+    sp.set("season", season);
+    sp.set("status", overrides.status ?? status);
+    const pos = overrides.position ?? position;
+    if (pos !== "all") sp.set("position", pos);
+    if (params.q) sp.set("q", params.q);
+    return `/admin/applications?${sp.toString()}`;
+  }
 
   return (
     <div>
@@ -95,14 +136,14 @@ export default async function AdminApplicationsPage({
           </span>
         }
       />
-      <div className="mb-4 flex items-center justify-between gap-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-4">
         <div className="flex gap-2">
           {STATUS_TABS.map((tab) => {
             const active = status === tab.value;
             return (
               <Link
                 key={tab.value}
-                href={`/admin/applications?season=${season}&status=${tab.value}`}
+                href={hrefFor({ status: tab.value })}
                 className={
                   active
                     ? "inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
@@ -123,11 +164,44 @@ export default async function AdminApplicationsPage({
             );
           })}
         </div>
-        <SeasonFilter
-          seasons={seasons.length ? seasons : [CURRENT_SEASON]}
-          value={season}
-          status={status}
-        />
+        <div className="flex items-center gap-3">
+          <SearchFilter season={season} status={status} position={position} q={params.q} />
+          <SeasonFilter
+            seasons={seasons.length ? seasons : [CURRENT_SEASON]}
+            value={season}
+            status={status}
+            position={position}
+            q={params.q}
+          />
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap gap-2">
+        {POSITION_TABS.map((tab) => {
+          const active = position === tab.value;
+          return (
+            <Link
+              key={tab.value}
+              href={hrefFor({ position: tab.value })}
+              className={
+                active
+                  ? "inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white"
+                  : "inline-flex items-center gap-2 rounded-md bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"
+              }
+            >
+              {tab.label}
+              <span
+                className={
+                  active
+                    ? "rounded-full bg-white/20 px-1.5 py-0.5 text-xs font-semibold leading-none"
+                    : "rounded-full bg-white px-1.5 py-0.5 text-xs font-semibold leading-none text-gray-500"
+                }
+              >
+                {positionCounts[tab.value as "all" | "frontend" | "backend" | "designer" | "none"]}
+              </span>
+            </Link>
+          );
+        })}
       </div>
 
       {applications.length === 0 ? (

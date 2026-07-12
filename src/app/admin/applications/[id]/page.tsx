@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import type { Application, ApplicationStatus } from "@/lib/types";
+import { POSITION_LABELS } from "@/lib/types";
 import { StatusSelector } from "../StatusSelector";
+import { ReviewNoteForm } from "./ReviewNoteForm";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_APPLICATIONS } from "@/lib/demoData";
 
@@ -103,6 +105,12 @@ export default async function AdminApplicationDetailPage({
           <p className="text-xs font-medium text-gray-500">이메일</p>
           <p className="mt-1 text-sm text-gray-700">{app.email || "이메일 없음"}</p>
         </div>
+        <div>
+          <p className="text-xs font-medium text-gray-500">지원 파트</p>
+          <p className="mt-1 text-sm text-gray-700">
+            {app.position ? POSITION_LABELS[app.position] : "미지정"}
+          </p>
+        </div>
         {ANSWER_FIELDS.map((field) => (
           <div key={field.key}>
             <p className="text-xs font-medium text-gray-500">{field.label}</p>
@@ -111,6 +119,10 @@ export default async function AdminApplicationDetailPage({
             </p>
           </div>
         ))}
+      </Card>
+
+      <Card>
+        <ReviewNoteForm id={app.id} note={app.review_note} />
       </Card>
 
       <div className="flex flex-wrap items-center justify-between gap-3">

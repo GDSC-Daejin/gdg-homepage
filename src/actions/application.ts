@@ -82,3 +82,19 @@ export async function setApplicationStatus(
   revalidatePath(`/admin/applications/${id}`);
   return {};
 }
+
+export async function setApplicationNote(id: string, note: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_application_note", {
+    p_application: id,
+    p_note: note.trim(),
+  });
+
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath(`/admin/applications/${id}`);
+  return {};
+}
