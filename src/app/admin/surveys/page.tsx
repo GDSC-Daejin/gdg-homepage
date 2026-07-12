@@ -45,6 +45,23 @@ function ExternalLinkIcon() {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 13.5V16h2.5l7.4-7.4-2.5-2.5L4 13.5Z" />
+      <path d="M12.1 5.4l2.5 2.5 1.2-1.2a1 1 0 0 0 0-1.4l-1.1-1.1a1 1 0 0 0-1.4 0l-1.2 1.2Z" />
+    </svg>
+  );
+}
+
 function ResponseIcon() {
   return (
     <svg
@@ -163,6 +180,17 @@ export default async function AdminSurveysPage() {
                   </p>
                 </div>
                 <div className="relative z-10 flex shrink-0 items-center gap-2">
+                  <Link href={`/admin/surveys/${survey.id}/edit`}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 border border-gray-300"
+                    >
+                      <EditIcon />
+                      수정
+                    </Button>
+                  </Link>
                   <ToggleSurveyButton surveyId={survey.id} isOpen={survey.is_open} />
                   <DeleteSurveyButton surveyId={survey.id} responseCount={responseCount} />
                 </div>

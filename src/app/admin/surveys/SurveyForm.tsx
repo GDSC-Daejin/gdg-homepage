@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { createSurvey, createSurveyPreset } from "@/actions/survey";
+import { createSurvey, editSurvey, createSurveyPreset } from "@/actions/survey";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
 import { Select } from "@/components/Select";
@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { cn } from "@/lib/cn";
 import type {
   Event,
+  Survey,
   SurveyPreset,
   SurveyQuestion,
   SurveyQuestionType,
@@ -19,6 +20,7 @@ import type {
 interface SurveyFormProps {
   events: Pick<Event, "id" | "title">[];
   presets: SurveyPreset[];
+  survey?: Pick<Survey, "id" | "title" | "event_id" | "questions">;
 }
 
 const TYPE_LABEL: Record<SurveyQuestionType, string> = {
@@ -54,9 +56,10 @@ function Spinner() {
   );
 }
 
-export function SurveyForm({ events, presets: initialPresets }: SurveyFormProps) {
+export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFormProps) {
   const router = useRouter();
-  const [questions, setQuestions] = useState<SurveyQuestion[]>([]);
+  const isEdit = !!survey;
+  const [questions, setQuestions] = useState<SurveyQuestion[]>(survey?.questions ?? []);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
@@ -116,7 +119,9 @@ export function SurveyForm({ events, presets: initialPresets }: SurveyFormProps)
     setError(undefined);
     formData.set("questions", JSON.stringify(questions));
     startTransition(async () => {
-      const result = await createSurvey(formData);
+      const result = survey
+        ? await editSurvey(survey.id, formData)
+        : await createSurvey(formData);
       if (result?.error) {
         setError(result.error);
         return;
@@ -135,6 +140,7 @@ export function SurveyForm({ events, presets: initialPresets }: SurveyFormProps)
           </>
         }
         placeholder="예) 4주차 세션 만족도 조사"
+        defaultValue={survey?.title}
         required
       />
       <div className="flex flex-col gap-1">
@@ -145,7 +151,7 @@ export function SurveyForm({ events, presets: initialPresets }: SurveyFormProps)
               연결 이벤트 <OptionalMark />
             </>
           }
-          defaultValue=""
+          defaultValue={survey?.event_id ?? ""}
         >
           <option value="">연결 안 함</option>
           {events.map((e) => (
@@ -364,8 +370,10 @@ export function SurveyForm({ events, presets: initialPresets }: SurveyFormProps)
         {pending ? (
           <span className="flex items-center gap-2">
             <Spinner />
-            생성 중...
+            {isEdit ? "저장 중..." : "생성 중..."}
           </span>
+        ) : isEdit ? (
+          "저장"
         ) : (
           "생성"
         )}

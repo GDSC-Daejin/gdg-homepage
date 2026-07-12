@@ -5,6 +5,7 @@ import type {
   Application,
   Notice,
   Survey,
+  SurveyPreset,
   SurveyResponse,
   Inquiry,
   PointLog,
@@ -163,6 +164,22 @@ export const DEMO_SURVEYS: Survey[] = [
     event_id: null,
     questions: [{ id: "q1", type: "text", label: "동아리 운영에 바라는 점을 자유롭게 적어주세요" }],
     is_open: true,
+    created_at: "2026-07-01T00:00:00.000Z",
+  },
+];
+
+export const DEMO_SURVEY_PRESETS: SurveyPreset[] = [
+  {
+    id: "demo-preset-1",
+    name: "정기세션 만족도 5문항",
+    questions: [
+      { id: "q1", type: "rating", label: "이번 정기세션의 전반적인 만족도는 어떠셨나요?" },
+      { id: "q2", type: "rating", label: "세션에서 다룬 내용이 유익했나요?" },
+      { id: "q3", type: "rating", label: "발표·진행 방식은 이해하기 쉬웠나요?" },
+      { id: "q4", type: "rating", label: "세션 난이도는 적절했나요?" },
+      { id: "q5", type: "rating", label: "세션 장소와 진행 시간은 적절했나요?" },
+    ],
+    created_by: null,
     created_at: "2026-07-01T00:00:00.000Z",
   },
 ];

@@ -50,6 +50,40 @@ export async function createSurvey(formData: FormData): Promise<ActionResult> {
   return {};
 }
 
+export async function editSurvey(
+  id: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const parsed = parseSurveyForm(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
+  }
+
+  const eventIdRaw = formData.get("event_id");
+  const event_id = typeof eventIdRaw === "string" && eventIdRaw ? eventIdRaw : null;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("surveys")
+    .update({
+      title: parsed.data.title,
+      questions: parsed.data.questions,
+      event_id,
+    })
+    .eq("id", id);
+
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath("/admin/surveys");
+  revalidatePath(`/admin/surveys/${id}/results`);
+  revalidatePath("/surveys");
+  revalidatePath(`/surveys/${id}`);
+  return {};
+}
+
 export async function createSurveyPreset(
   formData: FormData,
 ): Promise<{ error?: string; preset?: SurveyPreset }> {

@@ -5,14 +5,14 @@ import { Card } from "@/components/Card";
 import { SurveyForm } from "../SurveyForm";
 import type { Event, SurveyPreset } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_SURVEY_EVENT_OPTIONS } from "@/lib/demoData";
+import { DEMO_SURVEY_EVENT_OPTIONS, DEMO_SURVEY_PRESETS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewSurveyPage() {
   const demo = await isDemoMode();
   let events: Pick<Event, "id" | "title">[] = DEMO_SURVEY_EVENT_OPTIONS;
-  let presets: SurveyPreset[] = [];
+  let presets: SurveyPreset[] = DEMO_SURVEY_PRESETS;
 
   if (!demo) {
     const supabase = await createClient();
