@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/attendance-warning",
       "schedule": "0 0 * * 1"
+    },
+    {
+      "path": "/api/cron/event-reminder",
+      "schedule": "0 0 * * *"
     }
   ]
 }
