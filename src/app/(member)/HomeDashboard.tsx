@@ -5,7 +5,9 @@ import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { MonthFilter } from "@/components/MonthFilter";
+import { StatCard } from "@/components/StatCard";
 import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
+import { sumPointsInMonth } from "@/lib/points";
 import type { Event, EventType, Notice } from "@/lib/types";
 
 const TYPE_LABELS: Record<EventType, string> = {
@@ -47,7 +49,13 @@ function EventCard({ event, confirmed }: { event: Event; confirmed: number }) {
   );
 }
 
-export async function HomeDashboard({ month }: { month?: string }) {
+export async function HomeDashboard({
+  month,
+  profileId,
+}: {
+  month?: string;
+  profileId: string;
+}) {
   const supabase = await createClient();
 
   const { data: latestNotice } = await supabase
@@ -57,6 +65,30 @@ export async function HomeDashboard({ month }: { month?: string }) {
     .order("published_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  const [{ data: openSurveys }, { data: myResponses }, { data: pointLogs }] =
+    await Promise.all([
+      supabase
+        .from("surveys")
+        .select("id, title")
+        .eq("is_open", true)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("survey_responses")
+        .select("survey_id")
+        .eq("user_id", profileId),
+      supabase
+        .from("point_logs")
+        .select("amount, created_at")
+        .eq("user_id", profileId),
+    ]);
+
+  const respondedIds = new Set((myResponses ?? []).map((response) => response.survey_id));
+  const unanswered = (openSurveys ?? []).filter((survey) => !respondedIds.has(survey.id));
+  const monthPoints = sumPointsInMonth(
+    (pointLogs ?? []) as { amount: number; created_at: string }[],
+    monthKst(new Date().toISOString()),
+  );
 
   const { data: events } = await supabase
     .from("events")
@@ -109,6 +141,23 @@ export async function HomeDashboard({ month }: { month?: string }) {
           </Card>
         </Link>
       )}
+      {unanswered.length > 0 && (
+        <Link href="/surveys">
+          <Card className="flex items-center gap-2 transition-shadow hover:shadow-md">
+            <Badge tone="warning">설문</Badge>
+            <p className="text-sm font-medium text-gray-900">
+              응답을 기다리는 설문 {unanswered.length}개 — {unanswered[0].title}
+            </p>
+          </Card>
+        </Link>
+      )}
+      <Link href="/profile" className="sm:max-w-xs">
+        <StatCard
+          label="이번 달 포인트"
+          value={monthPoints}
+          hint="프로필에서 내역 보기"
+        />
+      </Link>
       <div>
         <PageHeader title="다가오는 이벤트" />
         {upcoming.length === 0 ? (

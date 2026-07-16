@@ -20,7 +20,7 @@ export default async function RootPage({
 
   return (
     <MemberShell profile={profile}>
-      <HomeDashboard month={month} />
+      <HomeDashboard month={month} profileId={profile.id} />
     </MemberShell>
   );
 }
