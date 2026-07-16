@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { toKoreanError } from "@/lib/errors";
+import { postSlack } from "@/lib/slack";
 import type { ActionResult, RegistrationStatus } from "@/lib/types";
 
 export async function registerForEvent(
@@ -28,11 +29,23 @@ export async function cancelRegistration(eventId: string): Promise<ActionResult>
   await requireProfile();
 
   const supabase = await createClient();
-  const { error } = await supabase.rpc("cancel_registration", {
+  const { data, error } = await supabase.rpc("cancel_registration", {
     p_event_id: eventId,
   });
 
   if (error) return { error: toKoreanError(error) };
+
+  const promotedName = data as string | null;
+  if (promotedName) {
+    const { data: event } = await supabase
+      .from("events")
+      .select("title")
+      .eq("id", eventId)
+      .single();
+    await postSlack(
+      `[정원 승급] ${promotedName}님이 '${event?.title ?? "이벤트"}' 확정으로 승급했어요`,
+    );
+  }
 
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/profile");
