@@ -6,7 +6,8 @@ import { Badge } from "@/components/Badge";
 import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { ProfileForm } from "./ProfileForm";
-import { formatKst } from "@/lib/format";
+import { formatKst, monthKst } from "@/lib/format";
+import { sumPointsInMonth } from "@/lib/points";
 import type { RegistrationStatus, PointLog, Badge as BadgeType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -61,13 +62,10 @@ export default async function ProfilePage() {
   const attendedEventIds = new Set((attendances ?? []).map((a) => a.event_id));
   const pointLogList = pointLogs ?? [];
   const pointTotal = pointLogList.reduce((sum, log) => sum + log.amount, 0);
-  const now = new Date();
-  const monthTotal = pointLogList
-    .filter((log) => {
-      const d = new Date(log.created_at);
-      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-    })
-    .reduce((sum, log) => sum + log.amount, 0);
+  const monthTotal = sumPointsInMonth(
+    pointLogList,
+    monthKst(new Date().toISOString()),
+  );
   const ownedBadgeIds = new Set(
     (myBadges ?? []).map((ub) => ub.badge?.id).filter(Boolean),
   );
