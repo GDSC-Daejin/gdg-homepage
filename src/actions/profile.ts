@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isOwnAvatarPath } from "@/lib/avatar";
 import { getProfile } from "@/lib/auth";
 import { profileSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
@@ -37,6 +38,24 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
   revalidatePath("/", "layout");
 
   if (profile.student_no === "") redirect("/");
+  return {};
+}
+
+export async function setProfileAvatar(path: string): Promise<ActionResult> {
+  const profile = await getProfile();
+  if (!profile) redirect("/login");
+  if (!isOwnAvatarPath(profile.id, path)) {
+    return { error: "프로필 사진 경로가 올바르지 않아요" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_path: path })
+    .eq("id", profile.id);
+
+  if (error) return { error: toKoreanError(error) };
+  revalidatePath("/", "layout");
   return {};
 }
 
