@@ -92,6 +92,15 @@ export interface Notice {
   created_at: string;
 }
 
+export interface InterviewQuestion {
+  id: string;
+  position: Position | null;
+  body: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type SurveyQuestionType = "rating" | "text";
 
 export interface SurveyQuestion {

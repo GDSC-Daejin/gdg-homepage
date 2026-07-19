@@ -5,6 +5,7 @@ import {
   applicationSchema,
   attendCodeSchema,
   noticeSchema,
+  interviewQuestionSchema,
   surveySchema,
   surveyResponseSchema,
   inquirySchema,
@@ -327,5 +328,27 @@ describe("commentSchema", () => {
 
   it("내용이 있으면 통과한다", () => {
     expect(commentSchema.safeParse({ body: "댓글" }).success).toBe(true);
+  });
+});
+
+describe("interviewQuestionSchema", () => {
+  it("빈 body는 reject한다", () => {
+    const result = interviewQuestionSchema.safeParse({ position: "frontend", body: "" });
+    expect(result.success).toBe(false);
+  });
+
+  it("position null(공통)을 허용한다", () => {
+    const result = interviewQuestionSchema.safeParse({ position: null, body: "자기소개 해주세요" });
+    expect(result.success).toBe(true);
+  });
+
+  it("정상 포지션 입력을 통과시킨다", () => {
+    const result = interviewQuestionSchema.safeParse({ position: "backend", body: "트랜잭션이란?" });
+    expect(result.success).toBe(true);
+  });
+
+  it("잘못된 position은 reject한다", () => {
+    const result = interviewQuestionSchema.safeParse({ position: "pm", body: "질문" });
+    expect(result.success).toBe(false);
   });
 });

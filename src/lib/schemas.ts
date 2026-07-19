@@ -59,6 +59,11 @@ export const noticeSchema = z.object({
   body: z.string(),
 });
 
+export const interviewQuestionSchema = z.object({
+  position: z.enum(["frontend", "backend", "designer", "beginner"]).nullable(),
+  body: z.string().min(1, "질문을 입력해주세요"),
+});
+
 export const surveyQuestionSchema = z.object({
   id: z.string().min(1),
   type: z.enum(["rating", "text"]),
