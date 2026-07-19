@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { MonthFilter } from "@/components/MonthFilter";
-import { StatCard } from "@/components/StatCard";
 import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
 import { sumPointsInMonth } from "@/lib/points";
 import type { Event, EventType, Notice } from "@/lib/types";
@@ -24,26 +22,94 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"
   party: "danger",
 };
 
-function EventCard({ event, confirmed }: { event: Event; confirmed: number }) {
+function CalendarIllustration() {
   return (
-    <Link href={`/events/${event.id}`}>
+    <div
+      aria-hidden
+      className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary-soft sm:h-36 sm:w-36"
+    >
+      <div className="absolute h-20 w-20 rounded-full bg-primary/15 sm:h-24 sm:w-24" />
+      <svg
+        viewBox="0 0 96 96"
+        fill="none"
+        className="relative h-20 w-20 text-primary sm:h-24 sm:w-24"
+      >
+        <rect x="22" y="25" width="52" height="48" rx="7" fill="white" />
+        <path d="M22 34a7 7 0 0 1 7-7h38a7 7 0 0 1 7 7v9H22v-9Z" fill="currentColor" />
+        <path d="M35 19v15M61 19v15" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+        <path d="M33 52h7M45 52h7M57 52h7M33 62h7M45 62h7" stroke="#D6E2FD" strokeWidth="6" strokeLinecap="round" />
+        <circle cx="70" cy="67" r="13" fill="currentColor" />
+        <path d="m64 67 4 4 8-9" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+function EventCard({
+  event,
+  confirmed,
+  featured = false,
+}: {
+  event: Event;
+  confirmed: number;
+  featured?: boolean;
+}) {
+  return (
+    <Link
+      href={`/events/${event.id}`}
+      className="block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
       <Card className="transition-shadow hover:shadow-md">
-        <div className="flex items-center gap-2">
-          <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
-          <h2 className="text-base font-semibold text-gray-900">
-            {event.title}
-          </h2>
-        </div>
-        <p className="mt-2 text-sm text-gray-500">
-          {formatKst(event.starts_at)}
-        </p>
-        {event.location && (
-          <p className="text-sm text-gray-500">{event.location}</p>
+        {featured ? (
+          <div className="flex items-center gap-5 sm:gap-7">
+            <CalendarIllustration />
+            <div className="min-w-0">
+              <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
+              <h3 className="mt-3 text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
+                {event.title}
+              </h3>
+              <div className="mt-4 space-y-2 text-sm text-gray-500">
+                <p className="flex items-center gap-2">
+                  <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 shrink-0">
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M7 3v4M17 3v4M3 10h18" />
+                  </svg>
+                  {formatKst(event.starts_at)}
+                </p>
+                {event.location && (
+                  <p className="flex items-center gap-2">
+                    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 shrink-0">
+                      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                      <circle cx="12" cy="10" r="2.5" />
+                    </svg>
+                    {event.location}
+                  </p>
+                )}
+                <p className="flex items-center gap-2">
+                  <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 shrink-0">
+                    <circle cx="9" cy="8" r="3" />
+                    <path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 0 1 0-6M18 20a5 5 0 0 0-2-4" />
+                  </svg>
+                  {confirmed}
+                  {event.capacity ? ` / ${event.capacity}` : ""}명 신청
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-2">
+              <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
+              <h3 className="text-base font-semibold text-gray-900">{event.title}</h3>
+            </div>
+            <p className="mt-2 text-sm text-gray-500">{formatKst(event.starts_at)}</p>
+            {event.location && <p className="text-sm text-gray-500">{event.location}</p>}
+            <p className="mt-3 text-xs text-gray-400">
+              {confirmed}
+              {event.capacity ? ` / ${event.capacity}` : ""}명 신청
+            </p>
+          </>
         )}
-        <p className="mt-2 text-xs text-gray-400">
-          {confirmed}
-          {event.capacity ? ` / ${event.capacity}` : ""}명 신청
-        </p>
       </Card>
     </Link>
   );
@@ -52,9 +118,11 @@ function EventCard({ event, confirmed }: { event: Event; confirmed: number }) {
 export async function HomeDashboard({
   month,
   profileId,
+  profileName,
 }: {
   month?: string;
   profileId: string;
+  profileName: string;
 }) {
   const supabase = await createClient();
 
@@ -132,61 +200,125 @@ export async function HomeDashboard({
   const notice = latestNotice as Pick<Notice, "id" | "title"> | null;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-8 sm:gap-10">
+      <header>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+          안녕하세요, {profileName}님
+        </h1>
+      </header>
+
       {notice && (
-        <Link href={`/notices/${notice.id}`}>
-          <Card className="flex items-center gap-2 bg-primary-soft transition-shadow hover:shadow-md">
-            <Badge tone="primary">공지</Badge>
-            <p className="text-sm font-medium text-gray-900">{notice.title}</p>
-          </Card>
+        <Link
+          href={`/notices/${notice.id}`}
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:bg-gray-100"
+        >
+          <Badge tone="primary">공지</Badge>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+            {notice.title}
+          </p>
+          <span aria-hidden className="text-2xl leading-none text-gray-400 transition-transform group-hover:translate-x-0.5">
+            ›
+          </span>
         </Link>
       )}
       {unanswered.length > 0 && (
-        <Link href="/surveys">
-          <Card className="flex items-center gap-2 transition-shadow hover:shadow-md">
-            <Badge tone="warning">설문</Badge>
-            <p className="text-sm font-medium text-gray-900">
-              응답을 기다리는 설문 {unanswered.length}개 — {unanswered[0].title}
-            </p>
-          </Card>
+        <Link
+          href="/surveys"
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warning dark:bg-gray-100"
+        >
+          <Badge tone="warning">설문</Badge>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+            응답을 기다리는 설문 {unanswered.length}개 — {unanswered[0].title}
+          </p>
+          <span aria-hidden className="text-2xl leading-none text-gray-400 transition-transform group-hover:translate-x-0.5">
+            ›
+          </span>
         </Link>
       )}
-      <Link href="/profile" className="sm:max-w-xs">
-        <StatCard
-          label="이번 달 포인트"
-          value={monthPoints}
-          hint="프로필에서 내역 보기"
-        />
-      </Link>
-      <div>
-        <PageHeader title="다가오는 이벤트" />
-        {upcoming.length === 0 ? (
-          <EmptyState title="예정된 이벤트가 없어요" />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {upcoming.map((event) => (
+
+      <section>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <h2 className="text-xl font-bold tracking-tight text-gray-900">
+            다가오는 이벤트
+          </h2>
+          {upcoming.length > 1 && (
+            <span className="text-xs text-gray-500">
+              {upcoming.length}개 예정
+            </span>
+          )}
+        </div>
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(260px,0.55fr)]">
+          {upcoming.length === 0 ? (
+            <EmptyState title="예정된 이벤트가 없어요" />
+          ) : (
+            <div className="flex flex-col gap-3">
               <EventCard
-                key={event.id}
-                event={event}
-                confirmed={counts[event.id] ?? 0}
+                event={upcoming[0]}
+                confirmed={counts[upcoming[0].id] ?? 0}
+                featured
               />
-            ))}
+              {upcoming.length > 1 && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {upcoming.slice(1).map((event) => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      confirmed={counts[event.id] ?? 0}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <Link
+            href="/profile"
+            className="block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <Card className="relative flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
+              <img
+                src="/point-coin.png"
+                alt=""
+                className="absolute right-5 top-5 h-16 w-16 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.2)]"
+              />
+              <p className="text-base font-medium text-gray-700">이번 달 포인트</p>
+              <p className="mt-auto text-5xl font-bold tracking-tight text-primary">
+                {monthPoints}<span className="ml-1 text-xl">P</span>
+              </p>
+              <p className="mt-8 flex items-center justify-between text-sm text-gray-500">
+                프로필에서 내역 보기 <span aria-hidden className="text-2xl leading-none text-gray-400">›</span>
+              </p>
+            </Card>
+          </Link>
+        </div>
+      </section>
+
+      <section>
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-gray-900">
+              지난 이벤트
+            </h2>
           </div>
-        )}
-      </div>
-      <div>
-        <PageHeader
-          title="지난 이벤트"
-          action={
+          <div>
             <MonthFilter
               options={monthOptions}
               value={month ?? ""}
               basePath="/"
             />
-          }
-        />
+          </div>
+        </div>
         {past.length === 0 ? (
-          <EmptyState title="지난 이벤트가 없어요" />
+          <EmptyState
+            title="지난 이벤트가 없어요"
+            description="참여했던 이벤트가 여기에 표시됩니다."
+            icon={
+              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7">
+                <rect x="3" y="5" width="18" height="16" rx="2" />
+                <path d="M7 3v4M17 3v4M3 10h18M8 14h8M8 17h5" />
+              </svg>
+            }
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {past.map((event) => (
@@ -198,7 +330,7 @@ export async function HomeDashboard({
             ))}
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }

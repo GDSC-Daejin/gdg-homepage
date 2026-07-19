@@ -39,6 +39,7 @@ export function OnboardingForm({ defaultName }: { defaultName?: string }) {
         <option value="frontend">프론트엔드</option>
         <option value="backend">백엔드</option>
         <option value="designer">디자이너</option>
+        <option value="beginner">비기너</option>
       </Select>
       <div className="flex flex-col gap-1">
         <span className="text-sm font-medium text-gray-700">관심 분야</span>

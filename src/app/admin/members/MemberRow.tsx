@@ -282,6 +282,7 @@ export function MemberRow({
                   <option value="frontend">프론트엔드</option>
                   <option value="backend">백엔드</option>
                   <option value="designer">디자이너</option>
+                  <option value="beginner">비기너</option>
                 </Select>
                 <Select
                   label="상태"

@@ -15,11 +15,24 @@ function parseEventForm(formData: FormData) {
     description: formData.get("description"),
     starts_at: formData.get("starts_at"),
     ends_at: formData.get("ends_at") || null,
-    location: formData.get("location"),
-    address: formData.get("address"),
+    place_id: formData.get("place_id") || null,
     speaker: formData.get("speaker"),
     capacity: formData.get("capacity") || null,
   });
+}
+
+// 선택한 장소의 이름/주소를 이벤트에 스냅샷으로 복사 (표시·리마인더가 그대로 읽음)
+async function placeSnapshot(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  placeId: string | null,
+) {
+  if (!placeId) return { location: "", address: "" };
+  const { data } = await supabase
+    .from("places")
+    .select("name, address")
+    .eq("id", placeId)
+    .single();
+  return { location: data?.name ?? "", address: data?.address ?? "" };
 }
 
 export async function createEvent(formData: FormData): Promise<ActionResult> {
@@ -32,9 +45,10 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
   }
 
   const supabase = await createClient();
+  const snapshot = await placeSnapshot(supabase, parsed.data.place_id);
   const { error } = await supabase
     .from("events")
-    .insert({ ...parsed.data, created_by: profile.id });
+    .insert({ ...parsed.data, ...snapshot, created_by: profile.id });
 
   if (error) return { error: toKoreanError(error) };
 
@@ -56,9 +70,10 @@ export async function updateEvent(
   }
 
   const supabase = await createClient();
+  const snapshot = await placeSnapshot(supabase, parsed.data.place_id);
   const { error } = await supabase
     .from("events")
-    .update(parsed.data)
+    .update({ ...parsed.data, ...snapshot })
     .eq("id", id);
 
   if (error) return { error: toKoreanError(error) };

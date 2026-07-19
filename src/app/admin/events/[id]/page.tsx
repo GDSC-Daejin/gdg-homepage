@@ -7,7 +7,7 @@ import { Card } from "@/components/Card";
 import { AttendanceStatusCard } from "@/components/AttendanceStatusCard";
 import { RegistrantsTable } from "@/components/RegistrantsTable";
 import { formatKst } from "@/lib/format";
-import type { Event, EventType } from "@/lib/types";
+import type { Event, EventType, Place } from "@/lib/types";
 import { EventForm } from "../EventForm";
 import { DeleteEventButton } from "../DeleteEventButton";
 
@@ -36,6 +36,7 @@ export default async function AdminEventDetailPage({
   const demo = await isDemoMode();
 
   let e: Event | undefined;
+  let places: Place[] = [];
 
   if (demo) {
     e = DEMO_EVENTS.find((ev) => ev.id === id) ?? DEMO_EVENTS[0];
@@ -49,6 +50,12 @@ export default async function AdminEventDetailPage({
 
     if (!event) notFound();
     e = event as Event;
+
+    const { data: placeRows } = await supabase
+      .from("places")
+      .select("*")
+      .order("name", { ascending: true });
+    places = (placeRows ?? []) as Place[];
   }
 
   if (!e) notFound();
@@ -84,7 +91,7 @@ export default async function AdminEventDetailPage({
             </svg>
             <p className="text-sm font-semibold text-gray-900">이벤트 정보 수정</p>
           </div>
-          <EventForm event={e} />
+          <EventForm event={e} places={places} />
         </Card>
         <AttendanceStatusCard eventId={e.id} />
       </div>

@@ -11,6 +11,7 @@ import type {
   PointLog,
   Badge,
   BudgetEntry,
+  Notification,
 } from "@/lib/types";
 
 export const DEMO_MEMBERS: Profile[] = [
@@ -277,4 +278,37 @@ export const DEMO_AUDIT_LOGS: {
   { id: 8, actor: "demo-m1", action: "award_badge", target: "demo-m6", detail: { badge: "발표왕" }, created_at: "2026-06-10T12:05:00.000Z", profiles: { name: "김도윤" } },
   { id: 9, actor: "demo-m2", action: "set_status", target: "demo-m7", detail: { status: "dormant" }, created_at: "2026-05-01T00:00:00.000Z", profiles: { name: "이서연" } },
   { id: 10, actor: "demo-m1", action: "grant_points", target: "demo-m7", detail: { amount: -20 }, created_at: "2026-05-01T00:00:00.000Z", profiles: { name: "김도윤" } },
+];
+
+export const DEMO_NOTIFICATIONS: Notification[] = [
+  {
+    id: "demo-nt1",
+    recipient_id: "demo-m3",
+    type: "registration_promoted",
+    title: "‘8월 모각코’ 참가가 확정됐어요",
+    body: "대기자에서 참가 확정으로 승급되었습니다.",
+    link: "/events/demo-e1",
+    read_at: null,
+    created_at: "2026-07-18T02:00:00.000Z",
+  },
+  {
+    id: "demo-nt2",
+    recipient_id: "demo-m3",
+    type: "inquiry_answered",
+    title: "문의에 답변이 등록됐어요",
+    body: "‘포인트는 어떻게 적립되나요?’ 문의에 답변이 달렸어요.",
+    link: "/inquiries",
+    read_at: null,
+    created_at: "2026-07-17T05:30:00.000Z",
+  },
+  {
+    id: "demo-nt3",
+    recipient_id: "demo-m3",
+    type: "badge_awarded",
+    title: "‘발표왕’ 배지를 받았어요",
+    body: "스터디 발표 3회 이상 달성으로 배지가 수여되었습니다.",
+    link: "/profile",
+    read_at: "2026-07-15T00:00:00.000Z",
+    created_at: "2026-07-15T00:00:00.000Z",
+  },
 ];

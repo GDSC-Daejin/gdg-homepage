@@ -1,20 +1,17 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { computeAttendanceWarnings } from "@/lib/attendance-stats";
+import { getCommunity } from "@/lib/community";
 import { postSlack } from "@/lib/slack";
-import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 export async function sendAttendanceWarning(): Promise<
   ActionResult & { count?: number }
 > {
   await requireAdmin();
-  if (await isDemoMode()) return { count: 0 };
-
-  const supabase = await createClient();
-  const warnings = await computeAttendanceWarnings(supabase);
+  const community = await getCommunity();
+  const warnings = await computeAttendanceWarnings(community.attendance);
 
   if (warnings.length === 0) {
     return { count: 0 };

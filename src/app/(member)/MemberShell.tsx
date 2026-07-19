@@ -1,7 +1,12 @@
-import { ADMIN_ROLES, type Profile } from "@/lib/types";
+import { ADMIN_ROLES, type Notification, type Profile } from "@/lib/types";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
 import { Logo } from "@/components/Logo";
+import { ResponsiveShell } from "@/components/ResponsiveShell";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_NOTIFICATIONS } from "@/lib/demoData";
+import { createClient } from "@/lib/supabase/server";
+import { NotificationBell } from "./NotificationBell";
 import { SidebarNav } from "./SidebarNav";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -12,17 +17,43 @@ const roleLabel: Record<string, string> = {
   applicant: "지원자",
 };
 
-export function MemberShell({
+export async function MemberShell({
   profile,
   children,
 }: {
   profile: Profile;
   children: React.ReactNode;
 }) {
+  let notifications: Notification[] = [];
+  let unreadCount = 0;
+
+  if (await isDemoMode()) {
+    notifications = DEMO_NOTIFICATIONS;
+    unreadCount = DEMO_NOTIFICATIONS.filter((notification) => !notification.read_at).length;
+  } else {
+    const supabase = await createClient();
+    const [{ data: rows }, { count }] = await Promise.all([
+      supabase
+        .from("notifications")
+        .select("id, type, title, body, link, read_at, created_at")
+        .eq("recipient_id", profile.id)
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", profile.id)
+        .is("read_at", null),
+    ]);
+    notifications = (rows ?? []) as Notification[];
+    unreadCount = count ?? 0;
+  }
+
   return (
-    <div className="flex min-h-screen w-full">
-      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white dark:bg-gray-100 px-4 py-6">
-        <div className="flex items-center gap-2.5 px-3 pb-6">
+    <ResponsiveShell
+      sidebar={
+        <>
+          <div className="flex items-center gap-2.5 px-3 pb-6">
           <Logo className="h-8 w-8 shrink-0" />
           <div>
             <p className="text-base font-bold text-gray-900">GDG DJU</p>
@@ -42,26 +73,7 @@ export function MemberShell({
               </p>
               <Badge tone="primary">{roleLabel[profile.role]}</Badge>
             </div>
-            {/* ponytail: 알림 기능 없음, 레퍼런스 레이아웃 맞춤용 자리표시 버튼 */}
-            <button
-              type="button"
-              aria-label="알림"
-              disabled
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-400"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.75}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z" />
-                <path d="M10 19a2 2 0 0 0 4 0" />
-              </svg>
-            </button>
+            <NotificationBell notifications={notifications} unreadCount={unreadCount} />
             <form action={signOut}>
               <button
                 type="submit"
@@ -83,10 +95,10 @@ export function MemberShell({
             </form>
           </div>
         </div>
-      </aside>
-      <main className="flex-1 px-8 py-8">
-        <div className="mx-auto w-full max-w-[1100px]">{children}</div>
-      </main>
-    </div>
+        </>
+      }
+    >
+      <div className="mx-auto w-full max-w-[1100px]">{children}</div>
+    </ResponsiveShell>
   );
 }

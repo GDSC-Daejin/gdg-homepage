@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { computeAttendanceWarnings } from "@/lib/attendance-stats";
+import { getCommunity } from "@/lib/community";
 import { postSlack } from "@/lib/slack";
 
 export async function GET(request: NextRequest) {
@@ -30,7 +31,8 @@ export async function GET(request: NextRequest) {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const warnings = await computeAttendanceWarnings(supabase);
+  const community = await getCommunity({ client: supabase });
+  const warnings = await computeAttendanceWarnings(community.attendance);
 
   if (warnings.length === 0) {
     return NextResponse.json({ sent: false, count: 0 });

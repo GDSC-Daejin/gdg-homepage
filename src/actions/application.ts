@@ -5,14 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { applicationSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
-import { getRecruitingSettings } from "@/lib/recruiting";
+import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
 import { isDemoMode } from "@/lib/demo";
 import { sendResultEmail } from "@/lib/email";
 import type { ActionResult, ApplicationStatus } from "@/lib/types";
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
   const settings = await getRecruitingSettings();
-  if (!settings.is_open) {
+  if (!isRecruitingOpen(settings)) {
     return { error: "지금은 모집 기간이 아니에요" };
   }
 

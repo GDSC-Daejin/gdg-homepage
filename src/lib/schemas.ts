@@ -7,7 +7,7 @@ export const profileSchema = z.object({
   major: z.string().min(1, "전공을 입력해주세요"),
   phone: z.string().min(1, "전화번호를 입력해주세요"),
   interests: z.array(z.string()),
-  position: z.enum(["frontend", "backend", "designer"], {
+  position: z.enum(["frontend", "backend", "designer", "beginner"], {
     message: "포지션을 선택해주세요",
   }),
 });
@@ -19,8 +19,7 @@ export const eventSchema = z
     description: z.string(),
     starts_at: z.string().min(1, "일시를 입력해주세요"),
     ends_at: z.string().nullable().optional(),
-    location: z.string(),
-    address: z.string(),
+    place_id: z.string().uuid().nullable(),
     speaker: z.string(),
     capacity: z.coerce.number().int().positive().nullable(),
   })
@@ -37,18 +36,30 @@ export const applicationSchema = z.object({
   email: z.email("이메일 형식이 올바르지 않아요"),
   season: z.string().min(1),
   answers: z.record(z.string(), z.string()),
-  position: z.enum(["frontend", "backend", "designer"], {
+  position: z.enum(["frontend", "backend", "designer", "beginner"], {
     message: "지원 파트를 선택해주세요",
   }),
 });
 
-export const recruitingSettingsSchema = z.object({
-  season: z.string().min(1, "시즌명을 입력해주세요"),
-  is_open: z.boolean(),
-  open_positions: z
-    .array(z.enum(["frontend", "backend", "designer"]))
-    .min(1, "모집 파트를 1개 이상 선택해주세요"),
-});
+const dateStr = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "날짜 형식이 올바르지 않아요")
+  .nullish();
+
+export const recruitingSettingsSchema = z
+  .object({
+    season: z.string().min(1, "시즌명을 입력해주세요"),
+    is_open: z.boolean(),
+    open_positions: z
+      .array(z.enum(["frontend", "backend", "designer", "beginner"]))
+      .min(1, "모집 파트를 1개 이상 선택해주세요"),
+    apply_start: dateStr,
+    apply_end: dateStr,
+  })
+  .refine(
+    (v) => !v.apply_start || !v.apply_end || v.apply_end >= v.apply_start,
+    { message: "종료일은 시작일보다 뒤여야 해요", path: ["apply_end"] },
+  );
 
 export const attendCodeSchema = z
   .string()

@@ -57,6 +57,15 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* 스크롤은 되지만 스크롤바는 시각적으로 숨김 (예: 사이드바) */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* 재질(§12): 반투명 크롬. 콘텐츠가 아래로 스크롤되며 비침. 밝은 상단 엣지 = 빛 반사.
    reduced-transparency / contrast 에선 불투명·보더로 대체(§14) */
 .material {
@@ -90,37 +99,9 @@ body {
   font-family: var(--font-sans);
 }
 
-/* 재질 오버레이(§12): 조건부 mount 되는 div 모달용. @starting-style 로 등장만 애니메이션
-   (React unmount 이라 퇴장은 즉시 — 기존 동작과 동일). 백드롭은 blur 로 배경을 뒤로 민다. */
-.material-overlay {
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  transition:
-    background var(--duration-base) var(--ease-out-quart),
-    backdrop-filter var(--duration-base) var(--ease-out-quart);
-}
-@starting-style {
-  .material-overlay {
-    background: rgba(0, 0, 0, 0);
-    backdrop-filter: blur(0px);
-  }
-}
-.material-panel {
-  transition:
-    opacity var(--duration-base) var(--ease-out-quart),
-    scale var(--duration-base) var(--ease-out-quart);
-}
-@starting-style {
-  .material-panel {
-    opacity: 0;
-    scale: 0.96;
-  }
-}
-
-/* apple-design 파일럿(회원 탭): 네이티브 <dialog> 를 재질처럼 등장/퇴장시킴.
+/* 재질 모달(§12): 네이티브 <dialog> 를 재질처럼 등장/퇴장시킴. Modal 컴포넌트 + MemberRow 공용.
    CSS scale 프로퍼티를 써서 Tailwind 의 translate 중앙정렬(transform)과 독립적으로 확대/축소.
-   response ~0.22s, 오버슈트 없음(critically damped) — 모달은 모멘텀 인터랙션이 아님(§4). */
+   allow-discrete 로 퇴장까지 대칭 애니메이션(§7). response ~0.22s, 오버슈트 없음(§4). */
 .member-modal {
   display: flex;
   /* max-height + 넘치는 flex 컨텐츠가 있으면 dialog computed overflow 가 auto 로 잡혀
@@ -165,5 +146,20 @@ body {
   .member-modal[open]::backdrop {
     background: rgba(0, 0, 0, 0);
     backdrop-filter: blur(0px);
+  }
+}
+
+/* custom Select 드롭다운 materialize(§8 §12): 트리거 상단을 원점으로 스케일+페이드로 등장해
+   메뉴가 트리거에서 자라나는 것처럼 보이게 한다. 조건부 mount 이라 등장만(퇴장은 즉시). */
+.select-menu {
+  transform-origin: top;
+  transition:
+    opacity var(--duration-fast) var(--ease-out-quart),
+    scale var(--duration-fast) var(--ease-out-quart);
+}
+@starting-style {
+  .select-menu {
+    opacity: 0;
+    scale: 0.96;
   }
 }

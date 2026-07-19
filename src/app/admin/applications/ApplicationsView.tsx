@@ -27,6 +27,7 @@ const POSITION_OPTIONS: { value: string; label: string }[] = [
   { value: "frontend", label: "프론트엔드" },
   { value: "backend", label: "백엔드" },
   { value: "designer", label: "디자이너" },
+  { value: "beginner", label: "비기너" },
   { value: "none", label: "미지정" },
 ];
 

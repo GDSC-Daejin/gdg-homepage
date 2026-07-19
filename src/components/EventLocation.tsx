@@ -17,7 +17,7 @@ export function EventLocation({
     setTimeout(() => setCopied(false), 1500);
   }
 
-  const mapUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  const mapUrl = `https://map.naver.com/p/search/${encodeURIComponent(address)}`;
 
   return (
     <div className="text-sm text-gray-700">

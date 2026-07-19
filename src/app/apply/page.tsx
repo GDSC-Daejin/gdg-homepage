@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getRecruitingSettings } from "@/lib/recruiting";
+import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { ApplyForm } from "./ApplyForm";
@@ -30,7 +30,7 @@ export default async function ApplyPage() {
           {settings.season} 리크루팅 · 로그인 없이 바로 지원할 수 있어요
         </p>
       </div>
-      {!settings.is_open ? (
+      {!isRecruitingOpen(settings) ? (
         <Card className="flex flex-col items-center gap-2 text-center">
           <p className="text-base font-semibold text-gray-900">
             지금은 모집 기간이 아니에요

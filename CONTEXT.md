@@ -87,3 +87,13 @@ _Avoid_: 행사(문서 제목 외), 모임
 — 각 용어의 경계가 논의에서 등장하면 이 자리에서 정의를 채운다.
 
 _참고_: Sponsor(스폰서)는 제거됨 (마이그레이션 0015). 용어에서 제외.
+
+## 아키텍처
+
+**Community Store** (커뮤니티 저장소):
+앱이 커뮤니티 기록(Member·Application·Event·Registration·Survey·Inquiry·Point Log·Budget Entry·Notice·Audit Log)을 읽고 쓰기 위해 건너는 seam. 집합별 store(MemberStore·EventStore·…)로 나뉘고, 각 store는 reads(raw 도메인 컬렉션)와 ops(원자적 쓰기 연산)를 가진다. Supabase adapter(실 DB, RLS·RPC 원자성)와 Demo adapter(둘러보기용 in-memory) 중 요청당 한 번 선택된다.
+_Avoid_: repository/DAO(구현 레이어 명칭), "demo 분기"(더 이상 호출부에 없음).
+→ [설계](docs/community-store-design.md)
+
+**둘러보기** (Demo Mode):
+`demo_mode` 쿠키로 켜지는 **영구 제품 기능**(임시 아님). 켜지면 Community Store가 Demo adapter를 선택해 모든 read는 예시 데이터, 모든 write는 **믿을 만한 성공 형태의 no-op**(에러 아님)을 반환한다. Staff가 `/admin`에서 토글.

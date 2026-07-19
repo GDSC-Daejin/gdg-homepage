@@ -7,7 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
 import type { EventType, Survey, RecruitingSettings, ApplicationStatus, Position } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
-import { getRecruitingSettings } from "@/lib/recruiting";
+import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
 import { RecruitingWidget } from "./RecruitingWidget";
 import {
   DEMO_DASHBOARD_STATS,
@@ -43,6 +43,7 @@ interface RecruitingCounts {
   frontend: number;
   backend: number;
   designer: number;
+  beginner: number;
   unassigned: number;
 }
 
@@ -50,7 +51,9 @@ interface RecruitingCounts {
 const DEMO_RECRUITING_SETTINGS: RecruitingSettings = {
   season: "2026-2",
   is_open: true,
-  open_positions: ["frontend", "backend", "designer"],
+  open_positions: ["frontend", "backend", "designer", "beginner"],
+  apply_start: null,
+  apply_end: null,
 };
 
 const DEMO_RECRUITING_COUNTS: RecruitingCounts = {
@@ -62,6 +65,7 @@ const DEMO_RECRUITING_COUNTS: RecruitingCounts = {
   frontend: 4,
   backend: 5,
   designer: 2,
+  beginner: 0,
   unassigned: 1,
 };
 
@@ -105,12 +109,10 @@ export default async function AdminDashboardPage() {
     ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "member"),
+        .select("*", { count: "exact", head: true }),
       supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .eq("role", "member")
         .eq("status", "active"),
       supabase
         .from("events")
@@ -333,6 +335,7 @@ export default async function AdminDashboardPage() {
         frontend: apps.filter((a) => a.position === "frontend").length,
         backend: apps.filter((a) => a.position === "backend").length,
         designer: apps.filter((a) => a.position === "designer").length,
+        beginner: apps.filter((a) => a.position === "beginner").length,
         unassigned: apps.filter((a) => a.position === null).length,
       };
 
@@ -382,12 +385,13 @@ export default async function AdminDashboardPage() {
       {recruitingSettings.is_open && (
         <RecruitingWidget
           season={recruitingSettings.season}
+          open={isRecruitingOpen(recruitingSettings)}
           counts={recruitingCounts}
           todayEvents={recruitingTodayEvents}
         />
       )}
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="전체 회원 수" value={totalMembers ?? 0} />
         <StatCard label="활동 회원 수" value={activeMembers ?? 0} />
         <StatCard label="다가오는 이벤트 수" value={upcomingEvents ?? 0} />

@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { formatKst, formatKstRange, formatMonthLabel, monthKst } from "@/lib/format";
+import { describe, it, expect, vi } from "vitest";
+import {
+  formatKst,
+  formatKstRange,
+  formatMonthLabel,
+  formatRelativeKst,
+  monthKst,
+} from "@/lib/format";
 
 describe("formatKst", () => {
   it("UTC 시각을 KST(UTC+9)로 옮겨 표시한다", () => {
@@ -11,6 +17,15 @@ describe("formatKst", () => {
     const result = formatKst("2026-07-09T20:15:00.000Z");
     expect(result).toContain("10");
     expect(result).toContain("5:15");
+  });
+});
+
+describe("formatRelativeKst", () => {
+  it("24시간 이내면 상대 시간을 표시한다", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-19T03:30:00.000Z"));
+    expect(formatRelativeKst("2026-07-19T03:00:00.000Z")).toBe("30분 전");
+    vi.useRealTimers();
   });
 });
 

@@ -14,6 +14,7 @@ interface RecruitingWidgetCounts {
   frontend: number;
   backend: number;
   designer: number;
+  beginner: number;
   unassigned: number;
 }
 
@@ -25,6 +26,7 @@ interface TodayEvent {
 
 interface RecruitingWidgetProps {
   season: string;
+  open: boolean;
   counts: RecruitingWidgetCounts;
   todayEvents: TodayEvent[];
 }
@@ -47,11 +49,12 @@ const quickActions = [
   },
 ];
 
-export function RecruitingWidget({ season, counts, todayEvents }: RecruitingWidgetProps) {
+export function RecruitingWidget({ season, open, counts, todayEvents }: RecruitingWidgetProps) {
   const positionBreakdown = [
     { label: POSITION_LABELS.frontend, count: counts.frontend },
     { label: POSITION_LABELS.backend, count: counts.backend },
     { label: POSITION_LABELS.designer, count: counts.designer },
+    { label: POSITION_LABELS.beginner, count: counts.beginner },
     { label: "미지정", count: counts.unassigned },
   ];
 
@@ -61,7 +64,11 @@ export function RecruitingWidget({ season, counts, todayEvents }: RecruitingWidg
         <div className="mb-4 flex items-center gap-2">
           <p className="text-sm font-semibold text-gray-900">리크루팅</p>
           <Badge tone="neutral">{season}</Badge>
-          <Badge tone="success">모집 중</Badge>
+          {open ? (
+            <Badge tone="success">모집 중</Badge>
+          ) : (
+            <Badge tone="neutral">모집 마감</Badge>
+          )}
         </div>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Link href={`/admin/applications?season=${season}&status=all`} className="transition hover:opacity-80">

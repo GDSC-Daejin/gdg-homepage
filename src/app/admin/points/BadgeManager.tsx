@@ -6,7 +6,7 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
-import { useDismiss } from "@/lib/useDismiss";
+import { Modal } from "@/components/Modal";
 import type { Badge as BadgeType } from "@/lib/types";
 
 interface BadgeManagerProps {
@@ -39,7 +39,7 @@ function BadgeCard({
 }) {
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
-  const { ref, open, setOpen } = useDismiss<HTMLDivElement>();
+  const [open, setOpen] = useState(false);
 
   function handleDelete() {
     setError(undefined);
@@ -82,58 +82,54 @@ function BadgeCard({
         <p className="line-clamp-2 text-sm text-gray-500">{badge.description}</p>
       )}
 
-      {open && (
-        <div className="material-overlay fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div ref={ref} className="material-panel w-full max-w-sm rounded-xl bg-white p-6 text-left shadow-card">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
-              <svg
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.75}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6 text-danger"
-              >
-                <path d="M4.5 5.5h11M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M6 5.5v9.5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5.5" />
-              </svg>
-            </div>
-            <h2 className="mt-3 text-base font-semibold text-gray-900">
-              이 뱃지를 삭제할까요?
-            </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              삭제하면 되돌릴 수 없어요. 이미 이 뱃지를 받은 회원의 기록에도 영향을 줄 수 있어요.
-            </p>
-            <div className="mt-4 flex items-center gap-3 rounded-md bg-gray-50 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-lg shadow-card">
-                {badge.icon}
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-900">{badge.name}</p>
-                {badge.description && (
-                  <p className="text-xs text-gray-500">{badge.description}</p>
-                )}
-              </div>
-            </div>
-            {error && <p className="mt-2 text-xs text-danger">{error}</p>}
-            <div className="mt-5 flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
-                취소
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handleDelete}
-                disabled={pending}
-                className="gap-1.5"
-              >
-                {pending && <Spinner />}
-                삭제
-              </Button>
-            </div>
+      <Modal open={open} onClose={() => setOpen(false)} className="text-left">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
+          <svg
+            viewBox="0 0 20 20"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.75}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-6 w-6 text-danger"
+          >
+            <path d="M4.5 5.5h11M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M6 5.5v9.5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V5.5" />
+          </svg>
+        </div>
+        <h2 className="mt-3 text-base font-semibold text-gray-900">
+          이 뱃지를 삭제할까요?
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          삭제하면 되돌릴 수 없어요. 이미 이 뱃지를 받은 회원의 기록에도 영향을 줄 수 있어요.
+        </p>
+        <div className="mt-4 flex items-center gap-3 rounded-md bg-gray-50 p-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white dark:bg-gray-200 text-lg shadow-card">
+            {badge.icon}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-gray-900">{badge.name}</p>
+            {badge.description && (
+              <p className="text-xs text-gray-500">{badge.description}</p>
+            )}
           </div>
         </div>
-      )}
+        {error && <p className="mt-2 text-xs text-danger">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
+            취소
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={handleDelete}
+            disabled={pending}
+            className="gap-1.5"
+          >
+            {pending && <Spinner />}
+            삭제
+          </Button>
+        </div>
+      </Modal>
     </Card>
   );
 }

@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
 import { Logo } from "@/components/Logo";
+import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { ThemeToggle } from "@/app/(member)/ThemeToggle";
 import { AdminSidebarNav } from "./AdminSidebarNav";
 import { TourModeToggle } from "./TourModeToggle";
@@ -26,9 +27,11 @@ export default async function AdminLayout({
   const demo = await isDemoMode();
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="sticky top-0 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white dark:bg-gray-50 px-4 py-6">
-        <div className="flex items-center gap-2.5 px-3 pb-6">
+    <ResponsiveShell
+      asideClassName="dark:bg-gray-50"
+      sidebar={
+        <>
+          <div className="flex items-center gap-2.5 px-3 pb-6">
           <Logo className="h-8 w-8 shrink-0" />
           <div>
             <p className="text-base font-bold text-gray-900">GDG DJU</p>
@@ -76,17 +79,17 @@ export default async function AdminLayout({
             </form>
           </div>
         </div>
-      </aside>
-      <main className="flex-1 px-8 py-8">
-        <div className="mx-auto max-w-6xl">
-          {demo && (
-            <div className="mb-6 rounded-md bg-amber-50 px-4 py-2 text-sm text-amber-800">
-              둘러보기 모드 · 모든 데이터는 예시입니다
-            </div>
-          )}
-          {children}
-        </div>
-      </main>
-    </div>
+        </>
+      }
+    >
+      <div className="mx-auto max-w-6xl">
+        {demo && (
+          <div className="mb-6 rounded-md bg-amber-50 px-4 py-2 text-sm text-amber-800">
+            둘러보기 모드 · 모든 데이터는 예시입니다
+          </div>
+        )}
+        {children}
+      </div>
+    </ResponsiveShell>
   );
 }

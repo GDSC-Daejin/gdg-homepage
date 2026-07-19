@@ -1,10 +1,11 @@
 export type Role = "organizer" | "team_member" | "member" | "applicant";
-export type Position = "frontend" | "backend" | "designer";
+export type Position = "frontend" | "backend" | "designer" | "beginner";
 export const ADMIN_ROLES: Role[] = ["organizer", "team_member"];
 export const POSITION_LABELS: Record<Position, string> = {
   frontend: "프론트엔드",
   backend: "백엔드",
   designer: "디자이너",
+  beginner: "비기너",
 };
 export type MemberStatus = "active" | "dormant" | "withdrawn";
 export type ApplicationStatus = "waiting" | "pending" | "accepted" | "rejected";
@@ -48,6 +49,8 @@ export interface RecruitingSettings {
   season: string;
   is_open: boolean;
   open_positions: Position[];
+  apply_start: string | null;
+  apply_end: string | null;
 }
 
 export interface Event {
@@ -61,7 +64,17 @@ export interface Event {
   address: string;
   speaker: string;
   capacity: number | null;
+  place_id?: string | null;
   created_by: string | null;
+  created_at: string;
+}
+
+export interface Place {
+  id: string;
+  name: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
   created_at: string;
 }
 
@@ -99,6 +112,22 @@ export interface InterviewQuestion {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export type NotificationType =
+  | "registration_promoted"
+  | "inquiry_answered"
+  | "badge_awarded";
+
+export interface Notification {
+  id: string;
+  recipient_id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
 }
 
 export type SurveyQuestionType = "rating" | "text";

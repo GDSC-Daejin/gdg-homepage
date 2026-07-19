@@ -267,7 +267,7 @@ export function Select({
                   role="listbox"
                   onMouseDown={(e) => e.stopPropagation()}
                   style={portal.style}
-                  className="z-50 max-h-60 min-w-max overflow-auto rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-1 shadow-card"
+                  className="select-menu z-50 max-h-60 min-w-max overflow-auto rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-1 shadow-card"
                 >
                   {items}
                 </ul>,
@@ -278,7 +278,7 @@ export function Select({
             return (
               <ul
                 role="listbox"
-                className="absolute top-full z-50 mt-1 max-h-60 w-full min-w-max overflow-auto rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-1 shadow-card"
+                className="select-menu absolute top-full z-50 mt-1 max-h-60 w-full min-w-max overflow-auto rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-1 shadow-card"
               >
                 {items}
               </ul>

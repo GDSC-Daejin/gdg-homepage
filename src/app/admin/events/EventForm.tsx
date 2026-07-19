@@ -9,7 +9,7 @@ import { Select } from "@/components/Select";
 import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
-import type { Event, EventType } from "@/lib/types";
+import type { Event, EventType, Place } from "@/lib/types";
 
 const TYPE_OPTIONS: { value: EventType; label: string }[] = [
   { value: "session", label: "정기세션" },
@@ -81,9 +81,10 @@ function toKstTimeOnly(iso: string): string {
 
 interface EventFormProps {
   event?: Event;
+  places?: Place[];
 }
 
-export function EventForm({ event }: EventFormProps) {
+export function EventForm({ event, places = [] }: EventFormProps) {
   const router = useRouter();
   const isEdit = Boolean(event);
   const [type, setType] = useState<EventType>(event?.type ?? "session");
@@ -278,12 +279,18 @@ export function EventForm({ event }: EventFormProps) {
       />
 
       <div className="grid grid-cols-2 gap-4">
-        <Input
-          name="location"
+        <Select
+          name="place_id"
           label={isEdit ? "장소" : <>장소 <OptionalMark /></>}
-          placeholder="예) 대전 유성구 공학2호관"
-          defaultValue={event?.location}
-        />
+          defaultValue={event?.place_id ?? ""}
+        >
+          <option value="">장소 없음</option>
+          {places.map((place) => (
+            <option key={place.id} value={place.id}>
+              {place.name}
+            </option>
+          ))}
+        </Select>
         <Input
           name="speaker"
           label={isEdit ? "발표자" : <>발표자 <OptionalMark /></>}
@@ -291,13 +298,13 @@ export function EventForm({ event }: EventFormProps) {
           defaultValue={event?.speaker}
         />
       </div>
-
-      <Input
-        name="address"
-        label={isEdit ? "주소" : <>주소 <OptionalMark>도로명주소</OptionalMark></>}
-        placeholder="예) 서울특별시 도봉구 마들로11길 75"
-        defaultValue={event?.address}
-      />
+      <p className="-mt-2 text-xs text-gray-400">
+        장소는{" "}
+        <a href="/admin/places" className="text-primary hover:underline">
+          장소 관리
+        </a>
+        에서 추가해요. 주소·지도는 선택한 장소에서 자동으로 채워져요.
+      </p>
 
       {error && (
         <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-soft px-3 py-2.5 text-sm text-danger">

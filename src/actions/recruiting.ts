@@ -18,6 +18,8 @@ export async function updateRecruitingSettings(
     season: formData.get("season"),
     is_open: formData.get("is_open") === "on",
     open_positions: formData.getAll("open_positions").map(String),
+    apply_start: (formData.get("apply_start") as string) || null,
+    apply_end: (formData.get("apply_end") as string) || null,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
@@ -28,6 +30,8 @@ export async function updateRecruitingSettings(
     p_season: parsed.data.season,
     p_is_open: parsed.data.is_open,
     p_open_positions: parsed.data.open_positions,
+    p_apply_start: parsed.data.apply_start,
+    p_apply_end: parsed.data.apply_end,
   });
 
   if (error) return { error: toKoreanError(error) };

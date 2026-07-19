@@ -21,6 +21,7 @@ export default async function AdminMembersPage({
   const demo = await isDemoMode();
 
   let members: Profile[] = DEMO_MEMBERS;
+  let totalMembers = DEMO_MEMBERS.length;
 
   if (!demo) {
     const supabase = await createClient();
@@ -38,8 +39,12 @@ export default async function AdminMembersPage({
     if (role) query = query.eq("role", role);
     if (status) query = query.eq("status", status);
 
-    const { data } = await query;
+    const [{ data }, { count }] = await Promise.all([
+      query,
+      supabase.from("profiles").select("*", { count: "exact", head: true }),
+    ]);
     members = (data as Profile[]) ?? [];
+    totalMembers = count ?? 0;
   }
 
   const hasFilter = Boolean(q || role || status);
@@ -51,7 +56,7 @@ export default async function AdminMembersPage({
         title="회원 관리"
         description="전체 회원을 검색·필터링하고, 역할·상태를 바로 수정해요"
         action={
-          <p className="text-sm text-gray-500">총 {members.length}명</p>
+          <p className="text-sm text-gray-500">총 {totalMembers}명</p>
         }
       />
 
