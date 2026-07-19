@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { resolveMapSource } from "@/lib/mapSource";
 import type { Coords } from "@/lib/geocode";
 
@@ -45,6 +45,12 @@ export function NaverMap({
     () => resolveMapSource(coords, address),
     [coords?.lat, coords?.lng, address],
   );
+  const sourceId = source
+    ? source.kind === "coords"
+      ? `coords:${source.coords.lat},${source.coords.lng}`
+      : `address:${source.address}`
+    : null;
+  const [failedSourceId, setFailedSourceId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!keyId || !ref.current || !source) return;
@@ -63,18 +69,31 @@ export function NaverMap({
         render(source.coords.lat, source.coords.lng);
         return;
       }
-      if (!naver?.maps?.Service) return;
+      if (!naver?.maps?.Service) {
+        setFailedSourceId(sourceId);
+        return;
+      }
       naver.maps.Service.geocode(
         { query: source.address },
         (status: string, res: any) => {
           const item = res?.v2?.addresses?.[0];
-          if (status !== naver.maps.Service.Status.OK || !item) return;
-          render(Number(item.y), Number(item.x));
+          const lat = Number(item?.y);
+          const lng = Number(item?.x);
+          if (
+            status !== naver.maps.Service.Status.OK ||
+            !item ||
+            !Number.isFinite(lat) ||
+            !Number.isFinite(lng)
+          ) {
+            setFailedSourceId(sourceId);
+            return;
+          }
+          render(lat, lng);
         },
       );
     });
   }, [keyId, source, zoom]);
 
-  if (!keyId || !source) return null;
+  if (!keyId || !source || failedSourceId === sourceId) return null;
   return <div ref={ref} className="h-56 w-full overflow-hidden rounded-md" />;
 }
