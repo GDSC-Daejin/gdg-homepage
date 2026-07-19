@@ -291,3 +291,34 @@ export interface Material {
   date: string;
   notionUrl: string;
 }
+
+export type GroupType = "study" | "project";
+export type GroupStatus = "recruiting" | "active" | "archived";
+
+export interface Group {
+  id: string;
+  type: GroupType;
+  title: string;
+  description: string;
+  season: string;
+  status: GroupStatus;
+  is_public: boolean;
+  capacity: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface GroupMember {
+  group_id: string;
+  user_id: string;
+  joined_at: string;
+}
+
+export interface PublicGroupCard {
+  id: string;
+  type: GroupType;
+  title: string;
+  description: string;
+  season: string;
+  member_count: number;
+}

@@ -13,6 +13,8 @@ import type {
   BudgetEntry,
   Notification,
   InterviewQuestion,
+  Group,
+  GroupMember,
 } from "@/lib/types";
 
 export const DEMO_MEMBERS: Profile[] = [
@@ -321,4 +323,19 @@ export const DEMO_INTERVIEW_QUESTIONS: InterviewQuestion[] = [
   { id: "iq-be-1", position: "backend", body: "REST API를 설계할 때 고려하는 점은 무엇인가요?", created_by: null, created_at: "2026-07-01T00:03:00.000Z", updated_at: "2026-07-01T00:03:00.000Z" },
   { id: "iq-ds-1", position: "designer", body: "가장 애착이 가는 디자인 작업물과 그 이유를 소개해주세요.", created_by: null, created_at: "2026-07-01T00:04:00.000Z", updated_at: "2026-07-01T00:04:00.000Z" },
   { id: "iq-bg-1", position: "beginner", body: "개발을 시작하게 된 계기와 앞으로 배우고 싶은 것을 말씀해주세요.", created_by: null, created_at: "2026-07-01T00:05:00.000Z", updated_at: "2026-07-01T00:05:00.000Z" },
+];
+
+export const DEMO_GROUPS: Group[] = [
+  { id: "demo-g1", type: "study", title: "타입스크립트 딥다이브 스터디", description: "타입 시스템 심화 — 주 1회 온라인", season: "2026-2", status: "recruiting", is_public: false, capacity: 6, created_by: "demo-m1", created_at: "2026-07-01T00:00:00.000Z" },
+  { id: "demo-g2", type: "project", title: "캠퍼스 길찾기 AI", description: "Gemini 기반 캠퍼스 내비게이션", season: "2026-2", status: "active", is_public: true, capacity: 5, created_by: "demo-m1", created_at: "2026-06-20T00:00:00.000Z" },
+  { id: "demo-g3", type: "project", title: "행사 등록 플랫폼", description: "Firebase 기반 이벤트 허브", season: "2026-1", status: "archived", is_public: true, capacity: null, created_by: "demo-m2", created_at: "2026-02-10T00:00:00.000Z" },
+];
+
+export const DEMO_GROUP_MEMBERS: GroupMember[] = [
+  { group_id: "demo-g1", user_id: "demo-m3", joined_at: "2026-07-02T00:00:00.000Z" },
+  { group_id: "demo-g1", user_id: "demo-m4", joined_at: "2026-07-03T00:00:00.000Z" },
+  { group_id: "demo-g2", user_id: "demo-m1", joined_at: "2026-06-21T00:00:00.000Z" },
+  { group_id: "demo-g2", user_id: "demo-m5", joined_at: "2026-06-22T00:00:00.000Z" },
+  { group_id: "demo-g2", user_id: "demo-m6", joined_at: "2026-06-23T00:00:00.000Z" },
+  { group_id: "demo-g3", user_id: "demo-m2", joined_at: "2026-02-11T00:00:00.000Z" },
 ];
