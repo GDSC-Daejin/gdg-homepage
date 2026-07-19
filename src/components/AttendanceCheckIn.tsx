@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { checkAttendance } from "@/actions/attendance";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
+import { EVENTS, trackEvent } from "@/lib/analytics";
 
 interface AttendanceCheckInProps {
   eventId: string;
@@ -23,7 +24,10 @@ export function AttendanceCheckIn({ eventId, defaultCode }: AttendanceCheckInPro
     startTransition(async () => {
       const result = await checkAttendance(eventId, code);
       if (result.error) setError(result.error);
-      else router.refresh();
+      else {
+        trackEvent(EVENTS.attendanceCheck, { event_id: eventId });
+        router.refresh();
+      }
     });
   }
 

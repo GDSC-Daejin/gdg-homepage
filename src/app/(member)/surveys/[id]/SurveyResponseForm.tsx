@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { submitSurveyResponse } from "@/actions/survey";
 import { Button } from "@/components/Button";
 import { Textarea } from "@/components/Textarea";
+import { EVENTS, trackEvent } from "@/lib/analytics";
 import type { SurveyQuestion } from "@/lib/types";
 
 interface SurveyResponseFormProps {
@@ -33,6 +34,7 @@ export function SurveyResponseForm({
         setError(result.error);
         return;
       }
+      trackEvent(EVENTS.surveySubmit, { survey_id: surveyId });
       router.refresh();
     });
   }

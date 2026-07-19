@@ -22,17 +22,20 @@ export async function GET(request: NextRequest) {
           .single();
 
         if (profile && profile.student_no !== "") {
-          return NextResponse.redirect(
-            ADMIN_ROLES.includes(profile.role as Role)
-              ? `${origin}/admin`
-              : `${origin}/`,
-          );
+          const next = ADMIN_ROLES.includes(profile.role as Role) ? "/admin" : "/";
+          return NextResponse.redirect(loginCompleteUrl(origin, next));
         }
       }
 
-      return NextResponse.redirect(`${origin}/onboarding`);
+      return NextResponse.redirect(loginCompleteUrl(origin, "/onboarding"));
     }
   }
 
   return NextResponse.redirect(`${origin}/login`);
+}
+
+function loginCompleteUrl(origin: string, next: string): URL {
+  const url = new URL("/auth/complete", origin);
+  url.searchParams.set("next", next);
+  return url;
 }

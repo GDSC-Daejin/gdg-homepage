@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useState } from "react";
+import { EVENTS, trackEvent } from "@/lib/analytics";
 import { ConsentBanner } from "./ConsentBanner";
 
 type Consent = "granted" | "denied" | "unknown";
@@ -22,19 +23,27 @@ export function AnalyticsProvider() {
     setConsent(value);
   }
 
+  function trackPendingLogin() {
+    const method = sessionStorage.getItem("analytics-login");
+    if (!method) return;
+    sessionStorage.removeItem("analytics-login");
+    trackEvent(EVENTS.login, { method });
+  }
+
   const enabled = consent === "granted";
 
   return (
     <>
       {enabled && GA_ID && (
         <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-            strategy="afterInteractive"
-          />
           <Script id="ga4-init" strategy="afterInteractive">
             {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}window.gtag=gtag;gtag('js',new Date());gtag('config','${GA_ID}');`}
           </Script>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+            strategy="afterInteractive"
+            onReady={trackPendingLogin}
+          />
         </>
       )}
       {enabled && CLARITY_ID && (

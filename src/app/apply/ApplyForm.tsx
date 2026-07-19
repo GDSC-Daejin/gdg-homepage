@@ -6,6 +6,7 @@ import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
+import { EVENTS, trackEvent } from "@/lib/analytics";
 import { POSITION_LABELS, type Position } from "@/lib/types";
 
 const QUESTIONS = [
@@ -29,7 +30,10 @@ export function ApplyForm({ openPositions }: ApplyFormProps) {
     startTransition(async () => {
       const result = await submitApplication(formData);
       if (result?.error) setError(result.error);
-      else setDone(true);
+      else {
+        trackEvent(EVENTS.applySubmit, { position });
+        setDone(true);
+      }
     });
   }
 
