@@ -10,6 +10,7 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
+import { PageHeader } from "@/components/PageHeader";
 import { POSITION_LABELS } from "@/lib/types";
 import type { InterviewQuestion, Position } from "@/lib/types";
 
@@ -140,10 +141,10 @@ export function InterviewQuestionManager({
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-lg font-bold text-gray-900">면접 질문 관리</h2>
-        <p className="text-sm text-gray-500">포지션별 면접 질문을 만들고 수정·삭제해요. 공통 질문은 모든 포지션 면접에 함께 표시돼요.</p>
-      </div>
+      <PageHeader
+        title="면접 질문 관리"
+        description="포지션별 면접 질문을 만들고 수정·삭제해요. 공통 질문은 모든 포지션 면접에 함께 표시돼요."
+      />
 
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
