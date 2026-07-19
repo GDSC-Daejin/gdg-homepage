@@ -12,6 +12,7 @@ import type {
   Badge,
   BudgetEntry,
   Notification,
+  InterviewQuestion,
 } from "@/lib/types";
 
 export const DEMO_MEMBERS: Profile[] = [
@@ -311,4 +312,13 @@ export const DEMO_NOTIFICATIONS: Notification[] = [
     read_at: "2026-07-15T00:00:00.000Z",
     created_at: "2026-07-15T00:00:00.000Z",
   },
+];
+
+export const DEMO_INTERVIEW_QUESTIONS: InterviewQuestion[] = [
+  { id: "iq-common-1", position: null, body: "자기소개와 함께 이 동아리에 지원한 이유를 말씀해주세요.", created_by: null, created_at: "2026-07-01T00:00:00.000Z", updated_at: "2026-07-01T00:00:00.000Z" },
+  { id: "iq-common-2", position: null, body: "협업 중 갈등을 겪었던 경험과 해결 방법을 말씀해주세요.", created_by: null, created_at: "2026-07-01T00:01:00.000Z", updated_at: "2026-07-01T00:01:00.000Z" },
+  { id: "iq-fe-1", position: "frontend", body: "리액트에서 상태 관리를 어떻게 해봤는지 설명해주세요.", created_by: null, created_at: "2026-07-01T00:02:00.000Z", updated_at: "2026-07-01T00:02:00.000Z" },
+  { id: "iq-be-1", position: "backend", body: "REST API를 설계할 때 고려하는 점은 무엇인가요?", created_by: null, created_at: "2026-07-01T00:03:00.000Z", updated_at: "2026-07-01T00:03:00.000Z" },
+  { id: "iq-ds-1", position: "designer", body: "가장 애착이 가는 디자인 작업물과 그 이유를 소개해주세요.", created_by: null, created_at: "2026-07-01T00:04:00.000Z", updated_at: "2026-07-01T00:04:00.000Z" },
+  { id: "iq-bg-1", position: "beginner", body: "개발을 시작하게 된 계기와 앞으로 배우고 싶은 것을 말씀해주세요.", created_by: null, created_at: "2026-07-01T00:05:00.000Z", updated_at: "2026-07-01T00:05:00.000Z" },
 ];
