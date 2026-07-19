@@ -14,6 +14,7 @@ import {
   pointGrantSchema,
   budgetSchema,
   recruitingSettingsSchema,
+  interviewSlotsSchema,
 } from "@/lib/schemas";
 
 describe("profileSchema", () => {
@@ -289,6 +290,39 @@ describe("eventSchema", () => {
 
   it("ends_at이 null이면 통과한다", () => {
     expect(eventSchema.safeParse({ ...base, ends_at: null }).success).toBe(true);
+  });
+});
+
+describe("interviewSlotsSchema", () => {
+  const valid = {
+    starts_at: [new Date(Date.now() + 86_400_000).toISOString()],
+    duration_min: 30,
+  };
+
+  it("유효한 슬롯 입력은 통과한다", () => {
+    expect(interviewSlotsSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("빈 배열과 0 이하 소요 시간은 거부한다", () => {
+    expect(
+      interviewSlotsSchema.safeParse({ ...valid, starts_at: [] }).success,
+    ).toBe(false);
+    expect(
+      interviewSlotsSchema.safeParse({ ...valid, duration_min: 0 }).success,
+    ).toBe(false);
+  });
+
+  it("과거 시각과 잘못된 날짜 형식은 거부한다", () => {
+    expect(
+      interviewSlotsSchema.safeParse({
+        ...valid,
+        starts_at: ["2000-01-01T00:00:00+09:00"],
+      }).success,
+    ).toBe(false);
+    expect(
+      interviewSlotsSchema.safeParse({ ...valid, starts_at: ["not-a-date"] })
+        .success,
+    ).toBe(false);
   });
 });
 

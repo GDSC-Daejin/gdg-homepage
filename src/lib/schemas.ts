@@ -131,3 +131,15 @@ export const budgetSchema = z.object({
   amount: z.coerce.number().int().positive("금액은 양수여야 해요"),
   memo: z.string().default(""),
 });
+
+export const interviewSlotsSchema = z.object({
+  starts_at: z
+    .array(
+      z
+        .string()
+        .refine((value) => !Number.isNaN(Date.parse(value)), "날짜 형식이 올바르지 않아요")
+        .refine((value) => Date.parse(value) > Date.now(), "과거 시각은 선택할 수 없어요"),
+    )
+    .min(1, "슬롯을 하나 이상 추가해주세요"),
+  duration_min: z.number().int().positive("소요 시간이 올바르지 않아요"),
+});

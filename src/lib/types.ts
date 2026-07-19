@@ -45,6 +45,18 @@ export interface Application {
   review_note: string;
 }
 
+export interface InterviewSlot {
+  id: string;
+  season: string;
+  starts_at: string;
+  duration_min: number;
+  application_id: string | null;
+  interviewer_id: string | null;
+  meet_uri: string | null;
+  meet_code: string | null;
+  status: "open" | "booked" | "completed" | "canceled";
+}
+
 export interface RecruitingSettings {
   season: string;
   is_open: boolean;
