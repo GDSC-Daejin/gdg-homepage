@@ -46,14 +46,38 @@ export async function updatePlace(
   const { name, address } = readPlaceForm(formData);
   if (!name) return { error: "장소명을 입력해주세요" };
 
-  const coords = await geocodeAddress(address);
   const supabase = await createClient();
-  const { error } = await supabase
+  const { data: existing, error: fetchError } = await supabase
     .from("places")
-    .update({ name, address, lat: coords?.lat ?? null, lng: coords?.lng ?? null })
-    .eq("id", id);
+    .select("address")
+    .eq("id", id)
+    .single();
 
-  if (error) return { error: toKoreanError(error) };
+  if (fetchError) return { error: toKoreanError(fetchError) };
+
+  const updates = { name, address };
+  if (!address) {
+    const { error } = await supabase
+      .from("places")
+      .update({ ...updates, lat: null, lng: null })
+      .eq("id", id);
+
+    if (error) return { error: toKoreanError(error) };
+  } else if (address === existing.address) {
+    const { error } = await supabase.from("places").update(updates).eq("id", id);
+
+    if (error) return { error: toKoreanError(error) };
+  } else {
+    const coords = await geocodeAddress(address);
+    if (!coords) return { error: "주소를 찾을 수 없어요" };
+
+    const { error } = await supabase
+      .from("places")
+      .update({ ...updates, lat: coords.lat, lng: coords.lng })
+      .eq("id", id);
+
+    if (error) return { error: toKoreanError(error) };
+  }
   revalidatePath("/admin/places");
   return {};
 }
@@ -79,11 +103,13 @@ export async function backfillPlaceCoords(): Promise<{
   if (await isDemoMode()) return { done: 0, failed: 0 };
 
   const supabase = await createClient();
-  const { data: rows } = await supabase
+  const { data: rows, error } = await supabase
     .from("places")
     .select("id, address")
     .is("lat", null)
     .neq("address", "");
+
+  if (error) return { error: toKoreanError(error) };
 
   const places = (rows ?? []) as { id: string; address: string }[];
   let done = 0;
