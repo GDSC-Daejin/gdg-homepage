@@ -6,6 +6,7 @@ import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Badge } from "@/components/Badge";
+import { ProfileAvatar } from "./ProfileAvatar";
 import { cn } from "@/lib/cn";
 import { POSITION_LABELS, type Profile } from "@/lib/types";
 
@@ -33,9 +34,7 @@ export function ProfileForm({ profile }: ProfileFormProps) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-card dark:bg-gray-100">
       <div className="mb-6 flex items-center gap-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xl font-bold text-primary">
-          {profile.name.charAt(0)}
-        </div>
+        <ProfileAvatar profile={profile} />
         <div className="min-w-0">
           <p className="truncate text-lg font-bold tracking-tight text-gray-900">
             {profile.name}

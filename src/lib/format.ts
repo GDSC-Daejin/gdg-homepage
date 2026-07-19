@@ -1,9 +1,16 @@
+function formatKoreanTime(formatter: Intl.DateTimeFormat, iso: string): string {
+  return formatter
+    .format(new Date(iso))
+    .replace("AM", "오전")
+    .replace("PM", "오후");
+}
+
 export function formatKst(iso: string): string {
-  return new Intl.DateTimeFormat("ko-KR", {
+  return formatKoreanTime(new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(iso));
+  }), iso);
 }
 
 export function formatKstDate(iso: string): string {
@@ -38,10 +45,10 @@ function kstDay(iso: string): string {
 }
 
 export function formatKstTime(iso: string): string {
-  return new Intl.DateTimeFormat("ko-KR", {
+  return formatKoreanTime(new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
     timeStyle: "short",
-  }).format(new Date(iso));
+  }), iso);
 }
 
 /** 시작~종료 일시. 종료 없으면 시작만, 같은 날이면 종료는 시각만 표시. */

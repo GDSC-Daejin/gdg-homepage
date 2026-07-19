@@ -10,6 +10,7 @@ import {
   updateMemberProfile,
 } from "@/actions/member";
 import { Select, type SelectChangeEvent } from "@/components/Select";
+import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
@@ -152,28 +153,35 @@ export function MemberRow({
         className="cursor-pointer border-b border-gray-100 last:border-0 transition-colors duration-100 hover:bg-gray-50 active:bg-gray-100"
         onClick={() => dialogRef.current?.showModal()}
       >
-        <td className="px-4 py-3">
-          <Link
-            href={`/admin/members/${member.id}`}
-            onClick={(e) => e.stopPropagation()}
-            className="font-medium text-primary hover:underline"
-          >
-            {member.name || "(이름 없음)"}
-          </Link>
+        <td className="px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Avatar
+              name={member.name}
+              avatarPath={member.avatar_path}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary"
+            />
+            <Link
+              href={`/admin/members/${member.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="font-medium text-primary hover:underline"
+            >
+              {member.name || "(이름 없음)"}
+            </Link>
+          </div>
         </td>
-        <td className="px-4 py-3 text-gray-700">{member.nickname || "-"}</td>
-        <td className="px-4 py-3 text-gray-700">{member.student_no || "-"}</td>
-        <td className="px-4 py-3 text-gray-700">{member.major || "-"}</td>
-        <td className="px-4 py-3">
+        <td className="px-4 py-4 text-gray-700">{member.nickname || "-"}</td>
+        <td className="px-4 py-4 text-gray-700">{member.student_no || "-"}</td>
+        <td className="px-4 py-4 text-gray-700">{member.major || "-"}</td>
+        <td className="px-4 py-4">
           <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>
         </td>
-        <td className="px-4 py-3 text-gray-700">
+        <td className="px-4 py-4 text-gray-700">
           {position ? POSITION_LABELS[position] : "-"}
         </td>
-        <td className="px-4 py-3">
+        <td className="px-4 py-4">
           <Badge tone={statusTone[status]}>{statusLabel[status]}</Badge>
         </td>
-        <td className="px-4 py-3 text-gray-500">
+        <td className="px-4 py-4 text-gray-500">
           {formatKstDate(member.joined_at)}
         </td>
       </tr>

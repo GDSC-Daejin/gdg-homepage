@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
 import { MemberFilters } from "./MemberFilters";
@@ -56,9 +55,9 @@ export default async function AdminMembersPage({
         }
       />
 
-      <Card className="mb-6">
+      <div className="border-y border-gray-200 py-4">
         <MemberFilters q={q} role={role} status={status} />
-      </Card>
+      </div>
 
       {members.length === 0 ? (
         <EmptyState
@@ -80,7 +79,7 @@ export default async function AdminMembersPage({
           }
         />
       ) : (
-        <Card className="overflow-x-auto p-0">
+        <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
@@ -104,7 +103,7 @@ export default async function AdminMembersPage({
               ))}
             </tbody>
           </table>
-        </Card>
+        </div>
       )}
     </div>
   );

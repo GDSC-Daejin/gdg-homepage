@@ -14,6 +14,7 @@ export type RegistrationStatus = "confirmed" | "waitlisted";
 export interface Profile {
   id: string;
   name: string;
+  avatar_path?: string | null;
   nickname: string;
   student_no: string;
   major: string;
