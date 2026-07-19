@@ -27,6 +27,7 @@ function Icon({
 const icons: Record<string, string> = {
   dashboard: "M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9",
   members: "M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-6 8a6 6 0 0 1 12 0M17 8a3 3 0 1 1 0 6M20 20a5.5 5.5 0 0 0-4-5.3",
+  groups: "M17 20h5v-2a3 3 0 0 0-4.5-2.6M9 20H4v-2a3 3 0 0 1 4.5-2.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-7 8a3 3 0 0 1 6 0m2 0a3 3 0 0 1 6 0",
   applications: "M4 7a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z",
   events: "M8 3v3M16 3v3M4 8h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z",
   attend: "M8 3v3M16 3v3M4 8h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm3 8 2.5 2.5L15.5 12",
@@ -36,7 +37,6 @@ const icons: Record<string, string> = {
   inquiries: "M21 12a8 8 0 1 1-3.3-6.5M21 4v5h-5",
   points: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0-13v2m0 6v2m-3-6a3 3 0 0 1 3-1.5c1.66 0 3 .9 3 2s-1.34 2-3 2-3 .9-3 2 1.34 2 3 2a3 3 0 0 0 3-1.5",
   budget: "M3 7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm14 6h.01",
-  audit: "M9 3h6l1 3h3a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3ZM9 12h6M9 16h6M9 8h6",
   materials: "M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z",
   places: "M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Zm0-8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z",
   settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2-1.2L14.5 3h-5l-.4 2.6a7.5 7.5 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2 1.2l.4 2.6h5l.4-2.6a7.5 7.5 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.06-.4.1-.8.1-1.2Z",
@@ -59,6 +59,7 @@ const groups: NavGroup[] = [
     title: "운영",
     items: [
       { href: "/admin/members", label: "회원", icon: "members" },
+      { href: "/admin/groups", label: "스터디·프로젝트", icon: "groups" },
       { href: "/admin/events", label: "이벤트", icon: "events" },
       { href: "/admin/places", label: "장소", icon: "places" },
       { href: "/admin/attendance", label: "출석", icon: "attend" },
@@ -68,6 +69,7 @@ const groups: NavGroup[] = [
     title: "모집",
     items: [
       { href: "/admin/applications", label: "지원서", icon: "applications" },
+      { href: "/admin/interviews", label: "면접 일정", icon: "interview" },
       { href: "/admin/interview-questions", label: "면접 질문", icon: "interview" },
       { href: "/admin/settings", label: "설정", icon: "settings" },
     ],
@@ -86,7 +88,6 @@ const groups: NavGroup[] = [
     items: [
       { href: "/admin/points", label: "포인트", icon: "points" },
       { href: "/admin/budget", label: "예산", icon: "budget" },
-      { href: "/admin/audit", label: "감사 로그", icon: "audit" },
     ],
   },
 ];
