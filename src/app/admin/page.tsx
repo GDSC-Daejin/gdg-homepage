@@ -9,6 +9,7 @@ import type { EventType, Survey, RecruitingSettings, ApplicationStatus, Position
 import { isDemoMode } from "@/lib/demo";
 import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
 import { RecruitingWidget } from "./RecruitingWidget";
+import { SyncMeetingsButton } from "./SyncMeetingsButton";
 import {
   DEMO_DASHBOARD_STATS,
   DEMO_DASHBOARD_ROWS,
@@ -381,6 +382,11 @@ export default async function AdminDashboardPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="대시보드" description="동아리 현황을 한눈에 확인해요" />
+
+      <Card>
+        <p className="mb-3 text-sm font-semibold text-gray-900">운영 도구</p>
+        <SyncMeetingsButton />
+      </Card>
 
       {recruitingSettings.is_open && (
         <RecruitingWidget
