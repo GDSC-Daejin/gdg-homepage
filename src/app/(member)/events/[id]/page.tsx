@@ -8,6 +8,7 @@ import { Badge } from "@/components/Badge";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
 import { formatKst, formatKstRange } from "@/lib/format";
 import { EventLocation } from "@/components/EventLocation";
+import { NaverMap } from "@/components/NaverMap";
 import type { BoardType, Event, EventType } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -40,12 +41,12 @@ export default async function MemberEventDetailPage({
   const supabase = await createClient();
   const { data: event } = await supabase
     .from("events")
-    .select("*")
+    .select("*, place:places(lat, lng)")
     .eq("id", id)
     .single();
 
   if (!event) notFound();
-  const e = event as Event;
+  const e = event as Event & { place: { lat: number | null; lng: number | null } | null };
 
   const { data: countRows } = await supabase.rpc("event_confirmed_counts", {
     p_event_ids: [e.id],
@@ -75,6 +76,14 @@ export default async function MemberEventDetailPage({
         {(e.location || e.address) && (
           <EventLocation location={e.location} address={e.address} />
         )}
+        <NaverMap
+          coords={
+            e.place?.lat != null && e.place?.lng != null
+              ? { lat: e.place.lat, lng: e.place.lng }
+              : null
+          }
+          address={e.address || e.location}
+        />
         {e.speaker && (
           <p className="text-sm text-gray-700">발표자: {e.speaker}</p>
         )}
