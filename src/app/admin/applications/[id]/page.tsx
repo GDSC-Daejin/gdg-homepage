@@ -9,6 +9,7 @@ import { POSITION_LABELS } from "@/lib/types";
 import { ReviewPanel } from "./ReviewPanel";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_APPLICATIONS, DEMO_MEMBERS } from "@/lib/demoData";
+import { getInterviewQuestionsFor } from "@/lib/interview-questions";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,8 @@ export default async function AdminApplicationDetailPage({
   }
 
   if (!app) notFound();
+
+  const interviewQuestions = await getInterviewQuestionsFor(app.position);
 
   const name = app.applicant_name || "알 수 없음";
   const studentNo = app.student_no || "정보 없음";
@@ -218,6 +221,32 @@ export default async function AdminApplicationDetailPage({
             </dl>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold text-gray-700">
+          면접 질문
+          <span className="ml-2 text-xs font-normal text-gray-400">
+            {positionLabel} · 공통 포함
+          </span>
+        </p>
+        {interviewQuestions.length === 0 ? (
+          <p className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm text-gray-400">
+            등록된 면접 질문이 없어요. 면접 질문 메뉴에서 추가할 수 있어요.
+          </p>
+        ) : (
+          <ol className="flex flex-col gap-2">
+            {interviewQuestions.map((q, i) => (
+              <li
+                key={q.id}
+                className="flex gap-2 rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm text-gray-800"
+              >
+                <span className="font-semibold text-primary">Q{i + 1}</span>
+                <span className="whitespace-pre-wrap">{q.body}</span>
+              </li>
+            ))}
+          </ol>
+        )}
       </div>
 
       <div className="border-t border-gray-100 pt-6">
