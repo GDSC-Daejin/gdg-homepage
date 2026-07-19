@@ -334,3 +334,15 @@ export interface PublicGroupCard {
   season: string;
   member_count: number;
 }
+
+export interface Meeting {
+  id: string;
+  notion_page_id: string;
+  title: string;
+  meeting_date: string | null;
+  mode: "online" | "offline";
+  summary: string;
+  notion_url: string;
+  synced_at: string;
+  created_at: string;
+}
