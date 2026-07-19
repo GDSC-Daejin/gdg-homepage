@@ -28,6 +28,7 @@ const icons: Record<string, string> = {
   home: "M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9",
   attend: "M8 3v3M16 3v3M4 8h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm3 8 2.5 2.5L15.5 12",
   notices: "M4 11v2a1 1 0 0 0 1 1h2l7 4V6l-7 4H5a1 1 0 0 0-1 1Zm14-3a4 4 0 0 1 0 6",
+  meetings: "M7 3h10a1 1 0 0 1 1 1v13l-3-2-3 2-3-2-3 2V4a1 1 0 0 1 1-1Z",
   board: "M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z",
   qna: "M12 17.5h.01M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z",
   materials: "M4 7a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z",
@@ -55,6 +56,7 @@ const baseGroups: NavGroup[] = [
     items: [
       { href: "/attend", label: "출석 이력", icon: "attend" },
       { href: "/notices", label: "공지", icon: "notices" },
+      { href: "/meetings", label: "회의록", icon: "meetings" },
       { href: "/board", label: "자유게시판", icon: "board" },
       { href: "/qna", label: "질문답변", icon: "qna" },
       { href: "/surveys", label: "설문", icon: "surveys" },
