@@ -267,8 +267,7 @@ describe("eventSchema", () => {
     title: "정기세션",
     description: "",
     starts_at: "2026-07-23T03:00:00.000Z",
-    location: "서울 청년센터 도봉 1층",
-    address: "서울특별시 도봉구 마들로11길 75",
+    place_id: null,
     speaker: "",
     capacity: null,
   };
