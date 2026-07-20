@@ -1,6 +1,7 @@
 import { ADMIN_ROLES, type Notification, type Profile } from "@/lib/types";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
+import { Avatar } from "@/components/Avatar";
 import { Logo } from "@/components/Logo";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { isDemoMode } from "@/lib/demo";
@@ -64,9 +65,11 @@ export async function MemberShell({
         <div className="mt-auto flex flex-col gap-3 pt-6">
           <ThemeToggle />
           <div className="flex items-center gap-2 rounded-md px-1 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-              {profile.name.slice(0, 1)}
-            </div>
+            <Avatar
+              name={profile.name}
+              avatarPath={profile.avatar_path}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-gray-900">
                 {profile.name}

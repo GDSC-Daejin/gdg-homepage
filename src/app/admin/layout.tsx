@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { signOut } from "@/actions/profile";
+import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
 import { Logo } from "@/components/Logo";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
@@ -49,9 +50,11 @@ export default async function AdminLayout({
           <TourModeToggle active={demo} />
           <ThemeToggle />
           <div className="flex items-center gap-2 rounded-md px-1 py-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
-              {profile.name.slice(0, 1)}
-            </div>
+            <Avatar
+              name={profile.name}
+              avatarPath={profile.avatar_path}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white"
+            />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-gray-900">
                 {profile.name}
