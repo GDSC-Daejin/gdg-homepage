@@ -41,7 +41,7 @@ export async function RegistrationPanel({ eventId, profile, code }: Registration
 
   return (
     <Card className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <p className="text-sm font-semibold text-gray-900">내 신청 상태</p>
           <div className="mt-1 flex gap-1.5">

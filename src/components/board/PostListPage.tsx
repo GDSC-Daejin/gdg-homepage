@@ -56,13 +56,16 @@ export async function PostListPage({
           {posts.map((post) => (
             <Link key={post.id} href={`${basePath}/${post.id}`}>
               <Card className="flex items-center justify-between gap-4 transition-colors hover:border-primary">
-                <div className="flex items-center gap-2">
+                <div className="flex min-w-0 items-center gap-2">
                   {board === "qna" && (
-                    <Badge tone={post.accepted_comment_id ? "success" : "neutral"}>
+                    <Badge
+                      tone={post.accepted_comment_id ? "success" : "neutral"}
+                      className="shrink-0"
+                    >
                       {post.accepted_comment_id ? "해결됨" : "미해결"}
                     </Badge>
                   )}
-                  <p className="font-semibold text-gray-900">{post.title}</p>
+                  <p className="truncate font-semibold text-gray-900">{post.title}</p>
                 </div>
                 <p className="shrink-0 text-xs text-gray-500">
                   {post.profiles?.name ?? "탈퇴한 회원"} · {formatKst(post.created_at)}

@@ -32,8 +32,8 @@ export default async function MemberNoticesPage() {
               className="group rounded-xl border border-gray-200 bg-white shadow-card"
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 [&::-webkit-details-marker]:hidden">
-                <span>
-                  <span className="block text-base font-semibold text-gray-900">
+                <span className="min-w-0">
+                  <span className="block truncate text-base font-semibold text-gray-900">
                     {notice.title}
                   </span>
                   <span className="mt-1 block text-sm text-gray-500">
@@ -42,7 +42,7 @@ export default async function MemberNoticesPage() {
                 </span>
                 <span
                   aria-hidden
-                  className="text-gray-500 transition-transform group-open:rotate-180"
+                  className="shrink-0 text-gray-500 transition-transform group-open:rotate-180"
                 >
                   ⌄
                 </span>

@@ -95,8 +95,8 @@ export async function PostDetailPage({
           eventOptions={eventOptions}
           canEdit={isOwner}
         />
-        <div className="flex items-center justify-between text-xs text-gray-500">
-          <span>
+        <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
+          <span className="min-w-0 truncate">
             {post.profiles?.name ?? "탈퇴한 회원"} · {formatKst(post.created_at)}
           </span>
           {canDelete && <DeletePostButton id={post.id} board={board} />}

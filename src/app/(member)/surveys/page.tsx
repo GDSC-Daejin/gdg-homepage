@@ -52,13 +52,13 @@ export default async function SurveysPage() {
             {list.map((survey) => (
               <Link key={survey.id} href={`/surveys/${survey.id}`}>
                 <Card className="flex items-center justify-between gap-4 transition-shadow hover:shadow-md">
-                  <h2 className="text-base font-semibold text-gray-900">
+                  <h2 className="min-w-0 truncate text-base font-semibold text-gray-900">
                     {survey.title}
                   </h2>
                   {respondedIds.has(survey.id) ? (
-                    <Badge tone="neutral">응답 완료</Badge>
+                    <Badge tone="neutral" className="shrink-0">응답 완료</Badge>
                   ) : (
-                    <Badge tone="primary">미응답</Badge>
+                    <Badge tone="primary" className="shrink-0">미응답</Badge>
                   )}
                 </Card>
               </Link>
@@ -76,10 +76,10 @@ export default async function SurveysPage() {
             {pastClosed.map((survey) => (
               <Link key={survey.id} href={`/surveys/${survey.id}`}>
                 <Card className="flex items-center justify-between gap-4 transition-shadow hover:shadow-md">
-                  <h2 className="text-base font-semibold text-gray-900">
+                  <h2 className="min-w-0 truncate text-base font-semibold text-gray-900">
                     {survey.title}
                   </h2>
-                  <Badge tone="neutral">마감</Badge>
+                  <Badge tone="neutral" className="shrink-0">마감</Badge>
                 </Card>
               </Link>
             ))}

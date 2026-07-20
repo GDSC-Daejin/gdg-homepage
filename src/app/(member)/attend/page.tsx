@@ -54,12 +54,12 @@ export default async function AttendPage() {
               key={a.event!.id}
               className="flex items-center justify-between gap-4 p-4"
             >
-              <div className="flex items-center gap-2.5">
-                <Badge tone={TYPE_TONES[a.event!.type]}>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Badge tone={TYPE_TONES[a.event!.type]} className="shrink-0">
                   {TYPE_LABELS[a.event!.type]}
                 </Badge>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-gray-900">
                     {a.event!.title}
                   </p>
                   <p className="text-xs text-gray-500">
@@ -67,7 +67,7 @@ export default async function AttendPage() {
                   </p>
                 </div>
               </div>
-              <Badge tone="primary">출석 완료</Badge>
+              <Badge tone="primary" className="shrink-0">출석 완료</Badge>
             </Card>
           ))}
         </div>

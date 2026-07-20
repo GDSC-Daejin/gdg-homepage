@@ -63,16 +63,18 @@ export default async function AdminEventDetailPage({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>
             <h1 className="text-xl font-bold text-gray-900">이벤트 수정</h1>
           </div>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 truncate text-sm text-gray-500">
             {e.title} · {formatKst(e.starts_at)}
           </p>
         </div>
-        <DeleteEventButton eventId={e.id} />
+        <div className="shrink-0">
+          <DeleteEventButton eventId={e.id} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">

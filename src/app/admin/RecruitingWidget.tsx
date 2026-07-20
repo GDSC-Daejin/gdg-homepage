@@ -99,9 +99,9 @@ export function RecruitingWidget({ season, open, counts, todayEvents }: Recruiti
         ) : (
           <ul className="flex flex-col gap-2">
             {todayEvents.map((event) => (
-              <li key={event.id} className="flex items-center justify-between text-sm">
-                <span className="font-medium text-gray-900">{event.title}</span>
-                <span className="text-gray-500">{formatKstTime(event.starts_at)}</span>
+              <li key={event.id} className="flex items-center justify-between gap-3 text-sm">
+                <span className="truncate font-medium text-gray-900">{event.title}</span>
+                <span className="shrink-0 text-gray-500">{formatKstTime(event.starts_at)}</span>
               </li>
             ))}
           </ul>

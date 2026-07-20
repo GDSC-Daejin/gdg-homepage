@@ -96,8 +96,8 @@ export default async function ProfilePage() {
                     key={r.id}
                     className="flex items-center justify-between gap-4 p-4"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-gray-900">
                         {r.event?.title ?? "삭제된 이벤트"}
                       </p>
                       {r.event && (
@@ -131,8 +131,8 @@ export default async function ProfilePage() {
                     key={log.id}
                     className="flex items-center justify-between gap-4 p-4"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-gray-900">
                         {log.reason}
                       </p>
                       <p className="text-xs text-gray-500">
@@ -142,8 +142,8 @@ export default async function ProfilePage() {
                     <p
                       className={
                         log.amount >= 0
-                          ? "text-sm font-semibold text-success"
-                          : "text-sm font-semibold text-danger"
+                          ? "shrink-0 text-sm font-semibold text-success"
+                          : "shrink-0 text-sm font-semibold text-danger"
                       }
                     >
                       {log.amount >= 0 ? `+${log.amount}` : log.amount}
