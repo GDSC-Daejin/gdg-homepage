@@ -10,6 +10,8 @@ const ERROR_MESSAGES: Record<string, string> = {
   INVALID_INPUT: "입력값이 올바르지 않아요",
   NOT_FOUND: "대상을 찾을 수 없어요",
   ORGANIZER_EXISTS: "오거나이저는 1명만 지정할 수 있어요",
+  DUPLICATE_APPLICANT: "이미 같은 학번/연락처로 지원한 내역이 있어요",
+  RATE_LIMITED: "잠시 후 다시 시도해주세요",
 };
 
 export function toKoreanError(e: unknown): string {

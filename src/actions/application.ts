@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/auth";
 import { applicationSchema } from "@/lib/schemas";
@@ -44,6 +45,17 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
   }
 
   const supabase = await createClient();
+
+  // IP 기반 스로틀 (실제 폼 남용의 대부분 차단). Vercel은 x-forwarded-for 제공.
+  const h = await headers();
+  const ip = h.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const { data: allowed } = await supabase.rpc("check_submission_rate", {
+    p_ip: ip ?? "",
+  });
+  if (allowed === false) {
+    return { error: "잠시 후 다시 시도해주세요" };
+  }
+
   const { error } = await supabase.from("applications").insert({
     applicant_id: null,
     applicant_name: parsed.data.applicant_name,
