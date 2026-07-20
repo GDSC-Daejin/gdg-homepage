@@ -26,6 +26,7 @@ function Icon({
 
 const icons: Record<string, string> = {
   home: "M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9",
+  events: "M8 3v3M16 3v3M4 8h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z",
   attend: "M8 3v3M16 3v3M4 8h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Zm3 8 2.5 2.5L15.5 12",
   notices: "M4 11v2a1 1 0 0 0 1 1h2l7 4V6l-7 4H5a1 1 0 0 0-1 1Zm14-3a4 4 0 0 1 0 6",
   meetings: "M7 3h10a1 1 0 0 1 1 1v13l-3-2-3 2-3-2-3 2V4a1 1 0 0 1 1-1Z",
@@ -54,7 +55,7 @@ const baseGroups: NavGroup[] = [
   {
     title: "활동",
     items: [
-      { href: "/attend", label: "출석 이력", icon: "attend" },
+      { href: "/events", label: "이벤트", icon: "events" },
       { href: "/notices", label: "공지", icon: "notices" },
       { href: "/meetings", label: "회의록", icon: "meetings" },
       { href: "/board", label: "자유게시판", icon: "board" },
@@ -69,7 +70,10 @@ const baseGroups: NavGroup[] = [
   },
   {
     title: "계정",
-    items: [{ href: "/profile", label: "프로필", icon: "profile" }],
+    items: [
+      { href: "/profile", label: "프로필", icon: "profile" },
+      { href: "/attend", label: "출석 이력", icon: "attend" },
+    ],
   },
 ];
 
