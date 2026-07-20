@@ -1,4 +1,12 @@
 import { PublicHeader } from "@/components/PublicHeader";
+import { JsonLd, breadcrumb } from "@/components/JsonLd";
+
+export const metadata = {
+  title: "소개",
+  description:
+    "GDG on Campus DJU는 함께 성장·실전 빌드·커뮤니티·오픈소스를 가치로 하는 대진대학교 개발자 동아리입니다. 정기세션·스터디·모각코·프로젝트로 활동해요.",
+  alternates: { canonical: "/about" },
+};
 
 const HISTORY = [
   { year: "2023", desc: "GDG on Campus DJU 창립" },
@@ -24,6 +32,7 @@ const ACTIVITIES = [
 export default function AboutPage() {
   return (
     <div className="min-h-dvh bg-[#060608] text-white">
+      <JsonLd data={breadcrumb("소개", "/about")} />
       <PublicHeader />
       <div className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="text-4xl font-extrabold tracking-tight">ABOUT</h1>

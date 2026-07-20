@@ -1,4 +1,11 @@
 import Link from "next/link";
+import { JsonLd, breadcrumb } from "@/components/JsonLd";
+
+export const metadata = {
+  title: "프로젝트",
+  description: "GDG on Campus DJU 멤버들이 진행 중인 프로젝트 모음.",
+  alternates: { canonical: "/projects" },
+};
 
 const PROJECTS = [
   { title: "Campus Map AI", desc: "캠퍼스 길찾기 · Gemini 기반", color: "#4285F4" },
@@ -10,6 +17,7 @@ const PROJECTS = [
 export default function ProjectsPage() {
   return (
     <div className="min-h-dvh bg-[#060608] px-6 py-16 text-white">
+      <JsonLd data={breadcrumb("프로젝트", "/projects")} />
       <div className="mx-auto max-w-2xl">
         <Link href="/" className="text-sm text-white/50 hover:text-white">
           ← 메인으로 돌아가기

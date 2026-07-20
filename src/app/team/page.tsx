@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { PublicHeader } from "@/components/PublicHeader";
+import { JsonLd, breadcrumb } from "@/components/JsonLd";
 import { POSITION_LABELS } from "@/lib/types";
+
+export const metadata = {
+  title: "팀",
+  description:
+    "GDG on Campus DJU 운영진을 소개합니다. 챕터 리드와 웹·AI·안드로이드·클라우드 트랙 코어 팀, 프론트엔드·백엔드·디자이너 파트로 활동해요.",
+  alternates: { canonical: "/team" },
+};
 
 const CHAPTER_LEAD = { name: "김도현", role: "회장 · 웹트랙", initials: "DH" };
 
@@ -41,6 +49,7 @@ function MemberCard({
 export default function TeamPage() {
   return (
     <div className="min-h-dvh bg-[#060608] text-white">
+      <JsonLd data={breadcrumb("팀", "/team")} />
       <PublicHeader />
       <div className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="text-4xl font-extrabold tracking-tight">TEAM</h1>

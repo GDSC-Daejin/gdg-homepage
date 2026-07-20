@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "면접 일정 예약 · GDG DJU",
+  robots: { index: false, follow: false },
 };
 
 interface InterviewContext {

@@ -12,6 +12,8 @@ import { isDemoMode } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = { robots: { index: false, follow: false } };
+
 const roleLabel: Record<string, string> = {
   organizer: "오거나이저",
   team_member: "팀 멤버",
