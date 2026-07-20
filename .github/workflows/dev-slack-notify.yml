@@ -1,0 +1,20 @@
+name: dev Slack 알림
+
+on:
+  push:
+    branches: [dev]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Slack에 변경 요약 전송
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_OPS }}
+          COMMITS_JSON: ${{ toJson(github.event.commits) }}
+          COMPARE_URL: ${{ github.event.compare }}
+        run: node scripts/notify-slack.mjs
