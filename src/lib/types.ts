@@ -8,6 +8,13 @@ export const POSITION_LABELS: Record<Position, string> = {
   beginner: "비기너",
 };
 export type MemberStatus = "active" | "dormant" | "withdrawn";
+export type AcademicStatus = "enrolled" | "leave" | "graduated" | "completed";
+export const ACADEMIC_STATUS_LABELS: Record<AcademicStatus, string> = {
+  enrolled: "재학",
+  leave: "휴학",
+  graduated: "졸업",
+  completed: "수료",
+};
 export type ApplicationStatus = "waiting" | "pending" | "accepted" | "rejected";
 export type EventType = "session" | "study" | "mogakco" | "party";
 export type RegistrationStatus = "confirmed" | "waitlisted";
@@ -24,6 +31,7 @@ export interface Profile {
   role: Role;
   position: Position | null;
   status: MemberStatus;
+  academic_status: AcademicStatus | null;
   joined_at: string;
 }
 
@@ -259,15 +267,6 @@ export interface BudgetEntry {
   amount: number;
   memo: string;
   created_by: string | null;
-  created_at: string;
-}
-
-export interface AuditLog {
-  id: number;
-  actor: string | null;
-  action: string;
-  target: string | null;
-  detail: Record<string, unknown>;
   created_at: string;
 }
 

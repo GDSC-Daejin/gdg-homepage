@@ -14,10 +14,10 @@ export const dynamic = "force-dynamic";
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; role?: string; status?: string; academicStatus?: string }>;
 }) {
   await requireAdmin();
-  const { q, role, status } = await searchParams;
+  const { q, role, status, academicStatus } = await searchParams;
   const demo = await isDemoMode();
 
   let members: Profile[] = DEMO_MEMBERS;
@@ -38,6 +38,7 @@ export default async function AdminMembersPage({
     }
     if (role) query = query.eq("role", role);
     if (status) query = query.eq("status", status);
+    if (academicStatus) query = query.eq("academic_status", academicStatus);
 
     const [{ data }, { count }] = await Promise.all([
       query,
@@ -47,7 +48,7 @@ export default async function AdminMembersPage({
     totalMembers = count ?? 0;
   }
 
-  const hasFilter = Boolean(q || role || status);
+  const hasFilter = Boolean(q || role || status || academicStatus);
   const organizerExists = members.some((m) => m.role === "organizer");
 
   return (
@@ -60,8 +61,8 @@ export default async function AdminMembersPage({
         }
       />
 
-      <div className="border-y border-gray-200 py-4">
-        <MemberFilters q={q} role={role} status={status} />
+      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card sm:p-6">
+        <MemberFilters q={q} role={role} status={status} academicStatus={academicStatus} />
       </div>
 
       {members.length === 0 ? (
@@ -84,31 +85,39 @@ export default async function AdminMembersPage({
           }
         />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
-                <th className="px-4 py-3 font-medium">이름</th>
-                <th className="px-4 py-3 font-medium">닉네임</th>
-                <th className="px-4 py-3 font-medium">학번</th>
-                <th className="px-4 py-3 font-medium">전공</th>
-                <th className="px-4 py-3 font-medium">역할</th>
-                <th className="px-4 py-3 font-medium">포지션</th>
-                <th className="px-4 py-3 font-medium">상태</th>
-                <th className="px-4 py-3 font-medium">가입일</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((member) => (
-                <MemberRow
-                  key={member.id}
-                  member={member}
-                  organizerTaken={organizerExists && member.role !== "organizer"}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 sm:px-6">
+            <h2 className="text-sm font-semibold text-gray-900">회원 목록</h2>
+            <p className="text-sm text-gray-500">{members.length}명</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="px-4 py-3 font-medium">이름</th>
+                  <th className="px-4 py-3 font-medium">닉네임</th>
+                  <th className="px-4 py-3 font-medium">학번</th>
+                  <th className="px-4 py-3 font-medium">전공</th>
+                  <th className="px-4 py-3 font-medium">전화번호</th>
+                  <th className="px-4 py-3 font-medium">역할</th>
+                  <th className="px-4 py-3 font-medium">포지션</th>
+                  <th className="px-4 py-3 font-medium">상태</th>
+                  <th className="px-4 py-3 font-medium">재학여부</th>
+                  <th className="px-4 py-3 font-medium">가입일</th>
+                </tr>
+              </thead>
+              <tbody>
+                {members.map((member) => (
+                  <MemberRow
+                    key={member.id}
+                    member={member}
+                    organizerTaken={organizerExists && member.role !== "organizer"}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </div>
   );

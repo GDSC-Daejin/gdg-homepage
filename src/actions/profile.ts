@@ -11,7 +11,7 @@ import type { ActionResult } from "@/lib/types";
 
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/");
 
   const parsed = profileSchema.safeParse({
     name: formData.get("name"),
@@ -21,6 +21,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
     phone: formData.get("phone"),
     interests: formData.getAll("interests"),
     position: formData.get("position"),
+    academic_status: formData.get("academic_status") || null,
   });
 
   if (!parsed.success) {
@@ -43,7 +44,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 
 export async function setProfileAvatar(path: string): Promise<ActionResult> {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/");
   if (!isOwnAvatarPath(profile.id, path)) {
     return { error: "프로필 사진 경로가 올바르지 않아요" };
   }
@@ -62,5 +63,5 @@ export async function setProfileAvatar(path: string): Promise<ActionResult> {
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/");
 }

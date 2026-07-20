@@ -81,6 +81,17 @@ export function ProfileForm({ profile }: ProfileFormProps) {
           <option value="designer">디자이너</option>
           <option value="beginner">비기너</option>
         </Select>
+        <Select
+          name="academic_status"
+          label="재학여부"
+          defaultValue={profile.academic_status ?? ""}
+        >
+          <option value="">선택 안 함</option>
+          <option value="enrolled">재학</option>
+          <option value="leave">휴학</option>
+          <option value="graduated">졸업</option>
+          <option value="completed">수료</option>
+        </Select>
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-medium text-gray-700">관심 분야</span>
           <div className="flex flex-wrap gap-2">

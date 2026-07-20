@@ -10,6 +10,7 @@ import type {
   Role,
   Position,
   MemberStatus,
+  AcademicStatus,
   Profile,
 } from "@/lib/types";
 
@@ -64,6 +65,26 @@ export async function setMemberStatus(
   const { error } = await supabase.rpc("admin_set_status", {
     p_user: userId,
     p_status: status,
+  });
+
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath("/admin/members");
+  revalidatePath(`/admin/members/${userId}`);
+  return {};
+}
+
+export async function setMemberAcademicStatus(
+  userId: string,
+  academicStatus: AcademicStatus | null,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_academic_status", {
+    p_user: userId,
+    p_academic_status: academicStatus,
   });
 
   if (error) return { error: toKoreanError(error) };

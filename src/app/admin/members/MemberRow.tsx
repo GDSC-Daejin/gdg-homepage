@@ -7,6 +7,7 @@ import {
   setMemberRole,
   setMemberPosition,
   setMemberStatus,
+  setMemberAcademicStatus,
   updateMemberProfile,
 } from "@/actions/member";
 import { Select, type SelectChangeEvent } from "@/components/Select";
@@ -18,10 +19,12 @@ import { formatKstDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import {
   POSITION_LABELS,
+  ACADEMIC_STATUS_LABELS,
   type Profile,
   type Role,
   type Position,
   type MemberStatus,
+  type AcademicStatus,
 } from "@/lib/types";
 
 const roleLabel: Record<Role, string> = {
@@ -50,6 +53,13 @@ const roleTone: Record<Role, "primary" | "success" | "neutral" | "warning"> = {
   applicant: "warning",
 };
 
+const academicStatusTone: Record<AcademicStatus, "primary" | "success" | "neutral" | "warning"> = {
+  enrolled: "success",
+  leave: "warning",
+  graduated: "neutral",
+  completed: "primary",
+};
+
 export function MemberRow({
   member,
   organizerTaken,
@@ -63,6 +73,7 @@ export function MemberRow({
   const [role, setRole] = useState(member.role);
   const [position, setPosition] = useState<Position | "">(member.position ?? "");
   const [status, setStatus] = useState(member.status);
+  const [academicStatus, setAcademicStatus] = useState(member.academic_status ?? null);
   const [error, setError] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -147,6 +158,20 @@ export function MemberRow({
     });
   }
 
+  function handleAcademicStatusChange(e: SelectChangeEvent) {
+    const next = (e.target.value || null) as AcademicStatus | null;
+    setAcademicStatus(next);
+    setError(undefined);
+    setSaved(false);
+    startTransition(async () => {
+      const result = await setMemberAcademicStatus(member.id, next);
+      if (result?.error) {
+        setError(result.error);
+        setAcademicStatus(member.academic_status ?? null);
+      } else flashSaved();
+    });
+  }
+
   return (
     <>
       <tr
@@ -172,6 +197,7 @@ export function MemberRow({
         <td className="px-4 py-4 text-gray-700">{member.nickname || "-"}</td>
         <td className="px-4 py-4 text-gray-700">{member.student_no || "-"}</td>
         <td className="px-4 py-4 text-gray-700">{member.major || "-"}</td>
+        <td className="px-4 py-4 text-gray-700">{member.phone || "-"}</td>
         <td className="px-4 py-4">
           <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>
         </td>
@@ -180,6 +206,9 @@ export function MemberRow({
         </td>
         <td className="px-4 py-4">
           <Badge tone={statusTone[status]}>{statusLabel[status]}</Badge>
+        </td>
+        <td className="px-4 py-4 text-gray-700">
+          {academicStatus ? ACADEMIC_STATUS_LABELS[academicStatus] : "-"}
         </td>
         <td className="px-4 py-4 text-gray-500">
           {formatKstDate(member.joined_at)}
@@ -252,10 +281,15 @@ export function MemberRow({
               </form>
 
               <div className="flex flex-col gap-3 bg-gray-50 p-6">
-                <p className="text-sm font-semibold text-gray-900">역할 · 상태</p>
+                <p className="text-sm font-semibold text-gray-900">역할 · 상태 · 재학여부</p>
                 <div className="flex items-center gap-2">
                   <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>
                   <Badge tone={statusTone[status]}>{statusLabel[status]}</Badge>
+                  {academicStatus && (
+                    <Badge tone={academicStatusTone[academicStatus]}>
+                      {ACADEMIC_STATUS_LABELS[academicStatus]}
+                    </Badge>
+                  )}
                 </div>
                 <Select
                   label="역할"
@@ -293,6 +327,18 @@ export function MemberRow({
                   <option value="active">활동</option>
                   <option value="dormant">휴면</option>
                   <option value="withdrawn">탈퇴</option>
+                </Select>
+                <Select
+                  label="재학여부"
+                  value={academicStatus ?? ""}
+                  onChange={handleAcademicStatusChange}
+                  disabled={pending}
+                >
+                  <option value="">선택 안 함</option>
+                  <option value="enrolled">재학</option>
+                  <option value="leave">휴학</option>
+                  <option value="graduated">졸업</option>
+                  <option value="completed">수료</option>
                 </Select>
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                   <span>변경 즉시 사이트에 반영돼요.</span>

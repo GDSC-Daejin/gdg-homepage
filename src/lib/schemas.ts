@@ -10,6 +10,10 @@ export const profileSchema = z.object({
   position: z.enum(["frontend", "backend", "designer", "beginner"], {
     message: "포지션을 선택해주세요",
   }),
+  academic_status: z
+    .enum(["enrolled", "leave", "graduated", "completed"])
+    .nullable()
+    .optional(),
 });
 
 export const eventSchema = z

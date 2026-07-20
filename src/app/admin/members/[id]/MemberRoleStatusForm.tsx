@@ -5,14 +5,17 @@ import {
   setMemberRole,
   setMemberPosition,
   setMemberStatus,
+  setMemberAcademicStatus,
 } from "@/actions/member";
 import { Select, type SelectChangeEvent } from "@/components/Select";
 import { Badge } from "@/components/Badge";
 import {
   POSITION_LABELS,
+  ACADEMIC_STATUS_LABELS,
   type Role,
   type Position,
   type MemberStatus,
+  type AcademicStatus,
 } from "@/lib/types";
 
 const roleLabel: Record<Role, string> = {
@@ -41,17 +44,26 @@ const statusTone: Record<MemberStatus, "success" | "neutral" | "danger"> = {
   withdrawn: "danger",
 };
 
+const academicStatusTone: Record<AcademicStatus, "primary" | "success" | "neutral" | "warning"> = {
+  enrolled: "success",
+  leave: "warning",
+  graduated: "neutral",
+  completed: "primary",
+};
+
 export function MemberRoleStatusForm({
   userId,
   role,
   position,
   status,
+  academicStatus,
   organizerTaken,
 }: {
   userId: string;
   role: Role;
   position: Position | null;
   status: MemberStatus;
+  academicStatus: AcademicStatus | null;
   organizerTaken: boolean;
 }) {
   const [roleValue, setRoleValue] = useState(role);
@@ -59,6 +71,7 @@ export function MemberRoleStatusForm({
     position ?? "",
   );
   const [statusValue, setStatusValue] = useState(status);
+  const [academicStatusValue, setAcademicStatusValue] = useState(academicStatus ?? null);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
@@ -101,9 +114,22 @@ export function MemberRoleStatusForm({
     });
   }
 
+  function handleAcademicStatusChange(e: SelectChangeEvent) {
+    const value = (e.target.value || null) as AcademicStatus | null;
+    setAcademicStatusValue(value);
+    setError(undefined);
+    startTransition(async () => {
+      const result = await setMemberAcademicStatus(userId, value);
+      if (result?.error) {
+        setError(result.error);
+        setAcademicStatusValue(academicStatus ?? null);
+      }
+    });
+  }
+
   return (
     <div className="flex flex-col gap-3 border-t border-gray-100 pt-4">
-      <p className="text-sm font-semibold text-gray-900">역할 · 포지션 · 상태</p>
+      <p className="text-sm font-semibold text-gray-900">역할 · 포지션 · 상태 · 재학여부</p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2">
           <Badge tone={roleTone[roleValue]}>{roleLabel[roleValue]}</Badge>
@@ -111,6 +137,11 @@ export function MemberRoleStatusForm({
             <Badge tone="neutral">{POSITION_LABELS[positionValue]}</Badge>
           )}
           <Badge tone={statusTone[statusValue]}>{statusLabel[statusValue]}</Badge>
+          {academicStatusValue && (
+            <Badge tone={academicStatusTone[academicStatusValue]}>
+              {ACADEMIC_STATUS_LABELS[academicStatusValue]}
+            </Badge>
+          )}
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <Select
@@ -152,6 +183,19 @@ export function MemberRoleStatusForm({
             <option value="active">활동</option>
             <option value="dormant">휴면</option>
             <option value="withdrawn">탈퇴</option>
+          </Select>
+          <Select
+            label="재학여부"
+            value={academicStatusValue ?? ""}
+            onChange={handleAcademicStatusChange}
+            disabled={pending}
+            className="w-36"
+          >
+            <option value="">선택 안 함</option>
+            <option value="enrolled">재학</option>
+            <option value="leave">휴학</option>
+            <option value="graduated">졸업</option>
+            <option value="completed">수료</option>
           </Select>
         </div>
       </div>
