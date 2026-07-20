@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { MonthFilter } from "@/components/MonthFilter";
 import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
 import { sumPointsInMonth } from "@/lib/points";
-import type { Event, EventType, Notice } from "@/lib/types";
+import type { Event, EventType, Group, Notice } from "@/lib/types";
 
 const TYPE_LABELS: Record<EventType, string> = {
   session: "정기세션",
@@ -21,6 +21,9 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"
   mogakco: "warning",
   party: "danger",
 };
+
+const GROUP_TYPE_LABELS = { study: "스터디", project: "프로젝트" } as const;
+const GROUP_STATUS_LABELS = { recruiting: "모집중", active: "진행중", archived: "종료" } as const;
 
 function CalendarIllustration() {
   return (
@@ -134,7 +137,7 @@ export async function HomeDashboard({
     .limit(1)
     .maybeSingle();
 
-  const [{ data: openSurveys }, { data: myResponses }, { data: pointLogs }] =
+  const [{ data: openSurveys }, { data: myResponses }, { data: pointLogs }, { data: groupMembers }] =
     await Promise.all([
       supabase
         .from("surveys")
@@ -149,7 +152,20 @@ export async function HomeDashboard({
         .from("point_logs")
         .select("amount, created_at")
         .eq("user_id", profileId),
+      supabase
+        .from("group_members")
+        .select("group_id")
+        .eq("user_id", profileId),
     ]);
+
+  const groupIds = (groupMembers ?? []).map((member) => member.group_id);
+  const { data: groups } = groupIds.length
+    ? await supabase
+        .from("groups")
+        .select("id, type, title, status")
+        .in("id", groupIds)
+    : { data: [] };
+  const myGroups = (groups ?? []) as Pick<Group, "id" | "type" | "title" | "status">[];
 
   const respondedIds = new Set((myResponses ?? []).map((response) => response.survey_id));
   const unanswered = (openSurveys ?? []).filter((survey) => !respondedIds.has(survey.id));
@@ -291,6 +307,46 @@ export async function HomeDashboard({
             </Card>
           </Link>
         </div>
+      </section>
+
+      <section>
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-bold tracking-tight text-gray-900">
+            내 스터디·프로젝트
+          </h2>
+          {myGroups.length > 0 && <Badge tone="primary">{myGroups.length}개</Badge>}
+        </div>
+        <Card>
+          {myGroups.length > 0 ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {myGroups.map((group) => (
+                <div key={group.id} className="rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-50">
+                  <div className="flex items-center gap-2">
+                    <Badge tone={group.type === "study" ? "success" : "primary"}>
+                      {GROUP_TYPE_LABELS[group.type]}
+                    </Badge>
+                    <span className="text-xs text-gray-500">{GROUP_STATUS_LABELS[group.status]}</span>
+                  </div>
+                  <p className="mt-2 truncate font-semibold text-gray-900">{group.title}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-semibold text-gray-900">아직 참여 중인 스터디·프로젝트가 없어요</p>
+                <p className="mt-1 text-sm text-gray-500">모집 중인 활동은 곧 목록에서 확인할 수 있어요.</p>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                모집 중인 스터디·프로젝트 보기
+              </button>
+            </div>
+          )}
+        </Card>
       </section>
 
       <section>

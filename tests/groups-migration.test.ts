@@ -35,6 +35,19 @@ describe("groups 마이그레이션", () => {
     expect(sql).toContain(
       "grant execute on function public.public_groups() to anon, authenticated",
     );
+
+    const adminMemberMigration = await readFile(
+      "supabase/migrations/0032_admin_group_members.sql",
+      "utf8",
+    );
+    expect(adminMemberMigration).toContain(
+      "function public.admin_assign_group_member(p_group uuid, p_user uuid)",
+    );
+    expect(adminMemberMigration).toContain("for update");
+    expect(adminMemberMigration).toContain("FULL");
+    expect(adminMemberMigration).toContain(
+      "grant execute on function public.admin_assign_group_member(uuid, uuid) to authenticated",
+    );
   });
 
   it("TypeScript 타입이 SQL 제약과 일치한다", async () => {

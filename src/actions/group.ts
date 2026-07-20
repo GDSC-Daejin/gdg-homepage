@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { isDemoMode } from "@/lib/demo";
 import { toKoreanError } from "@/lib/errors";
 import { parseGroupForm } from "@/lib/group-form";
@@ -9,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/types";
 
 const ADMIN_PATH = "/admin/groups";
+const uuid = z.string().uuid();
 
 export async function createGroup(formData: FormData): Promise<ActionResult> {
   await requireAdmin();
@@ -70,6 +72,35 @@ export async function removeMember(
     .eq("user_id", userId);
   if (error) return { error: toKoreanError(error) };
   revalidatePath(ADMIN_PATH);
+  return {};
+}
+
+export async function assignGroupMember(
+  groupId: string,
+  userId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+  if (!uuid.safeParse(groupId).success || !uuid.safeParse(userId).success) {
+    return { error: "요청이 올바르지 않습니다" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_assign_group_member", {
+    p_group: groupId,
+    p_user: userId,
+  });
+  if (error) {
+    const messages: Record<string, string> = {
+      NOT_FOUND: "그룹을 찾을 수 없습니다",
+      FULL: "정원이 가득 찼습니다",
+    };
+    const key = Object.keys(messages).find((code) => error.message.includes(code));
+    return { error: key ? messages[key] : toKoreanError(error) };
+  }
+
+  revalidatePath(ADMIN_PATH);
+  revalidatePath(`${ADMIN_PATH}/${groupId}`);
   return {};
 }
 
