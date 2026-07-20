@@ -31,7 +31,7 @@ export default async function AdminAttendancePage() {
       supabase
         .from("profiles")
         .select("*")
-        .eq("role", "member")
+        .in("role", ["member", "organizer", "team_member"])
         .eq("status", "active")
         .order("name"),
       supabase.from("events").select("id").lt("starts_at", now),

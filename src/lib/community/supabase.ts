@@ -8,7 +8,7 @@ export function supabaseCommunity(client: SupabaseClient): Community {
       const { data } = await client
         .from("profiles")
         .select("*")
-        .eq("role", "member")
+        .in("role", ["member", "organizer", "team_member"])
         .eq("status", "active")
         .order("name");
       return (data as Profile[]) ?? [];
