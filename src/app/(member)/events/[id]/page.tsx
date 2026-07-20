@@ -9,7 +9,7 @@ import { RegistrationPanel } from "@/components/RegistrationPanel";
 import { formatKst, formatKstRange } from "@/lib/format";
 import { EventLocation } from "@/components/EventLocation";
 import { NaverMap } from "@/components/NaverMap";
-import type { BoardType, Event, EventType } from "@/lib/types";
+import type { BoardType, Event, EventType, RegistrationStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +25,11 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"
   study: "success",
   mogakco: "warning",
   party: "danger",
+};
+
+const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
+  confirmed: "확정",
+  waitlisted: "대기",
 };
 
 export default async function MemberEventDetailPage({
@@ -53,6 +58,15 @@ export default async function MemberEventDetailPage({
   });
   const confirmed = Number(countRows?.[0]?.confirmed ?? 0);
 
+  const { data: registrantRows } = await supabase.rpc("event_registrants", {
+    p_event_id: e.id,
+  });
+  const registrants = (registrantRows ?? []) as {
+    user_id: string;
+    name: string;
+    status: RegistrationStatus;
+  }[];
+
   const { data: postRows } = await supabase
     .from("posts")
     .select("id, board, title, created_at")
@@ -65,34 +79,99 @@ export default async function MemberEventDetailPage({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={e.title} />
-      <Card className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>
-          <span className="text-sm text-gray-500">
-            {formatKstRange(e.starts_at, e.ends_at)}
-          </span>
-        </div>
+      <PageHeader
+        title={e.title}
+        action={<Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="divide-y divide-gray-200 p-0 dark:divide-gray-200">
+          <div className="p-5">
+            <p className="text-sm font-semibold text-gray-900">일시</p>
+            <p className="mt-2 text-sm text-gray-700">
+              {formatKstRange(e.starts_at, e.ends_at)}
+            </p>
+          </div>
+          {(e.location || e.address) && (
+            <div className="p-5">
+              <p className="text-sm font-semibold text-gray-900">장소</p>
+              <div className="mt-2">
+                <EventLocation location={e.location} address={e.address} />
+              </div>
+            </div>
+          )}
+          {e.speaker && (
+            <div className="p-5">
+              <p className="text-sm font-semibold text-gray-900">발표자</p>
+              <p className="mt-2 text-sm text-gray-700">{e.speaker}</p>
+            </div>
+          )}
+        </Card>
         {(e.location || e.address) && (
-          <EventLocation location={e.location} address={e.address} />
+          <Card className="flex flex-col gap-4 p-0 overflow-hidden">
+            <p className="px-5 pt-5 text-sm font-semibold text-gray-900">오시는 길</p>
+            <NaverMap
+              coords={
+                e.place?.lat != null && e.place?.lng != null
+                  ? { lat: e.place.lat, lng: e.place.lng }
+                  : null
+              }
+              address={e.address || e.location}
+            />
+          </Card>
         )}
-        <NaverMap
-          coords={
-            e.place?.lat != null && e.place?.lng != null
-              ? { lat: e.place.lat, lng: e.place.lng }
-              : null
-          }
-          address={e.address || e.location}
-        />
-        {e.speaker && (
-          <p className="text-sm text-gray-700">발표자: {e.speaker}</p>
+      </div>
+      <Card className="flex flex-col gap-3">
+        <div className="flex items-baseline justify-between gap-4">
+          <p className="text-sm font-semibold text-gray-900">신청 현황</p>
+          <p className="text-sm text-gray-700">
+            <span className="text-xl font-bold text-primary">{confirmed}</span>
+            {e.capacity ? ` / ${e.capacity}` : ""}명
+          </p>
+        </div>
+        {e.capacity && (
+          <div
+            role="progressbar"
+            aria-label="신청 인원"
+            aria-valuemin={0}
+            aria-valuenow={confirmed}
+            aria-valuemax={e.capacity}
+            className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-200"
+          >
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${Math.min(100, (confirmed / e.capacity) * 100)}%` }}
+            />
+          </div>
         )}
-        {e.description && <p className="text-sm text-gray-700">{e.description}</p>}
-        <p className="text-sm text-gray-500">
-          신청 {confirmed}
-          {e.capacity ? ` / ${e.capacity}` : ""}명
-        </p>
+        <div className="border-t border-gray-200 pt-3 dark:border-gray-200">
+          <p className="text-sm font-semibold text-gray-900">신청한 멤버</p>
+          {registrants.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-500">아직 신청한 멤버가 없어요.</p>
+          ) : (
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {registrants.map((registrant) => (
+                <li
+                  key={registrant.user_id}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-50"
+                >
+                  <span className="truncate text-sm font-medium text-gray-900">
+                    {registrant.name || "(이름 없음)"}
+                  </span>
+                  <Badge tone={registrant.status === "confirmed" ? "success" : "neutral"}>
+                    {REGISTRATION_STATUS_LABELS[registrant.status]}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Card>
+      {e.description && (
+        <Card className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-gray-900">세션 소개</p>
+          <p className="text-sm leading-6 text-gray-700">{e.description}</p>
+        </Card>
+      )}
       <RegistrationPanel eventId={e.id} profile={profile} code={code} />
       {relatedPosts.length > 0 && (
         <Card className="flex flex-col gap-3">
