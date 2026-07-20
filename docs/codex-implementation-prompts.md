@@ -1,7 +1,10 @@
 # Codex 구현 프롬프트 모음 (미완 8건)
 
 > 각 프롬프트는 **독립 Codex 세션**에 하나씩 붙여넣는다. 한 세션에서 여러 개를 몰아 실행하지 말 것(diff·리뷰 폭발).
-> 공통 규칙: 저장소 루트 `AGENTS.md`를 먼저 읽는다. Next.js 16이라 학습 데이터와 다를 수 있으니 새 API 사용 전 `node_modules/next/dist/docs/`를 확인한다. 태스크 단위로 커밋하고, 마지막에 `npm test`(vitest)와 `npm run build`가 통과해야 한다. 마이그레이션은 `supabase/migrations/`에 다음 번호 `.sql` 파일로 추가만 한다(적용은 사람이 함).
+> **패키지 매니저는 pnpm** (npm/yarn 쓰지 말 것).
+> 공통 규칙: 저장소 루트 `AGENTS.md`를 먼저 읽는다. Next.js 16이라 학습 데이터와 다를 수 있으니 새 API 사용 전 `node_modules/next/dist/docs/`를 확인한다. 태스크 단위로 커밋하고, 마지막에 `pnpm test`(vitest)와 `pnpm build`가 통과해야 한다.
+> **커밋 규칙(중요):** 이 저장소는 같은 워킹트리에 다른 세션의 미커밋 변경이 자주 있다. 커밋은 반드시 `git add <명시 경로>`로 **내가 만든 파일만** — `git add -A`/`git commit -a` 금지. 커밋 메시지에 `Co-Authored-By` 트레일러를 넣지 말 것(훅이 거부). 병렬로 돌릴 땐 각 작업을 **별도 git worktree/브랜치**에서 실행하고 dev로는 하나씩 순차 머지한다.
+> **마이그레이션 번호는 사전 배정됨(경쟁 방지):** #4=`0033`, #1=`0034`, #3=`0035`부터. 그 외 작업은 새 마이그레이션 없음. 지정된 번호를 그대로 쓰고 임의로 "다음 번호"를 집지 말 것.
 
 ---
 
@@ -14,11 +17,11 @@ gdg-dju 저장소에서 "재학 여부 관리" 기능을 구현해줘.
 
 핵심:
 - 상태값은 enrolled / leave_of_absence / graduated 3개만 허용, 기존 행 기본값은 enrolled.
-- profiles와 공개 지원서(applications) 양쪽에 독립적으로 저장. 마이그레이션은 supabase/migrations/ 에 다음 번호 .sql 로 추가.
+- profiles와 공개 지원서(applications) 양쪽에 독립적으로 저장. 마이그레이션 파일명은 반드시 0034_enrollment_status.sql (사전 배정 번호, 임의로 다른 번호 쓰지 말 것).
 - Zod로 서버 입력 검증. 사용자 프로필은 기존 직접 업데이트 권한, 관리자는 기존 admin_update_profile RPC로 저장.
 - 사용자 프로필 폼(src/app/(member)/profile), 관리자 회원 관리(src/app/admin/members), 지원 폼/지원서 심사 화면에 입력·수정·표시 반영.
 
-시작 전 AGENTS.md를 읽고, 태스크마다 커밋해. 완료 후 npm test 와 npm run build 통과 확인.
+시작 전 AGENTS.md를 읽고, 태스크마다 커밋해. 완료 후 pnpm test 와 pnpm build 통과 확인.
 ```
 
 ---
@@ -37,7 +40,7 @@ docs/seo-aeo-implementation-plan.md 를 읽고 계획대로 태스크 단위로 
 
 Next.js 16 App Router의 메타데이터/파일 규약을 쓸 것 — 정확한 API 시그니처는 node_modules/next/dist/docs/ 에서 확인하고 쓴다(app/sitemap.ts, app/robots.ts, generateMetadata, structured data 등).
 
-시작 전 AGENTS.md를 읽고, 태스크마다 커밋. 완료 후 npm run build 로 라우트/메타데이터 생성 확인, npm test 통과 확인.
+시작 전 AGENTS.md를 읽고, 태스크마다 커밋. 완료 후 pnpm build 로 라우트/메타데이터 생성 확인, pnpm test 통과 확인.
 ```
 
 ---
@@ -52,8 +55,10 @@ docs/security-hardening-plan.md 를 읽고 계획대로 태스크 단위로 구�
 주의:
 - 계획서에 없는 범위는 손대지 마. 서버 액션/RLS 동작을 깨지 않도록 기존 인증 경로(src/lib/auth.ts, requireAdmin 등)를 먼저 파악하고 진행.
 - 헤더/미들웨어 관련 API는 Next.js 16 기준으로 node_modules/next/dist/docs/ 에서 확인.
+- **계획서가 "다음 번호는 0025부터"라고 적었지만 그건 작성 시점 기준이고 이미 0032까지 존재한다. 새 마이그레이션은 0035부터 순서대로(0035, 0036…) 부여할 것.**
+- 신규 의존성(Upstash/KV 등)은 도입하지 않는다(계획서에서 기본안으로 확정).
 
-시작 전 AGENTS.md를 읽고, 태스크마다 커밋. 완료 후 npm test 와 npm run build 통과 확인. 리스크가 큰 변경(정책 완화/강제 리다이렉트 등)은 커밋 메시지에 명시.
+시작 전 AGENTS.md를 읽고, 태스크마다 커밋. 완료 후 pnpm test 와 pnpm build 통과 확인. 리스크가 큰 변경(정책 완화/강제 리다이렉트 등)은 커밋 메시지에 명시.
 ```
 
 ---
@@ -71,7 +76,7 @@ docs/superpowers/plans/2026-07-20-points-store.md 를 읽고 Task 1~9를 순서�
 - 모든 상태 변경은 security definer RPC + for update 잠금으로만. 감사 로깅(log_audit)은 비활성이라 호출 금지.
 - 어드민 수동 지급(src/app/admin/points)은 이미 있으니 중복 금지. 서버 액션은 points.ts/budget.ts 골격 그대로.
 
-시작 전 AGENTS.md를 읽고, 태스크마다 커밋. 완료 후 npm test 와 npm run build 통과 확인.
+시작 전 AGENTS.md를 읽고, 태스크마다 커밋. 완료 후 pnpm test 와 pnpm build 통과 확인.
 ```
 
 ---
@@ -88,7 +93,7 @@ docs/superpowers/plans/2026-07-19-analytics-dashboard.md 를 읽어라. Phase 1(
 - admin에 /admin/analytics 서버 컴포넌트 페이지 추가, 무의존성 SVG/테이블로 렌더. AdminSidebarNav에 진입점 연결.
 - google-auth-library 의존성은 이 Phase에서만 추가. 서비스 계정 자격증명은 환경변수로 읽고, 값은 코드/커밋에 넣지 마.
 
-시작 전 AGENTS.md를 읽고 계획서의 Phase 2 태스크를 순서대로 실행, 태스크마다 커밋. 완료 후 npm test 와 npm run build 통과 확인.
+시작 전 AGENTS.md를 읽고 계획서의 Phase 2 태스크를 순서대로 실행, 태스크마다 커밋. 완료 후 pnpm test 와 pnpm build 통과 확인.
 ```
 
 ---
@@ -105,7 +110,7 @@ docs/superpowers/plans/2026-07-19-member-event-detail-redesign.md 가 계획서�
 - 페이지 구성과 유틸 클래스만 변경. 기존 디자인 토큰/컴포넌트 재사용, 패키지·공용 추상화 추가 금지.
 - API 호출/URL 처리/접근성 컨트롤/옵셔널 데이터 렌더 보존.
 
-완성 후 하나의 커밋으로 정리. AGENTS.md 확인. npm test 와 npm run build 통과 확인.
+완성 후 하나의 커밋으로 정리. AGENTS.md 확인. pnpm test 와 pnpm build 통과 확인.
 ```
 
 ---
@@ -121,7 +126,7 @@ docs/superpowers/plans/2026-07-20-member-table-surface.md 가 계획서다. src/
 - 필터와 테이블을 별도 시각 표면으로 분리: 컴팩트 필터 카드 1개 + 작은 테이블 헤딩이 있는 테이블 카드 1개(페이지-로컬 Tailwind 래퍼만).
 - q/role/status URL 필터, 회원 행 다이얼로그, 링크, 기존 8개 컬럼 보존. MemberFilters/MemberRow 계약 유지, 의존성·컴포넌트 추가 금지. 기존 rounded-xl/gray 토큰/shadow-card 재사용.
 
-완성 후 하나의 커밋으로 정리. AGENTS.md 확인. npm test 와 npm run build 통과 확인.
+완성 후 하나의 커밋으로 정리. AGENTS.md 확인. pnpm test 와 pnpm build 통과 확인.
 ```
 
 ---
@@ -140,17 +145,35 @@ docs/superpowers/plans/2026-07-19-member-home-redesign.md 를 읽고 계획대�
 
 주의: HomeDashboard에는 리마인더 배너 등 최근 반영분이 있을 수 있으니 git log/blame으로 현재 상태를 먼저 파악하고, 기존 기능을 깨지 마.
 
-태스크마다 커밋. AGENTS.md 확인. npm test 와 npm run build 통과 확인.
+태스크마다 커밋. AGENTS.md 확인. pnpm test 와 pnpm build 통과 확인.
 ```
 
 ---
 
-## 실행 순서 권장
+## 병렬 실행 전략 (충돌 분석 기반)
 
-독립적이라 순서 강제는 없지만, 충돌 최소화 기준:
-1. **6·7** (미커밋분 먼저 커밋해 워킹트리 정리) →
-2. **8** (홈), **1** (재학여부) — 멤버/어드민 화면 변경 →
-3. **5** (분석 대시보드), **4** (포인트 상점) — 신규 백엔드+화면 →
-4. **2** (SEO), **3** (보안) — 설정/인프라, 마지막에.
+**8-way 완전 병렬은 금지.** 아래 작업들이 같은 파일/마이그레이션 번호를 건드려 충돌하기 때문:
+- 마이그레이션 번호: #4·#1·#3 → **사전 배정으로 해소**(0033/0034/0035).
+- 공유 TS 파일: `types.ts·schemas.ts·demoData.ts·errors.ts·profile/page.tsx` → **#4↔#1**.
+- `src/app/admin/members/page.tsx` → **#1↔#7**.
+- `src/app/admin/AdminSidebarNav.tsx` → **#4↔#5**.
+- `schemas.ts`(attendCodeSchema) → **#3**도 살짝 겹침.
 
-✅ **8건 전부 "계획서 실행" 프롬프트로 통일됨.** 포인트 상점 계획서(docs/superpowers/plans/2026-07-20-points-store.md) 작성 완료, SEO 미확정 값 전부 확정(계획서 반영). 보안 계획서는 원래 Codex 핸드오프용이라 그대로 실행 가능.
+### 그룹 A — 병렬 OK (서로 공유 파일 없음)
+각각 **별도 worktree/브랜치**에서 동시 실행 후 하나씩 머지:
+- **#2 SEO** (layout.tsx + 공개 페이지 + 신규 robots/sitemap/JsonLd)
+- **#6 이벤트 상세 리디자인** (events/[id]/page.tsx)
+- **#8 홈 리디자인** (HomeDashboard.tsx)
+
+> ⚠️ #6·#7은 지금 워킹트리에 **미커밋 변경**이 있다. 병렬로 worktree를 파기 전에, 이 변경들을 각자 브랜치에 먼저 옮기거나 커밋해 둘 것(안 그러면 worktree가 변경을 못 가져감).
+
+### 그룹 B — 순차 필수 (공유 파일·마이그레이션 겹침)
+한 번에 하나씩, dev로 머지하고 다음 것이 그 위에서 시작. 권장 순서:
+**#4 포인트상점(0033) → #1 재학여부(0034) → #7 회원테이블 → #5 분석대시보드 → #3 보안(0035~)**
+
+- #4→#1: `types.ts`/`schemas.ts`/`demoData.ts`/`profile/page.tsx`를 순차로 쌓아 충돌 회피.
+- #1→#7: 둘 다 `admin/members/page.tsx` → #1(재학 컬럼 표시) 먼저, #7(표면 분리) 그 위에.
+- #4→#5: 둘 다 `AdminSidebarNav` → #4 먼저 링크 추가, #5가 이어서.
+- #3은 `schemas.ts`·마이그레이션을 건드리니 B의 마지막에.
+
+**요약:** 그룹 A 3개를 병렬로 돌려 빠르게 끝내고, 그룹 B 5개는 순차 파이프라인으로. 이러면 실질 소요는 "가장 긴 A작업" + "B 5개 합"이 되고 머지 충돌은 거의 없다.

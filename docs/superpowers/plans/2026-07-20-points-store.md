@@ -284,7 +284,7 @@ describe("storeItemSchema", () => {
 });
 ```
 
-- [ ] **Step 2: 실패 확인** — `npx vitest run tests/store-schema.test.ts` → FAIL (`storeItemSchema` 없음)
+- [ ] **Step 2: 실패 확인** — `pnpm vitest run tests/store-schema.test.ts` → FAIL (`storeItemSchema` 없음)
 
 - [ ] **Step 3: 스키마 구현** — `src/lib/schemas.ts`에 추가 (기존 스키마 스타일 준수)
 
@@ -300,7 +300,7 @@ export const storeItemSchema = z.object({
 });
 ```
 
-- [ ] **Step 4: 통과 확인** — `npx vitest run tests/store-schema.test.ts` → PASS
+- [ ] **Step 4: 통과 확인** — `pnpm vitest run tests/store-schema.test.ts` → PASS
 
 - [ ] **Step 5: 커밋** — `git add tests/store-schema.test.ts src/lib/schemas.ts && git commit -m "feat: 포인트 상점 상품 Zod 스키마 + 테스트"`
 
@@ -418,7 +418,7 @@ NOT_PENDING        → "이미 처리된 신청입니다"
 NOT_CANCELABLE     → "취소할 수 없는 신청입니다"
 ```
 
-- [ ] **Step 3: 타입체크** — `npx tsc --noEmit` (또는 `npm run build`) 통과 확인
+- [ ] **Step 3: 타입체크** — `pnpm exec tsc --noEmit` (또는 `pnpm build`) 통과 확인
 
 - [ ] **Step 4: 커밋** — `git add src/actions/store.ts src/lib/errors.ts && git commit -m "feat: 포인트 상점 서버 액션 + 한국어 에러 매핑"`
 
@@ -490,7 +490,7 @@ async function load(): Promise<{ items: StoreItem[]; balance: number }> {
 
 - [ ] **Step 2: `RedeemButton` 작성** — `confirm` 후 `requestRedemption(itemId)` 호출, 결과 `error`면 표시. 기존 client 액션 버튼 패턴(예: `RegistrationPanel`/포인트 폼) 참조.
 
-- [ ] **Step 3: 빌드 확인** — `npm run build` 통과
+- [ ] **Step 3: 빌드 확인** — `pnpm build` 통과
 
 - [ ] **Step 4: 커밋** — `git commit -m "feat: 회원 포인트 상점 페이지 + 신청 버튼"`
 
@@ -514,7 +514,7 @@ async function load(): Promise<{ items: StoreItem[]; balance: number }> {
 
 - [ ] **Step 4: 사이드바 링크** — `SidebarNav.tsx` "활동" 섹션에 `/store`("상점") 항목 추가. 기존 항목 스타일/아이콘 관례 준수.
 
-- [ ] **Step 5: 빌드 확인 + 커밋** — `npm run build` → `git commit -m "feat: 상점 주문 내역 + 프로필 라벨 + 사이드바 진입점"`
+- [ ] **Step 5: 빌드 확인 + 커밋** — `pnpm build` → `git commit -m "feat: 상점 주문 내역 + 프로필 라벨 + 사이드바 진입점"`
 
 ---
 
@@ -536,14 +536,14 @@ async function load(): Promise<{ items: StoreItem[]; balance: number }> {
 
 - [ ] **Step 4: 어드민 사이드바 링크** — `AdminSidebarNav.tsx` "운영" 섹션에 `/admin/store`("상점") 추가.
 
-- [ ] **Step 5: 빌드 확인 + 커밋** — `npm run build` → `git commit -m "feat: 어드민 포인트 상점 관리 페이지 + 사이드바"`
+- [ ] **Step 5: 빌드 확인 + 커밋** — `pnpm build` → `git commit -m "feat: 어드민 포인트 상점 관리 페이지 + 사이드바"`
 
 ---
 
 ## Task 9: 회귀 확인 + 마무리
 
-- [ ] **Step 1: 전체 테스트** — `npm test` → 회귀 없음
-- [ ] **Step 2: 빌드** — `npm run build` → 타입 에러 0
+- [ ] **Step 1: 전체 테스트** — `pnpm test` → 회귀 없음
+- [ ] **Step 2: 빌드** — `pnpm build` → 타입 에러 0
 - [ ] **Step 3: (가능 시) 로컬 스모크** — 데모 모드 ON으로 `/store`, `/store/orders`, `/admin/store` 렌더 확인
 - [ ] **Step 4: 검증 기준 대조** (spec §검증 기준):
   - 신청 즉시 잔액 `price_points`만큼 감소
