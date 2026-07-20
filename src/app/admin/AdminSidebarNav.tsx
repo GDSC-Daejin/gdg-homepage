@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { SVGProps } from "react";
+import { useState, type SVGProps } from "react";
 
 function Icon({
   d,
@@ -51,27 +51,21 @@ interface NavItem {
 interface NavGroup {
   title: string;
   items: NavItem[];
+  defaultCollapsed?: boolean;
+  fixed?: boolean;
 }
 
 const groups: NavGroup[] = [
-  { title: "메인", items: [{ href: "/admin", label: "대시보드", icon: "dashboard" }] },
   {
     title: "운영",
+    fixed: true,
     items: [
+      { href: "/admin", label: "대시보드", icon: "dashboard" },
       { href: "/admin/members", label: "회원", icon: "members" },
       { href: "/admin/groups", label: "스터디·프로젝트", icon: "groups" },
       { href: "/admin/events", label: "이벤트", icon: "events" },
       { href: "/admin/places", label: "장소", icon: "places" },
       { href: "/admin/attendance", label: "출석", icon: "attend" },
-    ],
-  },
-  {
-    title: "모집",
-    items: [
-      { href: "/admin/applications", label: "지원서", icon: "applications" },
-      { href: "/admin/interviews", label: "면접 일정", icon: "interview" },
-      { href: "/admin/interview-questions", label: "면접 질문", icon: "interview" },
-      { href: "/admin/settings", label: "설정", icon: "settings" },
     ],
   },
   {
@@ -90,40 +84,89 @@ const groups: NavGroup[] = [
       { href: "/admin/budget", label: "예산", icon: "budget" },
     ],
   },
+  {
+    title: "모집",
+    defaultCollapsed: true,
+    items: [
+      { href: "/admin/applications", label: "지원서", icon: "applications" },
+      { href: "/admin/interviews", label: "면접 일정", icon: "interview" },
+      { href: "/admin/interview-questions", label: "면접 질문", icon: "interview" },
+      { href: "/admin/settings", label: "설정", icon: "settings" },
+    ],
+  },
 ];
+
+function itemActive(href: string, pathname: string) {
+  return href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+}
 
 export function AdminSidebarNav() {
   const pathname = usePathname();
+  // 접힘 상태: defaultCollapsed 그룹은 접되, 현재 경로를 포함하면 펼쳐 둔다.
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    const s = new Set<string>();
+    for (const g of groups) {
+      if (g.defaultCollapsed && !g.items.some((i) => itemActive(i.href, pathname))) {
+        s.add(g.title);
+      }
+    }
+    return s;
+  });
+
+  const toggle = (title: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      next.has(title) ? next.delete(title) : next.add(title);
+      return next;
+    });
 
   return (
     <nav className="flex flex-col gap-5">
-      {groups.map((group) => (
-        <div key={group.title} className="flex flex-col gap-1">
-          <p className="px-3 text-xs font-semibold text-gray-400">
-            {group.title}
-          </p>
-          {group.items.map((item) => {
-            const active =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-100 ${
-                  active
-                    ? "bg-primary-soft text-primary"
-                    : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
-                }`}
+      {groups.map((group) => {
+        const isCollapsed = !group.fixed && collapsed.has(group.title);
+        return (
+          <div key={group.title} className="flex flex-col gap-1">
+            {group.fixed ? (
+              <p className="px-3 py-1 text-xs font-semibold text-gray-400">
+                {group.title}
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={() => toggle(group.title)}
+                aria-expanded={!isCollapsed}
+                className="flex items-center justify-between px-3 py-1 text-xs font-semibold text-gray-400 hover:text-gray-600"
               >
-                <Icon d={icons[item.icon]} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </div>
-      ))}
+                {group.title}
+                <Icon
+                  d="M6 9l6 6 6-6"
+                  className={`h-3.5 w-3.5 shrink-0 transition-transform duration-150 ${
+                    isCollapsed ? "-rotate-90" : ""
+                  }`}
+                />
+              </button>
+            )}
+            {!isCollapsed &&
+              group.items.map((item) => {
+                const active = itemActive(item.href, pathname);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-100 ${
+                      active
+                        ? "bg-primary-soft text-primary"
+                        : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
+                    }`}
+                  >
+                    <Icon d={icons[item.icon]} />
+                    {item.label}
+                  </Link>
+                );
+              })}
+          </div>
+        );
+      })}
     </nav>
   );
 }
