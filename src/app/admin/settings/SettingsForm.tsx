@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { updateRecruitingSettings } from "@/actions/recruiting";
 import { Input } from "@/components/Input";
+import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/components/Button";
 import { POSITION_LABELS, type Position } from "@/lib/types";
 import type { RecruitingSettings } from "@/lib/types";
@@ -77,21 +78,19 @@ export function SettingsForm({ settings }: { settings: RecruitingSettings }) {
       <Input name="season" label="시즌명" defaultValue={settings.season} required />
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Input
+        <DatePicker
           name="apply_start"
-          type="date"
           label="지원 시작일"
-          value={start}
+          defaultValue={start}
           max={end || undefined}
-          onChange={(e) => setStart(e.target.value)}
+          onChange={setStart}
         />
-        <Input
+        <DatePicker
           name="apply_end"
-          type="date"
           label="지원 종료일"
-          value={end}
+          defaultValue={end}
           min={start || undefined}
-          onChange={(e) => setEnd(e.target.value)}
+          onChange={setEnd}
         />
       </div>
 

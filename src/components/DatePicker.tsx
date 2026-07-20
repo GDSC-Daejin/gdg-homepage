@@ -13,6 +13,9 @@ interface DatePickerProps {
   required?: boolean;
   disabled?: boolean;
   withTime?: boolean;
+  min?: string;
+  max?: string;
+  onChange?: (value: string) => void;
   className?: string;
 }
 
@@ -53,6 +56,9 @@ export function DatePicker({
   required,
   disabled,
   withTime = false,
+  min,
+  max,
+  onChange,
   className,
 }: DatePickerProps) {
   const fieldId = useId();
@@ -101,8 +107,15 @@ export function DatePicker({
   }
 
   function pick(d: number) {
-    setDate({ y: viewY, m: viewM, d });
+    const nextDate = { y: viewY, m: viewM, d };
+    setDate(nextDate);
+    onChange?.(serialize(nextDate, time, withTime));
     if (!withTime) setOpen(false);
+  }
+
+  function changeTime(nextTime: string) {
+    setTime(nextTime);
+    onChange?.(serialize(date, nextTime, withTime));
   }
 
   const isToday = (d: number) =>
@@ -111,6 +124,10 @@ export function DatePicker({
     today.getDate() === d;
   const isSelected = (d: number) =>
     date?.y === viewY && date?.m === viewM && date?.d === d;
+  const isOutOfRange = (d: number) => {
+    const value = serialize({ y: viewY, m: viewM, d }, "", false);
+    return Boolean((min && value < min) || (max && value > max));
+  };
 
   return (
     <div className="flex flex-col gap-1">
@@ -193,9 +210,10 @@ export function DatePicker({
                   <button
                     key={d}
                     type="button"
+                    disabled={isOutOfRange(d)}
                     onClick={() => pick(d)}
                     className={cn(
-                      "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm",
+                      "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm disabled:cursor-not-allowed disabled:text-gray-300",
                       isSelected(d)
                         ? "bg-primary font-semibold text-white"
                         : isToday(d)
@@ -214,7 +232,7 @@ export function DatePicker({
                 <input
                   type="time"
                   value={time}
-                  onChange={(e) => setTime(e.target.value)}
+                  onChange={(e) => changeTime(e.target.value)}
                   className="h-9 flex-1 rounded-md border border-gray-300 px-2 text-sm text-gray-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>

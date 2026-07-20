@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createSlots } from "@/actions/interview";
 import { Button } from "@/components/Button";
+import { DatePicker } from "@/components/DatePicker";
 import { Input } from "@/components/Input";
 
 export function SlotCreator() {
+  const formRef = useRef<HTMLFormElement>(null);
   const [slots, setSlots] = useState([""]);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
@@ -32,18 +34,20 @@ export function SlotCreator() {
         return;
       }
       setSlots([""]);
+      formRef.current?.reset();
       router.refresh();
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-3">
       {slots.map((slot, index) => (
         <div key={index} className="flex gap-2">
-          <Input
-            type="datetime-local"
-            value={slot}
-            onChange={(event) => updateSlot(index, event.target.value)}
+          <DatePicker
+            name="starts_at"
+            withTime
+            defaultValue={slot}
+            onChange={(value) => updateSlot(index, value)}
             required
             className="flex-1"
           />
