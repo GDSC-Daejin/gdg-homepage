@@ -15,8 +15,18 @@ const SCRIPT_ID = "naver-maps-sdk";
 
 // maps.js(+geocoder) 로드 후 콜백. cleanup 함수 반환.
 function loadSdk(keyId: string, onReady: () => void): () => void {
+  function onLoad() {
+    const maps = window.naver?.maps;
+    if (!maps) return;
+    if (maps.Service) {
+      onReady();
+      return;
+    }
+    maps.onJSContentLoaded = onReady;
+  }
+
   if (window.naver?.maps) {
-    onReady();
+    onLoad();
     return () => {};
   }
   let script = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
@@ -26,8 +36,8 @@ function loadSdk(keyId: string, onReady: () => void): () => void {
     script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${keyId}&submodules=geocoder`;
     document.head.appendChild(script);
   }
-  script.addEventListener("load", onReady);
-  return () => script?.removeEventListener("load", onReady);
+  script.addEventListener("load", onLoad);
+  return () => script?.removeEventListener("load", onLoad);
 }
 
 export function NaverMap({
