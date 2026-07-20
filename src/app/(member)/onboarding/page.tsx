@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/");
   if (profile.student_no !== "") redirect("/");
 
   return (

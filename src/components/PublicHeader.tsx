@@ -69,7 +69,7 @@ export async function PublicHeader() {
             </Link>
           ) : (
             <Link
-              href="/login"
+              href="/"
               className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition-[color,background-color,transform] hover:bg-white/10 active:scale-[0.97]"
             >
               로그인

@@ -11,8 +11,8 @@ export default function ProjectsPage() {
   return (
     <div className="min-h-dvh bg-[#060608] px-6 py-16 text-white">
       <div className="mx-auto max-w-2xl">
-        <Link href="/login" className="text-sm text-white/50 hover:text-white">
-          ← 로그인으로 돌아가기
+        <Link href="/" className="text-sm text-white/50 hover:text-white">
+          ← 메인으로 돌아가기
         </Link>
         <h1 className="mt-6 text-4xl font-extrabold tracking-tight">PROJECTS</h1>
         <p className="mt-4 text-white/70">멤버들이 진행 중인 프로젝트입니다.</p>

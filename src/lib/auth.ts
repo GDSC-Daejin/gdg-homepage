@@ -21,7 +21,7 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
 
 export async function requireProfile(): Promise<Profile> {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/");
   if (profile.student_no === "") redirect("/onboarding");
   return profile;
 }

@@ -10,7 +10,7 @@ export default async function MemberLayout({
   children: React.ReactNode;
 }) {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/");
 
   return <MemberShell profile={profile}>{children}</MemberShell>;
 }

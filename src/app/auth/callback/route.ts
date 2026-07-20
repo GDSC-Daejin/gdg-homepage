@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(`${origin}/login`);
+  return NextResponse.redirect(`${origin}/`);
 }
 
 function loginCompleteUrl(origin: string, next: string): URL {
