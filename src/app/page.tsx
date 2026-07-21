@@ -1,7 +1,8 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
 import { MemberShell } from "./(member)/MemberShell";
-import { HomeDashboard } from "./(member)/HomeDashboard";
+import { HomeDashboard, HomeDashboardSkeleton } from "./(member)/HomeDashboard";
 import Landing from "./landing-preview/Landing";
 import { JsonLd } from "@/components/JsonLd";
 
@@ -45,11 +46,16 @@ export default async function RootPage({
 
   return (
     <MemberShell profile={profile}>
-      <HomeDashboard
-        month={month}
-        profileId={profile.id}
-        profileName={profile.name}
-      />
+      <div className="flex flex-col gap-8 sm:gap-10">
+        <header>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+            안녕하세요, {profile.name}님
+          </h1>
+        </header>
+        <Suspense fallback={<HomeDashboardSkeleton />}>
+          <HomeDashboard month={month} profileId={profile.id} />
+        </Suspense>
+      </div>
     </MemberShell>
   );
 }

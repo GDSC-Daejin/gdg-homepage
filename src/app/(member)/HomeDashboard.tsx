@@ -121,51 +121,58 @@ function EventCard({
 export async function HomeDashboard({
   month,
   profileId,
-  profileName,
 }: {
   month?: string;
   profileId: string;
-  profileName: string;
 }) {
   const supabase = await createClient();
 
-  const { data: latestNotice } = await supabase
-    .from("notices")
-    .select("id, title")
-    .eq("published", true)
-    .order("published_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // 서로 의존 없는 쿼리는 한 번에 병렬 실행 (서버 워터폴 제거)
+  const [
+    { data: latestNotice },
+    { data: openSurveys },
+    { data: myResponses },
+    { data: pointLogs },
+    { data: groupMembers },
+    { data: events },
+  ] = await Promise.all([
+    supabase
+      .from("notices")
+      .select("id, title")
+      .eq("published", true)
+      .order("published_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("surveys")
+      .select("id, title")
+      .eq("is_open", true)
+      .order("created_at", { ascending: false }),
+    supabase.from("survey_responses").select("survey_id").eq("user_id", profileId),
+    supabase.from("point_logs").select("amount, created_at").eq("user_id", profileId),
+    supabase.from("group_members").select("group_id").eq("user_id", profileId),
+    supabase.from("events").select("*").order("starts_at", { ascending: false }),
+  ]);
 
-  const [{ data: openSurveys }, { data: myResponses }, { data: pointLogs }, { data: groupMembers }] =
-    await Promise.all([
-      supabase
-        .from("surveys")
-        .select("id, title")
-        .eq("is_open", true)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("survey_responses")
-        .select("survey_id")
-        .eq("user_id", profileId),
-      supabase
-        .from("point_logs")
-        .select("amount, created_at")
-        .eq("user_id", profileId),
-      supabase
-        .from("group_members")
-        .select("group_id")
-        .eq("user_id", profileId),
-    ]);
-
+  const list = (events ?? []) as Event[];
   const groupIds = (groupMembers ?? []).map((member) => member.group_id);
-  const { data: groups } = groupIds.length
-    ? await supabase
-        .from("groups")
-        .select("id, type, title, status")
-        .in("id", groupIds)
-    : { data: [] };
-  const myGroups = (groups ?? []) as Pick<Group, "id" | "type" | "title" | "status">[];
+
+  // 위 결과에 의존하는 두 쿼리도 서로 병렬 (groups ⇐ groupMembers, counts ⇐ events)
+  const [groupsRes, countsRes] = await Promise.all([
+    groupIds.length
+      ? supabase.from("groups").select("id, type, title, status").in("id", groupIds)
+      : Promise.resolve({ data: [] }),
+    list.length
+      ? supabase.rpc("event_confirmed_counts", { p_event_ids: list.map((e) => e.id) })
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const myGroups = (groupsRes.data ?? []) as Pick<Group, "id" | "type" | "title" | "status">[];
+
+  const counts: Record<string, number> = {};
+  for (const row of (countsRes.data ?? []) as { event_id: string; confirmed: number }[]) {
+    counts[row.event_id] = Number(row.confirmed);
+  }
 
   const respondedIds = new Set((myResponses ?? []).map((response) => response.survey_id));
   const unanswered = (openSurveys ?? []).filter((survey) => !respondedIds.has(survey.id));
@@ -173,23 +180,6 @@ export async function HomeDashboard({
     (pointLogs ?? []) as { amount: number; created_at: string }[],
     monthKst(new Date().toISOString()),
   );
-
-  const { data: events } = await supabase
-    .from("events")
-    .select("*")
-    .order("starts_at", { ascending: false });
-
-  const list = (events ?? []) as Event[];
-
-  const counts: Record<string, number> = {};
-  if (list.length > 0) {
-    const { data: countRows } = await supabase.rpc("event_confirmed_counts", {
-      p_event_ids: list.map((e) => e.id),
-    });
-    for (const row of countRows ?? []) {
-      counts[row.event_id] = Number(row.confirmed);
-    }
-  }
 
   const now = Date.now();
   const upcoming = list
@@ -216,13 +206,7 @@ export async function HomeDashboard({
   const notice = latestNotice as Pick<Notice, "id" | "title"> | null;
 
   return (
-    <div className="flex flex-col gap-8 sm:gap-10">
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-          안녕하세요, {profileName}님
-        </h1>
-      </header>
-
+    <>
       {notice && (
         <Link
           href={`/notices/${notice.id}`}
@@ -387,6 +371,27 @@ export async function HomeDashboard({
           </div>
         )}
       </section>
-    </div>
+    </>
+  );
+}
+
+export function HomeDashboardSkeleton() {
+  const block = "animate-pulse rounded-xl bg-gray-100 dark:bg-gray-100";
+  const heading = "mb-5 h-7 w-40 animate-pulse rounded bg-gray-100 dark:bg-gray-100";
+  return (
+    <>
+      <div className={`h-14 ${block}`} />
+      <section>
+        <div className={heading} />
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(260px,0.55fr)]">
+          <div className={`h-44 ${block}`} />
+          <div className={`h-44 ${block}`} />
+        </div>
+      </section>
+      <section>
+        <div className={heading} />
+        <div className={`h-28 ${block}`} />
+      </section>
+    </>
   );
 }
