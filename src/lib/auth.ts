@@ -5,15 +5,15 @@ import { ADMIN_ROLES, type Profile } from "@/lib/types";
 
 export const getProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  // getClaims: JWKS 로컬 검증(ECC 비대칭 키) → Auth 서버 네트워크 왕복 제거
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const userId = claimsData?.claims.sub;
+  if (!userId) return null;
 
   const { data } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   return (data as Profile) ?? null;

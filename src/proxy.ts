@@ -25,7 +25,9 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  await supabase.auth.getUser();
+  // getClaims: ECC(비대칭) JWT를 JWKS로 로컬 검증 → Auth 서버 왕복 제거.
+  // 토큰 만료 시에만 내부 getSession이 리프레시하며 쿠키(setAll)를 갱신한다.
+  await supabase.auth.getClaims();
 
   return response;
 }

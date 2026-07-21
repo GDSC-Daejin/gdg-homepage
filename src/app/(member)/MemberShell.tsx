@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { ADMIN_ROLES, type Notification, type Profile } from "@/lib/types";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
@@ -18,38 +19,13 @@ const roleLabel: Record<string, string> = {
   applicant: "지원자",
 };
 
-export async function MemberShell({
+export function MemberShell({
   profile,
   children,
 }: {
   profile: Profile;
   children: React.ReactNode;
 }) {
-  let notifications: Notification[] = [];
-  let unreadCount = 0;
-
-  if (await isDemoMode()) {
-    notifications = DEMO_NOTIFICATIONS;
-    unreadCount = DEMO_NOTIFICATIONS.filter((notification) => !notification.read_at).length;
-  } else {
-    const supabase = await createClient();
-    const [{ data: rows }, { count }] = await Promise.all([
-      supabase
-        .from("notifications")
-        .select("id, type, title, body, link, read_at, created_at")
-        .eq("recipient_id", profile.id)
-        .order("created_at", { ascending: false })
-        .limit(10),
-      supabase
-        .from("notifications")
-        .select("id", { count: "exact", head: true })
-        .eq("recipient_id", profile.id)
-        .is("read_at", null),
-    ]);
-    notifications = (rows ?? []) as Notification[];
-    unreadCount = count ?? 0;
-  }
-
   return (
     <ResponsiveShell
       sidebar={
@@ -76,7 +52,9 @@ export async function MemberShell({
               </p>
               <Badge tone="primary">{roleLabel[profile.role]}</Badge>
             </div>
-            <NotificationBell notifications={notifications} unreadCount={unreadCount} />
+            <Suspense fallback={<NotificationBellFallback />}>
+              <NotificationBellData profileId={profile.id} />
+            </Suspense>
             <form action={signOut}>
               <button
                 type="submit"
@@ -103,5 +81,55 @@ export async function MemberShell({
     >
       <div className="mx-auto w-full max-w-[1100px]">{children}</div>
     </ResponsiveShell>
+  );
+}
+
+// 알림 쿼리를 셸 크리티컬 경로에서 분리 — 셸은 즉시 페인트, 벨은 스트리밍
+async function NotificationBellData({ profileId }: { profileId: string }) {
+  let notifications: Notification[] = [];
+  let unreadCount = 0;
+
+  if (await isDemoMode()) {
+    notifications = DEMO_NOTIFICATIONS;
+    unreadCount = DEMO_NOTIFICATIONS.filter((notification) => !notification.read_at).length;
+  } else {
+    const supabase = await createClient();
+    const [{ data: rows }, { count }] = await Promise.all([
+      supabase
+        .from("notifications")
+        .select("id, type, title, body, link, read_at, created_at")
+        .eq("recipient_id", profileId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("recipient_id", profileId)
+        .is("read_at", null),
+    ]);
+    notifications = (rows ?? []) as Notification[];
+    unreadCount = count ?? 0;
+  }
+
+  return <NotificationBell notifications={notifications} unreadCount={unreadCount} />;
+}
+
+// 스트리밍 중 표시할 벨 — 실제 버튼과 동일 크기(h-8 w-8), 배지는 absolute라 시프트 없음
+function NotificationBellFallback() {
+  return (
+    <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-500">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.75}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="h-4 w-4"
+      >
+        <path d="M6 8a6 6 0 0 1 12 0c0 4 1.5 5.5 2 6H4c.5-.5 2-2 2-6Z" />
+        <path d="M10 19a2 2 0 0 0 4 0" />
+      </svg>
+    </div>
   );
 }
