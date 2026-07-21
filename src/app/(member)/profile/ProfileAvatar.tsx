@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { setProfileAvatar } from "@/actions/profile";
 import { Avatar } from "@/components/Avatar";
 import { avatarPath, validateAvatarFile } from "@/lib/avatar";
-import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/lib/types";
 
 export function ProfileAvatar({ profile }: { profile: Profile }) {
@@ -27,6 +26,7 @@ export function ProfileAvatar({ profile }: { profile: Profile }) {
     setError(undefined);
     setUploading(true);
     const path = avatarPath(profile.id);
+    const { createClient } = await import("@/lib/supabase/client");
     const { error: uploadError } = await createClient()
       .storage
       .from("avatars")

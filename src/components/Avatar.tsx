@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/cn";
-import { createClient } from "@/lib/supabase/client";
 
 export function Avatar({
   name,
@@ -17,20 +16,21 @@ export function Avatar({
   const [retries, setRetries] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
     setSrc(undefined);
     if (!avatarPath) return;
 
-    createClient()
-      .storage
-      .from("avatars")
-      .createSignedUrl(avatarPath, 60 * 60)
-      .then(({ data }) => {
-        if (!cancelled) setSrc(data?.signedUrl);
-      });
+    void (async () => {
+      const { createClient } = await import("@/lib/supabase/client");
+      const { data } = await createClient()
+        .storage
+        .from("avatars")
+        .createSignedUrl(avatarPath, 60 * 60);
+      if (active) setSrc(data?.signedUrl);
+    })();
 
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [avatarPath, retries]);
 

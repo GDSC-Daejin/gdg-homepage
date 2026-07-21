@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/Button";
 import { PostForm } from "@/components/board/PostForm";
-import { Markdown } from "@/components/Markdown";
 import type { BoardType } from "@/lib/types";
+
+const Markdown = dynamic(() => import("@/components/Markdown").then((module) => module.Markdown), {
+  loading: () => <div className="min-h-24 animate-pulse rounded-md bg-gray-100" />,
+});
 
 interface EventOption {
   id: string;

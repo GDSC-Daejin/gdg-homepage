@@ -1,15 +1,19 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { createPost, updatePost } from "@/actions/post";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
 import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
-import { Markdown } from "@/components/Markdown";
 import { cn } from "@/lib/cn";
 import type { BoardType } from "@/lib/types";
+
+const Markdown = dynamic(() => import("@/components/Markdown").then((module) => module.Markdown), {
+  loading: () => <div className="min-h-[8rem] animate-pulse rounded-md bg-gray-100" />,
+});
 
 interface EventOption {
   id: string;

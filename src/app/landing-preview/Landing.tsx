@@ -22,10 +22,10 @@ const TICKER = [
 
 // 로그인 페이지(login-orb)의 4색 3D 오브 클러스터를 그대로 가져옴
 const ORBS = [
-  { top: "8%", left: "16%", bottom: undefined, size: "45%", grad: "#b7d3ff 0%, #4285F4 46%, #1553c0 100%", shadow: "0 34px 80px rgba(66,133,244,.5),inset -14px -18px 40px rgba(0,0,0,.28),inset 14px 14px 32px rgba(255,255,255,.5)", anim: "nbOrb1 9s ease-in-out infinite" },
-  { top: "0", left: "55%", bottom: undefined, size: "31%", grad: "#ffb0a8 0%, #EA4335 48%, #a5231a 100%", shadow: "0 30px 70px rgba(234,67,53,.5),inset -12px -16px 34px rgba(0,0,0,.28),inset 12px 12px 28px rgba(255,255,255,.42)", anim: "nbOrb2 11s ease-in-out infinite" },
-  { top: undefined, left: "36%", bottom: "2%", size: "36%", grad: "#ffe89a 0%, #FBBC04 50%, #cf9100 100%", shadow: "0 30px 72px rgba(251,188,4,.5),inset -12px -16px 36px rgba(0,0,0,.24),inset 12px 12px 30px rgba(255,255,255,.55)", anim: "nbOrb3 10s ease-in-out infinite" },
-  { top: undefined, left: "0", bottom: "11%", size: "29%", grad: "#a6ecbf 0%, #34A853 50%, #17662f 100%", shadow: "0 28px 66px rgba(52,168,83,.5),inset -11px -14px 30px rgba(0,0,0,.28),inset 11px 11px 26px rgba(255,255,255,.42)", anim: "nbOrb4 12s ease-in-out infinite" },
+  { top: "8%", left: "16%", bottom: undefined, size: "45%", grad: "#b7d3ff 0%, #4285F4 46%, #1553c0 100%", shadow: "0 28px 64px rgba(66,133,244,.5),inset -14px -18px 40px rgba(0,0,0,.28)", anim: "nbOrb1 9s ease-in-out infinite" },
+  { top: "0", left: "55%", bottom: undefined, size: "31%", grad: "#ffb0a8 0%, #EA4335 48%, #a5231a 100%", shadow: "0 24px 56px rgba(234,67,53,.5),inset -12px -16px 34px rgba(0,0,0,.28)", anim: "nbOrb2 11s ease-in-out infinite" },
+  { top: undefined, left: "36%", bottom: "2%", size: "36%", grad: "#ffe89a 0%, #FBBC04 50%, #cf9100 100%", shadow: "0 24px 58px rgba(251,188,4,.5),inset -12px -16px 36px rgba(0,0,0,.24)", anim: "nbOrb3 10s ease-in-out infinite" },
+  { top: undefined, left: "0", bottom: "11%", size: "29%", grad: "#a6ecbf 0%, #34A853 50%, #17662f 100%", shadow: "0 22px 52px rgba(52,168,83,.5),inset -11px -14px 30px rgba(0,0,0,.28)", anim: "nbOrb4 12s ease-in-out infinite" },
 ];
 
 const STATS = [
