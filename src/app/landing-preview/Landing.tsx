@@ -92,10 +92,10 @@ export default function Landing() {
             2026 신규 멤버 모집 중 — 대진대학교
           </p>
           <h1 className="nb-display" aria-label="배우고, 만들고, 배포한다.">
-            <span className="nb-line nb-in" style={{ animationDelay: ".12s" }}>
+            <span className="nb-line nb-line--soft nb-in" style={{ animationDelay: ".12s" }}>
               배우고<i className="dot" style={{ color: "#4285F4" }}>,</i>
             </span>
-            <span className="nb-line nb-in" style={{ animationDelay: ".22s" }}>
+            <span className="nb-line nb-line--soft nb-in" style={{ animationDelay: ".22s" }}>
               만들고<i className="dot" style={{ color: "#FBBC04" }}>,</i>
             </span>
             <span className="nb-line nb-in" style={{ animationDelay: ".32s" }}>
