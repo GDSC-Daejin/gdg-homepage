@@ -1,0 +1,33 @@
+{
+  "measured_at": "2026-07-21",
+  "build": "production (next 16.2.10)",
+  "tool": "lighthouse 13.4.1 (Lantern simulated throttling, deterministic)",
+  "route": "/ (anonymous Landing)",
+  "note": "Lab. Vercel RUM TTFB 0.61s; RUM desktop FCP 5.81s was small-sample noise (not reproduced in lab). Mobile numbers = 3-run median (stable).",
+  "configs": {
+    "before_2MB_font": {
+      "impl": "next/font/local full PretendardVariable.woff2 (2.0MB), preload:true, display:swap",
+      "desktop": { "score": 85, "FCP_s": 0.8, "LCP_s": 2.6, "CLS": 0, "TBT_ms": 0 },
+      "mobile":  { "score": 75, "FCP_s": 0.9, "LCP_s": 13.8, "CLS": 0, "TBT_ms": 50 },
+      "font_transfer": "2.0MB (1 file, preloaded)"
+    },
+    "after_subset_optional": {
+      "impl": "pretendard variable dynamic-subset (unicode-range), font-display:optional via src/app/pretendard-subset.css",
+      "desktop": { "score": 95, "FCP_s": 0.7, "LCP_s": 1.5, "CLS": 0, "TBT_ms": 0 },
+      "mobile":  { "score": 70, "FCP_s": 3.3, "LCP_s": 6.2, "CLS": 0, "TBT_ms": 50 },
+      "font_transfer": "342KB (13 of 92 chunks actually downloaded)"
+    }
+  },
+  "wins": [
+    "desktop 85->95, LCP 2.6->1.5s",
+    "mobile LCP 13.8->6.2s (the RUM problem)",
+    "font payload 2.0MB->342KB (6x)",
+    "CLS held at 0 (optional prevents swap reflow)"
+  ],
+  "open_regression": {
+    "metric": "mobile FCP 0.9->3.3s (Lantern)",
+    "cause": "render-blocking CSS chunk grew to 106KB (26KB gz) because 92 @font-face rules moved into the critical CSS bundle; next/font previously inlined+preloaded them off the critical path. Likely inflated by Lantern; real-world delta expected ~0.1-0.3s. GA gtag is also preloaded as script, competing on critical path.",
+    "possible_fix": "load pretendard-subset.css non-render-blocking (safe because display:optional tolerates late font), and/or defer GA."
+  },
+  "targets": { "FCP_s": 1.8, "LCP_s": 2.5, "CLS": 0.1, "INP_ms": 200, "TTFB_ms": 800 }
+}

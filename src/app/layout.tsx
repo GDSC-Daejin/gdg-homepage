@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
 import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
-import { pretendard } from "./fonts";
+import "./pretendard-subset.css";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -44,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${pretendard.variable} h-full antialiased`}
+      className="h-full antialiased"
       suppressHydrationWarning
     >
       <head>
