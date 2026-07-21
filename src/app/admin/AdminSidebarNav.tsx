@@ -26,6 +26,7 @@ function Icon({
 
 const icons: Record<string, string> = {
   dashboard: "M3 11.5 12 4l9 7.5M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9",
+  analytics: "M4 20V10M10 20V4M16 20v-7M22 20H2",
   members: "M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-6 8a6 6 0 0 1 12 0M17 8a3 3 0 1 1 0 6M20 20a5.5 5.5 0 0 0-4-5.3",
   groups: "M17 20h5v-2a3 3 0 0 0-4.5-2.6M9 20H4v-2a3 3 0 0 1 4.5-2.6M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-7 8a3 3 0 0 1 6 0m2 0a3 3 0 0 1 6 0",
   applications: "M4 7a1 1 0 0 1 1-1h4l2 2h8a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Z",
@@ -61,6 +62,7 @@ const groups: NavGroup[] = [
     fixed: true,
     items: [
       { href: "/admin", label: "대시보드", icon: "dashboard" },
+      { href: "/admin/analytics", label: "분석", icon: "analytics" },
       { href: "/admin/members", label: "회원", icon: "members" },
       { href: "/admin/groups", label: "스터디·프로젝트", icon: "groups" },
       { href: "/admin/events", label: "이벤트", icon: "events" },
