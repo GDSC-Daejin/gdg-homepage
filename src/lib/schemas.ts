@@ -67,7 +67,7 @@ export const recruitingSettingsSchema = z
 
 export const attendCodeSchema = z
   .string()
-  .regex(/^[A-Za-z0-9]{6}$/, "출석 코드는 영숫자 6자예요");
+  .regex(/^[A-Z0-9]{6}$/, "출석 코드는 영숫자 6자예요");
 
 export const noticeSchema = z.object({
   title: z.string().min(1, "제목을 입력해주세요"),

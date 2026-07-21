@@ -136,8 +136,9 @@ describe("attendCodeSchema", () => {
     expect(attendCodeSchema.safeParse("1234567").success).toBe(false);
   });
 
-  it("6자 영숫자는 통과한다", () => {
+  it("6자 대문자 영숫자는 통과한다", () => {
     expect(attendCodeSchema.safeParse("AB12CD").success).toBe(true);
+    expect(attendCodeSchema.safeParse("ab12cd").success).toBe(false);
   });
 });
 
