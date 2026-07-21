@@ -18,6 +18,18 @@ const propertyId = process.env.GA4_PROPERTY_ID;
 const clientEmail = process.env.GA_SA_CLIENT_EMAIL;
 const privateKey = process.env.GA_SA_PRIVATE_KEY?.replace(/\\n/g, "\n");
 
+// /admin은 운영진 내부 활동이라 GA4 리포트에서도 제외.
+// 클라이언트 ga-disable은 best-effort라 과거 데이터·SPA 이동 레이스로 새어들어오므로
+// 서버 쿼리에서 pagePath 기준으로 확실히 걸러낸다.
+const EXCLUDE_ADMIN = {
+  notExpression: {
+    filter: {
+      fieldName: "pagePath",
+      stringFilter: { matchType: "BEGINS_WITH", value: "/admin" },
+    },
+  },
+} as const;
+
 export function parseRows(json: unknown): string[][] {
   const rows = (json as { rows?: unknown[] } | null)?.rows;
   if (!Array.isArray(rows)) return [];
@@ -118,6 +130,7 @@ export async function getTrafficOverview(
       { name: "sessions" },
       { name: "screenPageViews" },
     ],
+    dimensionFilter: EXCLUDE_ADMIN,
     orderBys: [{ dimension: { dimensionName: "date" } }],
   });
 
@@ -132,6 +145,7 @@ export async function getAcquisition(
     dateRanges: [range],
     dimensions: [{ name: "sessionDefaultChannelGroup" }],
     metrics: [{ name: "sessions" }],
+    dimensionFilter: EXCLUDE_ADMIN,
     orderBys: [{ metric: { metricName: "sessions" }, desc: true }],
     limit,
   });
@@ -147,6 +161,7 @@ export async function getTopPages(
     dateRanges: [range],
     dimensions: [{ name: "pagePath" }],
     metrics: [{ name: "screenPageViews" }],
+    dimensionFilter: EXCLUDE_ADMIN,
     orderBys: [{ metric: { metricName: "screenPageViews" }, desc: true }],
     limit,
   });

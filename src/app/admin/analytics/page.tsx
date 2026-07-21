@@ -10,6 +10,7 @@ import {
   getTrafficOverview,
   type DateRange,
 } from "@/lib/ga4";
+import { labelChannel, labelEvent, labelPage } from "@/lib/analytics-labels";
 import { getLatestDeployment, type Deployment } from "@/lib/vercel";
 import { TrafficChart } from "./TrafficChart";
 
@@ -89,15 +90,15 @@ export default async function AdminAnalyticsPage({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Section title="유입 경로">
-          <RankTable rows={(channels ?? []).map((channel) => [channel.channel, channel.sessions])} />
+          <RankTable rows={toRows(channels ?? [], (channel) => [labelChannel(channel.channel), channel.sessions])} />
         </Section>
         <Section title="인기 페이지">
-          <RankTable rows={(pages ?? []).map((page) => [page.path, page.views])} />
+          <RankTable rows={toRows(pages ?? [], (page) => [labelPage(page.path), page.views])} />
         </Section>
       </div>
 
-      <Section title="도메인 이벤트">
-        <RankTable rows={(events ?? []).map((event) => [event.name, event.count])} />
+      <Section title="주요 활동">
+        <RankTable rows={toRows(events ?? [], (event) => [labelEvent(event.name), event.count])} />
       </Section>
 
       {clarityProjectId && (
@@ -188,6 +189,19 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       {children}
     </Card>
   );
+}
+
+// 라벨 변환 후 같은 라벨(동적 상세 페이지 등)을 합산하고 값 기준 내림차순 정렬.
+function toRows<T>(
+  items: T[],
+  toEntry: (item: T) => [string, number],
+): [string, number][] {
+  const totals = new Map<string, number>();
+  for (const item of items) {
+    const [label, value] = toEntry(item);
+    totals.set(label, (totals.get(label) ?? 0) + value);
+  }
+  return [...totals].sort((a, b) => b[1] - a[1]);
 }
 
 function RankTable({ rows }: { rows: [string, number][] }) {
