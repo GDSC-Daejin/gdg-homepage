@@ -14,7 +14,7 @@ interface PostRow {
   title: string;
   accepted_comment_id: string | null;
   created_at: string;
-  profiles: { name: string } | null;
+  member_public: { name: string } | null;
 }
 
 export async function PostListPage({
@@ -32,7 +32,7 @@ export async function PostListPage({
   const [{ data: postRows }, { data: eventRows }] = await Promise.all([
     supabase
       .from("posts")
-      .select("id, title, accepted_comment_id, created_at, profiles(name)")
+      .select("id, title, accepted_comment_id, created_at, member_public(name)")
       .eq("board", board)
       .order("created_at", { ascending: false })
       .limit(50),
@@ -68,7 +68,7 @@ export async function PostListPage({
                   <p className="truncate font-semibold text-gray-900">{post.title}</p>
                 </div>
                 <p className="shrink-0 text-xs text-gray-500">
-                  {post.profiles?.name ?? "탈퇴한 회원"} · {formatKst(post.created_at)}
+                  {post.member_public?.name ?? "탈퇴한 회원"} · {formatKst(post.created_at)}
                 </p>
               </Card>
             </Link>

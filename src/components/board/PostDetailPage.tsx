@@ -22,7 +22,7 @@ interface PostRow {
   event_id: string | null;
   accepted_comment_id: string | null;
   created_at: string;
-  profiles: { name: string } | null;
+  member_public: { name: string } | null;
 }
 
 interface CommentRow {
@@ -30,7 +30,7 @@ interface CommentRow {
   author_id: string;
   body: string;
   created_at: string;
-  profiles: { name: string } | null;
+  member_public: { name: string } | null;
 }
 
 export async function PostDetailPage({
@@ -50,14 +50,14 @@ export async function PostDetailPage({
     supabase
       .from("posts")
       .select(
-        "id, board, title, body, author_id, event_id, accepted_comment_id, created_at, profiles(name)",
+        "id, board, title, body, author_id, event_id, accepted_comment_id, created_at, member_public(name)",
       )
       .eq("id", id)
       .eq("board", board)
       .single(),
     supabase
       .from("comments")
-      .select("id, author_id, body, created_at, profiles(name)")
+      .select("id, author_id, body, created_at, member_public(name)")
       .eq("post_id", id)
       .order("created_at", { ascending: true }),
     supabase.from("events").select("id, title").order("starts_at", { ascending: false }).limit(30),
@@ -97,7 +97,7 @@ export async function PostDetailPage({
         />
         <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
           <span className="min-w-0 truncate">
-            {post.profiles?.name ?? "탈퇴한 회원"} · {formatKst(post.created_at)}
+            {post.member_public?.name ?? "탈퇴한 회원"} · {formatKst(post.created_at)}
           </span>
           {canDelete && <DeletePostButton id={post.id} board={board} />}
         </div>
@@ -114,7 +114,7 @@ export async function PostDetailPage({
                   {accepted && <Badge tone="success">채택된 답변</Badge>}
                   <p className="whitespace-pre-wrap text-sm text-gray-700">{comment.body}</p>
                   <p className="text-xs text-gray-500">
-                    {comment.profiles?.name ?? "탈퇴한 회원"} · {formatKst(comment.created_at)}
+                    {comment.member_public?.name ?? "탈퇴한 회원"} · {formatKst(comment.created_at)}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
