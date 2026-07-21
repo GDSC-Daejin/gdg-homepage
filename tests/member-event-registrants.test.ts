@@ -8,8 +8,12 @@ describe("회원 이벤트 신청자 목록", () => {
       readFile("supabase/migrations/0033_member_event_registrants.sql", "utf8"),
     ]);
 
-    expect(page).toContain('rpc("event_registrants"');
+    expect(page).toContain('"event_registrants"');
     expect(page).toContain("신청한 멤버");
+    // 에러를 삼키지 않고 상태를 구분해 표시한다
+    expect(page).toContain("error: registrantsError");
+    expect(page).toContain("신청자 명단은 멤버만 볼 수 있어요");
+    expect(page).toContain("명단을 불러오지 못했어요");
     expect(migration).toContain("function public.event_registrants(p_event_id uuid)");
     expect(migration).toContain("role <> 'applicant'");
     expect(migration).toContain("to authenticated");

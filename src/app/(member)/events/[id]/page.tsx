@@ -58,14 +58,18 @@ export default async function MemberEventDetailPage({
   });
   const confirmed = Number(countRows?.[0]?.confirmed ?? 0);
 
-  const { data: registrantRows } = await supabase.rpc("event_registrants", {
-    p_event_id: e.id,
-  });
+  const { data: registrantRows, error: registrantsError } = await supabase.rpc(
+    "event_registrants",
+    { p_event_id: e.id },
+  );
   const registrants = (registrantRows ?? []) as {
     user_id: string;
     name: string;
     status: RegistrationStatus;
   }[];
+  const registrantsBlocked =
+    !!registrantsError && registrantsError.message.includes("NOT_MEMBER");
+  const registrantsFailed = !!registrantsError && !registrantsBlocked;
 
   const { data: postRows } = await supabase
     .from("posts")
@@ -146,7 +150,13 @@ export default async function MemberEventDetailPage({
         <div className="border-t border-gray-200 pt-3 dark:border-gray-200">
           <p className="text-sm font-semibold text-gray-900">신청한 멤버</p>
           {registrants.length === 0 ? (
-            <p className="mt-2 text-sm text-gray-500">아직 신청한 멤버가 없어요.</p>
+            <p className="mt-2 text-sm text-gray-500">
+              {registrantsBlocked
+                ? "신청자 명단은 멤버만 볼 수 있어요."
+                : registrantsFailed
+                  ? "명단을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
+                  : "아직 신청한 멤버가 없어요."}
+            </p>
           ) : (
             <ul className="mt-3 grid gap-2 sm:grid-cols-2">
               {registrants.map((registrant) => (
