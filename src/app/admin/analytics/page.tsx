@@ -10,6 +10,7 @@ import {
   getTrafficOverview,
   type DateRange,
 } from "@/lib/ga4";
+import { getLatestDeployment, type Deployment } from "@/lib/vercel";
 import { TrafficChart } from "./TrafficChart";
 
 const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
@@ -27,17 +28,19 @@ export default async function AdminAnalyticsPage({
   const { range: rangeParam } = await searchParams;
   const selectedRange = rangeParam === "7d" ? "7d" : "30d";
   const range = rangeFor(selectedRange);
-  const [traffic, channels, pages, events] = await Promise.all([
+  const [traffic, channels, pages, events, deployment] = await Promise.all([
     getTrafficOverview(range),
     getAcquisition(range),
     getTopPages(range),
     getDomainEvents(range),
+    getLatestDeployment(),
   ]);
 
   if (traffic === null) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader title="분석" description="웹사이트 이용 현황을 확인해요" />
+        <DeploymentCard deployment={deployment} />
         <Card className="p-8 text-center text-gray-500">
           분석이 설정되지 않았습니다. GA4 환경변수를 확인하세요.
         </Card>
@@ -70,6 +73,8 @@ export default async function AdminAnalyticsPage({
           </div>
         }
       />
+
+      <DeploymentCard deployment={deployment} />
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="활성 유저" value={totals.users} />
@@ -127,6 +132,52 @@ function RangeLink({
     >
       {label}
     </Link>
+  );
+}
+
+function DeploymentCard({ deployment }: { deployment: Deployment | null }) {
+  if (!deployment) return null;
+
+  const status =
+    deployment.state === "READY"
+      ? { label: "정상 운영 중", dot: "bg-green-500", text: "text-green-700" }
+      : deployment.state === "ERROR" || deployment.state === "CANCELED"
+        ? { label: "업데이트 실패", dot: "bg-red-500", text: "text-red-700" }
+        : { label: "업데이트 중", dot: "bg-yellow-500", text: "text-yellow-700" };
+  const when = deployment.createdAt
+    ? new Date(deployment.createdAt).toLocaleString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : "-";
+
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-gray-700">웹사이트 상태</h2>
+        <span
+          className={`inline-flex items-center gap-1.5 text-sm font-medium ${status.text}`}
+        >
+          <span className={`h-2 w-2 rounded-full ${status.dot}`} />
+          {status.label}
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-gray-500">
+        마지막 업데이트 · {when}
+        {deployment.commitAuthor && ` · ${deployment.commitAuthor}`}
+      </p>
+      {deployment.commitMessage && (
+        <p
+          className="mt-1 truncate text-xs text-gray-400"
+          title={deployment.commitMessage}
+        >
+          최근 변경: {deployment.commitMessage}
+        </p>
+      )}
+    </Card>
   );
 }
 
