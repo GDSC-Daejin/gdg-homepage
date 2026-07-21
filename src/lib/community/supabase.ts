@@ -1,6 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Event, Profile } from "@/lib/types";
-import type { AttendanceReads, Community, EventReads, EventUserPair } from "./types";
+import { toKoreanError } from "@/lib/errors";
+import type { Event, Inquiry, Profile } from "@/lib/types";
+import type {
+  AttendanceReads,
+  AuthorInfo,
+  Community,
+  EventReads,
+  EventUserPair,
+  InquiryStore,
+} from "./types";
 
 export function supabaseCommunity(client: SupabaseClient): Community {
   const attendance: AttendanceReads = {
@@ -59,5 +67,40 @@ export function supabaseCommunity(client: SupabaseClient): Community {
     },
   };
 
-  return { attendance, events };
+  const inquiries: InquiryStore = {
+    reads: {
+      async list() {
+        const { data } = await client
+          .from("inquiries")
+          .select("*")
+          .order("created_at", { ascending: false });
+        return (data as Inquiry[]) ?? [];
+      },
+      async authors(userIds) {
+        if (userIds.length === 0) return [];
+        const { data } = await client
+          .from("profiles")
+          .select("id, name")
+          .in("id", userIds);
+        return (data as AuthorInfo[]) ?? [];
+      },
+    },
+    ops: {
+      async submit(input) {
+        const { error } = await client.from("inquiries").insert(input);
+        if (error) return { error: toKoreanError(error) };
+        return {};
+      },
+      async answer(id, answer) {
+        const { error } = await client.rpc("admin_answer_inquiry", {
+          p_inquiry: id,
+          p_answer: answer,
+        });
+        if (error) return { error: toKoreanError(error) };
+        return {};
+      },
+    },
+  };
+
+  return { attendance, events, inquiries };
 }

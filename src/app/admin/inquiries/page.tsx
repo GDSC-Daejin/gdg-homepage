@@ -1,16 +1,14 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
-import type { Inquiry, InquiryStatus, Profile } from "@/lib/types";
+import type { InquiryStatus } from "@/lib/types";
 import { INQUIRY_CATEGORY_LABEL, INQUIRY_CATEGORY_TONE } from "@/lib/types";
 import { AnswerForm } from "./AnswerForm";
-import { isDemoMode } from "@/lib/demo";
-import { DEMO_INQUIRIES, DEMO_INQUIRY_AUTHORS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +28,6 @@ const STATUS_TABS: { value: string; label: string }[] = [
   { value: "answered", label: "답변완료" },
 ];
 
-type AuthorInfo = Pick<Profile, "id" | "name">;
-
 export default async function AdminInquiriesPage({
   searchParams,
 }: {
@@ -40,33 +36,16 @@ export default async function AdminInquiriesPage({
   await requireAdmin();
   const params = await searchParams;
   const status = params.status ?? "all";
-  const demo = await isDemoMode();
 
-  let inquiries: Inquiry[] = DEMO_INQUIRIES.filter(
+  const community = await getCommunity();
+  const allInquiries = await community.inquiries.reads.list();
+  const inquiries = allInquiries.filter(
     (i) => status === "all" || i.status === status,
   );
-  let authorMap = new Map(Object.entries(DEMO_INQUIRY_AUTHORS));
 
-  if (!demo) {
-    const supabase = await createClient();
-
-    let query = supabase
-      .from("inquiries")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (status !== "all") query = query.eq("status", status);
-
-    const { data: inquiryData } = await query;
-    inquiries = (inquiryData as Inquiry[] | null) ?? [];
-
-    const userIds = Array.from(new Set(inquiries.map((i) => i.user_id)));
-    const { data: profileData } = userIds.length
-      ? await supabase.from("profiles").select("id, name").in("id", userIds)
-      : { data: [] as AuthorInfo[] };
-    authorMap = new Map(
-      ((profileData as AuthorInfo[] | null) ?? []).map((p) => [p.id, p]),
-    );
-  }
+  const userIds = Array.from(new Set(inquiries.map((i) => i.user_id)));
+  const authors = await community.inquiries.reads.authors(userIds);
+  const authorMap = new Map(authors.map((a) => [a.id, a]));
 
   return (
     <div>
