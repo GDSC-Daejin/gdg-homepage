@@ -253,7 +253,13 @@ export default function Landing() {
       </main>
 
       <footer className="nb-footer">
-        <span>© 2026 GDG on Campus · Daejin University</span>
+        <span>
+          © 2026 GDG on Campus · Daejin University
+          {" · "}
+          <Link href="/privacy" className="nb-footer-link">
+            개인정보처리방침
+          </Link>
+        </span>
         <span className="nb-footer-dots" aria-hidden>
           <i style={{ background: "#4285F4" }} />
           <i style={{ background: "#EA4335" }} />

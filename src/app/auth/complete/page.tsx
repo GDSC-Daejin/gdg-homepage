@@ -10,10 +10,7 @@ function LoginCompleteRedirect() {
   const destination = next === "/admin" || next === "/onboarding" ? next : "/";
 
   useEffect(() => {
-    if (
-      localStorage.getItem("analytics-consent") === "granted" &&
-      process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID
-    ) {
+    if (process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID) {
       sessionStorage.setItem("analytics-login", "google");
     }
     router.replace(destination);
