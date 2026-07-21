@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { postSchema, commentSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
-import { ADMIN_ROLES, type ActionResult, type BoardType } from "@/lib/types";
+import { isDemoMode } from "@/lib/demo";
+import { isStaff, type ActionResult, type BoardType } from "@/lib/types";
 
 function boardPath(board: BoardType) {
   return board === "qna" ? "/qna" : "/board";
@@ -26,6 +27,7 @@ export async function createPost(
   formData: FormData,
 ): Promise<ActionResult & { id?: string }> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const parsed = parsePostForm(formData, board);
   if (!parsed.success) {
@@ -51,6 +53,7 @@ export async function updatePost(
   formData: FormData,
 ): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const parsed = parsePostForm(formData, board);
   if (!parsed.success) {
@@ -84,9 +87,10 @@ export async function updatePost(
 
 export async function deletePost(id: string, board: BoardType): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
-  if (!ADMIN_ROLES.includes(profile.role)) {
+  if (!isStaff(profile)) {
     const { data: post } = await supabase
       .from("posts")
       .select("author_id")
@@ -109,6 +113,7 @@ export async function createComment(
   formData: FormData,
 ): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const parsed = commentSchema.safeParse({
     body: String(formData.get("body") ?? "").trim(),
@@ -134,9 +139,10 @@ export async function deleteComment(
   board: BoardType,
 ): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
-  if (!ADMIN_ROLES.includes(profile.role)) {
+  if (!isStaff(profile)) {
     const { data: comment } = await supabase
       .from("comments")
       .select("author_id")
@@ -158,6 +164,7 @@ export async function acceptAnswer(
   commentId: string | null,
 ): Promise<ActionResult> {
   await requireProfile();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("accept_answer", {

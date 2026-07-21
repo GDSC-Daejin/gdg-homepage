@@ -1,22 +1,12 @@
 import Link from "next/link";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
-import type { Application, ApplicationStatus } from "@/lib/types";
-import { POSITION_LABELS } from "@/lib/types";
-
-const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  waiting: "심사 대기",
-  pending: "심사 중",
-  accepted: "합격",
-  rejected: "불합격",
-};
-
-const STATUS_TONE: Record<ApplicationStatus, "neutral" | "warning" | "success" | "danger"> = {
-  waiting: "neutral",
-  pending: "warning",
-  accepted: "success",
-  rejected: "danger",
-};
+import type { Application } from "@/lib/types";
+import {
+  APPLICATION_STATUS_LABELS,
+  APPLICATION_STATUS_TONES,
+  POSITION_LABELS,
+} from "@/lib/types";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -64,8 +54,8 @@ export function ApplicationCard({
               </p>
             </div>
           </div>
-          <Badge tone={STATUS_TONE[application.status]} className="shrink-0">
-            {STATUS_LABEL[application.status]}
+          <Badge tone={APPLICATION_STATUS_TONES[application.status]} className="shrink-0">
+            {APPLICATION_STATUS_LABELS[application.status]}
           </Badge>
         </div>
 

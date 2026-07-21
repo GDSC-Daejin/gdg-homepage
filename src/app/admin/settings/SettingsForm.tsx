@@ -7,30 +7,11 @@ import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/components/Button";
 import { POSITION_LABELS, type Position } from "@/lib/types";
 import type { RecruitingSettings } from "@/lib/types";
+import { recruitingStatus, type RecruitingStatus } from "@/lib/recruiting-window";
 
 const POSITIONS: Position[] = ["frontend", "backend", "designer", "beginner"];
 
-/** 오늘(KST) "YYYY-MM-DD" — isRecruitingOpen과 동일 규칙(서버 헬퍼는 server-only라 인라인) */
-function kstToday(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
-
-type Status = "closed" | "scheduled" | "open" | "expired";
-
-function status(isOpen: boolean, start: string, end: string): Status {
-  if (!isOpen) return "closed";
-  const today = kstToday();
-  if (start && today < start) return "scheduled";
-  if (end && today > end) return "expired";
-  return "open";
-}
-
-const STATUS_META: Record<Status, { label: string; className: string }> = {
+const STATUS_META: Record<RecruitingStatus, { label: string; className: string }> = {
   open: { label: "🟢 모집 중", className: "bg-success-soft text-success" },
   scheduled: { label: "🕒 모집 예정 — 시작일이 되면 자동으로 열려요", className: "bg-warning-soft text-warning" },
   expired: { label: "⛔ 자동 종료됨 — 종료일이 지났어요", className: "bg-gray-100 text-gray-500" },
@@ -47,7 +28,7 @@ export function SettingsForm({ settings }: { settings: RecruitingSettings }) {
   const [start, setStart] = useState(settings.apply_start ?? "");
   const [end, setEnd] = useState(settings.apply_end ?? "");
 
-  const current = status(isOpen, start, end);
+  const current = recruitingStatus(isOpen, start, end);
   const meta = STATUS_META[current];
 
   function submit(nextOpen: boolean) {

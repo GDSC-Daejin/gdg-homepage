@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { ADMIN_ROLES, type Notification, type Profile } from "@/lib/types";
+import { isStaff, type Notification, type Profile } from "@/lib/types";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
 import { Avatar } from "@/components/Avatar";
@@ -37,7 +37,7 @@ export function MemberShell({
             <p className="text-xs text-gray-500">동아리 관리 시스템</p>
           </div>
         </div>
-        <SidebarNav isAdmin={ADMIN_ROLES.includes(profile.role)} />
+        <SidebarNav isAdmin={isStaff(profile)} />
         <div className="mt-auto flex flex-col gap-3 pt-6">
           <ThemeToggle />
           <div className="flex items-center gap-2 rounded-md px-1 py-2">

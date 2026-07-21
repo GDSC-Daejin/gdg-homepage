@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -53,10 +54,9 @@ export default async function MemberEventDetailPage({
   if (!event) notFound();
   const e = event as Event & { place: { lat: number | null; lng: number | null } | null };
 
-  const { data: countRows } = await supabase.rpc("event_confirmed_counts", {
-    p_event_ids: [e.id],
-  });
-  const confirmed = Number(countRows?.[0]?.confirmed ?? 0);
+  const community = await getCommunity();
+  const countRows = await community.events.confirmedCounts([e.id]);
+  const confirmed = countRows?.[e.id] ?? 0;
 
   const { data: registrantRows, error: registrantsError } = await supabase.rpc(
     "event_registrants",

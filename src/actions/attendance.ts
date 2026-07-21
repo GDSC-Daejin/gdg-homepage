@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { toKoreanError } from "@/lib/errors";
+import { isDemoMode } from "@/lib/demo";
 import { attendCodeSchema } from "@/lib/schemas";
 import type { ActionResult } from "@/lib/types";
 
@@ -12,6 +13,7 @@ export async function checkAttendance(
   code: string,
 ): Promise<ActionResult> {
   await requireProfile();
+  if (await isDemoMode()) return {};
 
   const parsed = attendCodeSchema.safeParse(code);
   if (!parsed.success) {

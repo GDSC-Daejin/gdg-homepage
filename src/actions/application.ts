@@ -12,6 +12,8 @@ import { sendResultEmail } from "@/lib/email";
 import type { ActionResult, ApplicationStatus } from "@/lib/types";
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
+  if (await isDemoMode()) return {};
+
   const settings = await getRecruitingSettings();
   if (!isRecruitingOpen(settings)) {
     return { error: "지금은 모집 기간이 아니에요" };
@@ -76,6 +78,8 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
   return {};
 }
 
+// DB RPC(admin_set_application_status)는 APPLICATION_STATUS_TRANSITIONS(src/lib/types.ts)에
+// 정의된 waiting → pending → accepted/rejected 순서를 강제하지 않음 — 강제는 별도 스코프.
 export async function setApplicationStatus(
   id: string,
   status: ApplicationStatus,

@@ -1,6 +1,9 @@
 export type Role = "organizer" | "team_member" | "member" | "applicant";
 export type Position = "frontend" | "backend" | "designer" | "beginner";
 export const ADMIN_ROLES: Role[] = ["organizer", "team_member"];
+export function isStaff(profile: Pick<Profile, "role"> | null | undefined): boolean {
+  return !!profile && ADMIN_ROLES.includes(profile.role);
+}
 export const POSITION_LABELS: Record<Position, string> = {
   frontend: "프론트엔드",
   backend: "백엔드",
@@ -16,6 +19,29 @@ export const ACADEMIC_STATUS_LABELS: Record<AcademicStatus, string> = {
   completed: "수료",
 };
 export type ApplicationStatus = "waiting" | "pending" | "accepted" | "rejected";
+export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  waiting: "심사 대기",
+  pending: "심사 중",
+  accepted: "합격",
+  rejected: "불합격",
+};
+export const APPLICATION_STATUS_TONES: Record<
+  ApplicationStatus,
+  "neutral" | "warning" | "primary" | "success" | "danger"
+> = {
+  waiting: "warning",
+  pending: "primary",
+  accepted: "success",
+  rejected: "danger",
+};
+// 문서화 목적: 합법적 다음 상태 표. RPC(admin_set_application_status)나 UI가 이 순서를
+// 강제하지는 않음 — 강제는 별도 스코프.
+export const APPLICATION_STATUS_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
+  waiting: ["pending"],
+  pending: ["accepted", "rejected"],
+  accepted: [],
+  rejected: [],
+};
 export type EventType = "session" | "study" | "mogakco" | "party";
 export type RegistrationStatus = "confirmed" | "waitlisted";
 

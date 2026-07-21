@@ -10,6 +10,7 @@ import type { ActionResult } from "@/lib/types";
 
 export async function submitInquiry(formData: FormData): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const parsed = inquirySchema.safeParse({
     category: String(formData.get("category") ?? ""),

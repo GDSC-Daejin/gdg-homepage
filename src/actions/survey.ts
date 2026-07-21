@@ -168,6 +168,7 @@ export async function submitSurveyResponse(
   formData: FormData,
 ): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { data: survey } = await supabase

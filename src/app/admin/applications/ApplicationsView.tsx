@@ -6,9 +6,12 @@ import { EmptyState } from "@/components/EmptyState";
 import { Input } from "@/components/Input";
 import { Select } from "@/components/Select";
 import type { Application, ApplicationStatus } from "@/lib/types";
+import { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_TONES } from "@/lib/types";
 import { ApplicationCard } from "./ApplicationCard";
 import { SeasonFilter } from "./SeasonFilter";
 import { StatCard } from "./StatCard";
+
+const STATUSES: ApplicationStatus[] = ["waiting", "pending", "accepted", "rejected"];
 
 const STAT_CARDS: {
   value: "all" | ApplicationStatus;
@@ -16,10 +19,11 @@ const STAT_CARDS: {
   tone: "neutral" | "warning" | "primary" | "success" | "danger";
 }[] = [
   { value: "all", label: "전체", tone: "neutral" },
-  { value: "waiting", label: "심사 대기", tone: "warning" },
-  { value: "pending", label: "심사 중", tone: "primary" },
-  { value: "accepted", label: "합격", tone: "success" },
-  { value: "rejected", label: "불합격", tone: "danger" },
+  ...STATUSES.map((s) => ({
+    value: s,
+    label: APPLICATION_STATUS_LABELS[s],
+    tone: APPLICATION_STATUS_TONES[s],
+  })),
 ];
 
 const POSITION_OPTIONS: { value: string; label: string }[] = [

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/auth";
 import { getRecruitingSettings } from "@/lib/recruiting";
-import { ADMIN_ROLES } from "@/lib/types";
+import { isStaff } from "@/lib/types";
 import { Logo } from "./Logo";
 
 const NAV_ITEMS = [
@@ -16,7 +16,7 @@ export async function PublicHeader() {
     getProfile(),
     getRecruitingSettings(),
   ]);
-  const isAdmin = profile ? ADMIN_ROLES.includes(profile.role) : false;
+  const isAdmin = isStaff(profile);
 
   return (
     <header className="sticky top-0 z-10 border-b border-white/10 bg-black/30 backdrop-blur-lg backdrop-saturate-150">

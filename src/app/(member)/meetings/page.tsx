@@ -1,6 +1,6 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { ADMIN_ROLES } from "@/lib/types";
+import { isStaff } from "@/lib/types";
 import type { Meeting } from "@/lib/types";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
@@ -16,7 +16,7 @@ const MODE_LABEL: Record<Meeting["mode"], string> = {
 
 export default async function MemberMeetingsPage() {
   const profile = await requireProfile();
-  const isStaff = ADMIN_ROLES.includes(profile.role);
+  const isStaffFlag = isStaff(profile);
 
   const supabase = await createClient();
   const { data } = await supabase
@@ -63,7 +63,7 @@ export default async function MemberMeetingsPage() {
                   <p className="whitespace-pre-wrap text-sm text-gray-700">
                     {meeting.summary || "요약이 아직 없어요."}
                   </p>
-                  {isStaff && meeting.notion_url && (
+                  {isStaffFlag && meeting.notion_url && (
                     <a
                       href={meeting.notion_url}
                       target="_blank"

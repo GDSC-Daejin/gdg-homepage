@@ -11,7 +11,7 @@ import { DeleteCommentButton } from "@/components/board/DeleteCommentButton";
 import { CommentForm } from "@/components/board/CommentForm";
 import { AcceptButton } from "@/components/board/AcceptButton";
 import { formatKst } from "@/lib/format";
-import { ADMIN_ROLES, type BoardType } from "@/lib/types";
+import { isStaff, type BoardType } from "@/lib/types";
 
 interface PostRow {
   id: string;
@@ -69,7 +69,7 @@ export async function PostDetailPage({
   const eventOptions = eventRows ?? [];
 
   const isOwner = post.author_id === profile.id;
-  const canDelete = isOwner || ADMIN_ROLES.includes(profile.role);
+  const canDelete = isOwner || isStaff(profile);
   const linkedEvent = eventOptions.find((e) => e.id === post.event_id);
 
   return (
@@ -121,7 +121,7 @@ export async function PostDetailPage({
                   {board === "qna" && isOwner && (
                     <AcceptButton postId={post.id} commentId={comment.id} accepted={accepted} />
                   )}
-                  {(comment.author_id === profile.id || ADMIN_ROLES.includes(profile.role)) && (
+                  {(comment.author_id === profile.id || isStaff(profile)) && (
                     <DeleteCommentButton id={comment.id} postId={post.id} board={board} />
                   )}
                 </div>
