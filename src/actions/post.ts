@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { postSchema, commentSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
-import type { ActionResult, BoardType } from "@/lib/types";
+import { ADMIN_ROLES, type ActionResult, type BoardType } from "@/lib/types";
 
 function boardPath(board: BoardType) {
   return board === "qna" ? "/qna" : "/board";
@@ -50,7 +50,7 @@ export async function updatePost(
   board: BoardType,
   formData: FormData,
 ): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
 
   const parsed = parsePostForm(formData, board);
   if (!parsed.success) {
@@ -58,6 +58,13 @@ export async function updatePost(
   }
 
   const supabase = await createClient();
+  const { data: post } = await supabase
+    .from("posts")
+    .select("author_id")
+    .eq("id", id)
+    .maybeSingle();
+  if (!post || post.author_id !== profile.id) return { error: "권한이 없어요" };
+
   const { error } = await supabase
     .from("posts")
     .update({
@@ -76,9 +83,18 @@ export async function updatePost(
 }
 
 export async function deletePost(id: string, board: BoardType): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
 
   const supabase = await createClient();
+  if (!ADMIN_ROLES.includes(profile.role)) {
+    const { data: post } = await supabase
+      .from("posts")
+      .select("author_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!post || post.author_id !== profile.id) return { error: "권한이 없어요" };
+  }
+
   const { error } = await supabase.from("posts").delete().eq("id", id);
 
   if (error) return { error: toKoreanError(error) };
@@ -117,9 +133,18 @@ export async function deleteComment(
   postId: string,
   board: BoardType,
 ): Promise<ActionResult> {
-  await requireProfile();
+  const profile = await requireProfile();
 
   const supabase = await createClient();
+  if (!ADMIN_ROLES.includes(profile.role)) {
+    const { data: comment } = await supabase
+      .from("comments")
+      .select("author_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!comment || comment.author_id !== profile.id) return { error: "권한이 없어요" };
+  }
+
   const { error } = await supabase.from("comments").delete().eq("id", id);
 
   if (error) return { error: toKoreanError(error) };
