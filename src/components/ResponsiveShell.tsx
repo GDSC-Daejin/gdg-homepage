@@ -31,6 +31,9 @@ export function ResponsiveShell({
 
   return (
     <div>
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+        본문으로 건너뛰기
+      </a>
       {/* 모바일 상단바 (§5: 사이드바 대체) */}
       <header className="material sticky top-0 z-30 flex items-center gap-3 border-b border-gray-200 px-4 py-3 sm:hidden">
         <button
@@ -91,7 +94,7 @@ export function ResponsiveShell({
           {sidebar}
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8">
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8">
           {children}
         </main>
       </div>

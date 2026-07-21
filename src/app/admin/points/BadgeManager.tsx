@@ -82,7 +82,7 @@ function BadgeCard({
         <p className="line-clamp-2 text-sm text-gray-500">{badge.description}</p>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} className="text-left">
+      <Modal open={open} onClose={() => setOpen(false)} ariaLabel="뱃지 삭제 확인" className="text-left">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
           <svg
             viewBox="0 0 20 20"

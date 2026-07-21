@@ -9,6 +9,7 @@ interface ModalProps {
   onClose: () => void;
   /** 폭/레이아웃 오버라이드 (기본 max-w-sm). */
   className?: string;
+  ariaLabel?: string;
   children: ReactNode;
 }
 
@@ -17,7 +18,7 @@ interface ModalProps {
  * 대칭 등장/퇴장(allow-discrete)을 처리한다(§7 §12). ESC·백드롭 클릭 닫기는 네이티브 제공.
  * reduced-motion 은 전역 baseline(§14) 이 흡수한다.
  */
-export function Modal({ open, onClose, className, children }: ModalProps) {
+export function Modal({ open, onClose, className, ariaLabel, children }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -35,6 +36,7 @@ export function Modal({ open, onClose, className, children }: ModalProps) {
   return createPortal(
     <dialog
       ref={dialogRef}
+      aria-label={ariaLabel}
       onClose={onClose}
       onClick={(e) => {
         if (e.target !== dialogRef.current) return;

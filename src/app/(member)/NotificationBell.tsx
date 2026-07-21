@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { markAllRead, markNotificationsRead } from "@/actions/notification";
 import { formatRelativeKst } from "@/lib/format";
@@ -15,6 +15,8 @@ interface NotificationBellProps {
 export function NotificationBell({ notifications, unreadCount }: NotificationBellProps) {
   const router = useRouter();
   const { ref, open, setOpen } = useDismiss<HTMLDivElement>();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState(notifications);
   const [unread, setUnread] = useState(unreadCount);
 
@@ -22,6 +24,27 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
     setItems(notifications);
     setUnread(unreadCount);
   }, [notifications, unreadCount]);
+
+  useEffect(() => {
+    if (open) menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+  }, [open]);
+
+  function handleMenuKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    const items = [...(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      triggerRef.current?.focus();
+      return;
+    }
+    if (!items.length || !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const current = items.indexOf(document.activeElement as HTMLElement);
+    const next =
+      event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : (current + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length;
+    items[next].focus();
+  }
 
   async function handleRead(notification: Notification) {
     const wasUnread = !notification.read_at;
@@ -50,6 +73,7 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
   return (
     <div ref={ref} className="relative">
       <button
+        ref={triggerRef}
         type="button"
         aria-label={unread > 0 ? `알림 ${unread}건 안 읽음` : "알림"}
         aria-haspopup="menu"
@@ -70,7 +94,7 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
           <path d="M10 19a2 2 0 0 0 4 0" />
         </svg>
         {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
+          <span role="status" aria-live="polite" aria-label={`${unread}건 안 읽음`} className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -78,7 +102,9 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
 
       {open && (
         <div
+          ref={menuRef}
           role="menu"
+          onKeyDown={handleMenuKeyDown}
           className="select-menu absolute bottom-full right-0 z-50 mb-2 w-80 rounded-xl border border-gray-200 bg-white p-1 shadow-card dark:bg-gray-100"
         >
           <div className="flex items-center justify-between px-3 py-2">

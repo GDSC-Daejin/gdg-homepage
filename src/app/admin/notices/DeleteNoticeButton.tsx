@@ -81,7 +81,7 @@ export function DeleteNoticeButton({
       {error && (
         <p className="rounded-md bg-danger-soft px-2 py-1 text-xs text-danger">{error}</p>
       )}
-      <Modal open={open} onClose={() => setOpen(false)}>
+      <Modal open={open} onClose={() => setOpen(false)} ariaLabel="공지 삭제 확인">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
           <TrashIcon className="h-6 w-6 text-danger" />
         </div>

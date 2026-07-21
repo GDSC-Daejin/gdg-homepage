@@ -70,6 +70,9 @@ export function ProfileAvatar({ profile }: { profile: Profile }) {
           onChange={(event) => handleChange(event.target.files?.[0])}
         />
       </label>
+      <span className="sr-only" role="status" aria-live="polite">
+        {uploading ? "사진 저장 중" : version ? "사진 저장 완료" : ""}
+      </span>
       {error && <p className="max-w-32 text-center text-xs text-danger">{error}</p>}
     </div>
   );

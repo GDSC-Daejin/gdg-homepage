@@ -62,6 +62,7 @@ export function DatePicker({
   className,
 }: DatePickerProps) {
   const fieldId = useId();
+  const errorId = useId();
   const init = parse(defaultValue);
   const today = new Date();
 
@@ -72,6 +73,7 @@ export function DatePicker({
 
   const { ref, open, setOpen } = useDismiss<HTMLDivElement>();
   const hiddenRef = useRef<HTMLInputElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const form = hiddenRef.current?.form;
@@ -84,6 +86,10 @@ export function DatePicker({
     form.addEventListener("reset", onReset);
     return () => form.removeEventListener("reset", onReset);
   }, [defaultValue, withTime]);
+
+  useEffect(() => {
+    if (open) calendarRef.current?.focus();
+  }, [open]);
 
   const firstWeekday = new Date(viewY, viewM - 1, 1).getDay();
   const daysInMonth = new Date(viewY, viewM, 0).getDate();
@@ -151,6 +157,8 @@ export function DatePicker({
           type="button"
           disabled={disabled}
           onClick={() => setOpen((o) => !o)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           className={cn(
             "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-white dark:bg-gray-100 px-3 text-left text-sm focus:outline-none focus:ring-2 disabled:bg-gray-50 disabled:text-gray-400",
             date ? "text-gray-900" : "text-gray-400",
@@ -175,7 +183,7 @@ export function DatePicker({
           </svg>
         </button>
         {open && (
-          <div className="absolute z-50 mt-1 w-64 rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-3 shadow-card">
+          <div role="dialog" aria-label="날짜 선택" className="absolute z-50 mt-1 w-64 rounded-md border border-gray-200 bg-white dark:bg-gray-100 p-3 shadow-card">
             <div className="mb-2 flex items-center justify-between">
               <button
                 type="button"
@@ -197,7 +205,7 @@ export function DatePicker({
                 ›
               </button>
             </div>
-            <div className="grid grid-cols-7 gap-y-1 text-center text-xs">
+            <div ref={calendarRef} role="grid" tabIndex={-1} className="grid grid-cols-7 gap-y-1 text-center text-xs">
               {WEEKDAYS.map((w) => (
                 <span key={w} className="py-1 text-gray-400">
                   {w}
@@ -207,22 +215,26 @@ export function DatePicker({
                 d === null ? (
                   <span key={`e${i}`} />
                 ) : (
-                  <button
-                    key={d}
-                    type="button"
-                    disabled={isOutOfRange(d)}
-                    onClick={() => pick(d)}
-                    className={cn(
-                      "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm disabled:cursor-not-allowed disabled:text-gray-300",
-                      isSelected(d)
-                        ? "bg-primary font-semibold text-white"
-                        : isToday(d)
-                          ? "font-semibold text-primary hover:bg-primary-soft"
-                          : "text-gray-700 hover:bg-gray-100",
-                    )}
-                  >
-                    {d}
-                  </button>
+                  <div key={d} role="gridcell" className="flex justify-center">
+                    <button
+                      type="button"
+                      disabled={isOutOfRange(d)}
+                      onClick={() => pick(d)}
+                      aria-label={`${viewY}년 ${viewM}월 ${d}일`}
+                      aria-pressed={isSelected(d)}
+                      aria-current={isToday(d) ? "date" : undefined}
+                      className={cn(
+                        "mx-auto flex h-8 w-8 items-center justify-center rounded-full text-sm disabled:cursor-not-allowed disabled:text-gray-300",
+                        isSelected(d)
+                          ? "bg-primary font-semibold text-white"
+                          : isToday(d)
+                            ? "font-semibold text-primary hover:bg-primary-soft"
+                            : "text-gray-700 hover:bg-gray-100",
+                      )}
+                    >
+                      {d}
+                    </button>
+                  </div>
                 ),
               )}
             </div>
@@ -240,7 +252,7 @@ export function DatePicker({
           </div>
         )}
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && <p id={errorId} role="alert" className="text-xs text-danger">{error}</p>}
     </div>
   );
 }

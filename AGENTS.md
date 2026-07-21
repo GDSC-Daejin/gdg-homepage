@@ -8,6 +8,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 For UI redesign work, follow [docs/ai-redesign-workflow-general.md](docs/ai-redesign-workflow-general.md): agree on a reference before implementation, preserve functionality and data contracts, and extract only reusable visual rules into the existing design system.
 
+## Agent verification discipline
+
+When delegated a **verification-only** task (diff review, test, build, grep):
+
+- Run **only** the listed commands. Don't run `lint` or anything not asked for.
+- **Do not modify any file.** If something looks like it needs fixing, report it as text — don't fix it.
+- On a test/build failure, **stop and report it verbatim.** Don't try to fix it. Any failure unrelated to the diff you were given is pre-existing and out of scope.
+- Time box: if a step needs installing dependencies or exceeds ~5 min, stop and report.
+
+**Known pre-existing failure:** `tests/accessibility-primitives.test.ts` asserts eslint deps/script in `package.json`, but eslint is not installed — this test fails on a clean tree and is **not** a regression. Don't "fix" it by editing `package.json`.
+
 ## gstack
 
 - Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.

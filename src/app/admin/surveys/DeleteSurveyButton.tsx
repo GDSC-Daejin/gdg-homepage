@@ -77,7 +77,7 @@ export function DeleteSurveyButton({
       {error && (
         <p className="rounded-md bg-danger-soft px-2 py-1 text-xs text-danger">{error}</p>
       )}
-      <Modal open={open} onClose={() => setOpen(false)}>
+      <Modal open={open} onClose={() => setOpen(false)} ariaLabel="설문 삭제 확인">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-danger-soft">
           <svg
             viewBox="0 0 20 20"

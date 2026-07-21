@@ -98,6 +98,15 @@ body {
   font-family: var(--font-sans);
 }
 
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 /* 재질 모달(§12): 네이티브 <dialog> 를 재질처럼 등장/퇴장시킴. Modal 컴포넌트 + MemberRow 공용.
    CSS scale 프로퍼티를 써서 Tailwind 의 translate 중앙정렬(transform)과 독립적으로 확대/축소.
    allow-discrete 로 퇴장까지 대칭 애니메이션(§7). response ~0.22s, 오버슈트 없음(§4). */
