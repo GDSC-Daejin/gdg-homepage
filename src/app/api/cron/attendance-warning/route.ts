@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { computeAttendanceWarnings } from "@/lib/attendance-stats";
+import { hasValidCronAuthorization } from "@/lib/cron";
 import { getCommunity } from "@/lib/community";
 import { postSlack } from "@/lib/slack";
 
 export async function GET(request: NextRequest) {
-  if (!process.env.CRON_SECRET) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
     return NextResponse.json(
       { error: "CRON_SECRET이 설정되지 않았어요" },
       { status: 401 },
     );
   }
 
-  if (
-    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (!hasValidCronAuthorization(request.headers.get("authorization"), cronSecret)) {
     return NextResponse.json({ error: "권한이 없어요" }, { status: 401 });
   }
 
