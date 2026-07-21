@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
+import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -54,8 +53,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         {children}
         <AnalyticsProvider />
-        <Analytics />
-        <SpeedInsights />
+        <VercelAnalytics />
       </body>
     </html>
   );
