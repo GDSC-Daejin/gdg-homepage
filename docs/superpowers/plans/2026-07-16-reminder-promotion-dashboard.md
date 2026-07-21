@@ -2,7 +2,7 @@
 
 > **For agentic workers (Codex 등):** 이 계획을 태스크 단위로 순서대로 실행한다. 각 스텝은 체크박스(`- [ ]`)로 추적한다. 태스크마다 마지막에 커밋한다. 코드베이스 사전 지식이 없다고 가정하고 모든 코드·경로·명령을 그대로 담았다.
 
-**Goal:** [docs/improvement-proposals.md](../../improvement-proposals.md)의 상위 제안 중 ②(이벤트 리마인더 + 정원 승급 알림)와 ③(회원 홈 대시보드 보강)을 구현한다.
+**Goal:** [docs/improvement-proposals.md](../../plans/improvement-proposals.md)의 상위 제안 중 ②(이벤트 리마인더 + 정원 승급 알림)와 ③(회원 홈 대시보드 보강)을 구현한다.
 
 **Architecture:** 리마인더는 기존 출석 경고 cron(`/api/cron/attendance-warning`)과 동일한 패턴 — Community Store reads + 순수 메시지 빌더(vitest 테스트) + Vercel cron 라우트 + Slack webhook. 승급 알림은 `cancel_registration` RPC가 승급자 이름을 반환하도록 마이그레이션하고 서버 액션에서 Slack으로 전송. 대시보드는 기존 `HomeDashboard` 서버 컴포넌트에 미응답 설문 배너와 이번 달 포인트 카드를 추가.
 

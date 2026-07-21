@@ -6,16 +6,16 @@
 ## 배경 (읽고 시작할 것)
 
 이 앱(GDG DJU 동아리 관리)의 **1차 보안 방어선은 Supabase RLS + SECURITY DEFINER RPC**다.
-앱단 `requireAdmin`/`requireProfile`([src/lib/auth.ts](../src/lib/auth.ts))은 보조선이다.
+앱단 `requireAdmin`/`requireProfile`([src/lib/auth.ts](../../src/lib/auth.ts))은 보조선이다.
 정적 분석 결과 치명적 구멍은 없었고, 아래는 **방어 강화(hardening)와 남용 방지** 작업이다.
 
 ### 실행자 필수 규칙
 
-1. **이 Next.js는 변형 버전(16.2.10)이다.** API를 추정하지 말고 `node_modules/next/dist/docs/` 의 해당 가이드를 먼저 읽어라. (참고: [AGENTS.md](../AGENTS.md))
+1. **이 Next.js는 변형 버전(16.2.10)이다.** API를 추정하지 말고 `node_modules/next/dist/docs/` 의 해당 가이드를 먼저 읽어라. (참고: [AGENTS.md](../../AGENTS.md))
 2. **RLS 정책을 절대 약화시키지 마라.** 특히 `profiles` 테이블 read 정책을 넓히지 말 것 (Task 5 참조).
 3. **DB 변경은 새 마이그레이션 파일로만.** 기존 `supabase/migrations/*.sql` 수정 금지. 다음 번호는 **`0025`** 부터. 파일명 규칙: `00NN_snake_case.sql`.
 4. 각 Task는 **독립 PR** 로 낼 것. Task 간 의존성 없음.
-5. 테스트: `npm test` (vitest). 기존 테스트는 [tests/](../tests/)·[src/](../src/) 산재. 새 로직엔 최소 1개 검증 테스트 추가.
+5. 테스트: `npm test` (vitest). 기존 테스트는 [tests/](../../tests/)·[src/](../../src/) 산재. 새 로직엔 최소 1개 검증 테스트 추가.
 6. 응답/커밋/에러 메시지는 기존 코드처럼 **한국어 사용자 문구** 유지 (`toKoreanError`, `ActionResult` 패턴).
 7. 스코프 밖 코드 리팩터·포맷 변경 금지. 변경 라인은 각 Task 목표에 직결되게.
 
@@ -36,9 +36,9 @@ P2/P3은 여력 있을 때. P0 두 개가 최우선.
 
 ## Task 1 — HTTP 보안 헤더 추가 (P0)
 
-**문제:** [next.config.ts](../next.config.ts)에 `headers()`가 없어 CSP·HSTS·X-Frame-Options 등 전무. 클릭재킹·XSS 심층방어 부재.
+**문제:** [next.config.ts](../../next.config.ts)에 `headers()`가 없어 CSP·HSTS·X-Frame-Options 등 전무. 클릭재킹·XSS 심층방어 부재.
 
-**주의:** 이 앱은 인라인 테마 스크립트(`dangerouslySetInnerHTML`, [src/app/layout.tsx:21](../src/app/layout.tsx))와 Vercel Analytics/Speed Insights, Supabase 호출을 쓴다. **엄격한 enforcing CSP는 인라인 스크립트를 깨뜨린다.** 따라서:
+**주의:** 이 앱은 인라인 테마 스크립트(`dangerouslySetInnerHTML`, [src/app/layout.tsx:21](../../src/app/layout.tsx))와 Vercel Analytics/Speed Insights, Supabase 호출을 쓴다. **엄격한 enforcing CSP는 인라인 스크립트를 깨뜨린다.** 따라서:
 
 - 즉시 안전한 헤더는 **enforce** 로 넣는다.
 - CSP는 **`Content-Security-Policy-Report-Only`** 로 먼저 넣어 위반만 수집한다. (nonce 배선은 후속 작업)
@@ -64,7 +64,7 @@ P2/P3은 여력 있을 때. P0 두 개가 최우선.
 
 ## Task 2 — 공개 지원폼 남용 방지 (P0)
 
-**문제:** [src/actions/application.ts](../src/actions/application.ts)의 `submitApplication`은 rate limit·CAPTCHA가 없다. `(email, season)` unique 제약([0010](../supabase/migrations/0010_public_application.sql))만 있어 이메일만 바꾸면 무제한 삽입 가능. 게다가 anon 키로 PostgREST를 **직접 호출**하면 앱 레이어를 우회한다(현재 [0019](../supabase/migrations/0019_application_insert_deadline_check.sql)의 anon insert 정책만 통과하면 됨).
+**문제:** [src/actions/application.ts](../../src/actions/application.ts)의 `submitApplication`은 rate limit·CAPTCHA가 없다. `(email, season)` unique 제약([0010](../../supabase/migrations/0010_public_application.sql))만 있어 이메일만 바꾸면 무제한 삽입 가능. 게다가 anon 키로 PostgREST를 **직접 호출**하면 앱 레이어를 우회한다(현재 [0019](../../supabase/migrations/0019_application_insert_deadline_check.sql)의 anon insert 정책만 통과하면 됨).
 
 **전략 (2단 방어):**
 
@@ -77,7 +77,7 @@ P2/P3은 여력 있을 때. P0 두 개가 최우선.
 
 > 참고: DB는 클라이언트 IP를 보지 못하므로 IP 기반은 앱 레이어(2-B)에서만 가능. 트리거는 `created_at` 인덱스 전제 — 없으면 함께 생성.
 
-에러 코드는 `toKoreanError`([src/lib/errors.ts](../src/lib/errors.ts))에 한국어 매핑 추가:
+에러 코드는 `toKoreanError`([src/lib/errors.ts](../../src/lib/errors.ts))에 한국어 매핑 추가:
 - `DUPLICATE_APPLICANT` → "이미 같은 학번/연락처로 지원한 내역이 있어요"
 - `RATE_LIMITED` → "잠시 후 다시 시도해주세요"
 
@@ -86,7 +86,7 @@ P2/P3은 여력 있을 때. P0 두 개가 최우선.
 `submitApplication` 시작부에 IP 기반 스로틀 추가. **새 외부 의존성 없이** Supabase 테이블로 구현:
 
 - 마이그레이션 `0025`에 `submission_throttle` 테이블 추가: `(ip text, window_start timestamptz, count int)` + SECURITY DEFINER RPC `check_submission_rate(p_ip text)` — 예: IP당 10분에 5회 초과 시 false 반환. 이 RPC는 `authenticated`/`anon` 모두 execute 허용.
-- 서버 액션에서 IP 추출: `const h = await headers()` → `h.get("x-forwarded-for")?.split(",")[0]?.trim()`. (Vercel은 `x-forwarded-for` 제공. [src/actions/notice.ts:109](../src/actions/notice.ts)에 `headers()` 사용 선례 있음.)
+- 서버 액션에서 IP 추출: `const h = await headers()` → `h.get("x-forwarded-for")?.split(",")[0]?.trim()`. (Vercel은 `x-forwarded-for` 제공. [src/actions/notice.ts:109](../../src/actions/notice.ts)에 `headers()` 사용 선례 있음.)
 - 초과 시 `{ error: "잠시 후 다시 시도해주세요" }` 반환하고 insert 스킵.
 
 > **결정 필요 없음(기본안 채택):** Upstash/Vercel KV 같은 신규 의존성은 도입하지 않는다(YAGNI). 이후 트래픽이 실제로 문제되면 그때 교체.
@@ -106,7 +106,7 @@ PostgREST 직접 호출은 IP 스로틀로도 완벽 차단 불가. 근본 방�
 ## Task 3 — 출석 코드 강화 + 시도 제한 (P1)
 
 **문제:**
-[0004:181](../supabase/migrations/0004_phase2.sql)의 `admin_set_event_code`가 `upper(substr(md5(random()::text), 1, 6))` → md5는 16진수라 실제 알파벳 **16종(≈16.7M)**, 스키마([src/lib/schemas.ts:53](../src/lib/schemas.ts) `attendCodeSchema`)는 "영숫자 6자"라 표기와 불일치. 또 `check_attendance`([0001](../supabase/migrations/0001_init.sql))에 **시도 제한이 없어** 확정 등록자가 불참 상태로 코드를 무제한 추측 가능(부정 출석).
+[0004:181](../../supabase/migrations/0004_phase2.sql)의 `admin_set_event_code`가 `upper(substr(md5(random()::text), 1, 6))` → md5는 16진수라 실제 알파벳 **16종(≈16.7M)**, 스키마([src/lib/schemas.ts:53](../../src/lib/schemas.ts) `attendCodeSchema`)는 "영숫자 6자"라 표기와 불일치. 또 `check_attendance`([0001](../../supabase/migrations/0001_init.sql))에 **시도 제한이 없어** 확정 등록자가 불참 상태로 코드를 무제한 추측 가능(부정 출석).
 
 **구현 — 마이그레이션 `0026_attendance_code_hardening.sql`:**
 
@@ -116,7 +116,7 @@ PostgREST 직접 호출은 IP 스로틀로도 완벽 차단 불가. 근본 방�
 3. 시도 제한: `check_attendance`에 실패 카운터 추가. `attendance_attempts` 테이블 `(event_id, user_id, attempts int, last_attempt timestamptz)` 를 두고, 실패 시 증가, N회(예: 5) 초과+쿨다운 미경과면 `raise exception 'TOO_MANY_ATTEMPTS'`. 성공 시 카운터 리셋. 함수는 SECURITY DEFINER 유지.
 
 **앱 변경:**
-- [src/lib/schemas.ts](../src/lib/schemas.ts) `attendCodeSchema` 정규식을 새 코드 형식에 맞게 수정(예: `/^[A-Z2-9]{8}$/`). 클라이언트 입력 UI가 6자 가정하는 곳 있으면 함께 조정(grep `attendCodeSchema` 사용처).
+- [src/lib/schemas.ts](../../src/lib/schemas.ts) `attendCodeSchema` 정규식을 새 코드 형식에 맞게 수정(예: `/^[A-Z2-9]{8}$/`). 클라이언트 입력 UI가 6자 가정하는 곳 있으면 함께 조정(grep `attendCodeSchema` 사용처).
 - `toKoreanError`에 `TOO_MANY_ATTEMPTS` → "시도 횟수를 초과했어요. 잠시 후 다시 해주세요" 매핑.
 
 > **호환성 주의:** 기존에 발급된 6자 코드가 DB에 있으면 새 스키마 정규식이 그 코드 입력을 막는다. 마이그레이션에서 기존 `event_codes`를 새 형식으로 재발급하거나, 운영상 새 이벤트부터 적용됨을 PR에 명시.
@@ -130,13 +130,13 @@ PostgREST 직접 호출은 IP 스로틀로도 완벽 차단 불가. 근본 방�
 
 ## Task 4 — 게시판 뮤테이션 소유권 이중화 (P1, 구조적)
 
-**문제:** [src/actions/post.ts](../src/actions/post.ts)의 `updatePost`/`deletePost`/`deleteComment`는 앱단 소유권 체크 없이 RLS에만 의존. **현재는 안전**(posts RLS가 `author_id = auth.uid()` 강제, [0021](../supabase/migrations/0021_member_board.sql))하나 방어선이 한 겹이라, 훗날 정책 회귀 시 조용히 IDOR화.
+**문제:** [src/actions/post.ts](../../src/actions/post.ts)의 `updatePost`/`deletePost`/`deleteComment`는 앱단 소유권 체크 없이 RLS에만 의존. **현재는 안전**(posts RLS가 `author_id = auth.uid()` 강제, [0021](../../supabase/migrations/0021_member_board.sql))하나 방어선이 한 겹이라, 훗날 정책 회귀 시 조용히 IDOR화.
 
 **구현 (DB 변경 없음, 앱 레이어 이중화):**
 
 각 함수에서 뮤테이션 전에 소유권을 앱단에서도 확인:
 - `updatePost(id, ...)`: `posts`에서 `author_id` 조회 → `profile.id`와 불일치 시 `{ error: "권한이 없어요" }`. (update는 소유자만)
-- `deletePost(id, ...)` / `deleteComment(id, ...)`: 소유자 **또는 관리자** 허용. `requireProfile()` 결과 role이 `ADMIN_ROLES`([src/lib/types.ts](../src/lib/types.ts)) 포함이면 통과, 아니면 소유권 확인.
+- `deletePost(id, ...)` / `deleteComment(id, ...)`: 소유자 **또는 관리자** 허용. `requireProfile()` 결과 role이 `ADMIN_ROLES`([src/lib/types.ts](../../src/lib/types.ts)) 포함이면 통과, 아니면 소유권 확인.
 
 `createPost`/`createComment`는 이미 `author_id: profile.id`로 삽입하므로 변경 불필요. `acceptAnswer`는 RPC가 내부에서 `author_id = auth.uid()` 확인하므로 그대로 둘 것.
 
@@ -151,13 +151,13 @@ PostgREST 직접 호출은 IP 스로틀로도 완벽 차단 불가. 근본 방�
 
 ## Task 5 — 작성자명 노출용 안전 뷰 (P2, 선제)
 
-**문제/맥락:** [src/components/board/PostListPage.tsx:35](../src/components/board/PostListPage.tsx)가 `profiles(name)`을 조인하지만, `profiles: self read` RLS([0001](../supabase/migrations/0001_init.sql))상 **타인 프로필은 못 읽어** 작성자명이 "탈퇴한 회원"으로 표시될 수 있음. 이를 고치려 `profiles` read 정책을 넓히면 **phone·student_no·email이 전 멤버에게 노출**된다 — 절대 금지.
+**문제/맥락:** [src/components/board/PostListPage.tsx:35](../../src/components/board/PostListPage.tsx)가 `profiles(name)`을 조인하지만, `profiles: self read` RLS([0001](../../supabase/migrations/0001_init.sql))상 **타인 프로필은 못 읽어** 작성자명이 "탈퇴한 회원"으로 표시될 수 있음. 이를 고치려 `profiles` read 정책을 넓히면 **phone·student_no·email이 전 멤버에게 노출**된다 — 절대 금지.
 
 **구현 — 마이그레이션 `0027_public_author_view.sql`:**
 
 - `profiles`에서 **`id`, `name`, `nickname`만** 노출하는 안전 뷰 또는 SECURITY DEFINER 함수 생성. 예: `create view public.member_public as select id, name, nickname from profiles;` + 멤버에게 select 허용하되 **민감 컬럼(phone/student_no/email/major/interests) 절대 미포함**.
   - 뷰 사용 시 `security_invoker=off`(정의자 권한) 또는 별도 RLS 고려 — Supabase/PG 버전에 맞게 `security_barrier`/`security_invoker` 옵션 검토. 목표: 멤버가 다른 작성자의 이름/닉네임만 읽을 수 있게.
-- 게시판 조회 코드([PostListPage.tsx](../src/components/board/PostListPage.tsx) 및 [src/app/(member)/board/[id]/page.tsx](../src/app/(member)/board/[id]/page.tsx), qna 대응 페이지)의 `profiles(name)` 조인을 새 뷰 기준으로 교체.
+- 게시판 조회 코드([PostListPage.tsx](../../src/components/board/PostListPage.tsx) 및 [src/app/(member)/board/[id]/page.tsx](../../src/app/(member)/board/[id]/page.tsx), qna 대응 페이지)의 `profiles(name)` 조인을 새 뷰 기준으로 교체.
 
 **수용 기준:**
 - 게시판에서 **타인 작성자명이 정상 표시**됨.
@@ -168,7 +168,7 @@ PostgREST 직접 호출은 IP 스로틀로도 완벽 차단 불가. 근본 방�
 
 ## Task 6 — Cron 시크릿 상수시간 비교 (P3, 최하)
 
-**문제:** [src/app/api/cron/attendance-warning/route.ts:16](../src/app/api/cron/attendance-warning/route.ts)·[event-reminder/route.ts:16](../src/app/api/cron/event-reminder/route.ts)의 `!== \`Bearer ${CRON_SECRET}\`` 는 비상수시간 비교. 네트워크 경유라 실익 미미하나 정석은 상수시간.
+**문제:** [src/app/api/cron/attendance-warning/route.ts:16](../../src/app/api/cron/attendance-warning/route.ts)·[event-reminder/route.ts:16](../../src/app/api/cron/event-reminder/route.ts)의 `!== \`Bearer ${CRON_SECRET}\`` 는 비상수시간 비교. 네트워크 경유라 실익 미미하나 정석은 상수시간.
 
 **구현:** `crypto.timingSafeEqual`로 교체(길이 불일치 방어 포함). 두 라우트 동일 패턴이므로 공용 헬퍼로 뽑아도 됨(단, 스코프 최소화).
 

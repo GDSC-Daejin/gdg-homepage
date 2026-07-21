@@ -1,8 +1,8 @@
 # 구현 브리프 (Codex용): Community Store — 슬라이스 1 (출석 경고 경로)
 
-이 문서만 읽고 착수할 수 있게 자체 완결로 썼다. 배경 설계는 [community-store-design.md](community-store-design.md), 도메인 용어는 [CONTEXT.md](../CONTEXT.md)의 `## 아키텍처` 참조.
+이 문서만 읽고 착수할 수 있게 자체 완결로 썼다. 배경 설계는 [community-store-design.md](community-store-design.md), 도메인 용어는 [CONTEXT.md](../../CONTEXT.md)의 `## 아키텍처` 참조.
 
-**먼저 읽을 것**: 저장소 루트의 [AGENTS.md](../AGENTS.md) — 이 프로젝트의 Next.js(16.2.10)는 관례가 다를 수 있으니 코드 쓰기 전 `node_modules/next/dist/docs/`의 관련 가이드를 확인하라. (이 슬라이스는 새 Next API 표면을 추가하지 않고 기존 lib 함수 시그니처와 두 호출부만 바꾸므로 위험은 낮다.)
+**먼저 읽을 것**: 저장소 루트의 [AGENTS.md](../../AGENTS.md) — 이 프로젝트의 Next.js(16.2.10)는 관례가 다를 수 있으니 코드 쓰기 전 `node_modules/next/dist/docs/`의 관련 가이드를 확인하라. (이 슬라이스는 새 Next API 표면을 추가하지 않고 기존 lib 함수 시그니처와 두 호출부만 바꾸므로 위험은 낮다.)
 
 ## 목표
 

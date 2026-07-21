@@ -34,7 +34,7 @@
 1. **정원 승급 자동 알림** — `cancelRegistration`의 대기열 승급 시점에 승급자에게 Slack/알림 발송. 승급 로직·webhook 모두 이미 있고 훅 한 줄 거리다.
 2. **통합 검색** — 공지·게시판·자료를 Postgres FTS(tsvector)로 검색. 외부 검색엔진 불필요, 마이그레이션 하나로 해결.
 3. **출석 QR 코드** — `IssueCodeButton`이 발급하는 event_code를 QR로도 렌더링. 현장에서 코드 구두 전달 대신 화면 스캔.
-4. **Community Store 마이그레이션 완주** — `docs/community-store-design.md` 설계대로 남은 액션들을 store 경유로 전환. Demo Mode 신뢰성과 테스트 용이성이 함께 올라간다.
+4. **Community Store 마이그레이션 완주** — `docs/design/community-store-design.md` 설계대로 남은 액션들을 store 경유로 전환. Demo Mode 신뢰성과 테스트 용이성이 함께 올라간다.
 5. **포인트 지급 규칙 테이블** — `admin_grant_points` RPC 앞단에 규칙(출석 N점, 설문 응답 N점)을 두고 자동 지급 이벤트가 참조. 수동 지급과 감사 로그 체계는 그대로 유지.
 
 ---

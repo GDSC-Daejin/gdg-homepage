@@ -20,9 +20,9 @@
 
 ## ⚠️ 현재 코드 기준 정정 2건 (원본 계획서보다 우선)
 
-1. **사이드바 nav 삽입 위치** — 원본 계획서 Task 6은 존재하지 않는 "메인" 그룹에 넣으라고 되어 있다. 현재 [src/app/admin/AdminSidebarNav.tsx](../src/app/admin/AdminSidebarNav.tsx)는 `groups: NavGroup[]`(운영/콘텐츠/관리/모집) + 접이식 구조다. **"운영" 그룹의 `items` 배열에서 `대시보드(/admin)` 항목 바로 다음에** `{ href: "/admin/analytics", label: "분석", icon: "analytics" }`를 추가하고, `icons` 맵에 `analytics` 아이콘 path를 추가하라(예: `analytics: "M4 20V10M10 20V4M16 20v-7M22 20H2"`). 그룹 구조·접이식 로직은 건드리지 말 것.
+1. **사이드바 nav 삽입 위치** — 원본 계획서 Task 6은 존재하지 않는 "메인" 그룹에 넣으라고 되어 있다. 현재 [src/app/admin/AdminSidebarNav.tsx](../../src/app/admin/AdminSidebarNav.tsx)는 `groups: NavGroup[]`(운영/콘텐츠/관리/모집) + 접이식 구조다. **"운영" 그룹의 `items` 배열에서 `대시보드(/admin)` 항목 바로 다음에** `{ href: "/admin/analytics", label: "분석", icon: "analytics" }`를 추가하고, `icons` 맵에 `analytics` 아이콘 path를 추가하라(예: `analytics: "M4 20V10M10 20V4M16 20v-7M22 20H2"`). 그룹 구조·접이식 로직은 건드리지 말 것.
 
-2. **StatCard 재사용** — 원본 계획서 Task 6은 페이지 안에 인라인 `StatCard`를 새로 정의한다. **하지 마라.** 이미 [src/components/StatCard.tsx](../src/components/StatCard.tsx)가 있고 props는 `{ label, value, hint?, emphasis? }`다. 이걸 import해서 쓰라(값은 문자열/숫자 — 컴포넌트 시그니처를 먼저 확인). `Section`/`RankTable`/`TrafficChart`는 페이지-로컬로 새로 만들어도 됨.
+2. **StatCard 재사용** — 원본 계획서 Task 6은 페이지 안에 인라인 `StatCard`를 새로 정의한다. **하지 마라.** 이미 [src/components/StatCard.tsx](../../src/components/StatCard.tsx)가 있고 props는 `{ label, value, hint?, emphasis? }`다. 이걸 import해서 쓰라(값은 문자열/숫자 — 컴포넌트 시그니처를 먼저 확인). `Section`/`RankTable`/`TrafficChart`는 페이지-로컬로 새로 만들어도 됨.
 
 ---
 

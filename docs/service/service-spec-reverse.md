@@ -8,7 +8,7 @@
 
 ## 1. 서비스 개요
 
-**GDG on Campus 대진대학교** 동아리 운영 웹앱. 하나의 앱에서 신입 모집·심사·면접, 회원의 이벤트 참여·출석, 운영진의 관리 업무를 처리한다. 〔docs/service-wiki.md, src 라우트 구조〕
+**GDG on Campus 대진대학교** 동아리 운영 웹앱. 하나의 앱에서 신입 모집·심사·면접, 회원의 이벤트 참여·출석, 운영진의 관리 업무를 처리한다. 〔docs/service/service-wiki.md, src 라우트 구조〕
 
 - 현재 시즌 상수: `CURRENT_SEASON = "2026-2"` 〔src/lib/constants.ts〕
 - 인증: Google OAuth (Supabase Auth) 〔src/app/auth, src/lib/supabase〕
@@ -24,7 +24,7 @@
 | DB/인증 | Supabase (PostgreSQL + Auth + RLS) 〔supabase/migrations〕 |
 | 검증 | Zod 스키마 (폼·서버 액션 공용) 〔src/lib/schemas.ts〕 |
 | 서버 로직 | Server Actions (`src/actions/*`) + PostgreSQL `SECURITY DEFINER` RPC 〔0001_init 외〕 |
-| 스타일 | Tailwind 〔docs/mobile-design-system.md〕 |
+| 스타일 | Tailwind 〔docs/design/mobile-design-system.md〕 |
 
 **보안 아키텍처 (코드로 확인되는 3중 구조):**
 1. **RLS 전 테이블 활성화** — 모든 테이블에 `enable row level security`. 〔0001_init:79–85〕
@@ -46,7 +46,7 @@
 
 - 운영진 판정 `is_admin()` = role이 `organizer` 또는 `team_member`. 〔0009〕
 - 신규 가입 기본 role: **member** (0022에서 변경). `admin_emails` 등록 이메일은 `team_member`. 〔0022, 0009〕
-- 화면 분기는 실질적으로 **회원 / 운영진 2단계**. 〔docs/service-wiki.md §2〕
+- 화면 분기는 실질적으로 **회원 / 운영진 2단계**. 〔docs/service/service-wiki.md §2〕
 
 ### 3.2 상태(status) 〔0001_init:10〕
 `active` / `dormant` / `withdrawn` — admin RPC(`admin_set_status`)로만 변경.
@@ -239,7 +239,7 @@
 
 - **사이드바 정보구조(IA) 통합** 진행 중: 회원 8메뉴 통합, 콘텐츠·관리·모집 그룹 접힘. 〔최근 커밋 3e6879f, e483b48, b3e97a5, bcb822c〕
 - **미커밋 변경(작업 트리)**: `schemas.ts`·`errors.ts`·`schemas.test.ts` 수정, 0036 출석 시도 제한 마이그레이션 및 테스트 신규. 〔git status〕
-- 관련 계획 문서 존재: `docs/analytics-dashboard-phase2.md`, `docs/security-hardening-remaining.md`, `docs/PRD/ia-adoption-plan.md`.
+- 관련 계획 문서 존재: `docs/plans/analytics-dashboard-phase2.md`, `docs/security/security-hardening-remaining.md`, `docs/PRD/ia-adoption-plan.md`.
 
 ---
 
@@ -255,4 +255,4 @@
 
 ---
 
-_근거 파일 총람_: `supabase/migrations/0001–0036`, `src/lib/schemas.ts`·`errors.ts`·`constants.ts`, `src/actions/*`, `src/app/**` 라우트, `docs/service-wiki.md`. 기존 페이지별 상세는 `docs/PRD/{admin,member,public}/`.
+_근거 파일 총람_: `supabase/migrations/0001–0036`, `src/lib/schemas.ts`·`errors.ts`·`constants.ts`, `src/actions/*`, `src/app/**` 라우트, `docs/service/service-wiki.md`. 기존 페이지별 상세는 `docs/PRD/{admin,member,public}/`.

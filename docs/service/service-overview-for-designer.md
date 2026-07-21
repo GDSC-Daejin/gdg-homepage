@@ -1,6 +1,6 @@
 # 지금 우리 서비스, 어떻게 생겼나 (쉬운 소개)
 
-> 디자이너가 "이 앱이 지금 뭐로 이루어져 있지?"를 빠르게 파악하기 위한 문서. 어려운 말 빼고 화면 중심으로 정리했어요. (개선 방향은 별도 문서 → [redesign-for-designer.md](redesign-for-designer.md))
+> 디자이너가 "이 앱이 지금 뭐로 이루어져 있지?"를 빠르게 파악하기 위한 문서. 어려운 말 빼고 화면 중심으로 정리했어요. (개선 방향은 별도 문서 → [redesign-for-designer.md](../design/redesign-for-designer.md))
 
 ---
 
@@ -117,4 +117,4 @@
 ## 지금 상태를 한마디로
 
 기능은 **아주 많이** 들어있어요. 동아리 운영에 필요할 법한 건 거의 다 있는 편이에요.
-그래서 **"이 앱이 제일 잘하는 게 뭐지?"가 조금 흐려진 상태** — 이걸 어떻게 정리할지는 [redesign-for-designer.md](redesign-for-designer.md)에 담아뒀어요.
+그래서 **"이 앱이 제일 잘하는 게 뭐지?"가 조금 흐려진 상태** — 이걸 어떻게 정리할지는 [redesign-for-designer.md](../design/redesign-for-designer.md)에 담아뒀어요.

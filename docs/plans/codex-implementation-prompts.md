@@ -81,7 +81,7 @@ gdg-dju 저장소에서 "재학 여부 관리" 기능을 구현해줘.
 ```
 gdg-dju 저장소에서 SEO/AEO를 구현해줘.
 
-docs/seo-aeo-implementation-plan.md 를 읽고 계획대로 태스크 단위로 구현해. 현재 저장소엔 sitemap·robots·JSON-LD가 전혀 없다(from scratch).
+docs/plans/seo-aeo-implementation-plan.md 를 읽고 계획대로 태스크 단위로 구현해. 현재 저장소엔 sitemap·robots·JSON-LD가 전혀 없다(from scratch).
 
 미확정 값은 계획서에서 이미 전부 확정됐다(섹션 0.2, 말미 체크리스트 참고). 핵심:
 - NEXT_PUBLIC_SITE_URL은 사용자가 .env.local에 이미 실제 도메인으로 넣어둠 → 코드는 process.env로 읽기만, 도메인 하드코딩 금지.
@@ -100,7 +100,7 @@ Next.js 16 App Router의 메타데이터/파일 규약을 쓸 것 — 정확한 
 ```
 gdg-dju 저장소에서 보안 하드닝을 구현해줘.
 
-docs/security-hardening-plan.md 를 읽고 계획대로 태스크 단위로 구현해. 현재 rate limit·CSP 등이 없다.
+docs/security/security-hardening-plan.md 를 읽고 계획대로 태스크 단위로 구현해. 현재 rate limit·CSP 등이 없다.
 
 주의:
 - 계획서에 없는 범위는 손대지 마. 서버 액션/RLS 동작을 깨지 않도록 기존 인증 경로(src/lib/auth.ts, requireAdmin 등)를 먼저 파악하고 진행.

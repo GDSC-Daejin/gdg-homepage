@@ -52,7 +52,7 @@ TTFB를 dev 서버(`next dev`, Turbopack)에서 정적/동적 페이지 간 비�
 
 ### 2. 인증 확인 함수가 요청당 중복 호출됨 (N+1)
 
-> **[반영됨]** `getProfile()`이 `React cache()`로 감싸져 요청당 1회로 dedupe된다 ([auth.ts:6](../src/lib/auth.ts)). 레이아웃+페이지가 같은 요청에서 렌더되므로 아래 "왕복 ×2 / ×4"는 현재 발생하지 않는다 — 아래 서술은 `cache()` 적용 이전 기준.
+> **[반영됨]** `getProfile()`이 `React cache()`로 감싸져 요청당 1회로 dedupe된다 ([auth.ts:6](../../src/lib/auth.ts)). 레이아웃+페이지가 같은 요청에서 렌더되므로 아래 "왕복 ×2 / ×4"는 현재 발생하지 않는다 — 아래 서술은 `cache()` 적용 이전 기준.
 
 `(member)/layout.tsx`와 그 하위 거의 모든 `page.tsx`(예: [attend/page.tsx](src/app/(member)/attend/page.tsx), [profile/page.tsx](src/app/(member)/profile/page.tsx))가 각각 `getProfile()` / `requireProfile()`을 **따로** 호출한다. `admin/layout.tsx`와 그 하위 페이지들도 동일한 패턴.
 
@@ -71,7 +71,7 @@ TTFB를 dev 서버(`next dev`, Turbopack)에서 정적/동적 페이지 간 비�
 
 ### 4. OAuth 콜백에 불필요한 왕복 추가
 
-> **[반영됨]** `exchangeCodeForSession(code)`의 반환값에서 바로 `user`를 꺼내 쓰도록 바뀌어 중복 `getUser()` 호출이 제거됐다 ([callback/route.ts](../src/app/auth/callback/route.ts)).
+> **[반영됨]** `exchangeCodeForSession(code)`의 반환값에서 바로 `user`를 꺼내 쓰도록 바뀌어 중복 `getUser()` 호출이 제거됐다 ([callback/route.ts](../../src/app/auth/callback/route.ts)).
 
 [`auth/callback/route.ts`](src/app/auth/callback/route.ts)에서 `exchangeCodeForSession(code)` 직후 곧바로 `auth.getUser()`를 다시 호출한다. `exchangeCodeForSession`이 이미 세션/유저 정보를 반환하므로 이 추가 호출은 로그인 리다이렉트 경로에 왕복 1회를 더 얹는다.
 

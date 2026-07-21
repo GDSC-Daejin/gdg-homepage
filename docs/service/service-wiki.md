@@ -165,4 +165,4 @@ LLM과 함께 디자인/재배치를 할 때 **이건 건드리지 않기:**
 
 ---
 
-_상세 버전이 필요하면_: 현황은 [service-overview-for-designer.md](service-overview-for-designer.md), 개선안은 [redesign-for-designer.md](redesign-for-designer.md), 엔지니어용 원본 기획서는 [redesign-focus-proposal.md](redesign-focus-proposal.md).
+_상세 버전이 필요하면_: 현황은 [service-overview-for-designer.md](service-overview-for-designer.md), 개선안은 [redesign-for-designer.md](../design/redesign-for-designer.md), 엔지니어용 원본 기획서는 [redesign-focus-proposal.md](../design/redesign-focus-proposal.md).
