@@ -4,3 +4,4 @@ as select id, name, nickname from public.profiles;
 
 revoke all on public.member_public from anon;
 grant select on public.member_public to authenticated;
+notify pgrst, 'reload schema';

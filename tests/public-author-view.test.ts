@@ -13,6 +13,7 @@ describe("공개 작성자 뷰", () => {
     expect(migration).toContain("security_barrier = true");
     expect(migration).toContain("select id, name, nickname from public.profiles");
     expect(migration).toContain("grant select on public.member_public to authenticated");
+    expect(migration).toContain("notify pgrst, 'reload schema'");
     expect(migration).not.toMatch(/select[^;]*(phone|student_no|email|major|interests)/s);
   });
 
