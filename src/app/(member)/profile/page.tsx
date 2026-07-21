@@ -8,7 +8,12 @@ import { EmptyState } from "@/components/EmptyState";
 import { ProfileForm } from "./ProfileForm";
 import { formatKst, monthKst } from "@/lib/format";
 import { sumPointsInMonth } from "@/lib/points";
-import type { RegistrationStatus, PointLog, Badge as BadgeType } from "@/lib/types";
+import type {
+  RegistrationStatus,
+  PointLog,
+  Badge as BadgeType,
+  EventType,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +27,26 @@ interface MyBadgeItem {
   id: string;
   badge: { id: string } | null;
 }
+
+interface AttendanceHistoryItem {
+  event_id: string;
+  checked_at: string;
+  event: { id: string; title: string; type: EventType; starts_at: string } | null;
+}
+
+const TYPE_LABELS: Record<EventType, string> = {
+  session: "정기세션",
+  study: "스터디",
+  mogakco: "모각코",
+  party: "파티",
+};
+
+const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"> = {
+  session: "primary",
+  study: "success",
+  mogakco: "warning",
+  party: "danger",
+};
 
 export default async function ProfilePage() {
   const profile = await requireProfile();
@@ -40,7 +65,12 @@ export default async function ProfilePage() {
       .eq("user_id", profile.id)
       .order("created_at", { ascending: false })
       .returns<RegistrationHistoryItem[]>(),
-    supabase.from("attendances").select("event_id").eq("user_id", profile.id),
+    supabase
+      .from("attendances")
+      .select("event_id, checked_at, event:events(id, title, type, starts_at)")
+      .eq("user_id", profile.id)
+      .order("checked_at", { ascending: false })
+      .returns<AttendanceHistoryItem[]>(),
     supabase
       .from("point_logs")
       .select("*")
@@ -60,6 +90,7 @@ export default async function ProfilePage() {
   ]);
 
   const attendedEventIds = new Set((attendances ?? []).map((a) => a.event_id));
+  const attendanceHistory = (attendances ?? []).filter((a) => a.event);
   const pointLogList = pointLogs ?? [];
   const pointTotal = pointLogList.reduce((sum, log) => sum + log.amount, 0);
   const monthTotal = sumPointsInMonth(
@@ -189,6 +220,37 @@ export default async function ProfilePage() {
               </div>
             ) : (
               <EmptyState title="등록된 뱃지가 없어요" />
+            )}
+          </div>
+
+          <div>
+            <h2 className="mb-3 text-sm font-semibold text-gray-900">출석 이력</h2>
+            {attendanceHistory.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {attendanceHistory.map((a) => (
+                  <Card
+                    key={a.event!.id}
+                    className="flex items-center justify-between gap-4 p-4"
+                  >
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <Badge tone={TYPE_TONES[a.event!.type]} className="shrink-0">
+                        {TYPE_LABELS[a.event!.type]}
+                      </Badge>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-gray-900">
+                          {a.event!.title}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatKst(a.event!.starts_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge tone="primary" className="shrink-0">출석 완료</Badge>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <EmptyState title="아직 참석한 활동이 없어요" />
             )}
           </div>
         </div>
