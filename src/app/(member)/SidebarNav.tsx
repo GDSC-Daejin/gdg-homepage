@@ -43,6 +43,7 @@ interface NavItem {
   href: string;
   label: string;
   icon: keyof typeof icons;
+  matchPrefixes?: string[];
 }
 
 interface NavGroup {
@@ -57,9 +58,7 @@ const baseGroups: NavGroup[] = [
     items: [
       { href: "/events", label: "이벤트", icon: "events" },
       { href: "/notices", label: "공지", icon: "notices" },
-      { href: "/meetings", label: "회의록", icon: "meetings" },
-      { href: "/board", label: "자유게시판", icon: "board" },
-      { href: "/qna", label: "질문답변", icon: "qna" },
+      { href: "/board", label: "커뮤니티", icon: "board", matchPrefixes: ["/board", "/qna", "/meetings"] },
       { href: "/surveys", label: "설문", icon: "surveys" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
     ],
@@ -70,10 +69,7 @@ const baseGroups: NavGroup[] = [
   },
   {
     title: "계정",
-    items: [
-      { href: "/profile", label: "프로필", icon: "profile" },
-      { href: "/attend", label: "출석 이력", icon: "attend" },
-    ],
+    items: [{ href: "/profile", label: "프로필", icon: "profile" }],
   },
 ];
 
@@ -98,7 +94,7 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
             const active =
               item.href === "/"
                 ? pathname === "/"
-                : pathname.startsWith(item.href);
+                : item.matchPrefixes?.some((prefix) => pathname.startsWith(prefix)) ?? pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
