@@ -70,6 +70,7 @@ const groups: NavGroup[] = [
   },
   {
     title: "콘텐츠",
+    defaultCollapsed: true,
     items: [
       { href: "/admin/notices", label: "공지", icon: "notices" },
       { href: "/admin/surveys", label: "설문", icon: "surveys" },
@@ -79,6 +80,7 @@ const groups: NavGroup[] = [
   },
   {
     title: "관리",
+    defaultCollapsed: true,
     items: [
       { href: "/admin/points", label: "포인트", icon: "points" },
       { href: "/admin/budget", label: "예산", icon: "budget" },
