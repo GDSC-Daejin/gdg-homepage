@@ -4,10 +4,10 @@ import type { NextConfig } from "next";
 // Report-Only로 먼저 넣어 위반만 수집한다. (enforce + nonce 배선은 후속 작업)
 const cspReportOnly = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+  "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "connect-src 'self' https://*.supabase.co https://api.resend.com",
+  "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com",
+  "connect-src 'self' https://*.supabase.co https://api.resend.com https://www.google-analytics.com https://www.googletagmanager.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
 ].join("; ");
