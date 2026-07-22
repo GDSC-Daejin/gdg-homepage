@@ -1,29 +1,17 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { formatKstDate } from "@/lib/format";
-import type { Notice } from "@/lib/types";
-import { isDemoMode } from "@/lib/demo";
-import { DEMO_NOTICES } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminNoticesPage() {
-  const demo = await isDemoMode();
-  let list: Notice[] = DEMO_NOTICES;
-
-  if (!demo) {
-    const supabase = await createClient();
-    const { data: notices } = await supabase
-      .from("notices")
-      .select("*")
-      .order("created_at", { ascending: false });
-    list = (notices ?? []) as Notice[];
-  }
+  const community = await getCommunity();
+  const list = await community.notices.reads.list();
 
   return (
     <div>

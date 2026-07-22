@@ -1,4 +1,4 @@
-import { DEMO_INQUIRIES, DEMO_INQUIRY_AUTHORS } from "@/lib/demoData";
+import { DEMO_INQUIRIES, DEMO_INQUIRY_AUTHORS, DEMO_NOTICES } from "@/lib/demoData";
 import type { Community } from "./types";
 
 export const demoCommunity: Community = {
@@ -40,6 +40,30 @@ export const demoCommunity: Community = {
         return {};
       },
       async answer() {
+        return {};
+      },
+    },
+  },
+  notices: {
+    reads: {
+      async list() {
+        return DEMO_NOTICES;
+      },
+      async get(id) {
+        return DEMO_NOTICES.find((n) => n.id === id) ?? null;
+      },
+    },
+    ops: {
+      async create() {
+        return {};
+      },
+      async update() {
+        return {};
+      },
+      async delete() {
+        return {};
+      },
+      async publish() {
         return {};
       },
     },

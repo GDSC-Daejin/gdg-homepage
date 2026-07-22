@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { formatKst } from "@/lib/format";
-import type { Notice } from "@/lib/types";
 import { NoticeForm } from "../NoticeForm";
 import { NoticeActions } from "../NoticeActions";
-import { isDemoMode } from "@/lib/demo";
-import { DEMO_NOTICES } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -34,24 +31,9 @@ export default async function AdminNoticeDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const demo = await isDemoMode();
 
-  let n: Notice | undefined;
-
-  if (demo) {
-    n = DEMO_NOTICES.find((notice) => notice.id === id) ?? DEMO_NOTICES[0];
-  } else {
-    const supabase = await createClient();
-    const { data: notice } = await supabase
-      .from("notices")
-      .select("*")
-      .eq("id", id)
-      .single();
-
-    if (!notice) notFound();
-    n = notice as Notice;
-  }
-
+  const community = await getCommunity();
+  const n = await community.notices.reads.get(id);
   if (!n) notFound();
 
   return (

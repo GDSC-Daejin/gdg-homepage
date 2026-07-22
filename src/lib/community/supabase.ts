@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { toKoreanError } from "@/lib/errors";
-import type { Event, Inquiry, Profile } from "@/lib/types";
+import type { Event, Inquiry, Notice, Profile } from "@/lib/types";
 import type {
   AttendanceReads,
   AuthorInfo,
@@ -8,6 +8,7 @@ import type {
   EventReads,
   EventUserPair,
   InquiryStore,
+  NoticeStore,
 } from "./types";
 
 export function supabaseCommunity(client: SupabaseClient): Community {
@@ -102,5 +103,55 @@ export function supabaseCommunity(client: SupabaseClient): Community {
     },
   };
 
-  return { attendance, events, inquiries };
+  const notices: NoticeStore = {
+    reads: {
+      async list() {
+        const { data } = await client
+          .from("notices")
+          .select("*")
+          .order("created_at", { ascending: false });
+        return (data as Notice[]) ?? [];
+      },
+      async get(id) {
+        const { data } = await client
+          .from("notices")
+          .select("*")
+          .eq("id", id)
+          .single();
+        return (data as Notice | null) ?? null;
+      },
+    },
+    ops: {
+      async create(input) {
+        const { error } = await client.from("notices").insert(input);
+        if (error) return { error: toKoreanError(error) };
+        return {};
+      },
+      async update(id, input) {
+        const { error } = await client.from("notices").update(input).eq("id", id);
+        if (error) return { error: toKoreanError(error) };
+        return {};
+      },
+      async delete(id) {
+        const { error } = await client.from("notices").delete().eq("id", id);
+        if (error) return { error: toKoreanError(error) };
+        return {};
+      },
+      async publish(id) {
+        const { data: fetched, error: fetchError } = await client
+          .from("notices")
+          .select("*")
+          .eq("id", id)
+          .single();
+        if (fetchError) return { error: toKoreanError(fetchError) };
+
+        const { error } = await client.rpc("admin_publish_notice", { p_notice: id });
+        if (error) return { error: toKoreanError(error) };
+
+        return { notice: fetched as Notice };
+      },
+    },
+  };
+
+  return { attendance, events, inquiries, notices };
 }

@@ -1,4 +1,4 @@
-import type { ActionResult, Event, Inquiry, InquiryCategory, Profile } from "@/lib/types";
+import type { ActionResult, Event, Inquiry, InquiryCategory, Notice, Profile } from "@/lib/types";
 
 export type EventUserPair = { user_id: string; event_id: string };
 
@@ -36,8 +36,26 @@ export interface InquiryStore {
   ops: InquiryOps;
 }
 
+export interface NoticeReads {
+  list(): Promise<Notice[]>;
+  get(id: string): Promise<Notice | null>;
+}
+
+export interface NoticeOps {
+  create(input: { title: string; body: string; created_by: string }): Promise<ActionResult>;
+  update(id: string, input: { title: string; body: string }): Promise<ActionResult>;
+  delete(id: string): Promise<ActionResult>;
+  publish(id: string): Promise<ActionResult & { notice?: Notice }>;
+}
+
+export interface NoticeStore {
+  reads: NoticeReads;
+  ops: NoticeOps;
+}
+
 export interface Community {
   attendance: AttendanceReads;
   events: EventReads;
   inquiries: InquiryStore;
+  notices: NoticeStore;
 }

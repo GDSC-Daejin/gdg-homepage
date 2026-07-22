@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { formatKst } from "@/lib/format";
-import type { Notice } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -16,16 +15,9 @@ export default async function MemberNoticeDetailPage({
   await requireProfile();
   const { id } = await params;
 
-  const supabase = await createClient();
-  const { data: notice } = await supabase
-    .from("notices")
-    .select("*")
-    .eq("id", id)
-    .eq("published", true)
-    .single();
-
-  if (!notice) notFound();
-  const n = notice as Notice;
+  const community = await getCommunity();
+  const n = await community.notices.reads.get(id);
+  if (!n || !n.published) notFound();
 
   return (
     <div className="flex flex-col gap-6">

@@ -1,23 +1,19 @@
 import { requireProfile } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKst } from "@/lib/format";
-import type { Notice } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function MemberNoticesPage() {
   await requireProfile();
 
-  const supabase = await createClient();
-  const { data: notices } = await supabase
-    .from("notices")
-    .select("*")
-    .eq("published", true)
-    .order("published_at", { ascending: false });
-
-  const list = (notices ?? []) as Notice[];
+  const community = await getCommunity();
+  const all = await community.notices.reads.list();
+  const list = all
+    .filter((n) => n.published)
+    .sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""));
 
   return (
     <div>

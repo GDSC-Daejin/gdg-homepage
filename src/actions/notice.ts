@@ -3,12 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { noticeSchema } from "@/lib/schemas";
-import { toKoreanError } from "@/lib/errors";
 import { postSlack } from "@/lib/slack";
-import { isDemoMode } from "@/lib/demo";
-import type { ActionResult, Notice } from "@/lib/types";
+import type { ActionResult } from "@/lib/types";
 
 type PublishResult = ActionResult & { slack?: string };
 
@@ -21,19 +19,18 @@ function parseNoticeForm(formData: FormData) {
 
 export async function createNotice(formData: FormData): Promise<ActionResult> {
   const profile = await requireAdmin();
-  if (await isDemoMode()) return {};
 
   const parsed = parseNoticeForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("notices")
-    .insert({ ...parsed.data, created_by: profile.id });
-
-  if (error) return { error: toKoreanError(error) };
+  const community = await getCommunity();
+  const result = await community.notices.ops.create({
+    ...parsed.data,
+    created_by: profile.id,
+  });
+  if (result.error) return result;
 
   revalidatePath("/admin/notices");
   return {};
@@ -44,20 +41,15 @@ export async function updateNotice(
   formData: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
-  if (await isDemoMode()) return {};
 
   const parsed = parseNoticeForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
   }
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("notices")
-    .update(parsed.data)
-    .eq("id", id);
-
-  if (error) return { error: toKoreanError(error) };
+  const community = await getCommunity();
+  const result = await community.notices.ops.update(id, parsed.data);
+  if (result.error) return result;
 
   revalidatePath("/admin/notices");
   revalidatePath(`/admin/notices/${id}`);
@@ -68,12 +60,10 @@ export async function updateNotice(
 
 export async function deleteNotice(id: string): Promise<ActionResult> {
   await requireAdmin();
-  if (await isDemoMode()) return {};
 
-  const supabase = await createClient();
-  const { error } = await supabase.from("notices").delete().eq("id", id);
-
-  if (error) return { error: toKoreanError(error) };
+  const community = await getCommunity();
+  const result = await community.notices.ops.delete(id);
+  if (result.error) return result;
 
   revalidatePath("/admin/notices");
   revalidatePath("/notices");
@@ -82,24 +72,20 @@ export async function deleteNotice(id: string): Promise<ActionResult> {
 
 export async function publishNotice(id: string): Promise<PublishResult> {
   await requireAdmin();
-  if (await isDemoMode()) return { slack: "슬랙 전송 완료 (예시)" };
 
-  const supabase = await createClient();
-  const { data, error: fetchError } = await supabase
-    .from("notices")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const community = await getCommunity();
+  const result = await community.notices.ops.publish(id);
+  if (result.error) return { error: result.error };
 
-  if (fetchError) return { error: toKoreanError(fetchError) };
+  revalidatePath("/admin/notices");
+  revalidatePath(`/admin/notices/${id}`);
+  revalidatePath(`/notices/${id}`);
+  revalidatePath("/notices");
 
-  const { error } = await supabase.rpc("admin_publish_notice", {
-    p_notice: id,
-  });
+  // 데모에서는 ops.publish가 notice를 안 돌려주므로(실제 발행 없음) 슬랙 없이 예시 메시지만 반환
+  if (!result.notice) return { slack: "슬랙 전송 완료 (예시)" };
 
-  if (error) return { error: toKoreanError(error) };
-
-  const notice = data as Notice;
+  const notice = result.notice;
   const summary =
     notice.body.length > 100 ? `${notice.body.slice(0, 100)}...` : notice.body;
 
@@ -123,11 +109,6 @@ export async function publishNotice(id: string): Promise<PublishResult> {
   ].join("\n");
 
   const slackResult = await postSlack(text);
-
-  revalidatePath("/admin/notices");
-  revalidatePath(`/admin/notices/${id}`);
-  revalidatePath(`/notices/${id}`);
-  revalidatePath("/notices");
 
   if (slackResult.error) {
     return { slack: `슬랙 전송 실패: ${slackResult.error}` };
