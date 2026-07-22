@@ -12,6 +12,7 @@ import {
 } from "@/lib/ga4";
 import { labelChannel, labelEvent, labelPage } from "@/lib/analytics-labels";
 import { getLatestDeployment, type Deployment } from "@/lib/vercel";
+import { OverviewTabs } from "../OverviewTabs";
 import { TrafficChart } from "./TrafficChart";
 
 const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
@@ -40,6 +41,7 @@ export default async function AdminAnalyticsPage({
   if (traffic === null) {
     return (
       <div className="flex flex-col gap-6">
+        <OverviewTabs />
         <PageHeader title="분석" description="웹사이트 이용 현황을 확인해요" />
         <DeploymentCard deployment={deployment} />
         <Card className="p-8 text-center text-gray-500">
@@ -64,6 +66,7 @@ export default async function AdminAnalyticsPage({
 
   return (
     <div className="flex flex-col gap-6">
+      <OverviewTabs />
       <PageHeader
         title="분석"
         description="웹사이트 이용 현황을 확인해요"
