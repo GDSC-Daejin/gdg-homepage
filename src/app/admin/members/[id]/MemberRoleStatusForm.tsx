@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import {
+  approveMember,
   setMemberRole,
   setMemberPosition,
   setMemberStatus,
@@ -9,6 +10,7 @@ import {
 } from "@/actions/member";
 import { Select, type SelectChangeEvent } from "@/components/Select";
 import { Badge } from "@/components/Badge";
+import { Button } from "@/components/Button";
 import {
   POSITION_LABELS,
   ACADEMIC_STATUS_LABELS,
@@ -57,6 +59,7 @@ export function MemberRoleStatusForm({
   position,
   status,
   academicStatus,
+  approvedAt,
   organizerTaken,
 }: {
   userId: string;
@@ -64,6 +67,7 @@ export function MemberRoleStatusForm({
   position: Position | null;
   status: MemberStatus;
   academicStatus: AcademicStatus | null;
+  approvedAt: string | null;
   organizerTaken: boolean;
 }) {
   const [roleValue, setRoleValue] = useState(role);
@@ -127,11 +131,20 @@ export function MemberRoleStatusForm({
     });
   }
 
+  function handleApprove() {
+    setError(undefined);
+    startTransition(async () => {
+      const result = await approveMember(userId);
+      if (result?.error) setError(result.error);
+    });
+  }
+
   return (
     <div className="flex flex-col gap-3 border-t border-gray-100 pt-4">
       <p className="text-sm font-semibold text-gray-900">역할 · 포지션 · 상태 · 재학여부</p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2">
+          {!approvedAt && <Badge tone="warning">승인 대기</Badge>}
           <Badge tone={roleTone[roleValue]}>{roleLabel[roleValue]}</Badge>
           {positionValue && (
             <Badge tone="neutral">{POSITION_LABELS[positionValue]}</Badge>
@@ -144,6 +157,11 @@ export function MemberRoleStatusForm({
           )}
         </div>
         <div className="flex flex-wrap items-end gap-3">
+          {!approvedAt && (
+            <Button type="button" variant="primary" disabled={pending} onClick={handleApprove}>
+              승인
+            </Button>
+          )}
           <Select
             label="역할"
             value={roleValue}

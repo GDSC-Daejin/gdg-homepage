@@ -59,6 +59,8 @@ export interface Profile {
   status: MemberStatus;
   academic_status: AcademicStatus | null;
   joined_at: string;
+  approved_at: string | null;
+  approved_by?: string | null;
 }
 
 export interface Application {

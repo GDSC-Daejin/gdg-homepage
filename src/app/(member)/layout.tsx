@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getProfile } from "@/lib/auth";
+import { getProfile, assertApproved } from "@/lib/auth";
 import { MemberShell } from "./MemberShell";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +13,7 @@ export default async function MemberLayout({
 }) {
   const profile = await getProfile();
   if (!profile) redirect("/");
+  assertApproved(profile);
 
   return <MemberShell profile={profile}>{children}</MemberShell>;
 }

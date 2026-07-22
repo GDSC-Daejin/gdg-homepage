@@ -14,14 +14,16 @@ export const dynamic = "force-dynamic";
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string; status?: string; academicStatus?: string }>;
+  searchParams: Promise<{ q?: string; role?: string; status?: string; academicStatus?: string; pending?: string }>;
 }) {
   await requireAdmin();
-  const { q, role, status, academicStatus } = await searchParams;
+  const { q, role, status, academicStatus, pending } = await searchParams;
   const demo = await isDemoMode();
 
   let members: Profile[] = DEMO_MEMBERS;
   let totalMembers = DEMO_MEMBERS.length;
+
+  if (demo && pending) members = DEMO_MEMBERS.filter((m) => !m.approved_at);
 
   if (!demo) {
     const supabase = await createClient();
@@ -39,6 +41,7 @@ export default async function AdminMembersPage({
     if (role) query = query.eq("role", role);
     if (status) query = query.eq("status", status);
     if (academicStatus) query = query.eq("academic_status", academicStatus);
+    if (pending) query = query.is("approved_at", null);
 
     const [{ data }, { count }] = await Promise.all([
       query,
@@ -48,7 +51,7 @@ export default async function AdminMembersPage({
     totalMembers = count ?? 0;
   }
 
-  const hasFilter = Boolean(q || role || status || academicStatus);
+  const hasFilter = Boolean(q || role || status || academicStatus || pending);
   const organizerExists = members.some((m) => m.role === "organizer");
 
   return (
@@ -62,7 +65,7 @@ export default async function AdminMembersPage({
       />
 
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card sm:p-6">
-        <MemberFilters q={q} role={role} status={status} academicStatus={academicStatus} />
+        <MemberFilters q={q} role={role} status={status} academicStatus={academicStatus} pending={pending} />
       </div>
 
       {members.length === 0 ? (

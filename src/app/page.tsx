@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getProfile } from "@/lib/auth";
+import { getProfile, assertApproved } from "@/lib/auth";
 import { MemberShell } from "./(member)/MemberShell";
 import { HomeDashboard, HomeDashboardSkeleton } from "./(member)/HomeDashboard";
 import Landing from "./landing-preview/Landing";
@@ -42,6 +42,7 @@ export default async function RootPage({
       </>
     );
   if (profile.student_no === "") redirect("/onboarding");
+  assertApproved(profile);
   const { month } = await searchParams;
 
   return (

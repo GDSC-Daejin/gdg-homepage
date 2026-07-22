@@ -19,10 +19,15 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   return (data as Profile) ?? null;
 });
 
+export function assertApproved(profile: Profile): void {
+  if (!profile.approved_at && !isStaff(profile)) redirect("/pending");
+}
+
 export async function requireProfile(): Promise<Profile> {
   const profile = await getProfile();
   if (!profile) redirect("/");
   if (profile.student_no === "") redirect("/onboarding");
+  assertApproved(profile);
   return profile;
 }
 

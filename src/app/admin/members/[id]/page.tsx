@@ -109,6 +109,7 @@ export default async function AdminMemberDetailPage({
           position={member.position}
           status={member.status}
           academicStatus={member.academic_status}
+          approvedAt={member.approved_at}
           organizerTaken={organizerTaken}
         />
       </Card>

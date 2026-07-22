@@ -14,6 +14,17 @@ import type {
   Profile,
 } from "@/lib/types";
 
+export async function approveMember(userId: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_approve_member", { p_user: userId });
+  if (error) return { error: toKoreanError(error) };
+  revalidatePath("/admin/members");
+  revalidatePath(`/admin/members/${userId}`);
+  return {};
+}
+
 export async function setMemberRole(
   userId: string,
   role: Role,
