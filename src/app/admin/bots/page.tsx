@@ -6,7 +6,15 @@ import type { Bot } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-const DEMO_BOTS: Bot[] = [{ slug: "squirtle", name: "꼬북봇", active: true }];
+const DEMO_BOTS: Bot[] = [
+  {
+    slug: "squirtle",
+    name: "꼬북봇",
+    description:
+      "매일 오전 10시 #아무말대잔치에 물 마시기 알림을 올려요. 이모지 리액션으로 하루 한 번 인증하면 포인트가 쌓이고, 모인 인증으로 꼬북이가 꼬부기 → 어니부기 → 거북왕으로 진화해요.",
+    active: true,
+  },
+];
 
 export default async function AdminBotsPage() {
   let bots: Bot[] = DEMO_BOTS;
@@ -15,7 +23,7 @@ export default async function AdminBotsPage() {
     const supabase = await createClient();
     const { data } = await supabase
       .from("bots")
-      .select("slug, name, active")
+      .select("slug, name, description, active")
       .order("slug", { ascending: true });
     bots = (data ?? []) as Bot[];
   }

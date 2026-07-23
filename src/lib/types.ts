@@ -144,6 +144,7 @@ export interface Attendance {
 export interface Bot {
   slug: string;
   name: string;
+  description: string;
   active: boolean;
 }
 

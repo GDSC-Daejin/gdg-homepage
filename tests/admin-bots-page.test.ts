@@ -60,8 +60,17 @@ describe("어드민 화면", () => {
     expect(manager).toContain("bot.active");
   });
 
+  it("설명은 DB에서 읽는다 (봇 추가 시 코드 수정이 필요 없어야 한다)", () => {
+    expect(manager).toContain("bot.description");
+    expect(page).toContain("description");
+    // 특정 봇 이야기가 컴포넌트에 박혀 있으면 안 된다
+    expect(manager).not.toContain("꼬북");
+    expect(manager).not.toContain("물 마시기");
+  });
+
   it("꺼진 봇이 무엇을 의미하는지 알려준다", () => {
     expect(manager).toContain("쉬는 중");
+    expect(manager).toContain("이미 올라간 글의 리액션은 그대로 인정돼요");
   });
 
   it("사이드바 관리 그룹에 진입점을 둔다", () => {

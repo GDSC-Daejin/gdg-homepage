@@ -43,7 +43,7 @@ export function BotToggleList({ bots }: { bots: Bot[] }) {
 
       <div className="flex flex-col gap-2">
         {bots.map((bot) => (
-          <Card key={bot.slug} className="flex items-center justify-between gap-4">
+          <Card key={bot.slug} className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <p className="truncate font-medium text-gray-900">{bot.name}</p>
@@ -53,11 +53,14 @@ export function BotToggleList({ bots }: { bots: Bot[] }) {
                   </span>
                 )}
               </div>
-              <p className="mt-0.5 truncate text-sm text-gray-500">
-                {bot.active
-                  ? "매일 정해진 시각에 알림을 올려요"
-                  : "알림을 올리지 않아요. 이미 올라간 글의 리액션은 그대로 인정돼요"}
-              </p>
+              {bot.description && (
+                <p className="mt-1 text-sm text-gray-500">{bot.description}</p>
+              )}
+              {!bot.active && (
+                <p className="mt-1.5 text-xs text-gray-400">
+                  지금은 알림을 올리지 않아요. 이미 올라간 글의 리액션은 그대로 인정돼요.
+                </p>
+              )}
             </div>
 
             <button
