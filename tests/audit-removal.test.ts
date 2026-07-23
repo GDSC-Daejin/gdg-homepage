@@ -12,7 +12,7 @@ describe("감사 로그 제거", () => {
 
   it("기존 감사 로그 데이터는 보존하고 새 기록만 멈춘다", async () => {
     const migration = await readFile(
-      "supabase/migrations/0031_disable_audit_logging.sql",
+      "supabase/migrations/0039_disable_audit_logging.sql",
       "utf8",
     );
 

@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/auth", () => ({ requireProfile: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
+// isDemoMode()가 cookies()를 읽어서 요청 컨텍스트 밖에서는 그대로 터진다
+vi.mock("@/lib/demo", () => ({ isDemoMode: vi.fn().mockResolvedValue(false) }));
 
 describe("updatePost", () => {
   it("다른 회원의 글 수정은 앱 레이어에서 차단한다", async () => {
