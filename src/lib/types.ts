@@ -141,6 +141,12 @@ export interface Attendance {
   checked_at: string;
 }
 
+export interface Bot {
+  slug: string;
+  name: string;
+  active: boolean;
+}
+
 export type ActionResult = { error?: string; warning?: string };
 
 export interface Notice {
