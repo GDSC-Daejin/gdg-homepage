@@ -23,6 +23,32 @@
 - **커밋 메시지에 `Co-Authored-By` 트레일러를 넣지 않는다.** 이 저장소의 훅이 거부한다.
 - **커밋은 명시한 경로만 `git add` 한다.** 이 워킹트리에는 다른 세션의 미커밋 변경(`src/actions/member.ts`, `src/app/admin/AdminSidebarNav.tsx`, `src/lib/demoData.ts`, `docs/superpowers/**/admin-places-*`, `src/app/admin/members/pending/`, `tests/admin-places-layout.test.ts`)이 있다. 절대 함께 커밋하지 않는다.
 
+## 기존 코드 현재 상태 (실측)
+
+새 코드가 의존하거나 절대 건드리면 안 되는 것들. 전부 실제로 읽고 확인했다.
+
+| 위치 | 현재 상태 | 이 작업과의 관계 |
+|---|---|---|
+| `src/lib/cron.ts` | `hasValidCronAuthorization(authorization: string \| null, secret: string): boolean` — `timingSafeEqual`로 `Bearer ${secret}` 비교 | Task 7이 **그대로 재사용**. 새로 만들지 않는다 |
+| `src/lib/slack.ts` | `postSlack(text)` 하나뿐. `SLACK_WEBHOOK_URL` Incoming Webhook 전용이라 채널 지정·ts 반환 불가 | **수정 금지.** Task 3에서 `src/lib/slack/api.ts`를 새로 만든다 |
+| `src/app/api/cron/event-reminder/route.ts` | `CRON_SECRET` 검증 → service-role `createClient` → 작업 → `NextResponse.json` | Task 7이 이 패턴을 그대로 따른다 |
+| `supabase/migrations/0004_phase2.sql:201` | `admin_grant_points`가 `is_admin()`을 검사하고 `created_by`에 `auth.uid()` 사용 | **service-role은 `auth.uid()`가 null이라 반드시 실패한다.** 쓰지 말고 수정도 하지 마라 |
+| `supabase/migrations/0004_phase2.sql:57` | `point_logs(user_id, amount, reason, ref_event, created_by, created_at)` — `created_by` nullable | 봇 적립은 `created_by`를 생략한다 |
+| `supabase/migrations/0001_init.sql:2` | `profiles(id, name, student_no, major, phone, interests, role, status, joined_at)` — **email 컬럼 없음** | 이메일은 `auth.users`에만 있다. Task 7이 `auth.admin.listUsers()`로 가져온다 |
+| `supabase/migrations/0009_roles_positions.sql:22` | `public.is_admin()` 존재 | Task 1의 RLS 정책이 사용 |
+| `supabase/migrations/` 최신 | `0041_fix_event_registrants_ambiguous.sql` | 새 파일은 **`0042_squirtle.sql`** |
+| `vercel.json` | cron 2개(`attendance-warning`, `event-reminder`) | **수정 금지.** 신규 스케줄은 전부 pg_cron |
+| `vitest.config.ts` | `@` → `./src`, `server-only` → `./tests/server-only.ts`, environment node | 별칭 그대로 사용. 설정 수정 불필요 |
+| `package.json` | `next 16.2.10`, `react 19.2.4`, `test: vitest run`. **eslint 미설치** | `after`는 `next/server`에서 제공된다(`node_modules/next/server.d.ts:21`). package.json 수정 금지 |
+
+## 알려진 지뢰 (추적 금지)
+
+- 이 레포는 표준 Next.js가 아니다. 코드를 쓰기 전에 `AGENTS.md`를 읽고, 필요하면 `node_modules/next/dist/docs/`를 확인한다.
+- **`tests/accessibility-primitives.test.ts`는 상시 실패한다.** eslint 의존성·스크립트를 `package.json`에서 찾는데 eslint가 설치돼 있지 않다. 클린 트리에서도 실패하므로 회귀가 아니다. `package.json`을 고쳐서 "해결"하려 하지 마라.
+- turbopack dev의 `adapterFn` 반복 에러는 dev 캐시 이슈다. 코드 문제로 착각하지 마라.
+- Supabase DB 타임존은 UTC다. SQL에서 `current_date`를 그대로 쓰면 KST 오전 9시 이전 리액션이 전부 거부된다.
+- 이 워킹트리에는 **다른 세션의 미커밋 변경**이 있다: `src/actions/member.ts`, `src/app/admin/AdminSidebarNav.tsx`, `src/lib/demoData.ts`, `docs/superpowers/**/admin-places-*`, `src/app/admin/members/pending/`, `tests/admin-places-layout.test.ts`. 절대 함께 커밋하지 말고 되돌리지도 마라. `git add`는 각 태스크에 명시된 경로만.
+
 ## 파일 구조
 
 | 파일 | 책임 |
