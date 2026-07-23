@@ -41,6 +41,11 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
+
+  // 꺼진 봇은 시즌 마감도 보너스 지급도 하지 않는다 — 반드시 마감보다 먼저 확인한다
+  const { data: bot } = await supabase.from("bots").select("active").eq("slug", "squirtle").single();
+  if (!bot?.active) return NextResponse.json({ posted: false, reason: "disabled" });
+
   const { data: config } = await supabase.from("squirtle_config").select("channel_id, emoji, bonus_first, bonus_second, bonus_third").eq("id", 1).single();
   if (!config) return NextResponse.json({ error: "꼬북봇 설정이 없어요" }, { status: 500 });
 
