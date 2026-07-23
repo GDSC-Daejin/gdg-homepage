@@ -36,7 +36,7 @@
 | `supabase/migrations/0004_phase2.sql:57` | `point_logs(user_id, amount, reason, ref_event, created_by, created_at)` — `created_by` nullable | 봇 적립은 `created_by`를 생략한다 |
 | `supabase/migrations/0001_init.sql:2` | `profiles(id, name, student_no, major, phone, interests, role, status, joined_at)` — **email 컬럼 없음** | 이메일은 `auth.users`에만 있다. Task 7이 `auth.admin.listUsers()`로 가져온다 |
 | `supabase/migrations/0009_roles_positions.sql:22` | `public.is_admin()` 존재 | Task 1의 RLS 정책이 사용 |
-| `supabase/migrations/` 최신 | `0041_fix_event_registrants_ambiguous.sql` | 새 파일은 **`0042_squirtle.sql`** |
+| `supabase/migrations/` 최신 | `0041_fix_event_registrants_ambiguous.sql` | 새 파일은 **`0044_squirtle.sql`** |
 | `vercel.json` | cron 2개(`attendance-warning`, `event-reminder`) | **수정 금지.** 신규 스케줄은 전부 pg_cron |
 | `vitest.config.ts` | `@` → `./src`, `server-only` → `./tests/server-only.ts`, environment node | 별칭 그대로 사용. 설정 수정 불필요 |
 | `package.json` | `next 16.2.10`, `react 19.2.4`, `test: vitest run`. **eslint 미설치** | `after`는 `next/server`에서 제공된다(`node_modules/next/server.d.ts:21`). package.json 수정 금지 |
@@ -53,7 +53,7 @@
 
 | 파일 | 책임 |
 |---|---|
-| `supabase/migrations/0042_squirtle.sql` | 테이블 4개, `profiles.slack_user_id`, RPC 3개 |
+| `supabase/migrations/0044_squirtle.sql` | 테이블 4개, `profiles.slack_user_id`, RPC 3개 |
 | `src/lib/slack/verify.ts` | Slack 요청 서명 검증 (순수 함수) |
 | `src/lib/slack/api.ts` | Bot Token으로 postMessage / update / addReaction / usersList |
 | `src/lib/squirtle/messages.ts` | 문구 풀과 메시지 조립 (순수 함수) |
@@ -73,7 +73,7 @@ RPC 반환은 snake_case를 그대로 TS 타입으로 받는다. 매핑 레이�
 ### Task 1: 마이그레이션 — 스키마와 RPC
 
 **Files:**
-- Create: `supabase/migrations/0042_squirtle.sql`
+- Create: `supabase/migrations/0044_squirtle.sql`
 - Test: `tests/squirtle-migration.test.ts`
 
 **Interfaces:**
@@ -96,7 +96,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 let sql = "";
 
 beforeAll(async () => {
-  sql = await readFile("supabase/migrations/0042_squirtle.sql", "utf8");
+  sql = await readFile("supabase/migrations/0044_squirtle.sql", "utf8");
 });
 
 describe("꼬북봇 마이그레이션", () => {
@@ -146,11 +146,11 @@ describe("꼬북봇 마이그레이션", () => {
 - [ ] **Step 2: 테스트 실패 확인**
 
 Run: `npx vitest run tests/squirtle-migration.test.ts`
-Expected: FAIL — `ENOENT: no such file or directory ... 0042_squirtle.sql`
+Expected: FAIL — `ENOENT: no such file or directory ... 0044_squirtle.sql`
 
 - [ ] **Step 3: 마이그레이션 작성**
 
-`supabase/migrations/0042_squirtle.sql`:
+`supabase/migrations/0044_squirtle.sql`:
 
 ```sql
 -- 꼬북봇: 슬랙 리액션 기반 물 마시기 인증 + 시즌 진화
@@ -399,7 +399,7 @@ Expected: PASS — 8 tests
 - [ ] **Step 5: 커밋**
 
 ```bash
-git add supabase/migrations/0042_squirtle.sql tests/squirtle-migration.test.ts
+git add supabase/migrations/0044_squirtle.sql tests/squirtle-migration.test.ts
 git commit -m "🗃️ 꼬북봇 스키마: 시즌·인증·설정 테이블과 RPC 3종"
 ```
 

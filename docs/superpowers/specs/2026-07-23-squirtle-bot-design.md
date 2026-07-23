@@ -93,7 +93,7 @@
 - 인증 1회 = 5포인트
 - 시즌 종료 시 1/2/3위 보너스 = 30/20/10포인트
 
-## 데이터 모델 (`supabase/migrations/0042_squirtle.sql`)
+## 데이터 모델 (`supabase/migrations/0044_squirtle.sql`)
 
 ### profiles 컬럼 추가
 
@@ -339,7 +339,7 @@ src/app/api/cron/squirtle-daily/route.ts   일일 게시 + 시즌 전환
 src/lib/slack/verify.ts                    서명 검증
 src/lib/slack/api.ts                       postMessage / update (봇 토큰)
 src/lib/squirtle/messages.ts               문구 풀, 스레드·진화 메시지 조립
-supabase/migrations/0042_squirtle.sql
+supabase/migrations/0044_squirtle.sql
 tests/squirtle.test.ts
 ```
 
