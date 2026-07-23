@@ -9,6 +9,7 @@ import {
   setMemberStatus,
   setMemberAcademicStatus,
   updateMemberProfile,
+  deleteMember,
 } from "@/actions/member";
 import { Select, type SelectChangeEvent } from "@/components/Select";
 import { Avatar } from "@/components/Avatar";
@@ -113,6 +114,25 @@ export function MemberRow({
       });
       if (result?.error) setProfileError(result.error);
       else setProfileSaved(true);
+    });
+  }
+
+  const [deleteError, setDeleteError] = useState<string>();
+  const [deletePending, startDeleteTransition] = useTransition();
+
+  function handleDelete() {
+    // ponytail: 네이티브 confirm() — 이 저장소의 다른 삭제 버튼과 동일한 패턴
+    if (
+      !confirm(
+        `${member.name || "이 회원"}을(를) 완전히 삭제할까요?\n계정과 작성 글·신청·출석 기록이 함께 사라지고 되돌릴 수 없어요.`,
+      )
+    )
+      return;
+    setDeleteError(undefined);
+    startDeleteTransition(async () => {
+      const result = await deleteMember(member.id);
+      if (result?.error) setDeleteError(result.error);
+      else dialogRef.current?.close();
     });
   }
 
@@ -365,6 +385,23 @@ export function MemberRow({
                   </span>
                 </div>
                 {error && <p className="text-xs text-danger">{error}</p>}
+
+                <div className="mt-auto flex flex-col gap-2 border-t border-gray-200 pt-4">
+                  <Button
+                    type="button"
+                    variant="danger-outline"
+                    size="sm"
+                    className="self-start"
+                    onClick={handleDelete}
+                    disabled={deletePending || role === "organizer"}
+                  >
+                    회원 삭제
+                  </Button>
+                  <p className="text-xs text-gray-400">
+                    계정까지 완전히 삭제돼요. 되돌릴 수 없어요.
+                  </p>
+                  {deleteError && <p className="text-xs text-danger">{deleteError}</p>}
+                </div>
               </div>
             </div>
           </dialog>,

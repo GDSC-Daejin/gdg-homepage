@@ -11,13 +11,11 @@ export function MemberFilters({
   role,
   status,
   academicStatus,
-  pending,
 }: {
   q?: string;
   role?: string;
   status?: string;
   academicStatus?: string;
-  pending?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -25,7 +23,6 @@ export function MemberFilters({
   const [roleValue, setRoleValue] = useState(role ?? "");
   const [statusValue, setStatusValue] = useState(status ?? "");
   const [academicStatusValue, setAcademicStatusValue] = useState(academicStatus ?? "");
-  const [pendingValue, setPendingValue] = useState(pending ?? "");
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -34,7 +31,6 @@ export function MemberFilters({
     if (roleValue) params.set("role", roleValue);
     if (statusValue) params.set("status", statusValue);
     if (academicStatusValue) params.set("academicStatus", academicStatusValue);
-    if (pendingValue) params.set("pending", pendingValue);
     const queryString = params.toString();
     router.push(queryString ? `${pathname}?${queryString}` : pathname);
   }
@@ -84,16 +80,6 @@ export function MemberFilters({
           <option value="active">활동</option>
           <option value="dormant">휴면</option>
           <option value="withdrawn">탈퇴</option>
-        </Select>
-      </div>
-      <div className="w-36 shrink-0">
-        <Select
-          label="승인"
-          value={pendingValue}
-          onChange={(e) => setPendingValue(e.target.value)}
-        >
-          <option value="">전체</option>
-          <option value="1">승인 대기만 보기</option>
         </Select>
       </div>
       <Button type="submit" variant="primary">

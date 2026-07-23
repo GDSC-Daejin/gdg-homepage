@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { isStaff, type Notification, type Profile } from "@/lib/types";
 import { signOut } from "@/actions/profile";
 import { Badge } from "@/components/Badge";
@@ -30,13 +31,13 @@ export function MemberShell({
     <ResponsiveShell
       sidebar={
         <>
-          <div className="flex items-center gap-2.5 px-3 pb-6">
+          <Link href="/" className="flex items-center gap-2.5 px-3 pb-6">
           <Logo className="h-8 w-8 shrink-0" />
           <div>
             <p className="text-base font-bold text-gray-900">GDG DJU</p>
             <p className="text-xs text-gray-500">동아리 관리 시스템</p>
           </div>
-        </div>
+        </Link>
         <SidebarNav isAdmin={isStaff(profile)} />
         <div className="mt-auto flex flex-col gap-3 pt-6">
           <ThemeToggle />

@@ -33,6 +33,14 @@ const TYPE_BADGE: Record<SurveyQuestionType, string> = {
   text: "bg-success-soft text-success",
 };
 
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) return list;
+  const next = [...list];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 function RequiredMark() {
   return <span className="text-danger">*</span>;
 }
@@ -62,6 +70,10 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
   const [questions, setQuestions] = useState<SurveyQuestion[]>(survey?.questions ?? []);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
+  // ponytail: 네이티브 HTML5 DnD — dnd 라이브러리 없이 목록 정렬만 하면 충분
+  const [dragIndex, setDragIndex] = useState<number>();
+  const [overIndex, setOverIndex] = useState<number>();
+  const [dragId, setDragId] = useState<string>();
 
   const [presets, setPresets] = useState<SurveyPreset[]>(initialPresets);
   const [selectedPresetId, setSelectedPresetId] = useState("");
@@ -74,6 +86,10 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
       ...prev,
       { id: crypto.randomUUID(), type, label: "" },
     ]);
+  }
+
+  function moveQuestion(from: number, to: number) {
+    setQuestions((prev) => moveItem(prev, from, to));
   }
 
   function removeQuestion(id: string) {
@@ -256,9 +272,55 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
             {questions.map((q, i) => (
               <div
                 key={q.id}
-                className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-white px-3 py-3 dark:bg-gray-100"
+                draggable={dragId === q.id}
+                onDragStart={() => setDragIndex(i)}
+                onDragEnd={() => {
+                  setDragId(undefined);
+                  setDragIndex(undefined);
+                  setOverIndex(undefined);
+                }}
+                onDragOver={(e) => {
+                  if (dragIndex === undefined) return;
+                  e.preventDefault();
+                  setOverIndex(i);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragIndex !== undefined) moveQuestion(dragIndex, i);
+                }}
+                className={cn(
+                  "flex flex-col gap-2 rounded-lg border border-gray-200 bg-white px-3 py-3 dark:bg-gray-100",
+                  dragIndex === i && "opacity-50",
+                  overIndex === i && dragIndex !== i && "border-primary",
+                )}
               >
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="shrink-0 cursor-grab rounded p-0.5 text-gray-400 hover:text-gray-600 focus-visible:outline-2 focus-visible:outline-primary active:cursor-grabbing"
+                    onPointerDown={() => setDragId(q.id)}
+                    onPointerUp={() => setDragId(undefined)}
+                    onKeyDown={(e) => {
+                      if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+                      e.preventDefault();
+                      moveQuestion(i, e.key === "ArrowUp" ? i - 1 : i + 1);
+                    }}
+                    aria-label={`질문 ${i + 1} 순서 이동 (위/아래 방향키)`}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden
+                    >
+                      <circle cx="7.5" cy="5" r="1.3" />
+                      <circle cx="12.5" cy="5" r="1.3" />
+                      <circle cx="7.5" cy="10" r="1.3" />
+                      <circle cx="12.5" cy="10" r="1.3" />
+                      <circle cx="7.5" cy="15" r="1.3" />
+                      <circle cx="12.5" cy="15" r="1.3" />
+                    </svg>
+                  </button>
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
                     {i + 1}
                   </span>

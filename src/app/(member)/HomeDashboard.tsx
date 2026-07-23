@@ -48,6 +48,16 @@ function CalendarIllustration() {
   );
 }
 
+// 종료 시각이 없으면 시작 시각을 종료로 본다
+function eventEnd(event: Event) {
+  return new Date(event.ends_at ?? event.starts_at).getTime();
+}
+
+function isOngoing(event: Event) {
+  const now = Date.now();
+  return new Date(event.starts_at).getTime() <= now && now < eventEnd(event);
+}
+
 function EventCard({
   event,
   confirmed,
@@ -57,6 +67,7 @@ function EventCard({
   confirmed: number;
   featured?: boolean;
 }) {
+  const ongoing = isOngoing(event);
   return (
     <Link
       href={`/events/${event.id}`}
@@ -67,7 +78,10 @@ function EventCard({
           <div className="flex items-center gap-5 sm:gap-7">
             <CalendarIllustration />
             <div className="min-w-0">
-              <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
+              <div className="flex items-center gap-2">
+                <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
+                {ongoing && <Badge tone="success">진행중</Badge>}
+              </div>
               <h3 className="mt-3 text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
                 {event.title}
               </h3>
@@ -103,6 +117,7 @@ function EventCard({
           <>
             <div className="flex items-center gap-2">
               <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
+              {ongoing && <Badge tone="success">진행중</Badge>}
               <h3 className="text-base font-semibold text-gray-900">{event.title}</h3>
             </div>
             <p className="mt-2 text-sm text-gray-500">{formatKst(event.starts_at)}</p>
@@ -182,10 +197,8 @@ export async function HomeDashboard({
   );
 
   const now = Date.now();
-  const upcoming = list
-    .filter((e) => new Date(e.starts_at).getTime() >= now)
-    .reverse();
-  const allPast = list.filter((e) => new Date(e.starts_at).getTime() < now);
+  const upcoming = list.filter((e) => eventEnd(e) >= now).reverse();
+  const allPast = list.filter((e) => eventEnd(e) < now);
 
   const pastMonths = Array.from(new Set(allPast.map((e) => monthKst(e.starts_at))));
   const threeMonthsAgo = new Date();

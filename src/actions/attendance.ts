@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, requireAdmin } from "@/lib/auth";
 import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
 import { attendCodeSchema } from "@/lib/schemas";
@@ -31,6 +31,31 @@ export async function checkAttendance(
   revalidatePath(`/events/${eventId}`);
   revalidatePath("/profile");
   revalidatePath("/attend");
+
+  return {};
+}
+
+// 운영진이 신청자 목록에서 출석을 직접 체크/해제
+export async function setAttendance(
+  eventId: string,
+  userId: string,
+  present: boolean,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_attendance", {
+    p_event_id: eventId,
+    p_user_id: userId,
+    p_present: present,
+  });
+
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath(`/admin/events/${eventId}`);
+  revalidatePath(`/events/${eventId}`);
+  revalidatePath("/profile");
 
   return {};
 }

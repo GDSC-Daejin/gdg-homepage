@@ -98,11 +98,16 @@ const groups: NavGroup[] = [
   },
 ];
 
+const allHrefs = groups.flatMap((g) => g.items.map((i) => i.href));
+
 function itemActive(href: string, pathname: string) {
   // 대시보드 항목은 하위 탭(분석)까지 포함해 active로 본다.
-  return href === "/admin"
-    ? pathname === "/admin" || pathname.startsWith("/admin/analytics")
-    : pathname.startsWith(href);
+  if (href === "/admin") {
+    return pathname === "/admin" || pathname.startsWith("/admin/analytics");
+  }
+  if (!pathname.startsWith(href)) return false;
+  // 경로가 겹치는 항목끼리는 더 긴 쪽만 active.
+  return !allHrefs.some((other) => other.length > href.length && pathname.startsWith(other));
 }
 
 export function AdminSidebarNav() {

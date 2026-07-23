@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
+import { AttendanceToggle } from "@/components/AttendanceToggle";
 import type { RegistrationStatus } from "@/lib/types";
 
 interface RegistrationRow {
@@ -97,11 +98,11 @@ export async function RegistrantsTable({ eventId }: RegistrantsTableProps) {
                   <Badge tone={STATUS_TONE[row.status]}>{STATUS_LABEL[row.status]}</Badge>
                 </td>
                 <td className="px-4 py-3">
-                  {attendedUserIds.has(row.user_id) ? (
-                    <Badge tone="success">출석</Badge>
-                  ) : (
-                    <span className="text-gray-400">-</span>
-                  )}
+                  <AttendanceToggle
+                    eventId={eventId}
+                    userId={row.user_id}
+                    attended={attendedUserIds.has(row.user_id)}
+                  />
                 </td>
               </tr>
             ))}

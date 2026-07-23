@@ -25,6 +25,19 @@ export async function approveMember(userId: string): Promise<ActionResult> {
   return {};
 }
 
+export async function deleteMember(userId: string): Promise<ActionResult> {
+  const admin = await requireAdmin();
+  if (userId === admin.id) return { error: "본인 계정은 삭제할 수 없어요" };
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_delete_member", { p_user: userId });
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath("/admin/members");
+  return {};
+}
+
 export async function setMemberRole(
   userId: string,
   role: Role,

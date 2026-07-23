@@ -28,6 +28,7 @@ export const DEMO_MEMBERS: Profile[] = [
   { id: "demo-m8", name: "배수아", nickname: "Sua", student_no: "20221999", major: "경영학과", phone: "010-1111-1118", interests: ["기획"], role: "member", position: "designer", status: "dormant", academic_status: "completed", joined_at: "2022-09-01T00:00:00.000Z", approved_at: "2022-09-01T00:00:00.000Z" },
   { id: "demo-m9", name: "강하늘", nickname: "Sky", student_no: "20220111", major: "컴퓨터공학과", phone: "010-1111-1119", interests: [], role: "member", position: "frontend", status: "withdrawn", academic_status: "graduated", joined_at: "2022-03-01T00:00:00.000Z", approved_at: "2022-03-01T00:00:00.000Z" },
   { id: "demo-m10", name: "윤태경", nickname: "Ted", student_no: "20230111", major: "수학과", phone: "010-1111-1120", interests: [], role: "member", position: "frontend", status: "withdrawn", academic_status: "graduated", joined_at: "2023-03-01T00:00:00.000Z", approved_at: "2023-03-01T00:00:00.000Z" },
+  { id: "demo-m11", name: "신예준", nickname: "Yejun", student_no: "20261111", major: "컴퓨터공학과", phone: "010-1111-1121", interests: ["웹"], role: "member", position: null, status: "active", academic_status: "enrolled", joined_at: "2026-07-20T00:00:00.000Z", approved_at: null },
 ];
 
 export const DEMO_EVENTS: Event[] = [
