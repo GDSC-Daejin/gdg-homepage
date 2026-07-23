@@ -7,18 +7,26 @@ import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
+import { Modal } from "@/components/Modal";
 import type { Place } from "@/lib/types";
 
-function PinBadge({ located }: { located: boolean }) {
+// backfillPlaceCoords()의 대상 집합과 같아야 한다 — 주소가 빈 장소는 변환 대상이 아니다
+function needsPin(place: Place) {
+  return !!place.address && (place.lat == null || place.lng == null);
+}
+
+function PlaceStatusBadge({ place }: { place: Place }) {
+  if (place.lat != null && place.lng != null) return null;
+  const pending = needsPin(place);
   return (
     <span
       className={
-        located
-          ? "inline-flex items-center rounded-full bg-success-soft px-2 py-0.5 text-xs font-medium text-success"
-          : "inline-flex items-center rounded-full bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning"
+        pending
+          ? "inline-flex items-center rounded-full bg-warning-soft text-warning px-2 py-0.5 text-xs font-medium"
+          : "inline-flex items-center rounded-full bg-gray-100 text-gray-500 px-2 py-0.5 text-xs font-medium"
       }
     >
-      {located ? "핀 있음" : "핀 없음"}
+      {pending ? "핀 없음" : "주소 없음"}
     </span>
   );
 }
@@ -29,7 +37,9 @@ export function PlaceManager({ places }: { places: Place[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [backfillMsg, setBackfillMsg] = useState<string>();
+  const [deleting, setDeleting] = useState<Place | null>(null);
   const addFormRef = useRef<HTMLFormElement>(null);
+  const pendingCount = places.filter(needsPin).length;
 
   function handleBackfill() {
     setError(undefined);
@@ -62,44 +72,31 @@ export function PlaceManager({ places }: { places: Place[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <Card className="flex flex-col gap-3">
-        <p className="text-sm font-semibold text-gray-900">장소 추가</p>
+      <Card>
+        <p className="mb-2 text-xs font-medium text-gray-700">장소 추가</p>
         <form
           ref={addFormRef}
           action={(fd) => run(() => createPlace(fd), () => addFormRef.current?.reset())}
-          className="flex flex-col gap-3"
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
         >
-          <Input name="name" label="장소명" placeholder="예) GDG대전 스페이스" required />
-          <Input
-            name="address"
-            label="주소 (도로명)"
-            placeholder="예) 대전 유성구 대학로 99"
-          />
-          <p className="text-xs text-gray-400">
-            주소를 넣으면 저장 시 좌표로 변환돼 지도에 핀이 찍혀요.
-          </p>
-          <div>
-            <Button type="submit" variant="primary" disabled={pending}>
-              추가
-            </Button>
+          <div className="sm:w-56">
+            <Input name="name" label="장소명" placeholder="예) GDG대전 스페이스" required />
           </div>
+          <div className="flex-1">
+            <Input
+              name="address"
+              label="주소 (도로명)"
+              placeholder="예) 대전 유성구 대학로 99"
+            />
+          </div>
+          <Button type="submit" variant="primary" disabled={pending}>
+            추가
+          </Button>
         </form>
+        <p className="mt-2 text-xs text-gray-400">
+          주소를 넣으면 저장 시 좌표로 변환돼 지도에 핀이 찍혀요.
+        </p>
       </Card>
-
-      <div className="flex items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          disabled={pending}
-          onClick={handleBackfill}
-        >
-          좌표 없는 장소 일괄 변환
-        </Button>
-        {backfillMsg && (
-          <span className="text-sm text-gray-500">{backfillMsg}</span>
-        )}
-      </div>
 
       {error && (
         <div className="rounded-md border border-danger bg-danger-soft px-3 py-2.5 text-sm text-danger">
@@ -114,6 +111,26 @@ export function PlaceManager({ places }: { places: Place[] }) {
         />
       ) : (
         <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-xs font-medium text-gray-700">
+              등록된 장소 <span className="text-gray-400">{places.length}곳</span>
+              {pendingCount > 0 && (
+                <span className="text-warning"> · 핀 없음 {pendingCount}곳</span>
+              )}
+            </p>
+            {pendingCount > 0 && (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                disabled={pending}
+                onClick={handleBackfill}
+              >
+                핀 일괄 변환
+              </Button>
+            )}
+            {backfillMsg && <span className="text-xs text-gray-500">{backfillMsg}</span>}
+          </div>
           {places.map((place) =>
             editingId === place.id ? (
               <Card key={place.id}>
@@ -149,7 +166,7 @@ export function PlaceManager({ places }: { places: Place[] }) {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="truncate font-medium text-gray-900">{place.name}</p>
-                    <PinBadge located={place.lat != null && place.lng != null} />
+                    <PlaceStatusBadge place={place} />
                   </div>
                   {place.address && (
                     <p className="mt-0.5 truncate text-sm text-gray-500">{place.address}</p>
@@ -169,11 +186,7 @@ export function PlaceManager({ places }: { places: Place[] }) {
                     variant="ghost"
                     size="sm"
                     disabled={pending}
-                    onClick={() => {
-                      if (confirm(`'${place.name}' 장소를 삭제할까요?`)) {
-                        run(() => deletePlace(place.id));
-                      }
-                    }}
+                    onClick={() => setDeleting(place)}
                   >
                     삭제
                   </Button>
@@ -183,6 +196,33 @@ export function PlaceManager({ places }: { places: Place[] }) {
           )}
         </div>
       )}
+
+      <Modal open={!!deleting} onClose={() => setDeleting(null)} ariaLabel="장소 삭제 확인">
+        <h2 className="text-base font-semibold text-gray-900">
+          &lsquo;{deleting?.name}&rsquo; 장소를 삭제할까요?
+        </h2>
+        <p className="mt-1 text-sm text-gray-500">
+          삭제하면 되돌릴 수 없어요. 이 장소를 쓰던 이벤트의 장소 정보가 비워질 수 있어요.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="ghost" disabled={pending} onClick={() => setDeleting(null)}>
+            취소
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            disabled={pending}
+            onClick={() => {
+              const target = deleting;
+              if (!target) return;
+              // run()은 실패 시 onDone을 부르지 않는다 — 모달이 열린 채 남는 게 의도된 동작
+              run(() => deletePlace(target.id), () => setDeleting(null));
+            }}
+          >
+            삭제
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
