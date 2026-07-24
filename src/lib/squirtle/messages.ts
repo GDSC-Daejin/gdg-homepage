@@ -15,12 +15,12 @@ export const DAILY_MESSAGES = [
 ] as const;
 
 export function dailyMessage(emoji: string, index: number): string {
-  return `🐢 ${DAILY_MESSAGES[index % DAILY_MESSAGES.length]}\n:${emoji}: 눌러서 함께해요!`;
+  return `${DAILY_MESSAGES[index % DAILY_MESSAGES.length]}\n:${emoji}: 눌러서 함께해요!`;
 }
 
 export function threadSummary(o: { participants: string[]; total: number; stage: Stage; stage3Threshold: number }): string {
   if (o.participants.length === 0) return "";
-  const head = `🐢 오늘 ${o.participants.length}명이 꼬북이와 함께했어요!\n${o.participants.map((id) => `<@${id}>`).join(" ")}`;
+  const head = `오늘 ${o.participants.length}명이 꼬북이와 함께했어요!\n${o.participants.map((id) => `<@${id}>`).join(" ")}`;
   if (o.stage >= 3) return `${head}\n꼬북이는 이미 거북왕이에요 🏆`;
   return `${head}\n거북왕까지 ${Math.max(o.stage3Threshold - o.total, 0)}잔 남았어요`;
 }
@@ -35,5 +35,5 @@ export function evolutionMessage(o: { stage: Stage; total: number; top3: Contrib
 
 export function seasonEndMessage(o: { stage: Stage; total: number; top3: Contributor[]; bonuses: readonly [number, number, number] }): string {
   const bonusLines = o.top3.map((c, i) => `${MEDALS[i]} <@${c.slack_user_id}> ${c.count}잔 · ${o.bonuses[i]}포인트`).join("\n");
-  return ["🏁 이번 시즌이 끝났어요!", `   최종 ${STAGE_NAMES[o.stage]} · 총 ${o.total}잔`, "", bonusLines, "", "내일부터 새 시즌이 꼬부기로 시작해요. 다시 키워봐요 🐢"].join("\n");
+  return ["🏁 이번 시즌이 끝났어요!", `   최종 ${STAGE_NAMES[o.stage]} · 총 ${o.total}잔`, "", bonusLines, "", "내일부터 새 시즌이 꼬부기로 시작해요. 다시 키워봐요."].join("\n");
 }
