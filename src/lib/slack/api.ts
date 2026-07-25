@@ -49,11 +49,14 @@ type SlackMember = {
   id: string;
   is_bot?: boolean;
   deleted?: boolean;
-  profile?: { email?: string };
+  profile?: { email?: string; display_name?: string; real_name?: string };
 };
 
-export async function listUserEmails(): Promise<Map<string, string>> {
-  const emails = new Map<string, string>();
+export type SlackMemberSummary = { id: string; name: string; email: string };
+
+/** 워크스페이스의 사람 멤버 전체. 이메일이 없어도 포함한다 — 수동 연결 대상이다. */
+export async function listWorkspaceMembers(): Promise<SlackMemberSummary[]> {
+  const members: SlackMemberSummary[] = [];
   let cursor = "";
 
   do {
@@ -64,12 +67,24 @@ export async function listUserEmails(): Promise<Map<string, string>> {
     if (!res.ok) break;
 
     for (const member of res.members ?? []) {
-      const email = member.profile?.email;
-      if (member.is_bot || member.deleted || !email) continue;
-      emails.set(member.id, email.toLowerCase());
+      if (member.is_bot || member.deleted) continue;
+      members.push({
+        id: member.id,
+        name: member.profile?.display_name || member.profile?.real_name || member.id,
+        email: (member.profile?.email ?? "").toLowerCase(),
+      });
     }
     cursor = res.response_metadata?.next_cursor ?? "";
   } while (cursor);
 
+  return members;
+}
+
+/** 자동 백필용 — slackUserId → 이메일. 이메일 없는 멤버는 매칭 대상이 아니라 제외한다. */
+export async function listUserEmails(): Promise<Map<string, string>> {
+  const emails = new Map<string, string>();
+  for (const member of await listWorkspaceMembers()) {
+    if (member.email) emails.set(member.id, member.email);
+  }
   return emails;
 }

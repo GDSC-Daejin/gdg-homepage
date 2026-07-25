@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
 import { PageHeader } from "@/components/PageHeader";
@@ -35,6 +36,12 @@ export default async function AdminBotsPage() {
         description="슬랙봇을 하나씩 켜고 꺼요. 끄면 알림을 올리지 않아요"
       />
       <BotToggleList bots={bots} />
+      <p className="mt-4 text-xs text-gray-500">
+        리액션으로 포인트를 받으려면 회원과 슬랙 계정이 연결되어 있어야 해요.{" "}
+        <Link href="/admin/bots/links" className="font-medium text-primary underline">
+          슬랙 계정 연결 →
+        </Link>
+      </p>
     </div>
   );
 }
