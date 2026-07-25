@@ -147,7 +147,22 @@ describe("연결 화면", () => {
   });
 
   it("회원마다 슬랙 계정을 골라 연결한다", () => {
-    expect(list).toContain("<select");
     expect(list).toContain("setSlackLink");
+  });
+
+  it("디자인 시스템의 Select·Badge를 쓴다 (native select·수제 배지 금지)", () => {
+    expect(list).toContain('from "@/components/Select"');
+    expect(list).toContain('from "@/components/Badge"');
+    expect(list).not.toContain("<select");
+    expect(list).not.toContain("rounded-full bg-warning-soft");
+  });
+
+  it("슬랙 목록을 못 가져왔으면 빈 드롭다운 대신 이유를 알려준다", () => {
+    expect(list).toContain("슬랙 멤버 목록을 가져오지 못했어요");
+    expect(list).toContain("slackMembers.length === 0");
+  });
+
+  it("이미 연결된 회원에는 드롭다운을 띄우지 않는다 (해제 후 다시 연결)", () => {
+    expect(list).toContain("해제");
   });
 });

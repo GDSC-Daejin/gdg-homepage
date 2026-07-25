@@ -3,9 +3,11 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { setSlackLink } from "@/actions/slack-link";
+import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
+import { Select } from "@/components/Select";
 import { suggestSlackMatch } from "@/lib/squirtle/backfill";
 import type { SlackMemberSummary } from "@/lib/slack/api";
 
@@ -29,10 +31,7 @@ export function SlackLinkList({
   const [picked, setPicked] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
 
-  const slackById = useMemo(
-    () => new Map(slackMembers.map((m) => [m.id, m])),
-    [slackMembers],
-  );
+  const slackById = useMemo(() => new Map(slackMembers.map((m) => [m.id, m])), [slackMembers]);
   const unlinkedCount = members.filter((m) => !m.slack_user_id).length;
 
   // 미연결을 먼저 — 할 일이 위로 온다
@@ -65,9 +64,7 @@ export function SlackLinkList({
       <div className="flex flex-wrap items-center gap-3">
         <p className="text-xs font-medium text-gray-700">
           전체 <span className="text-gray-400">{members.length}명</span>
-          {unlinkedCount > 0 && (
-            <span className="text-warning"> · 연결 안 됨 {unlinkedCount}명</span>
-          )}
+          {unlinkedCount > 0 && <span className="text-warning"> · 연결 안 됨 {unlinkedCount}명</span>}
         </p>
         <label className="flex items-center gap-1.5 text-xs text-gray-500">
           <input
@@ -80,6 +77,16 @@ export function SlackLinkList({
         </label>
       </div>
 
+      {slackMembers.length === 0 && (
+        <div className="rounded-md border border-warning bg-warning-soft px-3 py-2.5 text-sm text-warning">
+          슬랙 멤버 목록을 가져오지 못했어요. 연결할 계정을 고를 수 없어요.
+          <span className="mt-0.5 block text-xs">
+            SLACK_BOT_TOKEN 환경변수와 users:read · users:read.email 권한을 확인해주세요. 로컬에서는
+            토큰이 없으면 비어 있는 게 정상이에요.
+          </span>
+        </div>
+      )}
+
       {error && (
         <div className="rounded-md border border-danger bg-danger-soft px-3 py-2.5 text-sm text-danger">
           {error}
@@ -87,30 +94,25 @@ export function SlackLinkList({
       )}
 
       {unlinkedFirst.length === 0 ? (
-        <EmptyState
-          title="모두 연결됐어요"
-          description="새로 가입한 회원이 생기면 여기에 나타나요."
-        />
+        <EmptyState title="모두 연결됐어요" description="새로 가입한 회원이 생기면 여기에 나타나요." />
       ) : (
         <div className="flex flex-col gap-2">
           {unlinkedFirst.map((member) => {
             const linked = member.slack_user_id ? slackById.get(member.slack_user_id) : undefined;
             const suggested = suggestSlackMatch(member.email, slackMembers);
-            const value = picked[member.id] ?? member.slack_user_id ?? suggested ?? "";
+            const value = picked[member.id] ?? suggested ?? "";
 
             return (
-              <Card key={member.id} className="flex flex-wrap items-center justify-between gap-3">
-                <div className="min-w-0">
+              <Card key={member.id} className="flex flex-wrap items-center gap-x-4 gap-y-3">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate font-medium text-gray-900">{member.name || "이름 없음"}</p>
                     {member.slack_user_id ? (
-                      <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-500 px-2 py-0.5 text-xs font-medium">
+                      <Badge tone="success">
                         {linked ? `@${linked.name}` : member.slack_user_id}
-                      </span>
+                      </Badge>
                     ) : (
-                      <span className="inline-flex items-center rounded-full bg-warning-soft text-warning px-2 py-0.5 text-xs font-medium">
-                        연결 안 됨
-                      </span>
+                      <Badge tone="warning">연결 안 됨</Badge>
                     )}
                   </div>
                   <p className="mt-0.5 truncate text-sm text-gray-500">
@@ -118,45 +120,48 @@ export function SlackLinkList({
                   </p>
                 </div>
 
-                <div className="flex shrink-0 items-center gap-2">
-                  <select
-                    value={value}
-                    disabled={pending}
-                    onChange={(e) => setPicked({ ...picked, [member.id]: e.target.value })}
-                    className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm text-gray-900 disabled:opacity-50"
-                  >
-                    <option value="">슬랙 계정 선택</option>
-                    {slackMembers.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                        {s.email ? ` (${s.email})` : ""}
-                        {s.id === suggested ? " · 이메일 일치" : ""}
-                      </option>
-                    ))}
-                  </select>
-
+                {/* 연결된 회원은 드롭다운을 띄우지 않는다 — 행마다 셀렉트가 뜨면 목록이 시끄러워진다 */}
+                {member.slack_user_id ? (
                   <Button
                     type="button"
-                    variant="primary"
+                    variant="ghost"
                     size="sm"
-                    disabled={pending || !value || value === member.slack_user_id}
-                    onClick={() => save(member.id, value)}
+                    disabled={pending}
+                    onClick={() => save(member.id, null)}
                   >
-                    연결
+                    해제
                   </Button>
-
-                  {member.slack_user_id && (
+                ) : (
+                  <div className="flex shrink-0 items-center gap-2">
+                    <div className="w-56">
+                      <Select
+                        value={value}
+                        disabled={pending || slackMembers.length === 0}
+                        onChange={(e) => setPicked({ ...picked, [member.id]: e.target.value })}
+                      >
+                        <option value="" disabled>
+                          슬랙 계정 선택
+                        </option>
+                        {slackMembers.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                            {s.email ? ` (${s.email})` : ""}
+                            {s.id === suggested ? " · 이메일 일치" : ""}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="primary"
                       size="sm"
-                      disabled={pending}
-                      onClick={() => save(member.id, null)}
+                      disabled={pending || !value}
+                      onClick={() => save(member.id, value)}
                     >
-                      해제
+                      연결
                     </Button>
-                  )}
-                </div>
+                  </div>
+                )}
               </Card>
             );
           })}
