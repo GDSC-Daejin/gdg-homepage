@@ -50,8 +50,14 @@ export function PlaceManager({ places }: { places: Place[] }) {
         setError(result.error);
         return;
       }
+      if (result.failures?.length) {
+        // 실패 사유는 UI에 다 못 담으니 콘솔로 — 관리자가 F12로 확인
+        console.warn("[핀 일괄 변환] 실패 목록", result.failures);
+        console.table(result.failures);
+      }
       setBackfillMsg(
-        `좌표 변환 완료 — 성공 ${result.done ?? 0} · 실패 ${result.failed ?? 0}`,
+        `좌표 변환 완료 — 성공 ${result.done ?? 0} · 실패 ${result.failed ?? 0}` +
+          (result.failures?.length ? " (사유는 브라우저 콘솔 확인)" : ""),
       );
       router.refresh();
     });
