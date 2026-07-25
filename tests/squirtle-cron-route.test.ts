@@ -31,6 +31,29 @@ describe("일일 크론 라우트", () => {
   });
 });
 
+describe("유령 메시지 방지", () => {
+  it("슬랙 게시보다 posted_on 예약을 먼저 한다", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const route = await readFile("src/app/api/cron/squirtle-daily/route.ts", "utf8");
+
+    const reserve = route.indexOf("posted_on: today");
+    // 시즌 종료 게시가 앞에 있으므로 일일 게시를 dailyMessage()로 특정한다
+    const post = route.indexOf("dailyMessage(");
+
+    expect(reserve).toBeGreaterThan(-1);
+    expect(post).toBeGreaterThan(-1);
+    // 순서가 뒤집히면 중복 실행 때 DB에 없는 메시지가 슬랙에 남아 리액션이 전부 stale로 버려진다
+    expect(reserve).toBeLessThan(post);
+  });
+
+  it("게시 실패 시 예약을 되돌린다", async () => {
+    const { readFile } = await import("node:fs/promises");
+    const route = await readFile("src/app/api/cron/squirtle-daily/route.ts", "utf8");
+
+    expect(route).toContain('.from("squirtle_posts").delete()');
+  });
+});
+
 describe("pickMessageIndex", () => {
   it("문구 개수 범위 안의 정수를 돌려준다", async () => {
     const { pickMessageIndex } = await import("@/app/api/cron/squirtle-daily/route");

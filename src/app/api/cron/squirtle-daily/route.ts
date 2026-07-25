@@ -67,15 +67,25 @@ export async function GET(request: NextRequest) {
   const { data: seasonId, error: seasonError } = await supabase.rpc("squirtle_open_season");
   if (seasonError || !seasonId) return NextResponse.json({ error: "시즌을 열지 못했어요" }, { status: 500 });
   const linked = await backfillSlackIds(supabase);
-  const posted = await postMessage({ channel: config.channel_id, text: dailyMessage(config.emoji, pickMessageIndex()) });
-  if (!posted.ok) return NextResponse.json({ error: posted.error, posted: false }, { status: 502 });
+  const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
 
-  const { error: insertError } = await supabase.from("squirtle_posts").insert({
-    season_id: seasonId,
-    posted_on: new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" }),
-    message_ts: posted.ts,
-  });
+  // 슬랙에 먼저 올리면 중복 실행 때 DB에 없는 유령 메시지가 남고, 거기 달린 리액션은 영원히 stale로 무시된다.
+  // 그래서 posted_on unique로 자리를 먼저 예약하고 게시한다.
+  const { data: reserved, error: insertError } = await supabase
+    .from("squirtle_posts")
+    .insert({ season_id: seasonId, posted_on: today, message_ts: `pending-${today}` })
+    .select("id")
+    .single();
   if (insertError) return NextResponse.json({ posted: false, reason: "already_posted" });
+
+  const posted = await postMessage({ channel: config.channel_id, text: dailyMessage(config.emoji, pickMessageIndex()) });
+  if (!posted.ok) {
+    // 게시 실패 — 예약을 풀어 다음 시도가 가능하게 한다
+    await supabase.from("squirtle_posts").delete().eq("id", reserved.id);
+    return NextResponse.json({ error: posted.error, posted: false }, { status: 502 });
+  }
+
+  await supabase.from("squirtle_posts").update({ message_ts: posted.ts }).eq("id", reserved.id);
   await addReaction({ channel: config.channel_id, ts: posted.ts, emoji: config.emoji });
   return NextResponse.json({ posted: true, linked, closed: closed?.closed ?? false });
 }
