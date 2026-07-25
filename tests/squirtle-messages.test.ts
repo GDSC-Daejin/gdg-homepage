@@ -15,18 +15,19 @@ describe("일일 메시지", () => {
 
 describe("스레드 집계", () => {
   it("참여자를 멘션 형식으로 호명하고 남은 잔을 알려준다", () => {
-    const text = threadSummary({ participants: ["U1", "U2"], total: 158, stage: 2, stage3Threshold: 200 });
+    const text = threadSummary({ participants: ["U1", "U2"], total: 158, stage: 2, stage3Threshold: 200, emoji: "squirtle" });
     expect(text).toContain("2명");
     expect(text).toContain("<@U1>");
     expect(text).toContain("<@U2>");
     expect(text).toContain("42잔");
+    expect(text).toContain(":squirtle:");
   });
   it("거북왕이면 남은 잔 문구를 뺀다", () => {
-    const text = threadSummary({ participants: ["U1"], total: 210, stage: 3, stage3Threshold: 200 });
+    const text = threadSummary({ participants: ["U1"], total: 210, stage: 3, stage3Threshold: 200, emoji: "squirtle" });
     expect(text).not.toContain("남았");
     expect(text).toContain("거북왕");
   });
-  it("참여자가 없으면 빈 문자열을 돌려준다", () => expect(threadSummary({ participants: [], total: 0, stage: 1, stage3Threshold: 200 })).toBe(""));
+  it("참여자가 없으면 빈 문자열을 돌려준다", () => expect(threadSummary({ participants: [], total: 0, stage: 1, stage3Threshold: 200, emoji: "squirtle" })).toBe(""));
 });
 
 describe("진화 축하", () => {
@@ -48,7 +49,7 @@ describe("진화 축하", () => {
 
 describe("시즌 종료", () => {
   it("최종 단계와 보너스 포인트를 안내한다", () => {
-    const text = seasonEndMessage({ stage: 2, total: 143, top3: [{ slack_user_id: "U1", count: 20 }], bonuses: [30, 20, 10] });
+    const text = seasonEndMessage({ stage: 2, total: 143, top3: [{ slack_user_id: "U1", count: 20 }], bonuses: [30, 20, 10], emoji: "squirtle" });
     expect(text).toContain("어니부기");
     expect(text).toContain("143");
     expect(text).toContain("30포인트");

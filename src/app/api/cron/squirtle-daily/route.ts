@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
         total: closed.total,
         top3: closed.top3,
         bonuses: [config.bonus_first, config.bonus_second, config.bonus_third] as [number, number, number],
+        emoji: config.emoji,
       }),
     });
   }

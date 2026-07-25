@@ -36,7 +36,7 @@ async function handleReaction(event: ReactionEvent) {
   if (!result.counted) return;
 
   const { data: post } = await supabase.from("squirtle_posts").select("thread_ts").eq("message_ts", messageTs).single();
-  const text = threadSummary({ participants: result.participants, total: result.total, stage: result.stage, stage3Threshold: config.stage3_threshold });
+  const text = threadSummary({ participants: result.participants, total: result.total, stage: result.stage, stage3Threshold: config.stage3_threshold, emoji: config.emoji });
   if (!text) return;
 
   if (post?.thread_ts) {
