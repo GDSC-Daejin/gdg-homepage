@@ -6,12 +6,16 @@ import { suggestSlackMatch } from "@/lib/squirtle/backfill";
 let action = "";
 let page = "";
 let list = "";
+let sql = "";
+let errors = "";
 
 beforeAll(async () => {
-  [action, page, list] = await Promise.all([
+  [action, page, list, sql, errors] = await Promise.all([
     readFile("src/actions/slack-link.ts", "utf8"),
     readFile("src/app/admin/bots/links/page.tsx", "utf8"),
     readFile("src/app/admin/bots/links/SlackLinkList.tsx", "utf8"),
+    readFile("supabase/migrations/0051_admin_set_slack_link.sql", "utf8"),
+    readFile("src/lib/errors.ts", "utf8"),
   ]);
 });
 
@@ -123,12 +127,41 @@ describe("서버 액션", () => {
     expect(action).toContain("slackUserId: string | null");
   });
 
-  it("이미 다른 회원이 쓰는 슬랙 계정이면 안내한다", () => {
-    expect(action).toContain("이미 다른 회원");
+  it("profiles 직접 update 대신 admin RPC를 쓴다 (profiles 쓰기는 봉인돼 있다)", () => {
+    expect(action).toContain('rpc("admin_set_slack_link"');
+    expect(action).not.toContain('.from("profiles")');
   });
 
   it("변경 후 목록을 다시 그린다", () => {
     expect(action).toContain('revalidatePath("/admin/bots/links")');
+  });
+});
+
+describe("admin_set_slack_link RPC", () => {
+  it("어드민만 통과시킨다", () => {
+    expect(sql).toContain("if not public.is_admin() then raise exception 'FORBIDDEN'");
+  });
+
+  it("security definer로 봉인된 컬럼을 우회한다", () => {
+    expect(sql).toContain("security definer");
+    expect(sql).toContain("set search_path = public");
+  });
+
+  it("한 슬랙 계정을 두 회원에게 붙이지 못하게 막는다", () => {
+    expect(sql).toContain("SLACK_ALREADY_LINKED");
+  });
+
+  it("빈 문자열은 해제로 처리한다 (드롭다운 기본값이 빈 문자열이다)", () => {
+    expect(sql).toContain("nullif");
+  });
+
+  it("anon에서 execute를 회수하고 authenticated에만 준다", () => {
+    expect(sql).toContain("revoke execute on function public.admin_set_slack_link(uuid, text) from public, anon");
+    expect(sql).toContain("grant execute on function public.admin_set_slack_link(uuid, text) to authenticated");
+  });
+
+  it("에러 코드가 한국어로 매핑된다", () => {
+    expect(errors).toContain("SLACK_ALREADY_LINKED");
   });
 });
 

@@ -7,7 +7,10 @@ import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
-/** slackUserId가 null이면 연결을 해제한다. */
+/**
+ * slackUserId가 null이면 연결을 해제한다.
+ * profiles 쓰기는 봉인돼 있어(컬럼 화이트리스트 + self update 정책) RPC를 경유한다.
+ */
 export async function setSlackLink(
   userId: string,
   slackUserId: string | null,
@@ -17,18 +20,12 @@ export async function setSlackLink(
   if (!userId) return { error: "회원을 선택해주세요" };
 
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("profiles")
-    .update({ slack_user_id: slackUserId })
-    .eq("id", userId);
+  const { error } = await supabase.rpc("admin_set_slack_link", {
+    p_user: userId,
+    p_slack: slackUserId,
+  });
 
-  if (error) {
-    // slack_user_id는 unique — 한 슬랙 계정을 두 회원에게 붙일 수 없다
-    if ((error as { code?: string }).code === "23505") {
-      return { error: "이미 다른 회원에게 연결된 슬랙 계정이에요" };
-    }
-    return { error: toKoreanError(error) };
-  }
+  if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/bots/links");
   return {};

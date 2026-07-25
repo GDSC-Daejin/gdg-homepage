@@ -13,6 +13,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   DUPLICATE_APPLICANT: "이미 같은 학번/연락처로 지원한 내역이 있어요",
   RATE_LIMITED: "잠시 후 다시 시도해주세요",
   TOO_MANY_ATTEMPTS: "시도 횟수를 초과했어요. 잠시 후 다시 해주세요",
+  SLACK_ALREADY_LINKED: "이미 다른 회원에게 연결된 슬랙 계정이에요",
 };
 
 export function toKoreanError(e: unknown): string {
