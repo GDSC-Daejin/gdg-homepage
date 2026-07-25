@@ -123,6 +123,7 @@ export interface Place {
   address: string;
   lat: number | null;
   lng: number | null;
+  notes: string;
   created_at: string;
 }
 

@@ -146,3 +146,20 @@ export async function backfillPlaceCoords(): Promise<{
   revalidatePath("/admin/places");
   return { done, failed: failures.length, failures };
 }
+
+// 메모는 목록 인라인 수정 폼에 없다 — readPlaceForm/updatePlace에 합치면 인라인 저장 시 메모가 지워진다
+export async function updatePlaceNotes(
+  id: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const notes = String(formData.get("notes") ?? "").trim();
+  const supabase = await createClient();
+  const { error } = await supabase.from("places").update({ notes }).eq("id", id);
+
+  if (error) return { error: toKoreanError(error) };
+  revalidatePath(`/admin/places/${id}`);
+  return {};
+}

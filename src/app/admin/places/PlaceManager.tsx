@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createPlace, updatePlace, deletePlace, backfillPlaceCoords } from "@/actions/place";
 import { Input } from "@/components/Input";
@@ -171,7 +172,12 @@ export function PlaceManager({ places }: { places: Place[] }) {
               <Card key={place.id} className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="truncate font-medium text-gray-900">{place.name}</p>
+                    <Link
+                      href={`/admin/places/${place.id}`}
+                      className="truncate font-medium text-gray-900 hover:underline"
+                    >
+                      {place.name}
+                    </Link>
                     <PlaceStatusBadge place={place} />
                   </div>
                   {place.address && (
