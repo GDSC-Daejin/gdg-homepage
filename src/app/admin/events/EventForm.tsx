@@ -9,30 +9,17 @@ import { Select } from "@/components/Select";
 import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
+import {
+  EVENT_TYPE_BG as TYPE_DOT,
+  EVENT_TYPE_OPTIONS as TYPE_OPTIONS,
+  EVENT_TYPE_SELECTED as TYPE_SELECTED,
+} from "@/lib/event-type";
 import type { Event, EventType, Place } from "@/lib/types";
 
-const TYPE_OPTIONS: { value: EventType; label: string }[] = [
-  { value: "session", label: "정기세션" },
-  { value: "study", label: "스터디" },
-  { value: "mogakco", label: "모각코" },
-  { value: "party", label: "파티" },
-];
-
-const TYPE_DOT: Record<EventType, string> = {
-  session: "bg-primary",
-  study: "bg-success",
-  mogakco: "bg-warning",
-  party: "bg-danger",
-};
-
-const TYPE_SELECTED: Record<EventType, string> = {
-  session: "border-primary bg-primary-soft text-primary",
-  study: "border-success bg-success-soft text-success",
-  mogakco: "border-warning bg-warning-soft text-warning",
-  party: "border-danger bg-danger-soft text-danger",
-};
-
 const DAY_TRIP_TYPES: EventType[] = ["session", "study", "mogakco"];
+
+/** 달력 빈 칸에서 만들 때 시각까지는 모르니 저녁 7시로 열어 둔다. */
+const DEFAULT_START_TIME = "19:00";
 
 function RequiredMark() {
   return <span className="text-danger">*</span>;
@@ -82,9 +69,13 @@ function toKstTimeOnly(iso: string): string {
 interface EventFormProps {
   event?: Event;
   places?: Place[];
+  /** 달력에서 클릭한 날짜("YYYY-MM-DD"). 생성 시 날짜를 미리 채운다. */
+  defaultDate?: string;
+  /** 넘기면 저장 후 페이지 이동 대신 이 콜백을 부른다(모달에서 닫기용). */
+  onSuccess?: () => void;
 }
 
-export function EventForm({ event, places = [] }: EventFormProps) {
+export function EventForm({ event, places = [], defaultDate, onSuccess }: EventFormProps) {
   const router = useRouter();
   const isEdit = Boolean(event);
   const [type, setType] = useState<EventType>(event?.type ?? "session");
@@ -137,7 +128,10 @@ export function EventForm({ event, places = [] }: EventFormProps) {
         return;
       }
 
-      if (event) {
+      if (onSuccess) {
+        router.refresh();
+        onSuccess();
+      } else if (event) {
         router.refresh();
         flashSaved();
       } else {
@@ -167,12 +161,12 @@ export function EventForm({ event, places = [] }: EventFormProps) {
           <label className="text-sm font-medium text-gray-700">
             유형 <RequiredMark />
           </label>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {TYPE_OPTIONS.map((opt) => (
               <label
                 key={opt.value}
                 className={cn(
-                  "flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.98]",
+                  "flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-medium transition-[color,background-color,border-color,transform] duration-150 active:scale-[0.98]",
                   type === opt.value
                     ? TYPE_SELECTED[opt.value]
                     : "border-gray-300 text-gray-700 hover:bg-gray-50",
@@ -212,7 +206,7 @@ export function EventForm({ event, places = [] }: EventFormProps) {
       />
 
       {DAY_TRIP_TYPES.includes(type) ? (
-        <>
+        <div className="grid gap-4 sm:grid-cols-3">
           <DatePicker
             name="event_date"
             label={
@@ -224,27 +218,27 @@ export function EventForm({ event, places = [] }: EventFormProps) {
                 </>
               )
             }
-            defaultValue={event ? toKstDateOnly(event.starts_at) : ""}
+            defaultValue={event ? toKstDateOnly(event.starts_at) : (defaultDate ?? "")}
             required
           />
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              type="time"
-              name="start_time"
-              label={isEdit ? "시작 시간" : <>시작 시간 <RequiredMark /></>}
-              defaultValue={event ? toKstTimeOnly(event.starts_at) : ""}
-              required
-            />
-            <Input
-              type="time"
-              name="end_time"
-              label={isEdit ? "종료 시간" : <>종료 시간 <OptionalMark /></>}
-              defaultValue={event?.ends_at ? toKstTimeOnly(event.ends_at) : ""}
-            />
-          </div>
-        </>
+          <Input
+            type="time"
+            name="start_time"
+            label={isEdit ? "시작 시간" : <>시작 시간 <RequiredMark /></>}
+            defaultValue={
+              event ? toKstTimeOnly(event.starts_at) : defaultDate ? DEFAULT_START_TIME : ""
+            }
+            required
+          />
+          <Input
+            type="time"
+            name="end_time"
+            label={isEdit ? "종료 시간" : <>종료 시간 <OptionalMark /></>}
+            defaultValue={event?.ends_at ? toKstTimeOnly(event.ends_at) : ""}
+          />
+        </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-4 sm:grid-cols-2">
           <DatePicker
             withTime
             name="starts_at"
@@ -257,7 +251,13 @@ export function EventForm({ event, places = [] }: EventFormProps) {
                 </>
               )
             }
-            defaultValue={event ? toKstDatetimeLocal(event.starts_at) : ""}
+            defaultValue={
+              event
+                ? toKstDatetimeLocal(event.starts_at)
+                : defaultDate
+                  ? `${defaultDate}T${DEFAULT_START_TIME}`
+                  : ""
+            }
             required
           />
           <DatePicker
@@ -269,16 +269,15 @@ export function EventForm({ event, places = [] }: EventFormProps) {
         </div>
       )}
 
-      <Input
-        type="number"
-        name="capacity"
-        label={isEdit ? "정원" : <>정원 <OptionalMark>선택 · 비우면 무제한</OptionalMark></>}
-        placeholder="예) 30"
-        min={1}
-        defaultValue={event?.capacity ?? undefined}
-      />
-
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Input
+          type="number"
+          name="capacity"
+          label={isEdit ? "정원" : <>정원 <OptionalMark>비우면 무제한</OptionalMark></>}
+          placeholder="예) 30"
+          min={1}
+          defaultValue={event?.capacity ?? undefined}
+        />
         <Select
           name="place_id"
           label={isEdit ? "장소" : <>장소 <OptionalMark /></>}

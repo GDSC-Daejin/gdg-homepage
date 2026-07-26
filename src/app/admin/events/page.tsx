@@ -7,18 +7,88 @@ import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { MonthFilter } from "@/components/MonthFilter";
 import { EventCards } from "@/components/EventCards";
-import { formatMonthLabel, monthKst } from "@/lib/format";
-import type { Event } from "@/lib/types";
+import { cn } from "@/lib/cn";
+import { kstDayStartIso, monthGrid, nextDayKey } from "@/lib/calendar";
+import { dayKeyKst, formatMonthLabel, monthKst } from "@/lib/format";
+import type { Event, Place } from "@/lib/types";
+import { EventCalendar, type CalendarInterview } from "./EventCalendar";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminEventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; view?: string }>;
 }) {
-  const { month } = await searchParams;
+  const { month, view } = await searchParams;
   const demo = await isDemoMode();
+  const isCalendar = view === "calendar";
+  const today = dayKeyKst(new Date().toISOString());
+
+  if (isCalendar) {
+    // 격자에는 앞뒤 달 날짜도 보이므로 42칸 전체를 덮는 범위로 조회한다.
+    const gridMonth = month && /^\d{4}-\d{2}$/.test(month) ? month : today.slice(0, 7);
+    const grid = monthGrid(gridMonth);
+    const from = kstDayStartIso(grid[0]);
+    const to = kstDayStartIso(nextDayKey(grid[grid.length - 1]));
+
+    let events: Event[] = DEMO_EVENTS.filter(
+      (e) => e.starts_at >= from && e.starts_at < to,
+    );
+    let interviews: CalendarInterview[] = [];
+    let places: Place[] = [];
+
+    if (!demo) {
+      const supabase = await createClient();
+      const [eventRes, interviewRes, placeRes] = await Promise.all([
+        supabase
+          .from("events")
+          .select("*")
+          .gte("starts_at", from)
+          .lt("starts_at", to)
+          .order("starts_at"),
+        supabase
+          .from("interview_slots")
+          .select("id, starts_at, status")
+          .gte("starts_at", from)
+          .lt("starts_at", to)
+          .in("status", ["open", "booked"])
+          .order("starts_at"),
+        supabase.from("places").select("*").order("name"),
+      ]);
+      events = (eventRes.data ?? []) as Event[];
+      interviews = (interviewRes.data ?? []) as CalendarInterview[];
+      places = (placeRes.data ?? []) as Place[];
+    }
+
+    return (
+      <div>
+        <PageHeader
+          title="이벤트"
+          description="정기세션·스터디·모각코를 관리해요"
+          action={
+            <div className="flex items-center gap-2">
+              <ViewToggle isCalendar month={gridMonth} />
+              <Link href="/admin/events/new">
+                <Button type="button" variant="primary">
+                  <PlusIcon />
+                  이벤트 생성
+                </Button>
+              </Link>
+            </div>
+          }
+        />
+        <EventCalendar
+          month={gridMonth}
+          events={events}
+          interviews={interviews}
+          places={places}
+          today={today}
+          readOnly={demo}
+        />
+      </div>
+    );
+  }
 
   let all: Event[] = DEMO_EVENTS;
   const counts: Record<string, number> = demo ? { ...DEMO_EVENT_CONFIRMED_COUNTS } : {};
@@ -57,6 +127,7 @@ export default async function AdminEventsPage({
         description="정기세션·스터디·모각코를 관리해요"
         action={
           <div className="flex items-center gap-2">
+            <ViewToggle isCalendar={false} month={month || today.slice(0, 7)} />
             <MonthFilter
               options={monthOptions}
               value={month ?? ""}
@@ -64,16 +135,7 @@ export default async function AdminEventsPage({
             />
             <Link href="/admin/events/new">
               <Button type="button" variant="primary">
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  className="mr-1.5 h-4 w-4"
-                >
-                  <path d="M10 4v12M4 10h12" />
-                </svg>
+                <PlusIcon />
                 이벤트 생성
               </Button>
             </Link>
@@ -95,6 +157,48 @@ export default async function AdminEventsPage({
       ) : (
         <EventCards events={list} counts={counts} hrefBase="/admin/events" />
       )}
+    </div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      className="mr-1.5 h-4 w-4"
+    >
+      <path d="M10 4v12M4 10h12" />
+    </svg>
+  );
+}
+
+function ViewToggle({ isCalendar, month }: { isCalendar: boolean; month: string }) {
+  const base =
+    "rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors duration-100";
+  return (
+    <div
+      className="flex items-center gap-0.5 rounded-lg border border-gray-300 p-0.5"
+      role="group"
+      aria-label="보기 전환"
+    >
+      <Link
+        href="/admin/events"
+        aria-current={isCalendar ? undefined : "page"}
+        className={cn(base, isCalendar ? "text-gray-600 hover:bg-gray-100" : "bg-primary-soft text-primary")}
+      >
+        목록
+      </Link>
+      <Link
+        href={`/admin/events?view=calendar&month=${month}`}
+        aria-current={isCalendar ? "page" : undefined}
+        className={cn(base, isCalendar ? "bg-primary-soft text-primary" : "text-gray-600 hover:bg-gray-100")}
+      >
+        달력
+      </Link>
     </div>
   );
 }

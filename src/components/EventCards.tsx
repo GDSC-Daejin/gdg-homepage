@@ -2,35 +2,13 @@ import Link from "next/link";
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { formatKst } from "@/lib/format";
-import type { Event, EventType } from "@/lib/types";
-
-const TYPE_LABELS: Record<EventType, string> = {
-  session: "정기세션",
-  study: "스터디",
-  mogakco: "모각코",
-  party: "파티",
-};
-
-const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"> = {
-  session: "primary",
-  study: "success",
-  mogakco: "warning",
-  party: "danger",
-};
-
-const TYPE_BAR: Record<EventType, string> = {
-  session: "bg-primary",
-  study: "bg-success",
-  mogakco: "bg-warning",
-  party: "bg-danger",
-};
-
-const TYPE_TEXT: Record<EventType, string> = {
-  session: "text-primary",
-  study: "text-success",
-  mogakco: "text-warning",
-  party: "text-danger",
-};
+import {
+  EVENT_TYPE_BG as TYPE_BAR,
+  EVENT_TYPE_LABELS as TYPE_LABELS,
+  EVENT_TYPE_TEXT as TYPE_TEXT,
+  EVENT_TYPE_TONES as TYPE_TONES,
+} from "@/lib/event-type";
+import type { Event } from "@/lib/types";
 
 function CalendarIcon() {
   return (
