@@ -51,7 +51,8 @@ export function formatMonthLabel(month: string): string {
   return `${y}년 ${Number(m)}월`;
 }
 
-function kstDay(iso: string): string {
+/** KST 기준 "YYYY-MM-DD" */
+export function dayKeyKst(iso: string): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul",
     year: "numeric",
@@ -64,10 +65,25 @@ export function formatKstTime(iso: string): string {
   return kstTimeOfDay(iso);
 }
 
+/** KST 기준 24시간제 "HH:mm". 달력 칩처럼 폭이 좁은 곳에 쓴다. */
+export function timeKeyKst(iso: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date(iso));
+}
+
+/** "닉네임(이름)" — 닉네임 없으면 이름만. 예: "제이든(옥지훈)" */
+export function displayName(name: string, nickname?: string | null): string {
+  return nickname?.trim() ? `${nickname}(${name})` : name;
+}
+
 /** 시작~종료 일시. 종료 없으면 시작만, 같은 날이면 종료는 시각만 표시. */
 export function formatKstRange(start: string, end: string | null): string {
   if (!end) return formatKst(start);
-  if (kstDay(start) === kstDay(end)) {
+  if (dayKeyKst(start) === dayKeyKst(end)) {
     return `${formatKst(start)} ~ ${formatKstTime(end)}`;
   }
   return `${formatKst(start)} ~ ${formatKst(end)}`;

@@ -23,8 +23,9 @@ describe("공개 작성자 뷰", () => {
       readFile("src/components/board/PostDetailPage.tsx", "utf8"),
     ]);
 
-    expect(list).toContain("member_public(name)");
-    expect(detail).toContain("member_public(name)");
-    expect(`${list}${detail}`).not.toContain("profiles(name)");
+    // 뷰가 노출하는 컬럼(id·name·nickname)은 늘어날 수 있다 — 검사할 건 "profiles가 아니라 뷰를 조인하는가"뿐
+    expect(list).toContain("member_public(");
+    expect(detail).toContain("member_public(");
+    expect(`${list}${detail}`).not.toContain("profiles(name");
   });
 });

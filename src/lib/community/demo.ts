@@ -32,7 +32,7 @@ export const demoCommunity: Community = {
       async authors(userIds) {
         return userIds
           .map((id) => DEMO_INQUIRY_AUTHORS[id])
-          .filter((a): a is { id: string; name: string } => !!a);
+          .filter((a): a is { id: string; name: string; nickname: string } => !!a);
       },
     },
     ops: {

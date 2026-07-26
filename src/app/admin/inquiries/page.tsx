@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
-import { formatKst } from "@/lib/format";
+import { displayName, formatKst } from "@/lib/format";
 import type { InquiryStatus } from "@/lib/types";
 import { INQUIRY_CATEGORY_LABEL, INQUIRY_CATEGORY_TONE } from "@/lib/types";
 import { AnswerForm } from "./AnswerForm";
@@ -83,7 +83,7 @@ export default async function AdminInquiriesPage({
                       <p className="font-semibold text-gray-900">{inquiry.title}</p>
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      {author?.name ?? "알 수 없음"} · {formatKst(inquiry.created_at)}
+                      {author ? displayName(author.name, author.nickname) : "알 수 없음"} · {formatKst(inquiry.created_at)}
                     </p>
                   </div>
                   <Badge tone={STATUS_TONE[inquiry.status]}>

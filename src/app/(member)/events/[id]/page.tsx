@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
-import { formatKst, formatKstRange } from "@/lib/format";
+import { displayName, formatKst, formatKstRange } from "@/lib/format";
 import { EventLocation } from "@/components/EventLocation";
 import { NaverMap } from "@/components/NaverMap";
 import type { BoardType, Event, EventType, RegistrationStatus } from "@/lib/types";
@@ -65,6 +65,7 @@ export default async function MemberEventDetailPage({
   const registrants = (registrantRows ?? []) as {
     user_id: string;
     name: string;
+    nickname: string;
     status: RegistrationStatus;
   }[];
   const registrantsBlocked =
@@ -165,7 +166,7 @@ export default async function MemberEventDetailPage({
                   className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-50"
                 >
                   <span className="truncate text-sm font-medium text-gray-900">
-                    {registrant.name || "(이름 없음)"}
+                    {displayName(registrant.name || "(이름 없음)", registrant.nickname)}
                   </span>
                   <Badge tone={registrant.status === "confirmed" ? "success" : "neutral"}>
                     {REGISTRATION_STATUS_LABELS[registrant.status]}

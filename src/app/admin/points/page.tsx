@@ -8,6 +8,7 @@ import { BadgeManager } from "./BadgeManager";
 import { PointLogTable } from "./PointLogTable";
 import type { Profile, Event, Badge as BadgeType, PointLog } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
+import { displayName } from "@/lib/format";
 import { DEMO_MEMBERS, DEMO_EVENTS, DEMO_BADGES, DEMO_POINT_LOGS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,9 @@ export default async function AdminPointsPage() {
   let eventList: Event[] = DEMO_EVENTS;
   let badgeList: BadgeType[] = DEMO_BADGES;
   let logList: PointLog[] = DEMO_POINT_LOGS;
-  let nameById = new Map(DEMO_MEMBERS.map((m) => [m.id, m.name]));
+  let nameById = new Map(
+    DEMO_MEMBERS.map((m) => [m.id, displayName(m.name, m.nickname)]),
+  );
 
   if (!demo) {
     const supabase = await createClient();
@@ -57,13 +60,12 @@ export default async function AdminPointsPage() {
 
     const logUserIds = Array.from(new Set(logList.map((l) => l.user_id)));
     const { data: logProfiles } = logUserIds.length
-      ? await supabase.from("profiles").select("id, name").in("id", logUserIds)
-      : { data: [] as { id: string; name: string }[] };
+      ? await supabase.from("profiles").select("id, name, nickname").in("id", logUserIds)
+      : { data: [] as { id: string; name: string; nickname: string }[] };
     nameById = new Map(
-      ((logProfiles as { id: string; name: string }[] | null) ?? []).map((p) => [
-        p.id,
-        p.name,
-      ]),
+      ((logProfiles as { id: string; name: string; nickname: string }[] | null) ?? []).map(
+        (p) => [p.id, displayName(p.name, p.nickname)],
+      ),
     );
   }
 

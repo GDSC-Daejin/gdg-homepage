@@ -224,12 +224,15 @@ export const DEMO_INQUIRIES: Inquiry[] = [
   { id: "demo-iq5", user_id: "demo-m7", category: "general", title: "복귀 절차가 궁금합니다", body: "휴면 상태인데 다시 활동하고 싶습니다. 어떻게 해야 하나요?", status: "pending", answer: null, answered_by: null, answered_at: null, created_at: "2026-07-09T00:00:00.000Z" },
 ];
 
-export const DEMO_INQUIRY_AUTHORS: Record<string, { id: string; name: string }> = {
-  "demo-m3": { id: "demo-m3", name: "박지훈" },
-  "demo-m4": { id: "demo-m4", name: "최유나" },
-  "demo-m5": { id: "demo-m5", name: "정민준" },
-  "demo-m6": { id: "demo-m6", name: "한소희" },
-  "demo-m7": { id: "demo-m7", name: "오지훈" },
+export const DEMO_INQUIRY_AUTHORS: Record<
+  string,
+  { id: string; name: string; nickname: string }
+> = {
+  "demo-m3": { id: "demo-m3", name: "박지훈", nickname: "Jason" },
+  "demo-m4": { id: "demo-m4", name: "최유나", nickname: "Una" },
+  "demo-m5": { id: "demo-m5", name: "정민준", nickname: "Kevin" },
+  "demo-m6": { id: "demo-m6", name: "한소희", nickname: "Sophie" },
+  "demo-m7": { id: "demo-m7", name: "오지훈", nickname: "Leo" },
 };
 
 export const DEMO_BADGES: Badge[] = [

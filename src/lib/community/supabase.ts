@@ -81,7 +81,7 @@ export function supabaseCommunity(client: SupabaseClient): Community {
         if (userIds.length === 0) return [];
         const { data } = await client
           .from("profiles")
-          .select("id, name")
+          .select("id, name, nickname")
           .in("id", userIds);
         return (data as AuthorInfo[]) ?? [];
       },

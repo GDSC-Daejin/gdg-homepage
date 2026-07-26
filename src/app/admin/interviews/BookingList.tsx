@@ -7,6 +7,7 @@ import { assignInterviewer, regenerateMeetLink } from "@/actions/interview";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import type { InterviewSlot } from "@/lib/types";
+import { displayName } from "@/lib/format";
 
 interface Booking extends InterviewSlot {
   applicant_name?: string;
@@ -15,6 +16,7 @@ interface Booking extends InterviewSlot {
 interface Interviewer {
   id: string;
   name: string;
+  nickname: string;
 }
 
 function formatSlot(startsAt: string) {
@@ -90,7 +92,7 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
                     className="h-8 rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-700"
                   >
                     <option value="">배정 안 함</option>
-                    {interviewers.map((interviewer) => <option key={interviewer.id} value={interviewer.id}>{interviewer.name}</option>)}
+                    {interviewers.map((interviewer) => <option key={interviewer.id} value={interviewer.id}>{displayName(interviewer.name, interviewer.nickname)}</option>)}
                   </select>
                 </td>
                 <td className="px-3 py-3">

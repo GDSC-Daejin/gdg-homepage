@@ -4,12 +4,13 @@ import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import { AttendanceToggle } from "@/components/AttendanceToggle";
 import type { RegistrationStatus } from "@/lib/types";
+import { displayName } from "@/lib/format";
 
 interface RegistrationRow {
   id: string;
   user_id: string;
   status: RegistrationStatus;
-  profiles: { name: string; student_no: string } | null;
+  profiles: { name: string; nickname: string; student_no: string } | null;
 }
 
 const STATUS_LABEL: Record<RegistrationStatus, string> = {
@@ -32,7 +33,7 @@ export async function RegistrantsTable({ eventId }: RegistrantsTableProps) {
   const [{ data: registrationsData }, { data: attendancesData }] = await Promise.all([
     supabase
       .from("event_registrations")
-      .select("id, user_id, status, profiles(name, student_no)")
+      .select("id, user_id, status, profiles(name, nickname, student_no)")
       .eq("event_id", eventId)
       .order("status", { ascending: true })
       .order("created_at", { ascending: true }),
@@ -89,7 +90,7 @@ export async function RegistrantsTable({ eventId }: RegistrantsTableProps) {
             {registrations.map((row) => (
               <tr key={row.id} className="border-b border-gray-100 last:border-0">
                 <td className="px-4 py-3 font-medium text-gray-900">
-                  {row.profiles?.name || "(이름 없음)"}
+                  {displayName(row.profiles?.name || "(이름 없음)", row.profiles?.nickname)}
                 </td>
                 <td className="px-4 py-3 text-gray-700">
                   {row.profiles?.student_no || "-"}

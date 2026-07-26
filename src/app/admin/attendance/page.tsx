@@ -4,6 +4,7 @@ import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
+import { displayName } from "@/lib/format";
 import { ATTENDANCE_WARNING_THRESHOLD } from "./constants";
 import { SendWarningButton } from "./SendWarningButton";
 import { isDemoMode } from "@/lib/demo";
@@ -108,7 +109,7 @@ export default async function AdminAttendancePage() {
                   className="border-b border-gray-100 last:border-0"
                 >
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    {row.member.name || "(이름 없음)"}
+                    {displayName(row.member.name || "(이름 없음)", row.member.nickname)}
                   </td>
                   <td className="px-4 py-3 text-gray-700">
                     {row.member.student_no || "-"}

@@ -7,6 +7,7 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import type { Profile, Event } from "@/lib/types";
+import { displayName } from "@/lib/format";
 
 interface GrantPointsFormProps {
   members: Profile[];
@@ -50,7 +51,8 @@ export function GrantPointsForm({ members, events }: GrantPointsFormProps) {
       );
       if (result?.error) setError(result.error);
       else {
-        const name = members.find((m) => m.id === userId)?.name || "회원";
+        const m = members.find((m) => m.id === userId);
+        const name = m ? displayName(m.name, m.nickname) : "회원";
         setSaved({ name, amount });
       }
     });
@@ -86,7 +88,7 @@ export function GrantPointsForm({ members, events }: GrantPointsFormProps) {
             </option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.name || "(이름 없음)"}
+                {displayName(m.name || "(이름 없음)", m.nickname)}
                 {m.student_no ? ` · ${m.student_no}` : ""}
               </option>
             ))}

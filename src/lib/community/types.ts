@@ -14,7 +14,7 @@ export interface EventReads {
   confirmedCounts(eventIds: string[]): Promise<Record<string, number>>;
 }
 
-export type AuthorInfo = Pick<Profile, "id" | "name">;
+export type AuthorInfo = Pick<Profile, "id" | "name" | "nickname">;
 
 export interface InquiryReads {
   list(): Promise<Inquiry[]>;

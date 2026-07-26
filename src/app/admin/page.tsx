@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
-import { formatKst } from "@/lib/format";
+import { displayName, formatKst, monthKst } from "@/lib/format";
 import type { EventType, Survey, RecruitingSettings, ApplicationStatus, Position } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
 import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
@@ -75,16 +75,35 @@ const DEMO_RECRUITING_TODAY_EVENTS: { id: string; title: string; starts_at: stri
   { id: "demo-re1", title: "리크루팅 설명회", starts_at: "2026-01-01T09:00:00.000Z" },
 ];
 
+// 최근 6개월 (KST 기준, 과거 → 현재). startUtc는 해당 월 KST 1일 00:00.
+function recentMonths() {
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return Array.from({ length: 6 }, (_, i) => {
+    const first = Date.UTC(
+      kstNow.getUTCFullYear(),
+      kstNow.getUTCMonth() - (5 - i),
+      1,
+    );
+    const d = new Date(first);
+    return {
+      key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+      label: `${d.getUTCMonth() + 1}월`,
+      startUtc: new Date(first - 9 * 60 * 60 * 1000),
+    };
+  });
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const demo = await isDemoMode();
+  const months = recentMonths();
 
   let totalMembers = DEMO_DASHBOARD_STATS.totalMembers;
   let activeMembers = DEMO_DASHBOARD_STATS.activeMembers;
   let upcomingEvents = DEMO_DASHBOARD_STATS.upcomingEvents;
   let rows: RecentEventRow[] = DEMO_DASHBOARD_ROWS;
-  let joinCounts: number[] = DEMO_DASHBOARD_JOIN_COUNTS;
+  let activeCounts: number[] = DEMO_DASHBOARD_JOIN_COUNTS;
   let satisfactionRows: {
     id: string;
     surveyId: string | null;
@@ -92,8 +111,13 @@ export default async function AdminDashboardPage() {
     count: number;
     avg: number;
   }[] = DEMO_DASHBOARD_SATISFACTION;
-  let rankingRows: { rank: number; id: string; name: string; total: number }[] =
-    DEMO_DASHBOARD_RANKING;
+  let rankingRows: {
+    rank: number;
+    id: string;
+    name: string;
+    nickname: string;
+    total: number;
+  }[] = DEMO_DASHBOARD_RANKING;
   let recruitingSettings: RecruitingSettings = DEMO_RECRUITING_SETTINGS;
   let recruitingCounts: RecruitingCounts = DEMO_RECRUITING_COUNTS;
   let recruitingTodayEvents: { id: string; title: string; starts_at: string }[] =
@@ -182,31 +206,19 @@ export default async function AdminDashboardPage() {
       };
     });
 
-    // 월별 신규 가입 추이 (최근 6개월)
-    const nowDate = new Date();
-    const sinceDate = new Date(
-      nowDate.getFullYear(),
-      nowDate.getMonth() - 5,
-      1,
-    ).toISOString();
-    const { data: joinRows } = await supabase
-      .from("profiles")
-      .select("joined_at")
-      .gte("joined_at", sinceDate);
+    // 월별 활동 회원 수 (최근 6개월) — 그 달에 이벤트를 한 번이라도 출석한 사람(중복 제외)
+    const { data: attendanceRows } = await supabase
+      .from("attendances")
+      .select("user_id, checked_at")
+      .gte("checked_at", months[0].startUtc.toISOString());
 
-    const monthKeys = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - (5 - i), 1);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    });
-    const joinCountByMonthReal = new Map(monthKeys.map((k) => [k, 0]));
-    for (const row of joinRows ?? []) {
-      const d = new Date(row.joined_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      if (joinCountByMonthReal.has(key)) {
-        joinCountByMonthReal.set(key, (joinCountByMonthReal.get(key) ?? 0) + 1);
-      }
+    const activeByMonth = new Map(months.map((m) => [m.key, new Set<string>()]));
+    for (const row of (attendanceRows as
+      | { user_id: string; checked_at: string }[]
+      | null) ?? []) {
+      activeByMonth.get(monthKst(row.checked_at))?.add(row.user_id);
     }
-    joinCounts = monthKeys.map((k) => joinCountByMonthReal.get(k) ?? 0);
+    activeCounts = months.map((m) => activeByMonth.get(m.key)?.size ?? 0);
 
     // 세션별 만족도 (설문 rating 질문 평균)
     const { data: eventSurveysData } = await supabase
@@ -303,18 +315,18 @@ export default async function AdminDashboardPage() {
     const topUserIds = topUsers.map(([id]) => id);
     const { data: topProfilesData } =
       topUserIds.length > 0
-        ? await supabase.from("profiles").select("id, name").in("id", topUserIds)
-        : { data: [] as { id: string; name: string }[] };
-    const topNameById = new Map(
-      ((topProfilesData as { id: string; name: string }[] | null) ?? []).map((p) => [
-        p.id,
-        p.name,
-      ]),
+        ? await supabase.from("profiles").select("id, name, nickname").in("id", topUserIds)
+        : { data: [] as { id: string; name: string; nickname: string }[] };
+    const topProfileById = new Map(
+      ((topProfilesData as { id: string; name: string; nickname: string }[] | null) ?? []).map(
+        (p) => [p.id, p],
+      ),
     );
     rankingRows = topUsers.map(([id, total], i) => ({
       rank: i + 1,
       id,
-      name: topNameById.get(id) ?? "(탈퇴)",
+      name: topProfileById.get(id)?.name ?? "(탈퇴)",
+      nickname: topProfileById.get(id)?.nickname ?? "",
       total,
     }));
 
@@ -369,16 +381,7 @@ export default async function AdminDashboardPage() {
         ratedRows.length
       : null;
 
-  const nowDate = new Date();
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - (5 - i), 1);
-    return {
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-      label: `${d.getMonth() + 1}월`,
-    };
-  });
-  const joinCountByMonth = new Map(months.map((m, i) => [m.key, joinCounts[i] ?? 0]));
-  const maxJoinCount = Math.max(1, ...joinCountByMonth.values());
+  const maxActiveCount = Math.max(1, ...activeCounts);
 
   return (
     <div className="flex flex-col gap-6">
@@ -459,13 +462,14 @@ export default async function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <p className="mb-4 text-sm font-semibold text-gray-900">
-            월별 신규 가입 추이
+          <p className="text-sm font-semibold text-gray-900">월별 활동 회원 수</p>
+          <p className="mb-4 mt-0.5 text-xs text-gray-400">
+            그 달에 이벤트를 한 번이라도 출석한 사람 (중복 제외)
           </p>
           <div className="flex h-32 items-end gap-3">
-            {months.map((m) => {
-              const count = joinCountByMonth.get(m.key) ?? 0;
-              const height = Math.max(4, (count / maxJoinCount) * 100);
+            {months.map((m, i) => {
+              const count = activeCounts[i] ?? 0;
+              const height = Math.max(4, (count / maxActiveCount) * 100);
               return (
                 <div
                   key={m.key}
@@ -556,7 +560,9 @@ export default async function AdminDashboardPage() {
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {r.rank}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{r.name}</td>
+                  <td className="px-4 py-3 text-gray-700">
+                    {displayName(r.name, r.nickname)}
+                  </td>
                   <td className="px-4 py-3 text-gray-700">{r.total}</td>
                 </tr>
               ))}

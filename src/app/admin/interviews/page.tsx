@@ -27,7 +27,7 @@ export default async function AdminInterviewsPage() {
       .order("applicant_name"),
     supabase
       .from("profiles")
-      .select("id, name")
+      .select("id, name, nickname")
       .in("role", ["organizer", "team_member", "member"])
       .order("name"),
   ]);
@@ -63,7 +63,7 @@ export default async function AdminInterviewsPage() {
           <h2 className="text-base font-semibold text-gray-900">예약 현황</h2>
         </div>
         <div className="p-3 sm:p-6">
-          <BookingList bookings={bookings} interviewers={(interviewerData ?? []) as { id: string; name: string }[]} />
+          <BookingList bookings={bookings} interviewers={(interviewerData ?? []) as { id: string; name: string; nickname: string }[]} />
         </div>
       </Card>
     </div>
