@@ -169,6 +169,13 @@ export async function getTopPages(
   return json === null ? null : mapPages(json);
 }
 
+export const TRACKED_EVENTS = [
+  "apply_submit",
+  "login",
+  "attendance_check",
+  "survey_submit",
+] as const;
+
 export async function getDomainEvents(
   range: DateRange,
 ): Promise<EventRow[] | null> {
@@ -179,9 +186,7 @@ export async function getDomainEvents(
     dimensionFilter: {
       filter: {
         fieldName: "eventName",
-        inListFilter: {
-          values: ["apply_submit", "login", "attendance_check", "survey_submit"],
-        },
+        inListFilter: { values: [...TRACKED_EVENTS] },
       },
     },
   });
