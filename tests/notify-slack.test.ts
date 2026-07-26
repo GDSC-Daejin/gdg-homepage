@@ -79,6 +79,13 @@ describe("pickTodayParentTs", () => {
     ...over,
   });
 
+  it("슬랙이 이모지를 콜론 코드로 저장해도 부모로 찾는다", () => {
+    // 보낼 땐 "🚀"지만 conversations.history는 ":rocket:"으로 돌려준다.
+    expect(pickTodayParentTs([parent("100", { text: ":rocket: dev 업데이트 (2건)" })])).toBe(
+      "100",
+    );
+  });
+
   it("그날 첫 글의 ts를 고른다 (history는 최신순)", () => {
     expect(pickTodayParentTs([parent("300"), parent("200"), parent("100")])).toBe("100");
   });

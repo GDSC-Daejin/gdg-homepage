@@ -12,6 +12,9 @@
 
 const SLACK_API = "https://slack.com/api";
 const HEADER = "🚀 dev 업데이트";
+// 슬랙은 저장할 때 이모지를 콜론 코드로 바꾼다 — 보낸 건 "🚀"여도 히스토리엔 ":rocket:"으로 온다.
+// 그래서 부모를 찾을 땐 둘 다 받아준다(이걸 놓치면 매 푸시가 새 글로 올라간다).
+const HEADER_RE = /^(?:🚀|:rocket:)\s*dev 업데이트/;
 
 const BUCKETS = {
   feat: { label: "✨ 새 기능", order: 1 },
@@ -152,7 +155,7 @@ export function pickTodayParentTs(messages) {
   const parents = (messages ?? []).filter(
     (m) =>
       m.bot_id &&
-      (m.text ?? "").startsWith(HEADER) &&
+      HEADER_RE.test(m.text ?? "") &&
       (!m.thread_ts || m.thread_ts === m.ts),
   );
   return parents.length ? parents[parents.length - 1].ts : null;
