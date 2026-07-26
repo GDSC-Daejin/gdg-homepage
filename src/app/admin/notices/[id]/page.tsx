@@ -4,6 +4,7 @@ import { getCommunity } from "@/lib/community";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { formatKst } from "@/lib/format";
+import { listPlaces } from "@/lib/places";
 import { NoticeForm } from "../NoticeForm";
 import { NoticeActions } from "../NoticeActions";
 
@@ -35,6 +36,7 @@ export default async function AdminNoticeDetailPage({
   const community = await getCommunity();
   const n = await community.notices.reads.get(id);
   if (!n) notFound();
+  const places = await listPlaces();
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,14 +70,14 @@ export default async function AdminNoticeDetailPage({
           <div className="flex items-start gap-2 rounded-lg bg-primary-soft px-4 py-3 text-sm text-primary">
             <InfoIcon />
             <p>
-              발행은 한 번만 가능한 작업이에요. 발행 버튼을 누르면 즉시 슬랙으로 공지가 전달되며
-              되돌릴 수 없어요.
+              발행은 한 번만 가능한 작업이고 되돌릴 수 없어요. 슬랙 #공지 채널로 보낼지는 발행
+              버튼 옆 토글로 정해요.
             </p>
           </div>
         )}
       </div>
       <Card>
-        <NoticeForm notice={n} />
+        <NoticeForm notice={n} places={places} />
       </Card>
     </div>
   );

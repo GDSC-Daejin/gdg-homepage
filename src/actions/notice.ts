@@ -70,7 +70,10 @@ export async function deleteNotice(id: string): Promise<ActionResult> {
   return {};
 }
 
-export async function publishNotice(id: string): Promise<PublishResult> {
+export async function publishNotice(
+  id: string,
+  notifySlack = true,
+): Promise<PublishResult> {
   await requireAdmin();
 
   const community = await getCommunity();
@@ -81,6 +84,8 @@ export async function publishNotice(id: string): Promise<PublishResult> {
   revalidatePath(`/admin/notices/${id}`);
   revalidatePath(`/notices/${id}`);
   revalidatePath("/notices");
+
+  if (!notifySlack) return { slack: "슬랙 전송 없이 발행" };
 
   // 데모에서는 ops.publish가 notice를 안 돌려주므로(실제 발행 없음) 슬랙 없이 예시 메시지만 반환
   if (!result.notice) return { slack: "슬랙 전송 완료 (예시)" };

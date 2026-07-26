@@ -1,10 +1,13 @@
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { NoticeForm } from "../NoticeForm";
+import { listPlaces } from "@/lib/places";
 
 export const dynamic = "force-dynamic";
 
-export default function NewNoticePage() {
+export default async function NewNoticePage() {
+  const places = await listPlaces();
+
   return (
     <div>
       <PageHeader
@@ -17,7 +20,7 @@ export default function NewNoticePage() {
         }
       />
       <Card>
-        <NoticeForm />
+        <NoticeForm places={places} />
       </Card>
     </div>
   );

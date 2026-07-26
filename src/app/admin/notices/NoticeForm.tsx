@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { createNotice, updateNotice } from "@/actions/notice";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
+import { Select } from "@/components/Select";
+import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/components/Button";
-import type { Notice } from "@/lib/types";
+import { composeNoticeBody, parseNoticeBody } from "@/lib/notice-body";
+import type { Notice, Place } from "@/lib/types";
 
 interface NoticeFormProps {
   notice?: Notice;
+  places?: Place[];
 }
 
 function Spinner() {
@@ -27,14 +31,31 @@ function Spinner() {
   );
 }
 
-export function NoticeForm({ notice }: NoticeFormProps) {
+export function NoticeForm({ notice, places = [] }: NoticeFormProps) {
   const router = useRouter();
   const bodyId = useId();
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
+  const details = parseNoticeBody(notice?.body ?? "");
+  // 풀에서 사라진 장소(삭제 등)도 선택지로 남겨 수정 시 값이 날아가지 않게 한다
+  const missingPlace =
+    details.place && !places.some((p) => p.name === details.place) ? details.place : "";
+
   function handleSubmit(formData: FormData) {
     setError(undefined);
+    formData.set(
+      "body",
+      composeNoticeBody({
+        schedule: String(formData.get("schedule") ?? ""),
+        place: String(formData.get("place") ?? ""),
+        supplies: String(formData.get("supplies") ?? ""),
+        body: String(formData.get("body") ?? ""),
+      }),
+    );
+    formData.delete("schedule");
+    formData.delete("place");
+    formData.delete("supplies");
     startTransition(async () => {
       const result = notice
         ? await updateNotice(notice.id, formData)
@@ -108,11 +129,58 @@ export function NoticeForm({ notice }: NoticeFormProps) {
           {error}
         </p>
       )}
+      <div className="grid grid-cols-2 gap-4">
+        <DatePicker
+          withTime
+          name="schedule"
+          label={
+            <>
+              일정{" "}
+              <span className="font-normal text-gray-400">선택 · KST 기준</span>
+            </>
+          }
+          defaultValue={details.schedule}
+        />
+        <Select
+          name="place"
+          label={
+            <>
+              장소 <span className="font-normal text-gray-400">선택</span>
+            </>
+          }
+          defaultValue={details.place}
+        >
+          <option value="">장소 없음</option>
+          {places.map((place) => (
+            <option key={place.id} value={place.name}>
+              {place.name}
+            </option>
+          ))}
+          {missingPlace && <option value={missingPlace}>{missingPlace}</option>}
+        </Select>
+      </div>
+      <p className="-mt-2 text-xs text-gray-400">
+        장소는{" "}
+        <a href="/admin/places" className="text-primary hover:underline">
+          장소 관리
+        </a>
+        에서 추가해요.
+      </p>
+      <Input
+        name="supplies"
+        label={
+          <>
+            준비물 <span className="font-normal text-gray-400">선택</span>
+          </>
+        }
+        placeholder="예) 노트북, 충전기"
+        defaultValue={details.supplies}
+      />
       <Textarea
         id={bodyId}
         name="body"
         rows={8}
-        defaultValue={notice?.body}
+        defaultValue={details.body}
         label={
           <>
             본문{" "}
@@ -124,7 +192,7 @@ export function NoticeForm({ notice }: NoticeFormProps) {
           </>
         }
         placeholder={
-          "공지 내용을 작성해 주세요.\n\n· 일정, 장소, 준비물 등을 빠짐없이 적어주세요.\n· 발행하면 슬랙 #공지 채널로도 전달돼요."
+          "공지 내용을 작성해 주세요.\n\n· 위에 적은 일정·장소·준비물은 본문 맨 앞에 자동으로 붙어요.\n· 발행할 때 슬랙 #공지 채널 전송 여부를 고를 수 있어요."
         }
       />
       <Button
