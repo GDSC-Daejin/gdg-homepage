@@ -49,3 +49,46 @@ describe("꼬북봇 마이그레이션", () => {
     }
   });
 });
+
+describe("꼬북봇 진화 사이클 마이그레이션", () => {
+  let cycleSql = "";
+
+  beforeAll(async () => {
+    cycleSql = await readFile("supabase/migrations/0053_squirtle_evolution_cycle.sql", "utf8");
+  });
+
+  it("ends_on의 not null을 푼다", () => {
+    expect(cycleSql).toMatch(/alter column ends_on drop not null/);
+  });
+
+  it("시즌 개시가 종료일을 계산하지 않는다", () => {
+    expect(cycleSql).toContain("create or replace function public.squirtle_open_season()");
+    expect(cycleSql).not.toContain("date_trunc");
+  });
+
+  it("시즌 개시 폴백이 활성 시즌만 인정한다", () => {
+    expect(cycleSql).toContain("where starts_on = v_today and status = 'active'");
+  });
+
+  it("거북왕에 도달한 시즌만 닫는다", () => {
+    expect(cycleSql).toContain("where status = 'active' and stage >= 3");
+    expect(cycleSql).not.toContain("ends_on <");
+  });
+
+  it("날짜를 KST로 계산한다", () => {
+    expect(cycleSql).toContain("now() at time zone 'Asia/Seoul'");
+    expect(cycleSql).not.toContain("current_date");
+  });
+
+  it("재정의한 두 RPC를 다시 봉인한다", () => {
+    for (const fn of ["squirtle_open_season", "squirtle_close_season"]) {
+      expect(cycleSql).toMatch(
+        new RegExp(`revoke execute on function public\\.${fn}\\(\\) from public, anon, authenticated`),
+      );
+    }
+  });
+
+  it("인증 함수는 재정의하지 않는다", () => {
+    expect(cycleSql).not.toContain("create or replace function public.squirtle_checkin");
+  });
+});

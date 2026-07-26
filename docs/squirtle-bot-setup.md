@@ -112,6 +112,8 @@ update squirtle_config set stage2_threshold = 1, stage3_threshold = 2 where id =
 update squirtle_config set stage2_threshold = 80, stage3_threshold = 200 where id = 1;
 ```
 
+> 임계값을 낮춰 거북왕까지 찍으면 다음 날 cron에서 그 시즌이 **실제로 마감되고 보너스가 지급된다**. 진화 확인은 어니부기(stage 2)까지만 하는 게 안전하다.
+
 ## 첫 주 이후 — 임계값 조정 (필수)
 
 80/200은 참여율 40% 가정치다. 실측 후 반드시 조정한다.
@@ -126,4 +128,4 @@ select s.starts_on, s.stage, s.total_count,
   group by s.id, s.starts_on, s.stage, s.total_count;
 ```
 
-하루평균 × 시즌일수가 `stage3_threshold` 근처가 되도록 맞춘다.
+시즌은 달력이 아니라 거북왕(stage 3) 도달로 끝난다. 즉 `stage3_threshold`가 곧 시즌 길이를 정한다 — 목표 시즌 일수(예: 30일) × 하루평균이 `stage3_threshold`가 되도록 맞춘다.

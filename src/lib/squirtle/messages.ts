@@ -18,11 +18,12 @@ export function dailyMessage(emoji: string, index: number): string {
   return `${DAILY_MESSAGES[index % DAILY_MESSAGES.length]}\n:${emoji}: 눌러서 함께해요!`;
 }
 
-export function threadSummary(o: { participants: string[]; total: number; stage: Stage; stage3Threshold: number; emoji: string }): string {
+export function threadSummary(o: { participants: string[]; total: number; stage: Stage; stage2Threshold: number; stage3Threshold: number; emoji: string }): string {
   if (o.participants.length === 0) return "";
   const head = `:${o.emoji}: 오늘 ${o.participants.length}명이 꼬북이와 함께했어요!\n${o.participants.map((id) => `<@${id}>`).join(" ")}`;
   if (o.stage >= 3) return `${head}\n꼬북이는 이미 거북왕이에요 🏆`;
-  return `${head}\n거북왕까지 ${Math.max(o.stage3Threshold - o.total, 0)}잔 남았어요`;
+  const threshold = o.stage === 1 ? o.stage2Threshold : o.stage3Threshold;
+  return `${head}\n${STAGE_NAMES[(o.stage + 1) as Stage]}까지 ${Math.max(threshold - o.total, 0)}잔 남았어요`;
 }
 
 function ranking(top3: Contributor[]): string {

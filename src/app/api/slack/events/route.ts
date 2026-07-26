@@ -25,7 +25,7 @@ function serviceClient() {
 async function handleReaction(event: ReactionEvent) {
   const supabase = serviceClient();
   if (!supabase) return;
-  const { data: config } = await supabase.from("squirtle_config").select("channel_id, emoji, stage3_threshold").eq("id", 1).single();
+  const { data: config } = await supabase.from("squirtle_config").select("channel_id, emoji, stage2_threshold, stage3_threshold").eq("id", 1).single();
   if (!config) return;
   if (!shouldProcess(event, { emoji: config.emoji, botUserId: process.env.SLACK_BOT_USER_ID ?? "" })) return;
 
@@ -36,7 +36,7 @@ async function handleReaction(event: ReactionEvent) {
   if (!result.counted) return;
 
   const { data: post } = await supabase.from("squirtle_posts").select("thread_ts").eq("message_ts", messageTs).single();
-  const text = threadSummary({ participants: result.participants, total: result.total, stage: result.stage, stage3Threshold: config.stage3_threshold, emoji: config.emoji });
+  const text = threadSummary({ participants: result.participants, total: result.total, stage: result.stage, stage2Threshold: config.stage2_threshold, stage3Threshold: config.stage3_threshold, emoji: config.emoji });
   if (!text) return;
 
   if (post?.thread_ts) {

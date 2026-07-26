@@ -14,20 +14,31 @@ describe("일일 메시지", () => {
 });
 
 describe("스레드 집계", () => {
-  it("참여자를 멘션 형식으로 호명하고 남은 잔을 알려준다", () => {
-    const text = threadSummary({ participants: ["U1", "U2"], total: 158, stage: 2, stage3Threshold: 200, emoji: "squirtle" });
+  it("꼬부기면 다음 단계인 어니부기까지 남은 잔을 센다", () => {
+    const text = threadSummary({ participants: ["U1"], total: 30, stage: 1, stage2Threshold: 80, stage3Threshold: 200, emoji: "squirtle" });
+    expect(text).toContain("어니부기까지 50잔");
+    expect(text).not.toContain("거북왕");
+  });
+  it("어니부기면 거북왕까지 남은 잔을 센다", () => {
+    const text = threadSummary({ participants: ["U1", "U2"], total: 158, stage: 2, stage2Threshold: 80, stage3Threshold: 200, emoji: "squirtle" });
     expect(text).toContain("2명");
     expect(text).toContain("<@U1>");
     expect(text).toContain("<@U2>");
-    expect(text).toContain("42잔");
+    expect(text).toContain("거북왕까지 42잔");
     expect(text).toContain(":squirtle:");
   });
   it("거북왕이면 남은 잔 문구를 뺀다", () => {
-    const text = threadSummary({ participants: ["U1"], total: 210, stage: 3, stage3Threshold: 200, emoji: "squirtle" });
+    const text = threadSummary({ participants: ["U1"], total: 210, stage: 3, stage2Threshold: 80, stage3Threshold: 200, emoji: "squirtle" });
     expect(text).not.toContain("남았");
     expect(text).toContain("거북왕");
   });
-  it("참여자가 없으면 빈 문자열을 돌려준다", () => expect(threadSummary({ participants: [], total: 0, stage: 1, stage3Threshold: 200, emoji: "squirtle" })).toBe(""));
+  it("목표를 넘겨도 음수로 내려가지 않는다", () => {
+    const text = threadSummary({ participants: ["U1"], total: 95, stage: 1, stage2Threshold: 80, stage3Threshold: 200, emoji: "squirtle" });
+    expect(text).toContain("어니부기까지 0잔");
+  });
+  it("참여자가 없으면 빈 문자열을 돌려준다", () => {
+    expect(threadSummary({ participants: [], total: 0, stage: 1, stage2Threshold: 80, stage3Threshold: 200, emoji: "squirtle" })).toBe("");
+  });
 });
 
 describe("진화 축하", () => {
