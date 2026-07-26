@@ -45,6 +45,7 @@ supabase/.temp
 
 # agent worktrees / scratch workspaces
 .claude/worktrees/
+.claude/settings.local.json
 _workspace/
 
 # lighthouse ad-hoc reports (keep perf/baseline.json)
