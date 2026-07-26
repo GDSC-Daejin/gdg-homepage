@@ -76,52 +76,35 @@ export default async function AdminNoticesPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {list.map((notice) => (
-            <Link key={notice.id} href={`/admin/notices/${notice.id}`}>
-              <Card className="transition-shadow hover:shadow-md">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Badge tone={notice.published ? "success" : "neutral"}>
-                        {notice.published ? "발행됨" : "미발행"}
-                      </Badge>
-                      <h2 className="truncate text-base font-semibold text-gray-900">
-                        {notice.title}
-                      </h2>
-                    </div>
-                    <p className="mt-1 truncate text-sm text-gray-500">{notice.body}</p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <p className="flex items-center gap-1 text-sm text-gray-500">
-                      <svg
-                        viewBox="0 0 20 20"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={1.75}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-3.5 w-3.5"
-                      >
-                        <rect x="3.5" y="4.5" width="13" height="12" rx="1.5" />
-                        <path d="M3.5 8h13M7 2.5v3M13 2.5v3" />
-                      </svg>
-                      {notice.published_at
-                        ? `발행 ${formatKstDate(notice.published_at)}`
-                        : `작성 ${formatKstDate(notice.created_at)}`}
-                    </p>
-                    <svg
-                      viewBox="0 0 20 20"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth={1.75}
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4 shrink-0 text-gray-400"
-                    >
-                      <path d="M7.5 4.5 13 10l-5.5 5.5" />
-                    </svg>
-                  </div>
+            <Link key={notice.id} href={`/admin/notices/${notice.id}`} className="block">
+              <Card className="flex h-full flex-col gap-3 p-5 transition-colors hover:border-gray-300 hover:bg-gray-50">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge tone={notice.published ? "success" : "neutral"}>
+                    {notice.published ? "발행됨" : "미발행"}
+                  </Badge>
+                  <span className="shrink-0 text-xs text-gray-400">
+                    {notice.published_at
+                      ? `발행 ${formatKstDate(notice.published_at)}`
+                      : `작성 ${formatKstDate(notice.created_at)}`}
+                  </span>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="line-clamp-2 text-[15px] font-semibold leading-snug tracking-tight text-gray-900">
+                    {notice.title}
+                  </h2>
+                  <svg
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={1.75}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-gray-300"
+                  >
+                    <path d="M7.5 4.5 13 10l-5.5 5.5" />
+                  </svg>
                 </div>
               </Card>
             </Link>

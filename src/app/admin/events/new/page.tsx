@@ -19,7 +19,7 @@ export default async function NewEventPage() {
   }
 
   return (
-    <div>
+    <div className="mx-auto max-w-3xl">
       <PageHeader title="이벤트 생성" />
       <Card>
         <EventForm places={places} />

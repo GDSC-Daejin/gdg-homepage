@@ -214,23 +214,25 @@ export function MemberRow({
             </Link>
           </div>
         </td>
-        <td className="px-4 py-4 text-gray-700">{member.nickname || "-"}</td>
-        <td className="px-4 py-4 text-gray-700">{member.student_no || "-"}</td>
-        <td className="px-4 py-4 text-gray-700">{member.major || "-"}</td>
-        <td className="px-4 py-4 text-gray-700">{member.phone || "-"}</td>
+        {/* 숨김 기준은 page.tsx의 th와 반드시 같이 움직여야 한다 */}
+        <td className="hidden px-4 py-4 text-gray-700 md:table-cell">{member.nickname || "-"}</td>
+        <td className="hidden px-4 py-4 text-gray-700 lg:table-cell">{member.email || "-"}</td>
+        <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.student_no || "-"}</td>
+        <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.major || "-"}</td>
+        <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.phone || "-"}</td>
         <td className="px-4 py-4">
           <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>
         </td>
-        <td className="px-4 py-4 text-gray-700">
+        <td className="hidden px-4 py-4 text-gray-700 xl:table-cell">
           {position ? POSITION_LABELS[position] : "-"}
         </td>
         <td className="px-4 py-4">
           <Badge tone={statusTone[status]}>{statusLabel[status]}</Badge>
         </td>
-        <td className="px-4 py-4 text-gray-700">
+        <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">
           {academicStatus ? ACADEMIC_STATUS_LABELS[academicStatus] : "-"}
         </td>
-        <td className="px-4 py-4 text-gray-500">
+        <td className="hidden px-4 py-4 text-gray-500 xl:table-cell">
           {formatKstDate(member.joined_at)}
         </td>
       </tr>
@@ -242,15 +244,17 @@ export function MemberRow({
             onClick={(e) =>
               e.target === dialogRef.current && dialogRef.current.close()
             }
-            className="member-modal fixed top-1/2 left-[calc(50%+7.5rem)] m-0 max-h-[85vh] w-full max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-gray-200 shadow-card"
+            /* left의 +7.5rem은 in-flow 사이드바(240px)의 절반 보정 — 사이드바가 fixed인
+               sm 미만에선 그만큼 오른쪽으로 밀리므로 그 아래에선 정직하게 가운데 정렬한다 */
+            className="member-modal fixed top-1/2 left-1/2 m-0 max-h-[85vh] w-[calc(100%-1.5rem)] max-w-4xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-gray-200 shadow-card sm:left-[calc(50%+7.5rem)] sm:w-full"
           >
-            <div className="grid flex-1 grid-cols-[3fr_2fr] overflow-y-auto rounded-xl">
+            <div className="grid flex-1 grid-cols-1 overflow-y-auto rounded-xl md:grid-cols-[3fr_2fr]">
               <form
                 onSubmit={handleProfileSubmit}
-                className="flex flex-col gap-3 p-6"
+                className="flex flex-col gap-3 p-4 sm:p-6"
               >
                 <p className="text-sm font-semibold text-gray-900">프로필</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <Input
                     label="이름"
                     value={name}
@@ -286,7 +290,7 @@ export function MemberRow({
                     value={interests}
                     onChange={(e) => setInterests(e.target.value)}
                     disabled={profilePending}
-                    className="col-span-2"
+                    className="sm:col-span-2"
                   />
                 </div>
                 <div className="flex items-center gap-3">
@@ -300,7 +304,7 @@ export function MemberRow({
                 </div>
               </form>
 
-              <div className="flex flex-col gap-3 bg-gray-50 p-6">
+              <div className="flex flex-col gap-3 bg-gray-50 p-4 sm:p-6">
                 <p className="text-sm font-semibold text-gray-900">역할 · 상태 · 재학여부</p>
                 <div className="flex items-center gap-2">
                   <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>

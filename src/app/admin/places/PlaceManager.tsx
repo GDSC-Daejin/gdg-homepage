@@ -7,6 +7,7 @@ import { createPlace, updatePlace, deletePlace, backfillPlaceCoords } from "@/ac
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { DropdownMenu, MenuItem } from "@/components/DropdownMenu";
 import { EmptyState } from "@/components/EmptyState";
 import { Modal } from "@/components/Modal";
 import type { Place } from "@/lib/types";
@@ -16,6 +17,21 @@ function needsPin(place: Place) {
   return !!place.address && (place.lat == null || place.lng == null);
 }
 
+function PinIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      className="h-4.5 w-4.5"
+    >
+      <path d="M10 18s6-5.7 6-10.2a6 6 0 1 0-12 0C4 12.3 10 18 10 18Z" />
+      <circle cx="10" cy="7.8" r="2" />
+    </svg>
+  );
+}
+
 function PlaceStatusBadge({ place }: { place: Place }) {
   if (place.lat != null && place.lng != null) return null;
   const pending = needsPin(place);
@@ -23,8 +39,8 @@ function PlaceStatusBadge({ place }: { place: Place }) {
     <span
       className={
         pending
-          ? "inline-flex items-center rounded-full bg-warning-soft text-warning px-2 py-0.5 text-xs font-medium"
-          : "inline-flex items-center rounded-full bg-gray-100 text-gray-500 px-2 py-0.5 text-xs font-medium"
+          ? "inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-warning-soft text-warning px-2 py-0.5 text-xs font-medium"
+          : "inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-gray-100 text-gray-500 px-2 py-0.5 text-xs font-medium"
       }
     >
       {pending ? "핀 없음" : "주소 없음"}
@@ -138,9 +154,10 @@ export function PlaceManager({ places }: { places: Place[] }) {
             )}
             {backfillMsg && <span className="text-xs text-gray-500">{backfillMsg}</span>}
           </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {places.map((place) =>
             editingId === place.id ? (
-              <Card key={place.id}>
+              <Card key={place.id} className="p-5">
                 <form
                   action={(fd) =>
                     run(() => updatePlace(place.id, fd), () => setEditingId(null))
@@ -169,43 +186,45 @@ export function PlaceManager({ places }: { places: Place[] }) {
                 </form>
               </Card>
             ) : (
-              <Card key={place.id} className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/admin/places/${place.id}`}
-                      className="truncate font-medium text-gray-900 hover:underline"
-                    >
-                      {place.name}
-                    </Link>
-                    <PlaceStatusBadge place={place} />
+              <Card
+                key={place.id}
+                className="relative flex h-full flex-col gap-3 p-5 transition-colors hover:border-gray-300 hover:bg-gray-50"
+              >
+                {/* 카드 전체를 상세 링크로 — 메뉴(z-10)는 이 오버레이 위에 뜬다 */}
+                <Link
+                  href={`/admin/places/${place.id}`}
+                  aria-label={`${place.name} 상세`}
+                  className="absolute inset-0 rounded-xl"
+                />
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
+                      <PinIcon />
+                    </div>
+                    <p className="truncate font-semibold text-gray-900">{place.name}</p>
                   </div>
-                  {place.address && (
-                    <p className="mt-0.5 truncate text-sm text-gray-500">{place.address}</p>
-                  )}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <PlaceStatusBadge place={place} />
+                    <DropdownMenu label={`${place.name} 관리`} className="z-10">
+                      <MenuItem onClick={() => setEditingId(place.id)}>수정</MenuItem>
+                      <MenuItem
+                        tone="danger"
+                        disabled={pending}
+                        onClick={() => setDeleting(place)}
+                      >
+                        삭제
+                      </MenuItem>
+                    </DropdownMenu>
+                  </div>
                 </div>
-                <div className="flex shrink-0 gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setEditingId(place.id)}
-                  >
-                    수정
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={pending}
-                    onClick={() => setDeleting(place)}
-                  >
-                    삭제
-                  </Button>
-                </div>
+
+                <p className="line-clamp-2 min-h-[2.5rem] text-sm text-gray-500">
+                  {place.address || "등록된 주소가 없어요"}
+                </p>
               </Card>
             ),
           )}
+          </div>
         </div>
       )}
 

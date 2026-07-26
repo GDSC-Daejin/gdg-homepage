@@ -46,7 +46,9 @@ export function Modal({ open, onClose, className, ariaLabel, children }: ModalPr
         if (!inside) onClose();
       }}
       className={cn(
-        "member-modal fixed top-1/2 left-1/2 m-0 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-gray-200 bg-white dark:bg-gray-100 p-6 shadow-card",
+        "member-modal fixed top-1/2 left-1/2 m-0 w-full -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-gray-200 bg-white dark:bg-gray-100 p-6 shadow-card",
+        // cn은 단순 join이라 두 max-w가 함께 남으면 좁은 쪽이 이긴다. 넘겨받았으면 기본값을 빼둔다.
+        !className?.includes("max-w-") && "max-w-sm",
         className,
       )}
     >

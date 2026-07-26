@@ -50,6 +50,8 @@ export interface Profile {
   name: string;
   avatar_path?: string | null;
   nickname: string;
+  // auth.users.email 미러 (0050) — 진실 원천은 auth.users
+  email?: string | null;
   student_no: string;
   major: string;
   phone: string;

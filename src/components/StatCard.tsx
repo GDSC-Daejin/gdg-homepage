@@ -4,7 +4,7 @@ import { Card } from "@/components/Card";
 interface StatCardProps {
   label: string;
   value: ReactNode;
-  hint?: string;
+  hint?: ReactNode;
   emphasis?: boolean;
 }
 

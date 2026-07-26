@@ -62,6 +62,11 @@ export default async function AdminMembersPage({
     pendingCount = pendingTotal ?? 0;
   }
 
+  // ponytail: 데모는 실제 auth.users가 없다 — 닉네임으로 가짜 주소를 만든다 (전화번호와 같은 취급)
+  if (demo) {
+    members = members.map((m) => ({ ...m, email: `${m.nickname.toLowerCase() || m.id}@example.com` }));
+  }
+
   const hasFilter = Boolean(q || role || status || academicStatus);
   const organizerExists = members.some((m) => m.role === "organizer");
 
@@ -138,10 +143,11 @@ export default async function AdminMembersPage({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
+                  {/* 승인에 꼭 필요한 이름·신청일·승인만 남기고 좁은 화면에서 접는다 */}
                   <th className="px-4 py-3 font-medium">이름</th>
-                  <th className="px-4 py-3 font-medium">학번</th>
-                  <th className="px-4 py-3 font-medium">전공</th>
-                  <th className="px-4 py-3 font-medium">전화번호</th>
+                  <th className="hidden px-4 py-3 font-medium md:table-cell">학번</th>
+                  <th className="hidden px-4 py-3 font-medium xl:table-cell">전공</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">전화번호</th>
                   <th className="px-4 py-3 font-medium">신청일</th>
                   <th className="px-4 py-3 text-right font-medium">승인</th>
                 </tr>
@@ -157,9 +163,9 @@ export default async function AdminMembersPage({
                         {member.name || "이름 없음"}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{member.student_no || "-"}</td>
-                    <td className="px-4 py-3 text-gray-600">{member.major || "-"}</td>
-                    <td className="px-4 py-3 text-gray-600">{member.phone || "-"}</td>
+                    <td className="hidden px-4 py-3 text-gray-600 md:table-cell">{member.student_no || "-"}</td>
+                    <td className="hidden px-4 py-3 text-gray-600 xl:table-cell">{member.major || "-"}</td>
+                    <td className="hidden px-4 py-3 text-gray-600 lg:table-cell">{member.phone || "-"}</td>
                     <td className="px-4 py-3 text-gray-600">{formatKstDate(member.joined_at)}</td>
                     <td className="px-4 py-3">
                       <ApproveButton userId={member.id} />
@@ -173,23 +179,33 @@ export default async function AdminMembersPage({
       ) : (
         <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 sm:px-6">
-            <h2 className="text-sm font-semibold text-gray-900">회원 목록</h2>
-            <p className="text-sm text-gray-500">{members.length}명</p>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-gray-900">회원 목록</h2>
+              {/* 컬럼을 접었으니 나머지를 어디서 보는지 알려준다 */}
+              <p className="mt-0.5 text-xs text-gray-500 2xl:hidden">
+                행을 누르면 가려진 정보까지 열려요
+              </p>
+            </div>
+            <p className="shrink-0 text-sm text-gray-500">{members.length}명</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            {/* 데이터 테이블 — 접지 말고 넘치면 가로 스크롤한다 */}
+            <table className="w-full whitespace-nowrap text-sm">
               <thead>
                 <tr className="border-b border-gray-200 text-left text-gray-500">
+                  {/* 좁은 화면에선 이름·역할·상태만 남긴다. 나머지는 행을 눌러 모달에서 본다.
+                      sm은 사이드바가 in-flow로 들어와 모바일보다 좁으므로 전환점은 md부터. */}
                   <th className="px-4 py-3 font-medium">이름</th>
-                  <th className="px-4 py-3 font-medium">닉네임</th>
-                  <th className="px-4 py-3 font-medium">학번</th>
-                  <th className="px-4 py-3 font-medium">전공</th>
-                  <th className="px-4 py-3 font-medium">전화번호</th>
+                  <th className="hidden px-4 py-3 font-medium md:table-cell">닉네임</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">이메일</th>
+                  <th className="hidden px-4 py-3 font-medium 2xl:table-cell">학번</th>
+                  <th className="hidden px-4 py-3 font-medium 2xl:table-cell">전공</th>
+                  <th className="hidden px-4 py-3 font-medium 2xl:table-cell">전화번호</th>
                   <th className="px-4 py-3 font-medium">역할</th>
-                  <th className="px-4 py-3 font-medium">포지션</th>
+                  <th className="hidden px-4 py-3 font-medium xl:table-cell">포지션</th>
                   <th className="px-4 py-3 font-medium">상태</th>
-                  <th className="px-4 py-3 font-medium">재학여부</th>
-                  <th className="px-4 py-3 font-medium">가입일</th>
+                  <th className="hidden px-4 py-3 font-medium 2xl:table-cell">재학여부</th>
+                  <th className="hidden px-4 py-3 font-medium xl:table-cell">가입일</th>
                 </tr>
               </thead>
               <tbody>

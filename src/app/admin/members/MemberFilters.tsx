@@ -42,9 +42,9 @@ export function MemberFilters({
         placeholder="이름 또는 학번"
         value={qValue}
         onChange={(e) => setQValue(e.target.value)}
-        className="w-56"
+        className="w-full md:w-56"
       />
-      <div className="w-36 shrink-0">
+      <div className="w-full md:w-36 md:shrink-0">
         <Select
           label="역할"
           value={roleValue}
@@ -57,7 +57,7 @@ export function MemberFilters({
           <option value="applicant">지원자</option>
         </Select>
       </div>
-      <div className="w-36 shrink-0">
+      <div className="w-full md:w-36 md:shrink-0">
         <Select
           label="재학여부"
           value={academicStatusValue}
@@ -70,7 +70,7 @@ export function MemberFilters({
           <option value="completed">수료</option>
         </Select>
       </div>
-      <div className="w-36 shrink-0">
+      <div className="w-full md:w-36 md:shrink-0">
         <Select
           label="상태"
           value={statusValue}
@@ -82,7 +82,7 @@ export function MemberFilters({
           <option value="withdrawn">탈퇴</option>
         </Select>
       </div>
-      <Button type="submit" variant="primary">
+      <Button type="submit" variant="primary" className="w-full md:w-auto">
         검색
       </Button>
     </form>

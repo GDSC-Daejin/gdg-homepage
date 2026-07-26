@@ -44,10 +44,13 @@ export function NaverMap({
   coords,
   address,
   zoom = 16,
+  /** 높이 오버라이드. 넘기면 기본 h-56을 완전히 대체한다(cn이 twMerge가 아니라 병합 불가). */
+  heightClass = "h-56",
 }: {
   coords?: Coords | null;
   address?: string;
   zoom?: number;
+  heightClass?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const keyId = process.env.NEXT_PUBLIC_NCP_MAP_KEY_ID;
@@ -64,16 +67,21 @@ export function NaverMap({
 
   useEffect(() => {
     if (!keyId || !ref.current || !source) return;
+    let observer: ResizeObserver | undefined;
 
     function render(lat: number, lng: number) {
       const naver = window.naver;
-      if (!naver?.maps || !ref.current) return;
+      const el = ref.current;
+      if (!naver?.maps || !el) return;
       const pos = new naver.maps.LatLng(lat, lng);
-      const map = new naver.maps.Map(ref.current, { center: pos, zoom });
+      const map = new naver.maps.Map(el, { center: pos, zoom });
       new naver.maps.Marker({ position: pos, map });
+      // 생성 뒤 컨테이너 크기가 바뀌면(창 리사이즈·레이아웃 변화) 타일이 옛 크기로 남는다
+      observer = new ResizeObserver(() => map.refresh());
+      observer.observe(el);
     }
 
-    return loadSdk(keyId, () => {
+    const cleanupSdk = loadSdk(keyId, () => {
       const naver = window.naver;
       if (source.kind === "coords") {
         render(source.coords.lat, source.coords.lng);
@@ -102,8 +110,13 @@ export function NaverMap({
         },
       );
     });
+
+    return () => {
+      cleanupSdk();
+      observer?.disconnect();
+    };
   }, [keyId, source, zoom]);
 
   if (!keyId || !source || failedSourceId === sourceId) return null;
-  return <div ref={ref} className="h-56 w-full overflow-hidden rounded-md" />;
+  return <div ref={ref} className={`${heightClass} w-full overflow-hidden rounded-md`} />;
 }

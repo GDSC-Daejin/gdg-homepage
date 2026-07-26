@@ -88,9 +88,9 @@ export default async function AdminMemberDetailPage({
       </div>
 
       <Card className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-semibold text-gray-900">프로필</p>
-          <p className="text-xs text-gray-400">
+          <p className="whitespace-nowrap text-xs text-gray-400">
             가입일 {formatKst(member.joined_at)} (KST)
           </p>
         </div>
@@ -126,12 +126,14 @@ export default async function AdminMemberDetailPage({
         {attendances.length === 0 ? (
           <EmptyState title="출석 기록이 없어요" />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
-                <th className="py-2 font-medium">이벤트</th>
-                <th className="py-2 font-medium">이벤트 일시 (KST)</th>
-                <th className="py-2 font-medium">출석 체크 (KST)</th>
+                <th className="py-2 pr-4 font-medium">이벤트</th>
+                {/* 날짜·시각은 값 하나라 절대 끊지 않는다 */}
+                <th className="whitespace-nowrap py-2 pr-4 font-medium">이벤트 일시 (KST)</th>
+                <th className="whitespace-nowrap py-2 font-medium">출석 체크 (KST)</th>
               </tr>
             </thead>
             <tbody>
@@ -142,21 +144,24 @@ export default async function AdminMemberDetailPage({
                 >
                   <td
                     className={
-                      row.events ? "py-2 text-gray-900" : "py-2 text-gray-400"
+                      row.events
+                        ? "py-2 pr-4 text-gray-900"
+                        : "py-2 pr-4 text-gray-400"
                     }
                   >
                     {row.events?.title ?? "(삭제된 이벤트)"}
                   </td>
-                  <td className="py-2 text-gray-500">
+                  <td className="whitespace-nowrap py-2 pr-4 text-gray-500">
                     {row.events ? formatKst(row.events.starts_at) : "-"}
                   </td>
-                  <td className="py-2 text-gray-500">
+                  <td className="whitespace-nowrap py-2 text-gray-500">
                     {formatKst(row.checked_at)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

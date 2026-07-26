@@ -79,7 +79,7 @@ export default async function AdminPlaceDetailPage({
             </p>
           )}
           {/* 키·좌표·주소가 모두 없으면 NaverMap이 null을 반환한다 */}
-          <NaverMap coords={coords} address={place.address} />
+          <NaverMap coords={coords} address={place.address} heightClass="h-96 lg:h-[32rem]" />
         </Card>
 
         <Card className="flex flex-col gap-4">
