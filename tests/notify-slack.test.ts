@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildSlackMessage, classifyCommit } from "../scripts/notify-slack.mjs";
+import {
+  buildSlackMessage,
+  classifyCommit,
+  kstDayStart,
+  pickTodayParentTs,
+} from "../scripts/notify-slack.mjs";
 
 describe("classifyCommit", () => {
   it("conventional 접두사를 버킷으로 분류하고 접두사를 제거한다", () => {
@@ -63,5 +68,45 @@ describe("buildSlackMessage", () => {
   it("알릴 커밋이 없으면 null을 반환한다", () => {
     expect(buildSlackMessage([{ message: "Merge x" }], "url")).toBeNull();
     expect(buildSlackMessage([], "url")).toBeNull();
+  });
+});
+
+describe("pickTodayParentTs", () => {
+  const parent = (ts: string, over: Record<string, unknown> = {}) => ({
+    ts,
+    bot_id: "B1",
+    text: "🚀 dev 업데이트 (2건)\n...",
+    ...over,
+  });
+
+  it("그날 첫 글의 ts를 고른다 (history는 최신순)", () => {
+    expect(pickTodayParentTs([parent("300"), parent("200"), parent("100")])).toBe("100");
+  });
+
+  it("답글이 달려 thread_ts가 채워진 부모도 부모로 인정한다", () => {
+    // 부모 글은 답글이 생기면 thread_ts === ts 가 붙는다. 이걸 걸러내면 매일 새 글이 여러 개 생긴다.
+    expect(pickTodayParentTs([parent("100", { thread_ts: "100" })])).toBe("100");
+  });
+
+  it("스레드 답글·사람 글·다른 봇 글은 부모가 아니다", () => {
+    const messages = [
+      parent("300", { thread_ts: "100" }), // 다른 글에 달린 답글
+      { ts: "250", text: "🚀 dev 업데이트 (1건)" }, // bot_id 없음 = 사람
+      { ts: "240", bot_id: "B1", text: "📢 새 공지가 등록됐어요" }, // 다른 알림
+    ];
+    expect(pickTodayParentTs(messages)).toBeNull();
+  });
+
+  it("오늘 글이 없으면 null (새 글로 올린다)", () => {
+    expect(pickTodayParentTs([])).toBeNull();
+    expect(pickTodayParentTs(undefined)).toBeNull();
+  });
+});
+
+describe("kstDayStart", () => {
+  it("KST 자정을 초 단위 epoch로 준다", () => {
+    // 2026-07-26 08:00 KST → 그날 0시(= 2026-07-25T15:00Z)
+    const start = kstDayStart(new Date("2026-07-25T23:00:00.000Z"));
+    expect(new Date(start * 1000).toISOString()).toBe("2026-07-25T15:00:00.000Z");
   });
 });

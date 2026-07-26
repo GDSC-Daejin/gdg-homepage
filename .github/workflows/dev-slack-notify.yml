@@ -14,7 +14,8 @@ jobs:
           node-version: 20
       - name: Slack에 변경 요약 전송
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_OPS }}
+          SLACK_JARVIS_BOT_TOKEN: ${{ secrets.SLACK_JARVIS_BOT_TOKEN }}
+          SLACK_DEV_CHANNEL_ID: ${{ secrets.SLACK_DEV_CHANNEL_ID }}
           COMMITS_JSON: ${{ toJson(github.event.commits) }}
           COMPARE_URL: ${{ github.event.compare }}
         run: node scripts/notify-slack.mjs
