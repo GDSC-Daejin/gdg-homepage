@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { computeAttendanceWarnings } from "@/lib/attendance-stats";
+import { sendAttendanceWarnings } from "@/lib/attendance-warning";
 import { hasValidCronAuthorization } from "@/lib/cron";
 import { getCommunity } from "@/lib/community";
-import { postSlack } from "@/lib/slack";
 
 export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
@@ -32,22 +31,15 @@ export async function GET(request: NextRequest) {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const community = await getCommunity({ client: supabase });
-  const warnings = await computeAttendanceWarnings(community.attendance);
-
-  if (warnings.length === 0) {
-    return NextResponse.json({ sent: false, count: 0 });
-  }
-
-  const lines = warnings
-    .map((w) => `- ${w.name} (${Math.round(w.rate * 100)}%)`)
-    .join("\n");
-  const { error } = await postSlack(
-    `[출석 경고] 출석률 50% 미만 회원 ${warnings.length}명\n${lines}`,
-  );
+  const { error, count, skipped } = await sendAttendanceWarnings(community.attendance, supabase);
 
   if (error) {
-    return NextResponse.json({ error, sent: false, count: warnings.length });
+    return NextResponse.json({ error, sent: false, count });
   }
 
-  return NextResponse.json({ sent: true, count: warnings.length });
+  if (skipped) {
+    return NextResponse.json({ sent: false, count: 0, reason: "already_sent_today" });
+  }
+
+  return NextResponse.json({ sent: count > 0, count });
 }

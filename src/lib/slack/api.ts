@@ -4,8 +4,13 @@ export type SlackResult = { ok: true; ts: string } | { ok: false; error: string 
 
 type SlackResponse = { ok: boolean; error?: string; ts?: string };
 
-async function call(method: string, body: Record<string, unknown>): Promise<SlackResponse> {
-  const token = process.env.SLACK_BOT_TOKEN;
+// 토큰을 넘기지 않으면 꼬북봇(SLACK_BOT_TOKEN)으로 보낸다. 다른 봇 이름으로 보내려면 그 봇의 토큰을 넘긴다.
+async function call(
+  method: string,
+  body: Record<string, unknown>,
+  botToken?: string,
+): Promise<SlackResponse> {
+  const token = botToken ?? process.env.SLACK_BOT_TOKEN;
   if (!token) return { ok: false, error: "missing_token" };
 
   try {
@@ -29,10 +34,10 @@ function toResult(res: SlackResponse): SlackResult {
   return { ok: true, ts: res.ts };
 }
 
-export async function postMessage(opts: { channel: string; text: string; threadTs?: string }): Promise<SlackResult> {
+export async function postMessage(opts: { channel: string; text: string; threadTs?: string; botToken?: string }): Promise<SlackResult> {
   const body: Record<string, unknown> = { channel: opts.channel, text: opts.text };
   if (opts.threadTs) body.thread_ts = opts.threadTs;
-  return toResult(await call("chat.postMessage", body));
+  return toResult(await call("chat.postMessage", body, opts.botToken));
 }
 
 export async function updateMessage(opts: { channel: string; ts: string; text: string }): Promise<SlackResult> {
