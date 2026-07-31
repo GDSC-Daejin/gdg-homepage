@@ -14,6 +14,7 @@ import {
   TextField,
 } from "@/components/wds/primitives";
 import { ScheduleGrid } from "@/components/wds/ScheduleGrid";
+import styles from "../schedule.module.css";
 import { monthGrid, nextDayKey, shiftMonth } from "@/lib/calendar";
 import {
   avatarInitial,
@@ -173,7 +174,7 @@ export function NewPollForm({
   const dueValue = dueAt ?? defaultDue;
 
   return (
-    <div style={{ padding: "28px 32px 44px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className={styles.page}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <h1 style={{ margin: 0, font: "700 28px/1.35 var(--wds-font-sans)", letterSpacing: "-0.025em" }}>
           새 일정 만들기
@@ -193,7 +194,7 @@ export function NewPollForm({
         <Callout tone={error ? "negative" : "primary"}>{error ?? notice}</Callout>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: 20, alignItems: "start" }}>
+      <div className={styles.newPollLayout}>
         {/* ── 왼쪽 ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div
@@ -238,7 +239,7 @@ export function NewPollForm({
                     ` · ${shortDate(sorted[0])} ~ ${shortDate(sorted[sorted.length - 1])}`}
                 </span>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+              <div className={styles.monthGrid}>
                 {months.map((month) => (
                   <MonthPicker
                     key={month}
@@ -257,7 +258,7 @@ export function NewPollForm({
               <span style={{ font: "600 15px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
                 시간 범위
               </span>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div className={styles.rangePresets}>
                 {RANGE_PRESETS.map((preset) => (
                   <Chip
                     key={preset.key}
@@ -271,14 +272,7 @@ export function NewPollForm({
                   </Chip>
                 ))}
               </div>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 220px",
-                  gap: 12,
-                  alignItems: "end",
-                }}
-              >
+              <div className={styles.timeRangeFields}>
                 <SelectBox
                   label="시작"
                   value={String(startHour)}
@@ -490,15 +484,7 @@ export function NewPollForm({
         </div>
 
         {/* ── 오른쪽 레일 ── */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            position: "sticky",
-            top: 20,
-          }}
-        >
+        <div className={styles.newPollAside} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div
             style={{
               display: "flex",

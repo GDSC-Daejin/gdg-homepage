@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { AdminSidebar } from "@/app/admin/AdminSidebar";
 import { NewPollButton, ScheduleNav } from "./ScheduleNav";
+import styles from "./schedule.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -35,15 +36,7 @@ export default async function ScheduleLayout({
       >
         {/* 넓은 화면에서 끝까지 늘어나면 카드가 읽기 어렵다 — 본문을 가운데로 모은다. */}
         <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 16,
-              padding: "20px 32px 0",
-            }}
-          >
+          <div className={styles.layoutBar}>
             <ScheduleNav />
             <NewPollButton />
           </div>

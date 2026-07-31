@@ -39,6 +39,7 @@ import {
   type ParticipantView,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
+import styles from "../schedule.module.css";
 
 interface PollDetailProps {
   poll: MeetingPoll;
@@ -201,11 +202,11 @@ export function PollDetail({
     : undefined;
 
   return (
-    <div style={{ padding: "28px 32px 40px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className={styles.detailPage}>
       {/* ── 제목 줄 ── */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24 }}>
+      <div className={styles.detailHeader}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div className={styles.detailTitleRow}>
             <h1
               style={{
                 margin: 0,
@@ -243,7 +244,7 @@ export function PollDetail({
             <MetaChip label="만든 사람">{ownerName}</MetaChip>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        <div className={styles.detailActions}>
           <Button
             variant="solid"
             color="assistive"
@@ -294,18 +295,8 @@ export function PollDetail({
       {toast}
 
       {/* ── 응답 현황 ── */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 24,
-          padding: "16px 20px",
-          background: "var(--wds-bg)",
-          borderRadius: 14,
-          boxShadow: "var(--wds-shadow-card)",
-        }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 7, minWidth: 280 }}>
+      <div className={styles.responseSummary}>
+        <div className={styles.responseStatus}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
             <span style={{ font: "700 16px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
               {liveViews.length}명 중 {responded.length}명이 응답했어요
@@ -316,8 +307,8 @@ export function PollDetail({
           </div>
           <ProgressBar value={percent} height={6} />
         </div>
-        <div style={{ width: 1, alignSelf: "stretch", background: "var(--wds-line-alternative)" }} />
-        <div style={{ display: "flex", alignItems: "center", gap: 14, flex: 1, minWidth: 0 }}>
+        <div className={styles.responseDivider} />
+        <div className={styles.responsePeople}>
           <span
             style={{
               font: "500 13px/1.4 var(--wds-font-sans)",
@@ -388,18 +379,7 @@ export function PollDetail({
 
       {/* ── 확정 배너 ── */}
       {poll.confirmed_at && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-            padding: "16px 20px",
-            background: "var(--wds-primary-bg)",
-            borderRadius: 14,
-            boxShadow: "inset 0 0 0 1.5px rgba(0,102,255,0.32)",
-          }}
-        >
+        <div className={styles.confirmedBanner}>
           <span style={{ font: "700 16px/1.4 var(--wds-font-sans)", color: "var(--wds-primary-strong)" }}>
             {dateWithWeekday(kstDayKey(poll.confirmed_at))} {timeAmPm(kstTime(poll.confirmed_at))}
             {" 로 확정 · "}
@@ -431,7 +411,7 @@ export function PollDetail({
           boxShadow: "var(--wds-shadow-card)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16 }}>
+        <div className={styles.recommendationHeader}>
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <h2
               style={{
@@ -467,14 +447,7 @@ export function PollDetail({
         </div>
 
         {recommendations.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3,1fr)",
-              gap: 14,
-              marginTop: 4,
-            }}
-          >
+          <div className={styles.recommendationCards}>
             {recommendations.map((r) => {
               const first = r.rank === 1;
               const endTime = addMinutes(times[r.from], r.durationMin);
@@ -612,17 +585,7 @@ export function PollDetail({
       </div>
 
       {/* ── 격자 2단 ── */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 32,
-          padding: "24px 28px 28px",
-          background: "var(--wds-bg)",
-          borderRadius: 16,
-          boxShadow: "var(--wds-shadow-card)",
-        }}
-      >
+      <div className={styles.scheduleGrids}>
         {/* 내가 가능한 시간 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
@@ -676,28 +639,31 @@ export function PollDetail({
             </span>
           </div>
 
-          <ScheduleGrid
-            dates={dates}
-            times={times}
-            slotMin={poll.slot_min}
-            interactive={Boolean(myParticipantId) && !locked}
-            onCellPointerDown={startDrag}
-            onPointerMove={moveDrag}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
-            cell={({ dateIndex, timeIndex }) => {
-              const slot = slotIso(dates[dateIndex], times[timeIndex]);
-              const isMine = draft.has(slot);
-              const others = (available.get(slot) ?? []).filter((p) => p.id !== myParticipantId).length;
-              return {
-                background: isMine
-                  ? "var(--wds-primary)"
-                  : others >= hintThreshold
-                    ? "rgba(0,102,255,0.10)"
-                    : "var(--wds-bg)",
-              };
-            }}
-          />
+          <div className={styles.gridScroller}>
+            <ScheduleGrid
+              dates={dates}
+              times={times}
+              slotMin={poll.slot_min}
+              interactive={Boolean(myParticipantId) && !locked}
+              onCellPointerDown={startDrag}
+              onPointerMove={moveDrag}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+              style={{ minWidth: 52 + dates.length * 56 }}
+              cell={({ dateIndex, timeIndex }) => {
+                const slot = slotIso(dates[dateIndex], times[timeIndex]);
+                const isMine = draft.has(slot);
+                const others = (available.get(slot) ?? []).filter((p) => p.id !== myParticipantId).length;
+                return {
+                  background: isMine
+                    ? "var(--wds-primary)"
+                    : others >= hintThreshold
+                      ? "rgba(0,102,255,0.10)"
+                      : "var(--wds-bg)",
+                };
+              }}
+            />
+          </div>
         </div>
 
         {/* 전체 가능한 시간 */}
@@ -727,7 +693,7 @@ export function PollDetail({
             </Button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div className={styles.gridLegend}>
             <span
               style={{
                 font: "400 12px/1.4 var(--wds-font-sans)",
@@ -773,111 +739,114 @@ export function PollDetail({
             )}
           </div>
 
-          <ScheduleGrid
-            dates={dates}
-            times={times}
-            slotMin={poll.slot_min}
-            interactive
-            onCellPointerEnter={(cell) => {
-              setSelected(slotIso(dates[cell.dateIndex], times[cell.timeIndex]));
-              setHovered(cell);
-            }}
-            onCellClick={(cell) =>
-              setSelected(slotIso(dates[cell.dateIndex], times[cell.timeIndex]))
-            }
-            onPointerLeave={() => setHovered(null)}
-            cell={(cell) => {
-              const slot = slotIso(dates[cell.dateIndex], times[cell.timeIndex]);
-              const people = available.get(slot) ?? [];
-              const count = people.length;
-              const isHovered =
-                hovered?.dateIndex === cell.dateIndex && hovered?.timeIndex === cell.timeIndex;
-              const block = blockAt(cell);
-              const isSel = selected === slot;
-              let boxShadow: string | undefined;
-              let zIndex = 1;
-              if (block) {
-                boxShadow =
-                  block.rank === 1
-                    ? "inset 0 0 0 1.5px rgba(0,84,209,0.95)"
-                    : "inset 0 0 0 1.5px rgba(0,102,255,0.40)";
-                zIndex = 2;
+          <div className={styles.gridScroller}>
+            <ScheduleGrid
+              dates={dates}
+              times={times}
+              slotMin={poll.slot_min}
+              interactive
+              onCellPointerEnter={(cell) => {
+                setSelected(slotIso(dates[cell.dateIndex], times[cell.timeIndex]));
+                setHovered(cell);
+              }}
+              onCellClick={(cell) =>
+                setSelected(slotIso(dates[cell.dateIndex], times[cell.timeIndex]))
               }
-              if (isSel) {
-                // 진한 칸 위의 검정 테두리는 파랑을 갉아먹는다 — 숫자 색과 같은 기준으로 흰 테두리를 쓴다.
-                boxShadow =
-                  heatStep(count, responded.length) >= 4
-                    ? "inset 0 0 0 2px rgba(255,255,255,0.92)"
-                    : "inset 0 0 0 2px var(--wds-label-normal)";
-                zIndex = 3;
-              }
-              // 말풍선이 옆 칸에 가리지 않게 올린다.
-              if (isHovered && count > 0) zIndex = 20;
-              return {
-                background: HEAT_STEPS[heatStep(count, responded.length)],
-                boxShadow,
-                zIndex,
-                content: (
-                  <>
-                    {isHovered && count > 0 && (
-                      <PeopleTooltip
-                        people={people}
-                        // 격자 가장자리에서 말풍선이 카드 밖으로 나가지 않게 붙는 쪽을 바꾼다.
-                        align={
-                          cell.dateIndex === 0
-                            ? "start"
-                            : cell.dateIndex === dates.length - 1
-                              ? "end"
-                              : "center"
-                        }
-                        below={cell.timeIndex < 3}
-                      />
-                    )}
-                    {block && cell.timeIndex === block.from && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          top: -8,
-                          left: -8,
-                          width: 18,
-                          height: 18,
-                          borderRadius: 999,
-                          background: "var(--wds-primary-heavy)",
-                          color: "#fff",
-                          font: "700 10px/1 var(--wds-font-sans)",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: "0 0 0 2px var(--wds-bg)",
-                          zIndex: 6,
-                        }}
-                      >
-                        {block.rank}
-                      </span>
-                    )}
-                    {showCounts && count > 0 && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          inset: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          font: "600 10px/1 var(--wds-font-sans)",
-                          color:
-                            heatStep(count, responded.length) >= 4
-                              ? "#fff"
-                              : "var(--wds-label-alternative)",
-                        }}
-                      >
-                        {count}
-                      </span>
-                    )}
-                  </>
-                ),
-              };
-            }}
-          />
+              onPointerLeave={() => setHovered(null)}
+              style={{ minWidth: 52 + dates.length * 56 }}
+              cell={(cell) => {
+                const slot = slotIso(dates[cell.dateIndex], times[cell.timeIndex]);
+                const people = available.get(slot) ?? [];
+                const count = people.length;
+                const isHovered =
+                  hovered?.dateIndex === cell.dateIndex && hovered?.timeIndex === cell.timeIndex;
+                const block = blockAt(cell);
+                const isSel = selected === slot;
+                let boxShadow: string | undefined;
+                let zIndex = 1;
+                if (block) {
+                  boxShadow =
+                    block.rank === 1
+                      ? "inset 0 0 0 1.5px rgba(0,84,209,0.95)"
+                      : "inset 0 0 0 1.5px rgba(0,102,255,0.40)";
+                  zIndex = 2;
+                }
+                if (isSel) {
+                  // 진한 칸 위의 검정 테두리는 파랑을 갉아먹는다 — 숫자 색과 같은 기준으로 흰 테두리를 쓴다.
+                  boxShadow =
+                    heatStep(count, responded.length) >= 4
+                      ? "inset 0 0 0 2px rgba(255,255,255,0.92)"
+                      : "inset 0 0 0 2px var(--wds-label-normal)";
+                  zIndex = 3;
+                }
+                // 말풍선이 옆 칸에 가리지 않게 올린다.
+                if (isHovered && count > 0) zIndex = 20;
+                return {
+                  background: HEAT_STEPS[heatStep(count, responded.length)],
+                  boxShadow,
+                  zIndex,
+                  content: (
+                    <>
+                      {isHovered && count > 0 && (
+                        <PeopleTooltip
+                          people={people}
+                          // 격자 가장자리에서 말풍선이 카드 밖으로 나가지 않게 붙는 쪽을 바꾼다.
+                          align={
+                            cell.dateIndex === 0
+                              ? "start"
+                              : cell.dateIndex === dates.length - 1
+                                ? "end"
+                                : "center"
+                          }
+                          below={cell.timeIndex < 3}
+                        />
+                      )}
+                      {block && cell.timeIndex === block.from && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            top: -8,
+                            left: -8,
+                            width: 18,
+                            height: 18,
+                            borderRadius: 999,
+                            background: "var(--wds-primary-heavy)",
+                            color: "#fff",
+                            font: "700 10px/1 var(--wds-font-sans)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 0 0 2px var(--wds-bg)",
+                            zIndex: 6,
+                          }}
+                        >
+                          {block.rank}
+                        </span>
+                      )}
+                      {showCounts && count > 0 && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            font: "600 10px/1 var(--wds-font-sans)",
+                            color:
+                              heatStep(count, responded.length) >= 4
+                                ? "#fff"
+                                : "var(--wds-label-alternative)",
+                          }}
+                        >
+                          {count}
+                        </span>
+                      )}
+                    </>
+                  ),
+                };
+              }}
+            />
+          </div>
 
           {/* 선택한 칸 상세 */}
           <div

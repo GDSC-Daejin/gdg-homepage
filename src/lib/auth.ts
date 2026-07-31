@@ -1,9 +1,14 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 import { isStaff, type Profile } from "@/lib/types";
 
 export const getProfile = cache(async (): Promise<Profile | null> => {
+  const cookieStore = await cookies();
+  if (!hasAuthCookie(cookieStore.getAll())) return null;
+
   const supabase = await createClient();
   // getClaims: JWKS 로컬 검증(ECC 비대칭 키) → Auth 서버 네트워크 왕복 제거
   const { data: claimsData } = await supabase.auth.getClaims();

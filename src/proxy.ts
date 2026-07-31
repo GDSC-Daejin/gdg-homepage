@@ -1,8 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  if (!hasAuthCookie(request.cookies.getAll())) return response;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

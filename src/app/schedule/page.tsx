@@ -1,5 +1,6 @@
 import { PollList } from "./PollList";
 import { loadPollCards } from "./queries";
+import styles from "./schedule.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -7,7 +8,7 @@ export default async function SchedulePage() {
   const cards = await loadPollCards("active");
 
   return (
-    <div style={{ padding: "28px 32px 44px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className={styles.page}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <h1 style={{ margin: 0, font: "700 28px/1.35 var(--wds-font-sans)", letterSpacing: "-0.025em" }}>
           내 일정

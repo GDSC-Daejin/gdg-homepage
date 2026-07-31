@@ -8,6 +8,7 @@ import {
   durationLabel,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
+import styles from "./schedule.module.css";
 
 export interface PollCard {
   poll: MeetingPoll;
@@ -56,29 +57,14 @@ export function PollList({
       {cards.map(({ poll, total, responded, people }) => {
         const percent = total ? Math.round((responded / total) * 100) : 0;
         return (
-          <Link
-            key={poll.id}
-            href={`/schedule/${poll.id}`}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 24,
-              padding: "18px 22px",
-              background: "var(--wds-bg)",
-              borderRadius: 14,
-              boxShadow: "var(--wds-shadow-card)",
-              textDecoration: "none",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Link key={poll.id} href={`/schedule/${poll.id}`} className={styles.listCard}>
+            <div className={styles.listContent}>
+              <div className={styles.listTitleRow}>
                 <span
+                  className={styles.listTitle}
                   style={{
                     font: "700 17px/1.4 var(--wds-font-sans)",
                     color: "var(--wds-label-normal)",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
                   }}
                 >
                   {poll.title}
@@ -116,7 +102,7 @@ export function PollList({
               overlap={8}
             />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, width: 160, flexShrink: 0 }}>
+            <div className={styles.listProgress}>
               <span
                 style={{
                   font: "500 13px/1.4 var(--wds-font-sans)",
