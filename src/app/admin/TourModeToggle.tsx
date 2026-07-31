@@ -1,16 +1,21 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { setDemoMode } from "@/actions/demo";
+import { safeDemoPath } from "@/lib/demo-route";
 
 export function TourModeToggle({ active }: { active: boolean }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [pending, startTransition] = useTransition();
 
   function toggle() {
     startTransition(async () => {
       await setDemoMode(!active);
+      // 상세 화면에 머무르면 반대쪽 데이터에 없는 id라 404가 난다 — 목록으로 옮기고 새로 받는다.
+      const safe = safeDemoPath(pathname);
+      if (safe !== pathname) router.push(safe);
       router.refresh();
     });
   }
