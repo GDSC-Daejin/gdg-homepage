@@ -9,10 +9,13 @@ export function ResponsiveShell({
   sidebar,
   children,
   asideClassName = "dark:bg-gray-100",
+  // 조율 화면은 자기 헤더를 본문 폭 끝까지 붙여야 해서 여백을 없앤다.
+  mainClassName = "px-4 py-6 sm:px-8 sm:py-8",
 }: {
   sidebar: React.ReactNode;
   children: React.ReactNode;
   asideClassName?: string;
+  mainClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -94,7 +97,7 @@ export function ResponsiveShell({
           {sidebar}
         </aside>
 
-        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8">
+        <main id="main-content" tabIndex={-1} className={`min-w-0 flex-1 ${mainClassName}`}>
           {children}
         </main>
       </div>

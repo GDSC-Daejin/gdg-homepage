@@ -1,4 +1,7 @@
+import { slotIso } from "@/lib/meeting-poll";
 import type {
+  MeetingPoll,
+  MeetingPollParticipant,
   Profile,
   Event,
   EventType,
@@ -321,4 +324,30 @@ export const DEMO_GROUP_MEMBERS: GroupMember[] = [
   { group_id: "demo-g2", user_id: "demo-m5", joined_at: "2026-06-22T00:00:00.000Z" },
   { group_id: "demo-g2", user_id: "demo-m6", joined_at: "2026-06-23T00:00:00.000Z" },
   { group_id: "demo-g3", user_id: "demo-m2", joined_at: "2026-02-11T00:00:00.000Z" },
+];
+
+/**
+ * 회의 시간 조율 예시. 추천 구간이 1·2·3위로 갈리도록 응답을 맞춰뒀다 —
+ * 8/1은 응답자 6명 전원, 8/2는 한소희만 빠진 5명, 8/4는 정민준만 빠진 5명.
+ */
+const slots = (date: string, times: string[]) => times.map((time) => slotIso(date, time));
+const BLOCK_0801 = slots("2026-08-01", ["19:00", "19:30", "20:00"]);
+const BLOCK_0802 = slots("2026-08-02", ["21:00", "21:30", "22:00"]);
+const BLOCK_0804 = slots("2026-08-04", ["19:00", "19:30", "20:00"]);
+
+export const DEMO_MEETING_POLLS: MeetingPoll[] = [
+  { id: "demo-mp1", title: "8월 정기 회의", dates: ["2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05"], start_hour: 18, end_hour: 24, slot_min: 30, created_by: "demo-m1", confirmed_at: null, duration_min: null, due_at: null, notify_before_due: true, invite_token: "demo-token-1", due_notified_at: null, created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mp2", title: "7월 회고 회의", dates: ["2026-07-20", "2026-07-21", "2026-07-22"], start_hour: 19, end_hour: 23, slot_min: 60, created_by: "demo-m2", confirmed_at: "2026-07-21T11:00:00.000Z", duration_min: 90, due_at: null, notify_before_due: true, invite_token: "demo-token-2", due_notified_at: null, created_at: "2026-07-14T00:00:00.000Z" },
+];
+
+export const DEMO_MEETING_POLL_PARTICIPANTS: MeetingPollParticipant[] = [
+  { id: "demo-mpp1", poll_id: "demo-mp1", user_id: "demo-m1", name: "Ryan(김도윤)", email: null, slots: [...BLOCK_0801, ...BLOCK_0802, ...BLOCK_0804, ...slots("2026-08-03", ["18:00", "18:30"])], responded_at: "2026-07-28T01:00:00.000Z", created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mpp2", poll_id: "demo-mp1", user_id: "demo-m2", name: "Sunny(이서연)", email: null, slots: [...BLOCK_0801, ...BLOCK_0802, ...BLOCK_0804, ...slots("2026-08-05", ["22:00", "22:30"])], responded_at: "2026-07-28T02:00:00.000Z", created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mpp3", poll_id: "demo-mp1", user_id: "demo-m3", name: "Jason(박지훈)", email: null, slots: [...BLOCK_0801, ...BLOCK_0802, ...BLOCK_0804], responded_at: "2026-07-28T03:00:00.000Z", created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mpp4", poll_id: "demo-mp1", user_id: "demo-m4", name: "Una(최유나)", email: null, slots: [...BLOCK_0801, ...BLOCK_0802, ...BLOCK_0804], responded_at: "2026-07-28T04:00:00.000Z", created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mpp5", poll_id: "demo-mp1", user_id: "demo-m5", name: "Kevin(정민준)", email: null, slots: [...BLOCK_0801, ...BLOCK_0802], responded_at: "2026-07-28T05:00:00.000Z", created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mpp6", poll_id: "demo-mp1", user_id: "demo-m6", name: "Sophie(한소희)", email: null, slots: [...BLOCK_0801, ...BLOCK_0804], responded_at: "2026-07-28T06:00:00.000Z", created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mpp7", poll_id: "demo-mp1", user_id: "demo-m7", name: "Leo(오지훈)", email: null, slots: [], responded_at: null, created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mpp8", poll_id: "demo-mp2", user_id: "demo-m1", name: "Ryan(김도윤)", email: null, slots: slots("2026-07-21", ["20:00", "21:00"]), responded_at: "2026-07-15T01:00:00.000Z", created_at: "2026-07-14T00:00:00.000Z" },
+  { id: "demo-mpp9", poll_id: "demo-mp2", user_id: "demo-m2", name: "Sunny(이서연)", email: null, slots: slots("2026-07-21", ["20:00", "21:00"]), responded_at: "2026-07-15T02:00:00.000Z", created_at: "2026-07-14T00:00:00.000Z" },
 ];

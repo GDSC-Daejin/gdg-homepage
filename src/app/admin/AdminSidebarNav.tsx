@@ -39,6 +39,7 @@ const icons: Record<string, string> = {
   budget: "M3 7a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v1h1a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Zm14 6h.01",
   materials: "M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z",
   places: "M12 21s7-5.5 7-11a7 7 0 1 0-14 0c0 5.5 7 11 7 11Zm0-8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z",
+  meetingPoll: "M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm3 4h3v3H8V8Zm5 3h3v3h-3v-3Zm-5 4h3v3H8v-3Z",
   bots: "M12 3v3M7 9h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2Zm2.5 4v2m5-2v2M3 13h2m14 0h2",
   settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2-1.2L14.5 3h-5l-.4 2.6a7.5 7.5 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2 1.2l.4 2.6h5l.4-2.6a7.5 7.5 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.06-.4.1-.8.1-1.2Z",
 };
@@ -65,6 +66,7 @@ const groups: NavGroup[] = [
       { href: "/admin/members", label: "회원", icon: "members" },
       { href: "/admin/groups", label: "스터디·프로젝트", icon: "groups" },
       { href: "/admin/events", label: "이벤트", icon: "events" },
+      { href: "/schedule", label: "스케줄", icon: "meetingPoll" },
       { href: "/admin/places", label: "장소", icon: "places" },
       { href: "/admin/attendance", label: "출석", icon: "attend" },
     ],
