@@ -11,7 +11,11 @@ import { cn } from "@/lib/cn";
 import { kstDayStartIso, monthGrid, nextDayKey } from "@/lib/calendar";
 import { dayKeyKst, formatMonthLabel, monthKst } from "@/lib/format";
 import type { Event, Place } from "@/lib/types";
-import { EventCalendar, type CalendarInterview } from "./EventCalendar";
+import {
+  EventCalendar,
+  type CalendarInterview,
+  type CalendarMeeting,
+} from "./EventCalendar";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +40,12 @@ export default async function AdminEventsPage({
       (e) => e.starts_at >= from && e.starts_at < to,
     );
     let interviews: CalendarInterview[] = [];
+    let meetings: CalendarMeeting[] = [];
     let places: Place[] = [];
 
     if (!demo) {
       const supabase = await createClient();
-      const [eventRes, interviewRes, placeRes] = await Promise.all([
+      const [eventRes, interviewRes, meetingRes, placeRes] = await Promise.all([
         supabase
           .from("events")
           .select("*")
@@ -54,10 +59,30 @@ export default async function AdminEventsPage({
           .lt("starts_at", to)
           .in("status", ["open", "booked"])
           .order("starts_at"),
+        supabase
+          .from("meeting_polls")
+          .select("id, title, confirmed_at, duration_min")
+          .gte("confirmed_at", from)
+          .lt("confirmed_at", to)
+          .order("confirmed_at"),
         supabase.from("places").select("*").order("name"),
       ]);
       events = (eventRes.data ?? []) as Event[];
       interviews = (interviewRes.data ?? []) as CalendarInterview[];
+      // 달력은 starts_at 하나로만 날짜를 묶는다 — 확정 시각을 그 이름으로 맞춰 넘긴다.
+      meetings = (
+        (meetingRes.data ?? []) as {
+          id: string;
+          title: string;
+          confirmed_at: string;
+          duration_min: number;
+        }[]
+      ).map((poll) => ({
+        id: poll.id,
+        title: poll.title,
+        starts_at: poll.confirmed_at,
+        duration_min: poll.duration_min,
+      }));
       places = (placeRes.data ?? []) as Place[];
     }
 
@@ -82,6 +107,7 @@ export default async function AdminEventsPage({
           month={gridMonth}
           events={events}
           interviews={interviews}
+          meetings={meetings}
           places={places}
           today={today}
           readOnly={demo}

@@ -33,18 +33,27 @@ export interface CalendarInterview {
   status: string;
 }
 
+/** 확정된 회의 시간도 표시만 한다. 수정은 /schedule에서. */
+export interface CalendarMeeting {
+  id: string;
+  title: string;
+  starts_at: string;
+  duration_min: number;
+}
+
 type Editing =
   | { mode: "create"; date: string }
   | { mode: "edit"; event: Event }
   | null;
 
 /** 툴바 유형 필터. null이면 전체. */
-type Filter = EventType | "interview" | null;
+type Filter = EventType | "interview" | "meeting" | null;
 
 interface EventCalendarProps {
   month: string;
   events: Event[];
   interviews: CalendarInterview[];
+  meetings: CalendarMeeting[];
   places: Place[];
   /** 서버에서 계산한 오늘(KST). 클라이언트에서 구하면 하이드레이션이 어긋난다. */
   today: string;
@@ -94,6 +103,7 @@ export function EventCalendar({
   month,
   events,
   interviews,
+  meetings,
   places,
   today,
   readOnly = false,
@@ -108,12 +118,14 @@ export function EventCalendar({
   const days = monthGrid(month);
   const eventsByDay = groupByDay(events);
   const interviewsByDay = groupByDay(interviews);
+  const meetingsByDay = groupByDay(meetings);
 
   // 툴바·요약은 이번 달만 센다. 격자에는 앞뒤 달 날짜도 섞여 있다.
   const monthEvents = events.filter((e) => dayKeyKst(e.starts_at).startsWith(month));
   const monthInterviews = interviews.filter((s) =>
     dayKeyKst(s.starts_at).startsWith(month),
   );
+  const monthMeetings = meetings.filter((m) => dayKeyKst(m.starts_at).startsWith(month));
   const countByType = new Map<EventType, number>();
   for (const e of monthEvents) {
     countByType.set(e.type, (countByType.get(e.type) ?? 0) + 1);
@@ -137,8 +149,19 @@ export function EventCalendar({
           },
         ]
       : []),
+    ...(monthMeetings.length > 0
+      ? [
+          {
+            key: "meeting" as Filter,
+            label: "회의",
+            dot: "bg-primary/60",
+            count: monthMeetings.length,
+            dashed: true,
+          },
+        ]
+      : []),
   ];
-  const totalCount = monthEvents.length + monthInterviews.length;
+  const totalCount = monthEvents.length + monthInterviews.length + monthMeetings.length;
 
   // 다가오는 일정: 오늘 이후만, 면접은 날짜별로 한 줄로 묶는다.
   const upcoming = [
@@ -169,6 +192,18 @@ export function EventCalendar({
           href: "/admin/interviews",
         };
       }),
+    ...meetings
+      .filter((m) => dayKeyKst(m.starts_at) >= today)
+      .map((m) => ({
+        key: `meeting-${m.id}`,
+        dateKey: dayKeyKst(m.starts_at),
+        sortKey: m.starts_at,
+        dot: "bg-primary/60",
+        title: m.title,
+        muted: true,
+        meta: `${timeKeyKst(m.starts_at)} · 회의 ${m.duration_min}분`,
+        href: `/schedule/${m.id}`,
+      })),
   ]
     .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
     .slice(0, 5);
@@ -311,6 +346,10 @@ export function EventCalendar({
                   filter === null || filter === "interview"
                     ? (interviewsByDay.get(dateKey) ?? [])
                     : [];
+                const dayMeetings =
+                  filter === null || filter === "meeting"
+                    ? (meetingsByDay.get(dateKey) ?? [])
+                    : [];
                 const isDropTarget = dragOver === dateKey;
 
                 return (
@@ -358,7 +397,9 @@ export function EventCalendar({
                       {Number(dateKey.slice(8))}
                     </span>
 
-                    {(dayEvents.length > 0 || dayInterviews.length > 0) && (
+                    {(dayEvents.length > 0 ||
+                      dayInterviews.length > 0 ||
+                      dayMeetings.length > 0) && (
                       <span className="flex gap-[3px] md:hidden" aria-hidden>
                         {[...new Set(dayEvents.map((e) => e.type))].map((type) => (
                           <span
@@ -371,6 +412,9 @@ export function EventCalendar({
                         ))}
                         {dayInterviews.length > 0 && (
                           <span className="h-[5px] w-[5px] rounded-full bg-gray-400" />
+                        )}
+                        {dayMeetings.length > 0 && (
+                          <span className="h-[5px] w-[5px] rounded-full bg-primary/60" />
                         )}
                       </span>
                     )}
@@ -433,6 +477,28 @@ export function EventCalendar({
                         </span>
                         <span className="w-full truncate text-[11.5px] text-gray-400">
                           표시 전용
+                        </span>
+                      </Link>
+                    ))}
+
+                    {dayMeetings.map((meeting) => (
+                      <Link
+                        key={meeting.id}
+                        href={`/schedule/${meeting.id}`}
+                        draggable={false}
+                        title={`회의 · ${meeting.title}`}
+                        className="hidden w-full flex-col rounded-r-[4px] border-l-[3px] border-l-primary/60 border-dashed bg-primary-soft/60 py-1 pr-1.5 pl-[7px] hover:bg-primary-soft md:flex"
+                      >
+                        <span className="flex w-full items-baseline gap-[5px]">
+                          <span className="flex-none text-xs tabular-nums text-gray-500">
+                            {timeKeyKst(meeting.starts_at)}
+                          </span>
+                          <span className="truncate text-[13px] font-semibold text-gray-800">
+                            회의
+                          </span>
+                        </span>
+                        <span className="w-full truncate text-[11.5px] text-gray-500">
+                          {meeting.title}
                         </span>
                       </Link>
                     ))}
