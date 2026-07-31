@@ -39,9 +39,9 @@ export default async function AdminGroupDetailPage({
       supabase.from("profiles").select("*").eq("status", "active").order("name"),
     ]);
     group = (groupData as Group | null) ?? undefined;
-    roster = (members ?? []).flatMap((member) =>
-      member.profiles[0] ? [member.profiles[0] as Profile] : [],
-    );
+    // profiles는 user_id FK를 타고 오는 1:1이라 배열이 아니라 객체다(RegistrantsTable과 같은 형태).
+    roster = ((members ?? []) as unknown as { user_id: string; profiles: Profile | null }[])
+      .flatMap((member) => (member.profiles ? [member.profiles] : []));
     const rosterIds = new Set(roster.map((profile) => profile.id));
     assignableMembers = ((profiles as Profile[]) ?? []).filter(
       (profile) => !rosterIds.has(profile.id),
