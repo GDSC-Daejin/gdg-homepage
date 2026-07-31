@@ -162,6 +162,38 @@ button:focus-visible,
   }
 }
 
+/* 토스트(§7): 화면 위 가운데에서 살짝 내려오며 나타났다가 같은 길로 사라진다.
+   버튼이 대체로 화면 위쪽에 있어, 누른 자리 가까이에서 답이 보이게 상단에 띄운다.
+   display allow-discrete 로 등장·퇴장을 대칭으로 두어, 닫힌 뒤에도 DOM에 남은 노드가
+   자리를 차지하거나 클릭을 가로채지 않게 한다. */
+.wds-toast {
+  position: fixed;
+  left: 50%;
+  top: 24px;
+  z-index: 200;
+  display: none;
+  width: max-content;
+  max-width: min(440px, calc(100vw - 32px));
+  pointer-events: none;
+  opacity: 0;
+  translate: -50% -8px;
+  transition:
+    opacity var(--duration-base) var(--ease-out-quart),
+    translate var(--duration-base) var(--ease-out-quart),
+    display var(--duration-base) var(--ease-out-quart) allow-discrete;
+}
+.wds-toast[data-open] {
+  display: block;
+  opacity: 1;
+  translate: -50% 0;
+}
+@starting-style {
+  .wds-toast[data-open] {
+    opacity: 0;
+    translate: -50% -8px;
+  }
+}
+
 /* custom Select 드롭다운 materialize(§8 §12): 트리거 상단을 원점으로 스케일+페이드로 등장해
    메뉴가 트리거에서 자라나는 것처럼 보이게 한다. 조건부 mount 이라 등장만(퇴장은 즉시). */
 .select-menu {

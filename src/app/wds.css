@@ -1,0 +1,115 @@
+/* ============================================================
+   Wanted Design System — 토큰 레이어
+   Claude Design 프로젝트(_ds/wanted-design-system-84e18722)의
+   tokens/aliases.css · tokens/typography.css를 값 그대로 옮긴 것.
+   원본이 SOT이므로 여기 값을 임의로 바꾸지 말 것.
+
+   --font-sans만 예외: Tailwind @theme의 같은 이름 토큰과 겹쳐 앱 전체
+   폰트를 흔들기 때문에 --wds-font-sans로 이름을 바꿨다. 값은 원본 스택
+   앞부분을 그대로 두고, 이 레포가 실제로 싣는 Pretendard Variable을 뒤에 붙였다.
+   ============================================================ */
+
+:root {
+  --wds-font-sans:
+    "Pretendard JP", "Pretendard", "Pretendard Variable", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --wds-font-mono: "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---- Brand / primary (Blue) ---- */
+  --wds-primary: rgb(0, 102, 255);
+  --wds-primary-strong: rgb(0, 94, 235);
+  --wds-primary-heavy: rgb(0, 84, 209);
+  --wds-primary-bg: rgb(234, 242, 254);
+
+  /* ---- Labels (text) ---- */
+  --wds-label-normal: rgb(23, 23, 23);
+  --wds-label-strong: rgb(0, 0, 0);
+  --wds-label-neutral: rgba(46, 47, 51, 0.88);
+  --wds-label-alternative: rgba(55, 56, 60, 0.61);
+  --wds-label-assistive: rgba(55, 56, 60, 0.28);
+  --wds-label-disable: rgba(55, 56, 60, 0.16);
+
+  /* ---- Backgrounds & surfaces ---- */
+  --wds-bg: rgb(255, 255, 255);
+  --wds-bg-alt: rgb(247, 247, 248);
+  --wds-bg-elevated: rgb(255, 255, 255);
+
+  /* ---- Fills ---- */
+  --wds-fill-normal: rgba(112, 115, 124, 0.08);
+  --wds-fill-strong: rgba(112, 115, 124, 0.16);
+  --wds-fill-alternative: rgba(112, 115, 124, 0.05);
+
+  /* ---- Lines ---- */
+  --wds-line-normal: rgba(112, 115, 124, 0.22);
+  --wds-line-neutral: rgba(112, 115, 124, 0.16);
+  --wds-line-alternative: rgba(112, 115, 124, 0.08);
+
+  /* ---- Status ---- */
+  --wds-status-positive: rgb(0, 191, 64);
+  --wds-status-cautionary: rgb(255, 153, 0);
+  --wds-status-negative: rgb(255, 66, 66);
+  --wds-status-positive-bg: rgb(233, 249, 238);
+  --wds-status-negative-bg: rgb(254, 235, 235);
+
+  /* ---- Inverse ---- */
+  --wds-inverse-bg: rgb(27, 28, 30);
+  --wds-inverse-label: rgb(247, 247, 248);
+  --wds-inverse-primary: rgb(51, 133, 255);
+
+  /* ---- Static ---- */
+  --wds-static-white: rgb(255, 255, 255);
+  --wds-static-black: rgb(0, 0, 0);
+
+  /* ---- Interaction ---- */
+  --wds-interaction-disable: rgb(244, 244, 245);
+  --wds-interaction-inactive: rgb(152, 155, 162);
+
+  /* ---- Accent foregrounds ---- */
+  --wds-accent-red: rgb(255, 66, 66);
+  --wds-accent-orange: rgb(255, 153, 0);
+  --wds-accent-green: rgb(0, 191, 64);
+  --wds-accent-cyan: rgb(0, 152, 178);
+  --wds-accent-blue: rgb(0, 94, 235);
+  --wds-accent-violet: rgb(101, 65, 242);
+  --wds-accent-purple: rgb(151, 71, 255);
+  --wds-accent-pink: rgb(255, 71, 133);
+
+  /* ---- Radius ---- */
+  --wds-radius-2: 2px;
+  --wds-radius-4: 4px;
+  --wds-radius-6: 6px;
+  --wds-radius-8: 8px;
+  --wds-radius-10: 10px;
+  --wds-radius-12: 12px;
+  --wds-radius-16: 16px;
+  --wds-radius-20: 20px;
+  --wds-radius-circle: 999px;
+
+  /* ---- Spacing ---- */
+  --wds-space-2: 2px;
+  --wds-space-3: 3px;
+  --wds-space-4: 4px;
+  --wds-space-6: 6px;
+  --wds-space-8: 8px;
+  --wds-space-10: 10px;
+  --wds-space-12: 12px;
+  --wds-space-16: 16px;
+  --wds-space-20: 20px;
+  --wds-space-24: 24px;
+  --wds-space-32: 32px;
+
+  /* ---- Elevation ---- */
+  --wds-shadow-emphasize:
+    0 1px 4px 0 rgba(0, 0, 0, 0.08), 0 0 1px 0 rgba(0, 0, 0, 0.12);
+  --wds-shadow-strong: 0 2px 8px 0 rgba(0, 0, 0, 0.12), 0 0 1px 0 rgba(0, 0, 0, 0.12);
+  --wds-shadow-heavy: 0 6px 12px 0 rgba(0, 0, 0, 0.12), 0 0 1px 0 rgba(0, 0, 0, 0.12);
+  --wds-shadow-card: 0 1px 2px 0 rgba(23, 23, 23, 0.06), 0 0 1px 0 rgba(23, 23, 23, 0.07);
+}
+
+/*
+  WDS 화면은 라이트 전용이다 — 원본 aliases.css에 다크 모드 값이 없다.
+  이 레포의 .dark가 상위에 걸려도 토큰이 흔들리지 않게 색을 다시 고정한다.
+*/
+.dark .wds-surface {
+  color-scheme: light;
+}
