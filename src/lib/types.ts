@@ -372,6 +372,37 @@ export interface PublicGroupCard {
   member_count: number;
 }
 
+/** 회의 시간 조율. 아래 Meeting(모지숲 회의록)과 다른 개념이다. */
+export interface MeetingPoll {
+  id: string;
+  title: string;
+  /** 후보 날짜 "YYYY-MM-DD" 배열. 연속 범위가 아니어도 된다. */
+  dates: string[];
+  start_hour: number;
+  end_hour: number;
+  slot_min: number;
+  created_by: string;
+  confirmed_at: string | null;
+  duration_min: number | null;
+  due_at: string | null;
+  notify_before_due: boolean;
+  invite_token: string;
+  due_notified_at: string | null;
+  created_at: string;
+}
+
+/** 초대된 사람 한 줄이 곧 그 사람의 응답이다. responded_at이 null이면 아직 안 함. */
+export interface MeetingPollParticipant {
+  id: string;
+  poll_id: string;
+  user_id: string | null;
+  name: string;
+  email: string | null;
+  slots: string[];
+  responded_at: string | null;
+  created_at: string;
+}
+
 export interface Meeting {
   id: string;
   notion_page_id: string;
