@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMeetingPage } from "@/lib/notion";
+import { parseMeetingPage, weeklyTitle } from "@/lib/notion";
 import type { PageObjectResponse } from "@notionhq/client";
 
 function fixture(): PageObjectResponse {
@@ -41,5 +41,16 @@ describe("parseMeetingPage", () => {
     const page = fixture();
     (page.properties["일시"] as { date: unknown }).date = null;
     expect(parseMeetingPage(page).meeting_date).toBeNull();
+  });
+});
+
+describe("weeklyTitle", () => {
+  it("확정 시각을 KST 기준 \"n월 n일 위클리\"로 만든다", () => {
+    expect(weeklyTitle("2026-07-31T10:00:00.000Z")).toBe("7월 31일 위클리");
+  });
+
+  it("UTC로는 전날인 새벽 시각도 KST 날짜를 쓴다", () => {
+    // KST 2026-08-01 00:30
+    expect(weeklyTitle("2026-07-31T15:30:00.000Z")).toBe("8월 1일 위클리");
   });
 });

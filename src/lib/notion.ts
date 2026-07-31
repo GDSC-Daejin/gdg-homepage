@@ -1,6 +1,7 @@
 // 서버 전용: NOTION_API_KEY는 서버 환경변수이므로 클라이언트 컴포넌트에서 import하지 말 것.
 import { Client, isFullDatabase, isFullPage } from "@notionhq/client";
 import type { PageObjectResponse } from "@notionhq/client";
+import { dayKeyKst } from "@/lib/format";
 import type { Material } from "@/lib/types";
 
 const PROPERTY = {
@@ -134,6 +135,57 @@ export function parseMeetingPage(page: PageObjectResponse): ParsedMeeting {
     summary: plainText(page.properties[MEETING_PROPERTY.summary]),
     notion_url: page.url,
   };
+}
+
+const WEEKLY_PROPERTY = {
+  title: "Name",
+  date: "Date",
+  season: "진행 기수",
+} as const;
+
+/** 확정 시각(ISO) → "7월 31일 위클리". KST 기준. */
+export function weeklyTitle(startIso: string): string {
+  const [, m, d] = dayKeyKst(startIso).split("-");
+  return `${Number(m)}월 ${Number(d)}일 위클리`;
+}
+
+/**
+ * 회의 시간을 확정하면 노션 "모여봐요 지디엣나무 숲" DB에 위클리 페이지를 만든다.
+ * 실패해도 확정 자체는 굴러가야 하므로 던지지 않고 한국어 메시지를 돌려준다.
+ */
+export async function createWeeklyPage(
+  startIso: string,
+): Promise<{ title: string; url?: string; error?: string }> {
+  const title = weeklyTitle(startIso);
+  const token = process.env.NOTION_API_KEY;
+  const databaseId = process.env.NOTION_WEEKLY_DATABASE_ID;
+
+  if (!token || !databaseId) {
+    return { title, error: "노션 위클리 연동이 설정되지 않았어요" };
+  }
+
+  try {
+    const notion = new Client({ auth: token });
+    const database = await notion.databases.retrieve({ database_id: databaseId });
+    const dataSourceId = isFullDatabase(database) ? database.data_sources[0]?.id : undefined;
+    if (!dataSourceId) return { title, error: "노션 위클리 DB를 찾지 못했어요" };
+
+    // ponytail: 기수는 1년에 한 번 바뀐다 — 배포 없이 고치라고 env로만 뺐다.
+    const season = process.env.NOTION_WEEKLY_SEASON;
+    const page = await notion.pages.create({
+      parent: { type: "data_source_id", data_source_id: dataSourceId },
+      // DB 기본 템플릿("위클리")을 그대로 씌운다. 본문을 여기서 다시 조립하지 않는다.
+      template: { type: "default" },
+      properties: {
+        [WEEKLY_PROPERTY.title]: { title: [{ text: { content: title } }] },
+        [WEEKLY_PROPERTY.date]: { date: { start: dayKeyKst(startIso) } },
+        ...(season ? { [WEEKLY_PROPERTY.season]: { select: { name: season } } } : {}),
+      },
+    });
+    return { title, url: "url" in page ? page.url : undefined };
+  } catch {
+    return { title, error: "노션 위클리 페이지를 만들지 못했어요" };
+  }
 }
 
 export async function fetchPublishedMeetings(): Promise<{
