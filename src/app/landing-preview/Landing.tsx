@@ -70,7 +70,7 @@ export default function Landing() {
       <main>
         {/* ── 히어로 ─────────────────────────── */}
         <section className="nb-hero">
-          <div className="nb-orb nb-in" style={{ animationDelay: ".42s" }} aria-hidden>
+          <div className="nb-orb" aria-hidden>
             {ORBS.map((o, i) => (
               <div
                 key={i}
@@ -87,23 +87,23 @@ export default function Landing() {
               />
             ))}
           </div>
-          <p className="nb-kicker nb-in" style={{ animationDelay: ".05s" }}>
+          <p className="nb-kicker">
             <span className="nb-kicker-pulse" aria-hidden />
             2026 신규 멤버 모집 중 — 대진대학교
           </p>
           <h1 className="nb-display" aria-label="배우고, 만들고, 배포한다.">
-            <span className="nb-line nb-line--soft nb-in" style={{ animationDelay: ".12s" }}>
+            <span className="nb-line nb-line--soft">
               배우고<i className="dot" style={{ color: "#4285F4" }}>,</i>
             </span>
-            <span className="nb-line nb-line--soft nb-in" style={{ animationDelay: ".22s" }}>
+            <span className="nb-line nb-line--soft">
               만들고<i className="dot" style={{ color: "#FBBC04" }}>,</i>
             </span>
-            <span className="nb-line nb-in" style={{ animationDelay: ".32s" }}>
+            <span className="nb-line">
               <em>배포한다</em>
               <i className="dot" style={{ color: "#34A853" }}>.</i>
             </span>
           </h1>
-          <div className="nb-hero-foot nb-in" style={{ animationDelay: ".45s" }}>
+          <div className="nb-hero-foot">
             <p className="nb-lede">
               구글 기술로 함께 성장하는 학생 개발자 커뮤니티.
               <br />

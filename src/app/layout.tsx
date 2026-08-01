@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { AnalyticsProvider } from "@/components/analytics/AnalyticsProvider";
-import { VercelAnalytics } from "@/components/analytics/VercelAnalytics";
+import { DeferredAnalytics } from "@/components/analytics/DeferredAnalytics";
 import "./pretendard-subset.css";
 import "./globals.css";
 
@@ -57,8 +56,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col font-sans" suppressHydrationWarning>
         {children}
-        <AnalyticsProvider />
-        <VercelAnalytics />
+        <DeferredAnalytics />
       </body>
     </html>
   );

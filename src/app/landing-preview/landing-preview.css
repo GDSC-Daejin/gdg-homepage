@@ -14,7 +14,7 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px) 0 0 / 88px 100%,
     var(--nb-bg);
   color: var(--nb-ink);
-  font-family: var(--font-sans);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   letter-spacing: -0.01em;
   overflow-x: clip;
 }
@@ -22,21 +22,6 @@
 .nb :where(a) {
   color: inherit;
   text-decoration: none;
-}
-
-/* ── 등장 모션 ── */
-@keyframes nb-in {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-.nb-in {
-  animation: nb-in 0.7s var(--ease-out-quart) backwards;
 }
 
 /* ── 네비게이션 ── */
@@ -377,6 +362,8 @@ button.nb-btn {
   max-width: 1200px;
   margin: 0 auto;
   padding: clamp(56px, 10vh, 110px) clamp(20px, 5vw, 56px) 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
 }
 .nb-section-head {
   display: flex;
