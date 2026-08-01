@@ -869,6 +869,10 @@ export function PollDetail({
               background: "var(--wds-bg-alt)",
               borderRadius: 12,
               marginTop: 2,
+              boxSizing: "border-box",
+              height: 200,
+              overflowY: "auto",
+              scrollbarGutter: "stable",
             }}
           >
             {selected ? (
