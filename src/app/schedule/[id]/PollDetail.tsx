@@ -269,6 +269,17 @@ export function PollDetail({
           {canManage && (
             <>
               <span style={{ width: 1, height: 18, background: "var(--wds-line-alternative)", margin: "0 2px" }} />
+              {!poll.confirmed_at && (
+                <Button
+                  variant="outlined"
+                  color="assistive"
+                  size="medium"
+                  disabled={busy}
+                  onClick={() => router.push(`/schedule/${poll.id}/edit`)}
+                >
+                  수정
+                </Button>
+              )}
               <Button
                 variant="outlined"
                 color="negative"

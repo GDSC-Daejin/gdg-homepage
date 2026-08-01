@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createMeetingPoll } from "@/actions/meeting-poll";
+import { createMeetingPoll, updateMeetingPoll } from "@/actions/meeting-poll";
 import { Avatar } from "@/components/wds/Avatar";
 import { Button } from "@/components/wds/Button";
 import {
@@ -26,6 +26,7 @@ import {
   SLOT_UNITS,
   suggestPollTitle,
 } from "@/lib/meeting-poll";
+import type { MeetingPoll } from "@/lib/types";
 
 export interface StaffOption {
   id: string;
@@ -34,9 +35,17 @@ export interface StaffOption {
 
 interface Picked {
   key: string;
+  participantId: string | null;
   name: string;
   /** 우리 회원이면 profiles.id */
   userId: string | null;
+  email: string | null;
+}
+
+export interface EditableParticipant {
+  id: string;
+  user_id: string | null;
+  name: string;
   email: string | null;
 }
 
@@ -53,27 +62,37 @@ export function NewPollForm({
   staff,
   inviteToken,
   inviteOrigin,
+  edit,
 }: {
   today: string;
   staff: StaffOption[];
   /** 만들기 전에도 초대 링크를 보여줄 수 있게 토큰을 서버에서 미리 받아온다. */
   inviteToken: string;
   inviteOrigin: string;
+  edit?: { poll: MeetingPoll; participants: EditableParticipant[] };
 }) {
   const router = useRouter();
   // 제목은 날짜에서 지어 미리 채워 둔다(원본도 값이 들어가 있다). 한 번 손대면 따라가지 않는다.
-  const [typedTitle, setTypedTitle] = useState<string | null>(null);
-  const [dates, setDates] = useState<string[]>(() => defaultWeek(today));
-  const [startHour, setStartHour] = useState(18);
-  const [endHour, setEndHour] = useState(24);
-  const [slotMin, setSlotMin] = useState<number>(30);
+  const [typedTitle, setTypedTitle] = useState<string | null>(edit?.poll.title ?? null);
+  const [dates, setDates] = useState<string[]>(() => edit?.poll.dates ?? defaultWeek(today));
+  const [startHour, setStartHour] = useState(edit?.poll.start_hour ?? 18);
+  const [endHour, setEndHour] = useState(edit?.poll.end_hour ?? 24);
+  const [slotMin, setSlotMin] = useState<number>(edit?.poll.slot_min ?? 30);
   const [people, setPeople] = useState<Picked[]>(() =>
-    staff.map((s) => ({ key: s.id, name: s.name, userId: s.id, email: null })),
+    edit
+      ? edit.participants.map((p) => ({
+          key: p.id,
+          participantId: p.id,
+          name: p.name,
+          userId: p.user_id,
+          email: p.email,
+        }))
+      : staff.map((s) => ({ key: s.id, participantId: null, name: s.name, userId: s.id, email: null })),
   );
   const [adding, setAdding] = useState(false);
   const [draftName, setDraftName] = useState("");
-  const [dueAt, setDueAt] = useState<string | null>(null);
-  const [notifyBeforeDue, setNotifyBeforeDue] = useState(true);
+  const [dueAt, setDueAt] = useState<string | null>(edit?.poll.due_at ?? null);
+  const [notifyBeforeDue, setNotifyBeforeDue] = useState(edit?.poll.notify_before_due ?? true);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -88,12 +107,12 @@ export function NewPollForm({
     : "";
   const title = typedTitle ?? suggestion;
   const activePreset = RANGE_PRESETS.find((p) => p.start === startHour && p.end === endHour);
-  const inviteUrl = `${inviteOrigin}/j/${inviteToken}`;
+  const inviteUrl = `${inviteOrigin}/j/${edit?.poll.invite_token ?? inviteToken}`;
   // 원본의 "6명 이상 응답하면" = 초대 7명의 80%. 같은 식으로 문턱을 잡는다.
   const recommendGate = Math.max(2, Math.ceil(people.length * 0.8));
 
   const months = useMemo(() => {
-    const first = today.slice(0, 7);
+    const first = (edit?.poll.dates[0] ?? today).slice(0, 7);
     return [first, shiftMonth(first, 1)];
   }, [today]);
 
@@ -117,9 +136,10 @@ export function NewPollForm({
     setPeople((prev) => [
       ...prev,
       member
-        ? { key: member.id, name: member.name, userId: member.id, email: null }
+        ? { key: member.id, participantId: null, name: member.name, userId: member.id, email: null }
         : {
             key: `guest-${value}-${prev.length}`,
+            participantId: null,
             name: isEmail ? value.split("@")[0] : value,
             userId: null,
             email: isEmail ? value : null,
@@ -131,7 +151,7 @@ export function NewPollForm({
   function submit() {
     setError(undefined);
     setPending(true);
-    createMeetingPoll({
+    const input = {
       title: (title || suggestion).trim(),
       dates: sorted,
       startHour,
@@ -139,17 +159,28 @@ export function NewPollForm({
       slotMin,
       dueAt: dueValue || null,
       notifyBeforeDue,
-      inviteToken,
       memberIds: people.filter((p) => p.userId).map((p) => p.userId as string),
       guests: people.filter((p) => !p.userId).map((p) => ({ name: p.name, email: p.email })),
-    })
+    };
+    const request = edit
+      ? updateMeetingPoll(edit.poll.id, {
+          ...input,
+          participants: people.map((p) => ({
+            id: p.participantId,
+            userId: p.userId,
+            name: p.name,
+            email: p.email,
+          })),
+        })
+      : createMeetingPoll({ ...input, inviteToken });
+    request
       .then((result) => {
         if (result.error) {
           setError(result.error);
           setPending(false);
           return;
         }
-        router.push(`/schedule/${result.id}`);
+        router.push(edit ? `/schedule/${edit.poll.id}` : `/schedule/${"id" in result ? result.id : ""}`);
       })
       .catch(() => setPending(false));
   }
@@ -177,7 +208,7 @@ export function NewPollForm({
     <div className={styles.page}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
         <h1 style={{ margin: 0, font: "700 28px/1.35 var(--wds-font-sans)", letterSpacing: "-0.025em" }}>
-          새 일정 만들기
+          {edit ? "일정 수정" : "새 일정 만들기"}
         </h1>
         <p
           style={{
@@ -186,7 +217,9 @@ export function NewPollForm({
             color: "var(--wds-label-alternative)",
           }}
         >
-          날짜와 시간 범위만 정하면 돼요. 나머지는 참여자가 칠해줄 거예요.
+          {edit
+            ? "후보를 바꾸면 새 시간에도 유효한 응답만 유지해요."
+            : "날짜와 시간 범위만 정하면 돼요. 나머지는 참여자가 칠해줄 거예요."}
         </p>
       </div>
 
@@ -474,7 +507,7 @@ export function NewPollForm({
                 size="small"
                 onClick={() => {
                   navigator.clipboard?.writeText(inviteUrl);
-                  setNotice("초대 링크를 복사했어요. 일정을 만들면 바로 열려요.");
+                  setNotice(edit ? "초대 링크를 복사했어요." : "초대 링크를 복사했어요. 일정을 만들면 바로 열려요.");
                 }}
               >
                 링크 복사
@@ -598,14 +631,14 @@ export function NewPollForm({
               disabled={pending}
               onClick={submit}
             >
-              {pending ? "만드는 중…" : "일정 만들고 링크 받기"}
+              {pending ? (edit ? "저장 중…" : "만드는 중…") : edit ? "변경사항 저장" : "일정 만들고 링크 받기"}
             </Button>
             <Button
               variant="text"
               color="assistive"
               size="medium"
               fullWidth
-              onClick={() => router.push("/schedule")}
+              onClick={() => router.push(edit ? `/schedule/${edit.poll.id}` : "/schedule")}
             >
               취소
             </Button>

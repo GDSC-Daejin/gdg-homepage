@@ -16,6 +16,7 @@ import {
   pollSlotSet,
   pollTimes,
   recommendBlocks,
+  remapAvailabilitySlots,
   rectSlots,
   slotEndIso,
   slotIso,
@@ -206,6 +207,30 @@ describe("pollSlotSet", () => {
     const set = pollSlotSet({ dates: DATES, start_hour: 18, end_hour: 24, slot_min: 30 });
     expect(set.has(slotIso(DATES[0], "17:30"))).toBe(false);
     expect(set.has(slotIso("2026-08-09", "19:00"))).toBe(false);
+  });
+});
+
+describe("remapAvailabilitySlots", () => {
+  it("새 후보 안에 완전히 남는 응답만 유지하고, 남는 칸이 없으면 미응답으로 만든다", () => {
+    const oldSlots = [slotIso("2026-07-30", "18:00"), slotIso("2026-07-30", "18:30")];
+
+    expect(
+      remapAvailabilitySlots(oldSlots, 30, {
+        dates: ["2026-07-30"],
+        start_hour: 18,
+        end_hour: 20,
+        slot_min: 60,
+      }),
+    ).toEqual([slotIso("2026-07-30", "18:00")]);
+
+    expect(
+      remapAvailabilitySlots(oldSlots, 30, {
+        dates: ["2026-07-31"],
+        start_hour: 18,
+        end_hour: 20,
+        slot_min: 30,
+      }),
+    ).toEqual([]);
   });
 });
 

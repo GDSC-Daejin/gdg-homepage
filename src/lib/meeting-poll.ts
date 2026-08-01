@@ -193,6 +193,37 @@ export function pollSlotSet(poll: {
   return new Set(poll.dates.flatMap((date) => times.map((time) => slotIso(date, time))));
 }
 
+/** 후보를 바꾼 뒤에도 새 칸 전체가 기존 응답으로 덮이면 그 응답을 유지한다. */
+export function remapAvailabilitySlots(
+  slots: string[],
+  oldSlotMin: number,
+  nextPoll: {
+    dates: string[];
+    start_hour: number;
+    end_hour: number;
+    slot_min: number;
+  },
+): string[] {
+  const ranges = normalizeSlots(slots)
+    .map((slot) => {
+      const start = Date.parse(slot);
+      return { start, end: start + oldSlotMin * 60_000 };
+    })
+    .sort((a, b) => a.start - b.start)
+    .reduce<{ start: number; end: number }[]>((merged, range) => {
+      const previous = merged.at(-1);
+      if (previous && range.start <= previous.end) previous.end = Math.max(previous.end, range.end);
+      else merged.push(range);
+      return merged;
+    }, []);
+
+  return [...pollSlotSet(nextPoll)].filter((slot) => {
+    const start = Date.parse(slot);
+    const end = start + nextPoll.slot_min * 60_000;
+    return ranges.some((range) => range.start <= start && range.end >= end);
+  });
+}
+
 /* ---------------- 추천 구간 ---------------- */
 
 export interface Recommendation {

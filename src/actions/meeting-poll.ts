@@ -11,6 +11,7 @@ import {
   MAX_POLL_DAYS,
   normalizeSlots,
   pollSlotSet,
+  remapAvailabilitySlots,
   SLOT_UNITS,
   type SlotUnit,
 } from "@/lib/meeting-poll";
@@ -35,6 +36,17 @@ export interface NewPollInput {
   memberIds: string[];
   /** 이름만/이메일만 있는 참여자 */
   guests: { name: string; email: string | null }[];
+}
+
+export interface UpdatePollInput {
+  title: string;
+  dates: string[];
+  startHour: number;
+  endHour: number;
+  slotMin: number;
+  dueAt: string | null;
+  notifyBeforeDue: boolean;
+  participants: { id: string | null; userId: string | null; name: string; email: string | null }[];
 }
 
 export async function createMeetingPoll(
@@ -133,6 +145,139 @@ export async function createMeetingPoll(
 
   revalidatePath("/schedule");
   return { id: pollId };
+}
+
+/** 확정 전 조율의 후보·명단을 바꾸고, 새 후보를 완전히 덮는 기존 응답만 보존한다. */
+export async function updateMeetingPoll(
+  pollId: string,
+  input: UpdatePollInput,
+): Promise<ActionResult> {
+  const profile = await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const title = input.title.trim();
+  const dates = [...new Set(input.dates)].filter((d) => DAY.test(d)).sort();
+  if (!title) return { error: "일정 이름을 입력해주세요" };
+  if (dates.length === 0) return { error: "날짜를 하나 이상 고르세요" };
+  if (dates.length > MAX_POLL_DAYS) return { error: `날짜는 ${MAX_POLL_DAYS}일까지만 고를 수 있어요` };
+  if (!Number.isInteger(input.startHour) || input.startHour < 0 || input.startHour > 23) {
+    return { error: "시작 시간을 선택해주세요" };
+  }
+  if (!Number.isInteger(input.endHour) || input.endHour < 1 || input.endHour > 24) {
+    return { error: "종료 시간을 선택해주세요" };
+  }
+  if (input.endHour <= input.startHour) return { error: "종료 시간이 시작 시간보다 늦어야 해요" };
+  if (!SLOT_UNITS.includes(input.slotMin as SlotUnit)) return { error: "칸 단위를 선택해주세요" };
+  if (input.dueAt && Number.isNaN(Date.parse(input.dueAt))) {
+    return { error: "응답 마감을 다시 선택해주세요" };
+  }
+
+  const supabase = await createClient();
+  const [{ data: pollRow, error: pollError }, { data: participantRows, error: participantError }] =
+    await Promise.all([
+      supabase.from("meeting_polls").select("*").eq("id", pollId).single(),
+      supabase.from("meeting_poll_participants").select("*").eq("poll_id", pollId),
+    ]);
+  if (pollError || !pollRow) return { error: toKoreanError(pollError) };
+  if (participantError) return { error: toKoreanError(participantError) };
+  const poll = pollRow as MeetingPoll;
+  if (poll.confirmed_at) return { error: "확정된 일정은 수정할 수 없어요" };
+  if (poll.created_by !== profile.id && profile.role !== "organizer") {
+    return { error: "일정을 수정할 권한이 없어요" };
+  }
+
+  const participants = (participantRows ?? []) as {
+    id: string;
+    user_id: string | null;
+    slots: string[];
+    responded_at: string | null;
+  }[];
+  const memberIds = [...new Set(input.participants.flatMap((p) => (p.userId ? [p.userId] : [])))];
+  const existingMemberIds = new Set(participants.flatMap((p) => (p.user_id ? [p.user_id] : [])));
+  const existingGuestIds = new Set(participants.filter((p) => !p.user_id).map((p) => p.id));
+  const keptGuestIds = new Set(
+    input.participants.flatMap((p) => (!p.userId && p.id && existingGuestIds.has(p.id) ? [p.id] : [])),
+  );
+  const keepIds = new Set(
+    participants.flatMap((p) => (p.user_id ? (memberIds.includes(p.user_id) ? [p.id] : []) : keptGuestIds.has(p.id) ? [p.id] : [])),
+  );
+  const newMemberIds = memberIds.filter((id) => !existingMemberIds.has(id));
+  const newGuests = input.participants
+    .filter((p) => !p.userId && !p.id)
+    .map((p) => ({ name: p.name.trim(), email: p.email?.trim() || null }))
+    .filter((p) => p.name);
+  if (memberIds.length + keptGuestIds.size + newGuests.length === 0) {
+    return { error: "참여자를 한 명 이상 초대하세요" };
+  }
+  let newRows: { poll_id: string; user_id: string | null; name: string; email: string | null }[] = [];
+  if (newMemberIds.length) {
+    const { data: members, error } = await supabase
+      .from("profiles")
+      .select("id, name, nickname, email")
+      .in("id", newMemberIds);
+    if (error) return { error: toKoreanError(error) };
+    if ((members ?? []).length !== newMemberIds.length) {
+      return { error: "참여자를 다시 선택해주세요" };
+    }
+    newRows = (members ?? []).map((m) => {
+      const person = m as { id: string; name: string; nickname: string; email: string | null };
+      return {
+        poll_id: pollId,
+        user_id: person.id,
+        name: person.nickname?.trim() ? `${person.nickname}(${person.name})` : person.name,
+        email: person.email ?? null,
+      };
+    });
+  }
+  newRows.push(...newGuests.map((p) => ({ poll_id: pollId, user_id: null, ...p })));
+
+  const nextPoll = {
+    dates,
+    start_hour: input.startHour,
+    end_hour: input.endHour,
+    slot_min: input.slotMin,
+  };
+  const { error: updateError } = await supabase
+    .from("meeting_polls")
+    .update({
+      title,
+      dates,
+      start_hour: input.startHour,
+      end_hour: input.endHour,
+      slot_min: input.slotMin,
+      due_at: input.dueAt,
+      notify_before_due: input.notifyBeforeDue,
+      due_notified_at: poll.due_at === input.dueAt ? poll.due_notified_at : null,
+    })
+    .eq("id", pollId);
+  if (updateError) return { error: toKoreanError(updateError) };
+
+  const removedIds = participants.filter((p) => !keepIds.has(p.id)).map((p) => p.id);
+  if (removedIds.length) {
+    const { error } = await supabase.from("meeting_poll_participants").delete().in("id", removedIds);
+    if (error) return { error: toKoreanError(error) };
+  }
+  if (newRows.length) {
+    const { error } = await supabase.from("meeting_poll_participants").insert(newRows);
+    if (error) return { error: toKoreanError(error) };
+  }
+  const remapResults = await Promise.all(
+    participants
+      .filter((p) => keepIds.has(p.id))
+      .map((p) => {
+        const slots = remapAvailabilitySlots(p.slots, poll.slot_min, nextPoll);
+        return supabase
+          .from("meeting_poll_participants")
+          .update({ slots, responded_at: slots.length && p.responded_at ? p.responded_at : null })
+          .eq("id", p.id);
+      }),
+  );
+  const remapError = remapResults.find((result) => result.error)?.error;
+  if (remapError) return { error: toKoreanError(remapError) };
+
+  revalidatePath(`/schedule/${pollId}`);
+  revalidatePath("/schedule");
+  return {};
 }
 
 /** 내 응답 전체를 통째로 덮어쓴다. 칸마다 저장하면 드래그 한 번에 요청이 수십 번 간다. */
