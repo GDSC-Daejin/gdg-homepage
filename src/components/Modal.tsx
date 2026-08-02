@@ -31,6 +31,12 @@ export function Modal({ open, onClose, className, ariaLabel, children }: ModalPr
     else if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  useEffect(() => {
+    if (!mounted || !open) return;
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, [mounted]);
+
   if (!mounted) return null;
 
   return createPortal(
