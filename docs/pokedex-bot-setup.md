@@ -25,6 +25,17 @@ select cron.schedule(
 );
 
 select cron.schedule(
+  'pokedex-ball-refill', '0 21 * * *',
+  $$ select net.http_get(
+       url := 'https://gdg-homepage.vercel.app/api/cron/pokedex-ball-refill',
+       headers := jsonb_build_object(
+         'Authorization',
+         'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret')
+       )
+     ); $$
+);
+
+select cron.schedule(
   'pokedex-spawn', '* * * * *',
   $$ select net.http_get(
        url := 'https://gdg-homepage.vercel.app/api/cron/pokedex-spawn',
@@ -47,7 +58,7 @@ select cron.schedule(
 );
 ```
 
-첫 스케줄은 UTC 15:00, 즉 KST 자정에 기본 몬스터볼 지급과 그날의 세 출현을 예약한다. 두 번째 스케줄은 예정된 출현을 게시한다. 세 번째 스케줄은 UTC 01:10, 즉 KST 오전 10:10에 보유 종 수 상위 3명을 도감봇으로 공지한다.
+첫 스케줄은 UTC 15:00, 즉 KST 자정에 그날의 다섯 출현을 예약한다. 낮형 포켓몬은 KST 07:00~19:00, 야행성은 19:00~23:00에 출현한다. 두 번째 스케줄은 UTC 21:00, 즉 KST 오전 6시에 기본 몬스터볼을 3개로 채운다. 세 번째 스케줄은 예정된 출현을 게시한다. 네 번째 스케줄은 UTC 01:10, 즉 KST 오전 10:10에 보유 종 수 상위 3명을 도감봇으로 공지한다.
 
 6. `#아무말대잔치`에서 도감봇이 메시지와 `:pokeball:` 반응을 올릴 수 있는지 확인한다.
 
@@ -55,7 +66,7 @@ select cron.schedule(
 
 운영자가 “파이리를 30분간 테스트 출현”처럼 요청하면 아래 절차로 처리한다. Slack API로 직접 메시지를 보내지 말고, 반드시 출현 크론 경로를 호출한다. 그래야 이미지와 `:pokeball:` 반응이 함께 생성된다.
 
-1. Supabase 원격 DB에서 테스트용 출현을 등록한다. `파이리`와 `30 minutes`를 요청값으로 바꿀다. 과거 `appears_on` 슬롯을 쓰므로 실제 하루 3회 예약과 출돌하지 않는다.
+1. Supabase 원격 DB에서 테스트용 출현을 등록한다. `파이리`와 `30 minutes`를 요청값으로 바꿀다. 과거 `appears_on` 슬롯을 쓰므로 실제 하루 5회 예약과 출돌하지 않는다.
 
 ```sql
 with free_slot as (
@@ -65,7 +76,7 @@ with free_slot as (
     ((now() at time zone 'Asia/Seoul')::date - 365),
     '-1 day'
   ) as day
-  cross join generate_series(1, 3) as slots(appearance_order)
+  cross join generate_series(1, 5) as slots(appearance_order)
   left join pokemon_appearances pa
     on pa.appears_on = day::date and pa.appearance_order = slots.appearance_order
   where pa.id is null

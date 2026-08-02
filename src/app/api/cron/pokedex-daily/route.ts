@@ -16,23 +16,22 @@ export async function GET(request: NextRequest) {
   const { data: bot } = await supabase.from("bots").select("active").eq("slug", "pokedex").single();
   if (!bot?.active) return NextResponse.json({ scheduled: false, reason: "disabled" });
 
-  const { data: granted } = await supabase.rpc("pokedex_grant_daily_balls");
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
   const { count } = await supabase
     .from("pokemon_appearances")
     .select("id", { count: "exact", head: true })
     .eq("appears_on", today);
-  if (count) return NextResponse.json({ scheduled: false, granted: granted ?? 0, reason: "already_scheduled" });
+  if (count) return NextResponse.json({ scheduled: false, reason: "already_scheduled" });
 
   const { data: catalog } = await supabase
     .from("pokemon_catalog")
-    .select("id, dwell_minutes, spawn_weight")
+    .select("id, dwell_minutes, spawn_weight, activity_period")
     .eq("active", true);
-  if (!catalog || catalog.length < 3) return NextResponse.json({ error: "출현 포켓몬이 부족해요" }, { status: 500 });
+  if (!catalog || catalog.length < 5) return NextResponse.json({ error: "출현 포켓몬이 부족해요" }, { status: 500 });
 
   const appearances = planDailyAppearances(
     new Date(),
-    catalog.map((pokemon) => ({ id: pokemon.id, dwellMinutes: pokemon.dwell_minutes, spawnWeight: pokemon.spawn_weight })),
+    catalog.map((pokemon) => ({ id: pokemon.id, dwellMinutes: pokemon.dwell_minutes, spawnWeight: pokemon.spawn_weight, activityPeriod: pokemon.activity_period })),
   );
   const { error } = await supabase.from("pokemon_appearances").insert(
     appearances.map((appearance, index) => ({
@@ -43,6 +42,6 @@ export async function GET(request: NextRequest) {
       ends_at: appearance.endsAt.toISOString(),
     })),
   );
-  if (error) return NextResponse.json({ scheduled: false, granted: granted ?? 0, reason: "already_scheduled" });
-  return NextResponse.json({ scheduled: true, granted: granted ?? 0 });
+  if (error) return NextResponse.json({ scheduled: false, reason: "already_scheduled" });
+  return NextResponse.json({ scheduled: true });
 }

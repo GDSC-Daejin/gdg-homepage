@@ -1,4 +1,4 @@
-export type PokemonScheduleItem = { id: string; dwellMinutes: number; spawnWeight: number };
+export type PokemonScheduleItem = { id: string; dwellMinutes: number; spawnWeight: number; activityPeriod: "day" | "night" };
 
 export type ScheduledAppearance = {
   pokemonId: string;
@@ -30,30 +30,35 @@ export function planDailyAppearances(
   pokemon: PokemonScheduleItem[],
   random = Math.random,
 ): ScheduledAppearance[] {
-  if (pokemon.length < 3) throw new Error("AT_LEAST_THREE_POKEMON_REQUIRED");
-
-  const choices = [...pokemon];
-  const selected = Array.from({ length: 3 }, () => {
-    const target = random() * choices.reduce((sum, item) => sum + item.spawnWeight, 0);
-    let total = 0;
-    const index = choices.findIndex((item) => {
-      total += item.spawnWeight;
-      return total > target;
+  const pick = (items: PokemonScheduleItem[], count: number) => {
+    if (items.length < count) throw new Error("INSUFFICIENT_POKEMON_FOR_ACTIVITY_PERIOD");
+    const choices = [...items];
+    return Array.from({ length: count }, () => {
+      const target = random() * choices.reduce((sum, item) => sum + item.spawnWeight, 0);
+      let total = 0;
+      const index = choices.findIndex((item) => {
+        total += item.spawnWeight;
+        return total > target;
+      });
+      return choices.splice(index < 0 ? choices.length - 1 : index, 1)[0];
     });
-    return choices.splice(index < 0 ? choices.length - 1 : index, 1)[0];
-  });
-  const closingMinute = 23 * 60;
-  let cursor = 7 * 60;
+  };
 
-  return selected.map((item, index) => {
-    const laterDwellMinutes = selected.slice(index + 1).reduce((sum, later) => sum + later.dwellMinutes, 0);
-    const latestStart = closingMinute - item.dwellMinutes - laterDwellMinutes;
-    const startMinute = cursor + Math.floor(random() * (latestStart - cursor + 1));
-    cursor = startMinute + item.dwellMinutes;
-    return {
-      pokemonId: item.id,
-      startsAt: atKst(date, startMinute),
-      endsAt: atKst(date, cursor),
-    };
-  });
+  const dayPokemon = pick(pokemon.filter((item) => item.activityPeriod === "day"), 4);
+  const nightPokemon = pick(pokemon.filter((item) => item.activityPeriod === "night"), 1);
+  const schedule = (items: PokemonScheduleItem[], startMinute: number, endMinute: number) => {
+    let cursor = startMinute;
+    return items.map((item, index) => {
+      const laterDwellMinutes = items.slice(index + 1).reduce((sum, later) => sum + later.dwellMinutes, 0);
+      const latestStart = endMinute - item.dwellMinutes - laterDwellMinutes;
+      const startsAt = cursor + Math.floor(random() * (latestStart - cursor + 1));
+      cursor = startsAt + item.dwellMinutes;
+      return { pokemonId: item.id, startsAt: atKst(date, startsAt), endsAt: atKst(date, cursor) };
+    });
+  };
+
+  return [
+    ...schedule(dayPokemon, 7 * 60, 19 * 60),
+    ...schedule(nightPokemon, 19 * 60, 23 * 60),
+  ];
 }
