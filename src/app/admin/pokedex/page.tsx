@@ -8,6 +8,7 @@ import { isDemoMode } from "@/lib/demo";
 import { displayName, formatKst } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OverviewTabs } from "../OverviewTabs";
+import { DuelPreview } from "../../(member)/pokedex/DuelPanel";
 
 type Catch = { user_id: string; pokemon_id: string; created_at: string };
 type Appearance = { pokemon_id: string; starts_at: string };
@@ -85,7 +86,7 @@ export default async function AdminPokedexPage() {
   return (
     <div className="flex flex-col gap-6">
       <OverviewTabs />
-      <PageHeader title="도감 현황" description="포획 기록과 인기 포켓몬을 한눈에 확인해요." />
+      <PageHeader title="포켓몬 개발" description="도감 현황과 결투 연출을 확인해요." />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="총 포획 성공" value={`${catches.length}마리`} />
@@ -131,6 +132,7 @@ export default async function AdminPokedexPage() {
           )}
         </Card>
       </div>
+      <DuelPreview />
     </div>
   );
 }

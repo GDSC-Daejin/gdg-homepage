@@ -79,6 +79,7 @@ const groups: NavGroup[] = [
       { href: "/admin/surveys", label: "설문", icon: "surveys" },
       { href: "/admin/inquiries", label: "문의", icon: "inquiries" },
       { href: "/admin/materials", label: "자료실", icon: "materials" },
+      { href: "/admin/pokedex", label: "포켓몬 개발", icon: "bots" },
     ],
   },
   {

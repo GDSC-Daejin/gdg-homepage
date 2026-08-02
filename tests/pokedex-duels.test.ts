@@ -108,15 +108,19 @@ describe("도감 포켓몬 결투", () => {
   });
 
   it("도감에서 결투 탭과 결과 애니메이션을 제공한다", async () => {
-    const page = await readFile("src/app/(member)/pokedex/page.tsx", "utf8");
-    const panel = await readFile("src/app/(member)/pokedex/DuelPanel.tsx", "utf8");
-    const modal = await readFile("src/components/Modal.tsx", "utf8");
+    const [page, panel, admin, modal] = await Promise.all([
+      readFile("src/app/(member)/pokedex/page.tsx", "utf8"),
+      readFile("src/app/(member)/pokedex/DuelPanel.tsx", "utf8"),
+      readFile("src/app/admin/pokedex/page.tsx", "utf8"),
+      readFile("src/components/Modal.tsx", "utf8"),
+    ]);
 
     expect(page).toContain("결투");
     expect(page).toContain("DuelPanel");
     expect(panel).toContain("result && <Modal");
     expect(panel).toContain("if (response.duel) setResult(response.duel)");
-    expect(panel).toContain("전투 연출 미리보기");
+    expect(admin).toContain("<DuelPreview />");
+    expect(panel).not.toContain('aria-label="결투 메뉴"');
     expect(panel).toContain("PREVIEW_DUEL");
     expect(panel).toContain("setPreviewKey");
     expect(panel).toContain("col-start-2 row-start-1");

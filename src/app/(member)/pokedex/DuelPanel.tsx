@@ -132,9 +132,12 @@ function DuelAnimation({ duel }: { duel: PokemonDuel }) {
   </div>;
 }
 
-export function DuelPanel({ profileId, members, ownedPokemon, duels }: DuelPanelProps) {
-  const [tab, setTab] = useState<"requests" | "preview">("requests");
+export function DuelPreview() {
   const [previewKey, setPreviewKey] = useState(0);
+  return <Card className="mx-auto w-full max-w-[96rem] p-8"><h2 className="text-lg font-semibold text-gray-900">결투 연출 미리보기</h2><p className="mt-1 text-sm text-gray-500">친선 결투의 전투 연출을 확인할 수 있어요.</p><div className="mt-6"><DuelAnimation key={previewKey} duel={PREVIEW_DUEL} /></div><Button variant="secondary" className="mt-8 w-full" onClick={() => setPreviewKey((key) => key + 1)}>다시 보기</Button></Card>;
+}
+
+export function DuelPanel({ profileId, members, ownedPokemon, duels }: DuelPanelProps) {
   const [opponentId, setOpponentId] = useState(members[0]?.id ?? "");
   const [throwId, setThrowId] = useState(ownedPokemon[0]?.id ?? "");
   const [acceptThrows, setAcceptThrows] = useState<Record<string, string>>({});
@@ -153,11 +156,6 @@ export function DuelPanel({ profileId, members, ownedPokemon, duels }: DuelPanel
   }
 
   return <>
-    <nav aria-label="결투 메뉴" className="mb-6 flex gap-1 border-b border-gray-200">
-      <button type="button" aria-current={tab === "requests" ? "page" : undefined} onClick={() => setTab("requests")} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "requests" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>결투 신청</button>
-      <button type="button" aria-current={tab === "preview" ? "page" : undefined} onClick={() => setTab("preview")} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "preview" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>전투 연출 미리보기</button>
-    </nav>
-    {tab === "preview" ? <Card className="mx-auto w-full max-w-[96rem] p-8"><DuelAnimation key={previewKey} duel={PREVIEW_DUEL} /><Button variant="secondary" className="mt-8 w-full" onClick={() => setPreviewKey((key) => key + 1)}>다시 보기</Button></Card> : <>
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
         <h2 className="font-semibold text-gray-900">결투 신청</h2>
@@ -174,7 +172,6 @@ export function DuelPanel({ profileId, members, ownedPokemon, duels }: DuelPanel
       </Card>
     </div>
     <Card className="mt-6"><h2 className="font-semibold text-gray-900">보낸 신청</h2>{outgoing.length === 0 ? <p className="mt-4 text-sm text-gray-500">보낸 결투 신청이 없어요.</p> : <div className="mt-4 space-y-3">{outgoing.map((duel) => <div key={duel.id} className="flex items-center justify-between gap-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-200"><p className="text-sm text-gray-700"><strong className="text-gray-900">{duel.opponent.name}</strong>님이 수락하기를 기다리고 있어요.</p><Button variant="ghost" size="sm" disabled={pending} onClick={() => run(() => cancelPokemonDuel(duel.id))}>취소</Button></div>)}</div>}</Card>
-    </>}
     {error && <p role="alert" className="mt-4 text-sm text-danger">{error}</p>}
     {result && <Modal open onClose={() => setResult(undefined)} ariaLabel="결투 결과" className="max-w-[96rem] p-8"><DuelAnimation duel={result} /><Button variant="secondary" className="mt-8 w-full" onClick={() => setResult(undefined)}>확인</Button></Modal>}
   </>;
