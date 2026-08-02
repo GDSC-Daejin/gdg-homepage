@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/meeting-poll-due",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/pokedex-ranking-daily",
+      "schedule": "0 21 * * *"
     }
   ]
 }

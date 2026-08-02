@@ -15,6 +15,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   TOO_MANY_ATTEMPTS: "시도 횟수를 초과했어요. 잠시 후 다시 해주세요",
   SLACK_ALREADY_LINKED: "이미 다른 회원에게 연결된 슬랙 계정이에요",
   POKEMON_NOT_OWNED: "보유한 포켓몬만 대표로 지정할 수 있어요",
+  RANKING_NOT_ELIGIBLE: "서로 다른 포켓몬 6종을 포획해야 랭킹전에 참가할 수 있어요",
+  RANKING_NOT_JOINED: "먼저 랭킹전에 참가해주세요",
+  INVALID_RANKING_TEAM: "서로 다른 포켓몬 3마리와 전설/환상 1마리 이하로 덱을 구성해주세요",
+  RANKING_REROLL_UNAVAILABLE: "리롤은 첫 공격 전 하루 한 번만 할 수 있어요",
+  RANKING_BATTLE_UNAVAILABLE: "지금은 이 상대에게 결투할 수 없어요",
 };
 
 export function toKoreanError(e: unknown): string {

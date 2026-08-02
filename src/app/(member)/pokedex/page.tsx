@@ -7,7 +7,9 @@ import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { PageHeader } from "@/components/PageHeader";
 import { DuelPanel } from "./DuelPanel";
+import { RankingLeaguePanel } from "./RankingLeaguePanel";
 import type { DuelMember, OwnedBattlePokemon, PokemonDuel } from "@/lib/pokedex/duel";
+import type { RankingLeagueState } from "@/lib/pokedex/ranking-league";
 
 type Pokemon = { id: string; pokedex_no: number; name_ko: string; image_path: string; rarity: Rarity; spawn_weight: number; catch_rate: number };
 type Rarity = "common" | "uncommon" | "rare" | "very_rare" | "legendary";
@@ -35,23 +37,25 @@ const RARITY_INFO: Record<Rarity, { label: string; weight: number; catchRate: nu
 export default async function PokedexPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
   const profile = await requireProfile();
   const requestedTab = (await searchParams).tab;
-  const tab = requestedTab === "probabilities" ? "probabilities" : requestedTab === "duels" ? "duels" : "collection";
+  const tab = requestedTab === "probabilities" ? "probabilities" : requestedTab === "duels" ? "duels" : requestedTab === "ranking" ? "ranking" : "collection";
   let pokemon = DEMO_POKEMON;
   let ballCount = 2;
   let caughtIds = ["demo-7"];
   let ownedBattlePokemon: OwnedBattlePokemon[] = [];
   let duelMembers: DuelMember[] = [];
   let duels: PokemonDuel[] = [];
+  let rankingState: RankingLeagueState | null = null;
 
   if (!(await isDemoMode())) {
     const supabase = await createClient();
-    const [{ data: catalog }, { data: inventory }, { data: throws }, { data: ownedThrows }, { data: members }, { data: duelRows }] = await Promise.all([
+    const [{ data: catalog }, { data: inventory }, { data: throws }, { data: ownedThrows }, { data: members }, { data: duelRows }, { data: rankState }] = await Promise.all([
       supabase.from("pokemon_catalog").select("id, pokedex_no, name_ko, image_path, rarity, spawn_weight, catch_rate").order("pokedex_no"),
       supabase.from("pokemon_ball_inventory").select("quantity").eq("user_id", profile.id).eq("ball_slug", "poke_ball").maybeSingle(),
       supabase.from("pokemon_throws").select("pokemon_id").eq("user_id", profile.id).eq("outcome", "caught"),
       supabase.from("pokemon_throws").select("id, pokemon:pokemon_catalog(name_ko, image_path), appearance:pokemon_appearances(combat_power)").eq("user_id", profile.id).eq("outcome", "caught").order("created_at", { ascending: false }),
       supabase.rpc("pokedex_duel_members"),
       supabase.rpc("pokedex_duel_list"),
+      supabase.rpc("pokedex_rank_state"),
     ]);
     pokemon = (catalog ?? []) as Pokemon[];
     ballCount = inventory?.quantity ?? 0;
@@ -70,6 +74,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
       challenger: { userId: duel.challenger_id, name: duel.challenger_name, nickname: null, avatarPath: null, battleType: "normal", pokemonName: duel.challenger_pokemon_name, imagePath: duel.challenger_image_path, combatPower: duel.challenger_combat_power, score: duel.challenger_score },
       opponent: { userId: duel.opponent_id, name: duel.opponent_name, nickname: null, avatarPath: null, battleType: "normal", pokemonName: duel.opponent_pokemon_name, imagePath: duel.opponent_image_path, combatPower: duel.opponent_combat_power, score: duel.opponent_score },
     }));
+    rankingState = rankState as RankingLeagueState | null;
   }
 
   const countByPokemon = new Map<string, number>();
@@ -83,6 +88,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
         <Link href="/pokedex" aria-current={tab === "collection" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "collection" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>내 도감</Link>
         <Link href="/pokedex?tab=probabilities" aria-current={tab === "probabilities" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "probabilities" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>확률표</Link>
         <Link href="/pokedex?tab=duels" aria-current={tab === "duels" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "duels" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>결투</Link>
+        <Link href="/pokedex?tab=ranking" aria-current={tab === "ranking" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "ranking" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>랭킹전</Link>
       </nav>
       {tab === "collection" ? <>
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -99,7 +105,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
           const count = countByPokemon.get(entry.id) ?? 0;
           return <Link key={entry.id} href={`/pokedex/${entry.pokedex_no}`} className="rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"><Card className={`p-4 text-center transition-transform hover:-translate-y-0.5 ${count ? "" : "grayscale opacity-45"}`}><img src={entry.image_path} alt={count ? entry.name_ko : "미획득 포켓몬"} className={`mx-auto h-20 w-20 object-contain ${count ? "" : "brightness-0"}`} /><p className="mt-2 text-sm font-semibold text-gray-900">{count ? entry.name_ko : "???"}</p><p className="mt-1 text-xs text-gray-500">{count ? `${count}마리 보유` : `No. ${entry.pokedex_no}`}</p></Card></Link>;
         })}</div>}
-      </> : tab === "duels" ? <DuelPanel profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : <>
+      </> : tab === "duels" ? <DuelPanel profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : tab === "ranking" ? rankingState ? <RankingLeaguePanel profileId={profile.id} state={rankingState} /> : <EmptyState title="랭킹전을 준비하고 있어요" description="데모에서는 랭킹전을 이용할 수 없어요." /> : <>
         <Card className="mb-6 overflow-x-auto p-0">
           <div className="border-b border-gray-100 px-5 py-4"><h2 className="font-semibold text-gray-900">희귀도별 확률</h2><p className="mt-1 text-sm text-gray-500">하루 3회, 가중치 비례·중복 없이 선정돼요.</p></div>
           <table className="w-full text-sm"><thead><tr className="border-b border-gray-200 text-left text-gray-500"><th className="px-5 py-3 font-medium">희귀도</th><th className="px-5 py-3 text-right font-medium">출현 가중치</th><th className="px-5 py-3 text-right font-medium">기본 몬스터볼 포획률</th></tr></thead><tbody>{Object.entries(RARITY_INFO).map(([rarity, info]) => <tr key={rarity} className="border-b border-gray-100 last:border-0"><td className="px-5 py-3"><Badge tone={info.tone}>{info.label}</Badge></td><td className="px-5 py-3 text-right font-mono text-gray-700">{info.weight}</td><td className="px-5 py-3 text-right font-mono text-gray-700">{info.catchRate}%</td></tr>)}</tbody></table>
