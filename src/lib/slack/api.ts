@@ -44,8 +44,8 @@ export async function updateMessage(opts: { channel: string; ts: string; text: s
   return toResult(await call("chat.update", { channel: opts.channel, ts: opts.ts, text: opts.text }));
 }
 
-export async function addReaction(opts: { channel: string; ts: string; emoji: string }): Promise<{ ok: boolean; error?: string }> {
-  const res = await call("reactions.add", { channel: opts.channel, timestamp: opts.ts, name: opts.emoji });
+export async function addReaction(opts: { channel: string; ts: string; emoji: string; botToken?: string }): Promise<{ ok: boolean; error?: string }> {
+  const res = await call("reactions.add", { channel: opts.channel, timestamp: opts.ts, name: opts.emoji }, opts.botToken);
   if (!res.ok && res.error === "already_reacted") return { ok: true };
   return { ok: res.ok, error: res.error };
 }

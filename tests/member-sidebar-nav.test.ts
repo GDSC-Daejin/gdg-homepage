@@ -2,12 +2,12 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 describe("회원 사이드바", () => {
-  it("8개 메뉴와 커뮤니티 통합 항목을 표시한다", async () => {
+  it("9개 메뉴와 커뮤니티 통합 항목을 표시한다", async () => {
     const nav = await readFile("src/app/(member)/SidebarNav.tsx", "utf8");
     const baseGroups = nav.slice(nav.indexOf("const baseGroups"), nav.indexOf("export function"));
 
-    expect((baseGroups.match(/href:/g) ?? [])).toHaveLength(8);
-    for (const label of ["홈", "이벤트", "공지", "커뮤니티", "설문", "문의", "자료실", "프로필"]) {
+    expect((baseGroups.match(/href:/g) ?? [])).toHaveLength(9);
+    for (const label of ["홈", "이벤트", "공지", "커뮤니티", "설문", "문의", "자료실", "포켓몬 도감", "프로필"]) {
       expect(baseGroups).toContain(`label: "${label}"`);
     }
     expect(baseGroups).not.toContain('href: "/attend"');

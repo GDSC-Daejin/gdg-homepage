@@ -36,6 +36,7 @@ const icons: Record<string, string> = {
   surveys: "M7 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Zm2 6h6M9 12h6M9 15h4",
   inquiries: "M21 12a8 8 0 1 1-3.3-6.5M21 4v5h-5",
   profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
+  pokedex: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8 12h8M12 8v8",
   admin: "m12 3 7 3v5c0 4.5-3 7.5-7 10-4-2.5-7-5.5-7-10V6Z",
 };
 
@@ -65,7 +66,10 @@ const baseGroups: NavGroup[] = [
   },
   {
     title: "자료",
-    items: [{ href: "/materials", label: "자료실", icon: "materials" }],
+    items: [
+      { href: "/materials", label: "자료실", icon: "materials" },
+      { href: "/pokedex", label: "포켓몬 도감", icon: "pokedex" },
+    ],
   },
   {
     title: "계정",

@@ -53,6 +53,12 @@ describe("Slack Web API 클라이언트", () => {
     expect(url).toBe("https://slack.com/api/reactions.add");
     expect(JSON.parse(String(init?.body)).name).toBe("squirtle");
   });
+  it("addReaction에 토큰을 주면 해당 봇으로 반응을 추가한다", async () => {
+    const spy = mockFetch({ ok: true });
+    await addReaction({ channel: "C1", ts: "1", emoji: "pokeball", botToken: "xoxb-pokedex" });
+    const [, init] = spy.mock.calls[0];
+    expect(init?.headers).toMatchObject({ Authorization: "Bearer xoxb-pokedex" });
+  });
   it("already_reacted는 성공으로 취급한다", async () => {
     mockFetch({ ok: false, error: "already_reacted" });
     expect((await addReaction({ channel: "C1", ts: "1", emoji: "squirtle" })).ok).toBe(true);
