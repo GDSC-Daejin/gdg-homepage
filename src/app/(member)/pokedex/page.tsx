@@ -55,11 +55,13 @@ export default async function PokedexPage() {
           {pokemon.map((entry) => {
             const count = countByPokemon.get(entry.id) ?? 0;
             return (
-              <Card key={entry.id} className={`p-4 text-center ${count ? "" : "grayscale opacity-45"}`}>
-                <img src={entry.image_path} alt={count ? entry.name_ko : "미획득 포켓몬"} className={`mx-auto h-20 w-20 object-contain ${count ? "" : "brightness-0"}`} />
-                <p className="mt-2 text-sm font-semibold text-gray-900">{count ? entry.name_ko : "???"}</p>
-                <p className="mt-1 text-xs text-gray-500">{count ? `${count}마리 보유` : `No. ${entry.pokedex_no}`}</p>
-              </Card>
+              <Link key={entry.id} href={`/pokedex/${entry.pokedex_no}`} className="rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                <Card className={`p-4 text-center transition-transform hover:-translate-y-0.5 ${count ? "" : "grayscale opacity-45"}`}>
+                  <img src={entry.image_path} alt={count ? entry.name_ko : "미획득 포켓몬"} className={`mx-auto h-20 w-20 object-contain ${count ? "" : "brightness-0"}`} />
+                  <p className="mt-2 text-sm font-semibold text-gray-900">{count ? entry.name_ko : "???"}</p>
+                  <p className="mt-1 text-xs text-gray-500">{count ? `${count}마리 보유` : `No. ${entry.pokedex_no}`}</p>
+                </Card>
+              </Link>
             );
           })}
         </div>
@@ -67,3 +69,4 @@ export default async function PokedexPage() {
     </div>
   );
 }
+import Link from "next/link";
