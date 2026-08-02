@@ -37,6 +37,13 @@ describe("Slack Web API 클라이언트", () => {
     const [, init] = spy.mock.calls[0];
     expect(JSON.parse(String(init?.body)).thread_ts).toBe("1");
   });
+  it("blocks를 주면 Slack 메시지 블록으로 보낸다", async () => {
+    const spy = mockFetch({ ok: true, ts: "2" });
+    const blocks = [{ type: "image", image_url: "https://example.com/pokemon.png", alt_text: "꼬부기" }];
+    await postMessage({ channel: "C1", text: "야생의 꼬부기가 나타났어요!", blocks });
+    const [, init] = spy.mock.calls[0];
+    expect(JSON.parse(String(init?.body)).blocks).toEqual(blocks);
+  });
   it("HTTP 200이어도 ok:false면 실패로 처리한다", async () => {
     mockFetch({ ok: false, error: "channel_not_found" });
     expect(await postMessage({ channel: "C1", text: "안녕" })).toEqual({ ok: false, error: "channel_not_found" });

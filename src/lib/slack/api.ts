@@ -1,6 +1,7 @@
 const BASE = "https://slack.com/api";
 
 export type SlackResult = { ok: true; ts: string } | { ok: false; error: string };
+export type SlackBlock = Record<string, unknown>;
 
 type SlackResponse = { ok: boolean; error?: string; ts?: string };
 
@@ -34,9 +35,10 @@ function toResult(res: SlackResponse): SlackResult {
   return { ok: true, ts: res.ts };
 }
 
-export async function postMessage(opts: { channel: string; text: string; threadTs?: string; botToken?: string }): Promise<SlackResult> {
+export async function postMessage(opts: { channel: string; text: string; threadTs?: string; botToken?: string; blocks?: SlackBlock[] }): Promise<SlackResult> {
   const body: Record<string, unknown> = { channel: opts.channel, text: opts.text };
   if (opts.threadTs) body.thread_ts = opts.threadTs;
+  if (opts.blocks) body.blocks = opts.blocks;
   return toResult(await call("chat.postMessage", body, opts.botToken));
 }
 

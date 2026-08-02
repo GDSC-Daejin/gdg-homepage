@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { resultMessage, throwMessage, type ThrowOutcome } from "@/lib/pokedex/messages";
+import { rejectionMessage, remainingBallsMessage, resultMessage, throwMessage, type ThrowOutcome } from "@/lib/pokedex/messages";
 import { postMessage } from "@/lib/slack/api";
 import { verifySlackSignature } from "@/lib/slack/verify";
 
@@ -10,6 +10,7 @@ type PokedexResult = {
   reason?: "unlinked" | "invalid" | "expired" | "already_thrown" | "no_ball";
   outcome?: ThrowOutcome;
   pokemon_name?: string;
+  remaining_balls?: number;
 };
 
 function serviceClient() {
@@ -43,15 +44,14 @@ async function handleReaction(event: ReactionEvent) {
   if (error) return;
   const result = data as PokedexResult;
   if (!result.processed) {
-    const text = result.reason === "expired"
-      ? `${result.pokemon_name ?? "포켓몬"}은 이미 사라졌어요.`
-      : result.reason === "already_thrown"
-        ? "오늘은 이미 몬스터볼을 던졌어요."
-        : result.reason === "no_ball"
-          ? "몬스터볼이 없어요."
-          : result.reason === "unlinked"
-            ? "연결된 서비스 계정을 찾지 못했어요."
-            : null;
+    if (!result.reason) return;
+    const { error: noticeError } = await supabase.from("pokemon_throw_notices").insert({
+      appearance_id: appearance.id,
+      slack_user_id: slackUser,
+      reason: result.reason,
+    });
+    if (noticeError) return;
+    const text = result.reason ? rejectionMessage(slackUser, result.reason, result.pokemon_name) : null;
     if (text) await postMessage({ channel: config.channel_id, threadTs: messageTs, text, botToken });
     return;
   }
@@ -60,6 +60,7 @@ async function handleReaction(event: ReactionEvent) {
   await postMessage({ channel: config.channel_id, threadTs: messageTs, text: throwMessage(slackUser), botToken });
   const outcomeText = resultMessage(slackUser, pokemonName, result.outcome!);
   await postMessage({ channel: config.channel_id, threadTs: messageTs, text: outcomeText, botToken });
+  await postMessage({ channel: config.channel_id, threadTs: messageTs, text: remainingBallsMessage(slackUser, result.remaining_balls ?? 0), botToken });
   if (result.outcome === "caught") await postMessage({ channel: config.channel_id, text: outcomeText, botToken });
 }
 
