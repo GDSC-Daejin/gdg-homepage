@@ -43,7 +43,8 @@ describe("도감 포켓몬 결투", () => {
 
     expect(panel).toContain("setStage(3)");
     expect(panel).toContain('"/pokedex/effects/monster-ball.png"');
-    expect(panel).toContain("setStage(8)");
+    expect(panel).toContain('"/pokedex/effects/monster-ball-side.png"');
+    expect(panel).toContain("setStage(15)");
     expect(panel).toContain("setStage(2), 1800");
     expect(panel).toContain("몬스터볼이 빛나며 포켓몬이 등장해요!");
     expect(panel).toContain("<PixelBattleEffect");
@@ -59,18 +60,44 @@ describe("도감 포켓몬 결투", () => {
     expect(effect).toContain('"/pokedex/effects/grass.png"');
     expect(effect).toContain('"/pokedex/effects/electric.png"');
     expect(effect).toContain("stage === 2");
+    expect(effect).toContain('width="960" height="288"');
+    expect(effect).toContain("const battleY = 144");
     expect((await readFile("public/pokedex/effects/monster-ball.png")).length).toBeGreaterThan(100);
     expect(styles).toContain("width: 18px");
     expect(styles).toContain("rotate(-300deg)");
     expect(styles).toContain(".ballRelease::before, .ballRelease::after");
     expect(styles).toContain("release-sparks");
     expect(styles).toContain(".battleArena");
-    expect(styles).toContain("#c8a45a");
-    expect(styles).toContain("#fff9dc");
+    expect(styles).toContain('url("/pokedex/effects/battle-arena-v4.png")');
+    expect(styles).toContain(".battleFighter");
+    expect(styles).toContain("translateY(4rem)");
+    expect(styles).toContain("aspect-ratio: 10 / 3");
     expect(styles).toContain("min-height: 18rem");
     expect(panel).toContain('className="max-w-[96rem] p-8"');
     expect(panel).toContain('mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3');
     expect(panel).toContain("styles.facingRight");
+    expect(panel).toContain("styles.battleFighter");
+    expect(panel).toContain("BattlePokemonSprite");
+    expect(panel).toContain("BattleStatus");
+    expect(panel).toContain("role=\"progressbar\"");
+    expect(panel).toContain("duel.winnerId");
+    expect(panel).toContain("styles.battleMessage");
+    expect(panel).toContain('crossOrigin="anonymous"');
+    expect(styles).toContain(".groundedSprite");
+    expect(styles).toContain(".battleMessage");
+    expect(styles).toContain(".battleStatus");
+    expect(styles).toContain(".healthTrack");
+    expect(styles).toContain("clip-path: polygon");
+    expect(styles).toContain("pokemon-faint");
+    expect(styles).toContain("pokemon-recall");
+    expect(styles).toContain("pokemon-capture");
+    expect(styles).toContain(".recallLeft");
+    expect(styles).toContain(".recallBeam");
+    expect(styles).toContain("recall-sparkle");
+    expect(styles).toContain("grounded-ball-drop");
+    expect(styles).toContain(".groundedBall");
+    expect((await readFile("public/pokedex/effects/battle-arena-v4.png")).length).toBeGreaterThan(100_000);
+    expect((await readFile("public/pokedex/effects/monster-ball-side.png")).length).toBeGreaterThan(100);
   });
 
   it("모든 공식 타입의 고정 이모지 픽셀 스프라이트를 제공한다", async () => {

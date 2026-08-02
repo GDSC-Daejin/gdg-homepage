@@ -151,8 +151,9 @@ export function PixelBattleEffect({ type, stage, fromLeft, className }: { type: 
     context.imageSmoothingEnabled = false;
     const palette = PALETTES[type];
     const direction = fromLeft ? 1 : -1;
-    const sourceX = fromLeft ? 65 : 255;
-    const targetX = fromLeft ? 255 : 65;
+    const sourceX = fromLeft ? 195 : 765;
+    const targetX = fromLeft ? 765 : 195;
+    const battleY = 144;
     const start = performance.now();
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const spritePath = FIXED_SPRITE_PATHS[type];
@@ -163,17 +164,17 @@ export function PixelBattleEffect({ type, stage, fromLeft, className }: { type: 
     const draw = (now: number) => {
       const tick = Math.floor((now - start) / 55);
       context.clearRect(0, 0, canvas.width, canvas.height);
-      if (stage === 0) charge(context, type, sourceX, 48, palette, tick, fixedImage);
+      if (stage === 0) charge(context, type, sourceX, battleY, palette, tick, fixedImage);
       if (stage === 1) {
         const progress = Math.min((now - start) / 620, 1);
         const x = sourceX + (targetX - sourceX) * progress;
         for (let index = 0; index < 8; index++) {
           const trail = Math.max(progress - index * .08, 0);
-          block(context, sourceX + (targetX - sourceX) * trail, 48 + Math.sin(index + tick / 3) * 3, 3, index % 3 === 0 ? palette[2] : palette[1]);
+          block(context, sourceX + (targetX - sourceX) * trail, battleY + Math.sin(index + tick / 3) * 3, 3, index % 3 === 0 ? palette[2] : palette[1]);
         }
-        projectile(context, type, x, 48, direction, palette, tick, fixedImage);
+        projectile(context, type, x, battleY, direction, palette, tick, fixedImage);
       }
-      if (stage === 2) hit(context, targetX, 48, palette, tick);
+      if (stage === 2) hit(context, targetX, battleY, palette, tick);
       if (!reduceMotion && stage < 3) frame = window.requestAnimationFrame(draw);
     };
 
@@ -185,5 +186,5 @@ export function PixelBattleEffect({ type, stage, fromLeft, className }: { type: 
     return () => { cancelled = true; window.cancelAnimationFrame(frame); };
   }, [fromLeft, stage, type]);
 
-  return <canvas ref={canvasRef} width="320" height="96" aria-hidden className={className} />;
+  return <canvas ref={canvasRef} width="960" height="288" aria-hidden className={className} />;
 }
