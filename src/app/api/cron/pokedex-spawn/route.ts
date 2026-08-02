@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
   await supabase.from("pokemon_appearances").update({ status: "expired" }).eq("status", "scheduled").lt("ends_at", now);
   const { data: due } = await supabase
     .from("pokemon_appearances")
-    .select("id, pokemon_id, starts_at, ends_at")
+    .select("id, pokemon_id, starts_at, ends_at, combat_power")
     .eq("status", "scheduled")
     .lte("starts_at", now)
     .gt("ends_at", now)
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   const botToken = process.env.POKEDEX_SLACK_BOT_TOKEN;
   if (!botToken) return NextResponse.json({ error: "도감봇 토큰이 설정되지 않았어요" }, { status: 500 });
 
-  const text = appearanceMessage(pokemon.name_ko, "pokeball", due.starts_at, due.ends_at);
+  const text = appearanceMessage(pokemon.name_ko, "pokeball", due.starts_at, due.ends_at, due.combat_power);
   const posted = await postMessage({
     channel: config.channel_id,
     text,

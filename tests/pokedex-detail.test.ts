@@ -20,6 +20,7 @@ describe("포켓몬 상세 도감", () => {
     expect(page).toContain('supabase.rpc("pokedex_catchers"');
     expect(page).toContain("내가 사용한 볼");
     expect(page).toContain("포획한 회원");
+    expect(page).toContain("전투력");
     expect(page).toContain("<Avatar");
   });
 

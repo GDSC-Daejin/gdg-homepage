@@ -5,7 +5,7 @@ describe("도감봇 메시지", () => {
     const module = await import("@/lib/pokedex/messages").catch(() => null);
 
     expect(module).not.toBeNull();
-    expect(module?.appearanceMessage("꼬부기", "pokeball", "2026-08-02T01:14:00.000Z", "2026-08-02T01:44:00.000Z")).toBe("야생의 꼬부기가 나타났어요! 30분간 출현해요. 오전 10:44까지 :pokeball:을 눌러 포획해보세요.");
+    expect(module?.appearanceMessage("꼬부기", "pokeball", "2026-08-02T01:14:00.000Z", "2026-08-02T01:44:00.000Z", 542)).toBe("야생의 꼬부기가 나타났어요! 전투력 542. 30분간 출현해요. 오전 10:44까지 :pokeball:을 눌러 포획해보세요.");
     expect(module?.appearanceMessage("고라파덕", "pokeball", "2026-08-02T01:14:00.000Z", "2026-08-02T01:44:00.000Z")).toContain("고라파덕이 나타났어요!");
     expect(module?.throwMessage("U1", "Jayden")).toBe("<@U1>이 몬스터볼을 던졌어요!");
     expect(module?.resultMessage("U1", "Jayden", "꼬부기", "caught")).toBe("🎉 <@U1>이 꼬부기 포획에 성공했어요!");
