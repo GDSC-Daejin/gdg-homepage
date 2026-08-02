@@ -10,9 +10,7 @@ export function pickMessageIndex(): number {
   return Math.floor(Math.random() * DAILY_MESSAGES.length);
 }
 
-type ServiceClient = SupabaseClient;
-
-async function backfillSlackIds(supabase: ServiceClient) {
+async function backfillSlackIds(supabase: SupabaseClient) {
   const { data: unlinked } = await supabase.from("profiles").select("id").is("slack_user_id", null);
   if (!unlinked || unlinked.length === 0) return 0;
   const slackEmails = await listUserEmails();

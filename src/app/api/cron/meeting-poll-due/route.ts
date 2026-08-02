@@ -45,12 +45,16 @@ export async function GET(request: NextRequest) {
   let sent = 0;
   const slackErrors: string[] = [];
   for (const poll of (polls ?? []) as { id: string; title: string }[]) {
-    const { data: pending } = await supabase
+    const { data: pending, error: pendingError } = await supabase
       .from("meeting_poll_participants")
       .select("user_id")
       .eq("poll_id", poll.id)
       .is("responded_at", null)
       .not("user_id", "is", null);
+
+    if (pendingError) {
+      return NextResponse.json({ error: pendingError.message, sent }, { status: 500 });
+    }
 
     const rows = ((pending ?? []) as { user_id: string }[]).map((p) => ({
       recipient_id: p.user_id,
