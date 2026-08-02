@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const tabs = [
   { href: "/admin", label: "대시보드" },
   { href: "/admin/analytics", label: "분석" },
+  { href: "/admin/pokedex", label: "도감" },
 ];
 
 export function OverviewTabs() {
