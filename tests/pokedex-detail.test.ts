@@ -24,6 +24,14 @@ describe("포켓몬 상세 도감", () => {
     expect(page).toContain("<Avatar");
   });
 
+  it("미획득 포켓몬의 이미지와 설명을 숨긴다", async () => {
+    const page = await readFile("src/app/(member)/pokedex/[pokedexNo]/page.tsx", "utf8");
+
+    expect(page).toContain("const caught = myCatches.length > 0;");
+    expect(page).toContain('alt={caught ? pokemon.name_ko : "미획득 포켓몬"}');
+    expect(page).toContain('{caught ? pokemonDescription(pokemon.pokedex_no, pokemon.name_ko) : "???"}');
+  });
+
   it("포획자 이름과 프로필 이미지만 제한적으로 조회한다", async () => {
     const [sql, permissions] = await Promise.all([
       readFile("supabase/migrations/0063_pokedex_catchers.sql", "utf8"),

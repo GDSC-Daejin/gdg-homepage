@@ -56,6 +56,7 @@ export default async function PokemonDetailPage({ params }: { params: Promise<{ 
   const ballNames = new Map(balls.map((ball) => [ball.slug, ball.name_ko]));
   const myBallCounts = new Map<string, number>();
   for (const catchRecord of myCatches) myBallCounts.set(catchRecord.ball_slug, (myBallCounts.get(catchRecord.ball_slug) ?? 0) + 1);
+  const caught = myCatches.length > 0;
   let previousPower: number | null = null;
   let rank = 0;
   const rankedCatchers = catchers.map((catcher, index) => {
@@ -69,13 +70,13 @@ export default async function PokemonDetailPage({ params }: { params: Promise<{ 
       <PageHeader title={pokemon.name_ko} description={`No. ${String(pokemon.pokedex_no).padStart(3, "0")}`} action={<Link href="/pokedex" className="text-sm font-medium text-primary hover:underline">도감으로 돌아가기</Link>} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_1.35fr]">
         <Card className="flex flex-col items-center justify-center bg-primary-soft p-8 text-center">
-          <img src={pokemon.image_path} alt={pokemon.name_ko} className="h-48 w-48 object-contain sm:h-56 sm:w-56" />
+          <img src={pokemon.image_path} alt={caught ? pokemon.name_ko : "미획득 포켓몬"} className={`h-48 w-48 object-contain sm:h-56 sm:w-56 ${caught ? "" : "grayscale brightness-0 opacity-45"}`} />
           <p className="mt-4 text-sm font-semibold text-primary">No. {String(pokemon.pokedex_no).padStart(3, "0")}</p>
           <h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">{pokemon.name_ko}</h2>
         </Card>
         <Card>
           <p className="text-sm font-semibold text-gray-900">포켓몬 설명</p>
-          <p className="mt-3 leading-7 text-gray-600">{pokemonDescription(pokemon.pokedex_no, pokemon.name_ko)}</p>
+          <p className="mt-3 leading-7 text-gray-600">{caught ? pokemonDescription(pokemon.pokedex_no, pokemon.name_ko) : "???"}</p>
           <div className="mt-8 border-t border-gray-100 pt-6">
             <p className="text-sm font-semibold text-gray-900">내가 사용한 볼</p>
             {myBallCounts.size === 0 ? <p className="mt-2 text-sm text-gray-500">아직 이 포켓몬을 포획하지 못했어요.</p> : <div className="mt-3 flex flex-wrap gap-2">{[...myBallCounts.entries()].map(([slug, count]) => <span key={slug} className="rounded-full bg-primary-soft px-3 py-1.5 text-sm font-medium text-primary">{ballNames.get(slug) ?? slug} × {count}</span>)}</div>}
