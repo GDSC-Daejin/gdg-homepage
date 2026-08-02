@@ -41,7 +41,8 @@ const DEMO_CATCHES: Catch[] = [
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminPokedexPage() {
+export default async function AdminPokedexPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
+  const tab = (await searchParams).tab === "development" ? "development" : "overview";
   let catches = DEMO_CATCHES;
   let profiles = DEMO_PROFILES;
   let pokemon = DEMO_POKEMON;
@@ -86,7 +87,13 @@ export default async function AdminPokedexPage() {
   return (
     <div className="flex flex-col gap-6">
       <OverviewTabs />
-      <PageHeader title="포켓몬 개발" description="도감 현황과 결투 연출을 확인해요." />
+      <PageHeader title="포켓몬" description="도감 현황을 확인하고 개발용 결투 연출을 미리 봐요." />
+      <nav aria-label="포켓몬 관리" className="flex gap-1 border-b border-gray-200">
+        <Link href="/admin/pokedex" aria-current={tab === "overview" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium ${tab === "overview" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>도감 현황</Link>
+        <Link href="/admin/pokedex?tab=development" aria-current={tab === "development" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium ${tab === "development" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>개발</Link>
+      </nav>
+
+      {tab === "development" ? <DuelPreview /> : <>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="총 포획 성공" value={`${catches.length}마리`} />
@@ -132,7 +139,7 @@ export default async function AdminPokedexPage() {
           )}
         </Card>
       </div>
-      <DuelPreview />
+      </>}
     </div>
   );
 }

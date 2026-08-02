@@ -12,6 +12,13 @@ beforeAll(async () => {
 });
 
 describe("어드민 포켓몬 도감 대시보드", () => {
+  it("도감 현황과 개발 탭을 나누고 결투 연출은 개발 탭에 둔다", async () => {
+    const page = await readFile("src/app/admin/pokedex/page.tsx", "utf8");
+    expect(page).toContain('tab === "development"');
+    expect(page).toContain("개발");
+    expect(page).toContain("<DuelPreview />");
+  });
+
   it("대시보드 탭에서 도감 현황으로 이동할 수 있다", () => {
     expect(tabs).toContain('href: "/admin/pokedex"');
     expect(tabs).toContain('label: "도감"');
