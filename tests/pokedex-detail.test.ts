@@ -2,10 +2,13 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
 describe("포켓몬 상세 도감", () => {
-  it("포켓몬의 종별 설명을 제공한다", async () => {
+  it("151종 모두 세 줄의 종별 설명을 제공한다", async () => {
     const { pokemonDescription } = await import("@/lib/pokedex/catalog");
 
     expect(pokemonDescription(7, "꼬부기")).toContain("등딱지");
+    for (let pokedexNo = 1; pokedexNo <= 151; pokedexNo += 1) {
+      expect(pokemonDescription(pokedexNo, "").split("\n")).toHaveLength(3);
+    }
   });
 
   it("도감 카드를 상세 경로로 연결한다", async () => {
@@ -32,6 +35,7 @@ describe("포켓몬 상세 도감", () => {
     expect(page).toContain('alt={caught ? pokemon.name_ko : "미획득 포켓몬"}');
     expect(page).toContain('<h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">{caught ? pokemon.name_ko : "???"}</h2>');
     expect(page).toContain('{caught ? pokemonDescription(pokemon.pokedex_no, pokemon.name_ko) : "???"}');
+    expect(page).toContain("whitespace-pre-line");
   });
 
   it("포획자 이름과 프로필 이미지만 제한적으로 조회한다", async () => {

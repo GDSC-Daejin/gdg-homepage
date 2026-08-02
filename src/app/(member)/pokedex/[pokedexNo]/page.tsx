@@ -76,7 +76,7 @@ export default async function PokemonDetailPage({ params }: { params: Promise<{ 
         </Card>
         <Card>
           <p className="text-sm font-semibold text-gray-900">포켓몬 설명</p>
-          <p className="mt-3 leading-7 text-gray-600">{caught ? pokemonDescription(pokemon.pokedex_no, pokemon.name_ko) : "???"}</p>
+          <p className="mt-3 whitespace-pre-line leading-7 text-gray-600">{caught ? pokemonDescription(pokemon.pokedex_no, pokemon.name_ko) : "???"}</p>
           <div className="mt-8 border-t border-gray-100 pt-6">
             <p className="text-sm font-semibold text-gray-900">내가 사용한 볼</p>
             {myBallCounts.size === 0 ? <p className="mt-2 text-sm text-gray-500">아직 이 포켓몬을 포획하지 못했어요.</p> : <div className="mt-3 flex flex-wrap gap-2">{[...myBallCounts.entries()].map(([slug, count]) => <span key={slug} className="rounded-full bg-primary-soft px-3 py-1.5 text-sm font-medium text-primary">{ballNames.get(slug) ?? slug} × {count}</span>)}</div>}
