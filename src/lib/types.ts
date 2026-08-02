@@ -48,6 +48,7 @@ export type RegistrationStatus = "confirmed" | "waitlisted";
 export interface Profile {
   id: string;
   name: string;
+  featured_pokemon_id?: string | null;
   avatar_path?: string | null;
   nickname: string;
   // auth.users.email 미러 (0050) — 진실 원천은 auth.users

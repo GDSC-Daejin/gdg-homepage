@@ -22,6 +22,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
     interests: formData.getAll("interests"),
     position: formData.get("position"),
     academic_status: formData.get("academic_status") || null,
+    featured_pokemon_id: formData.get("featured_pokemon_id") || null,
   });
 
   if (!parsed.success) {
@@ -29,9 +30,14 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
   }
 
   const supabase = await createClient();
+  const { featured_pokemon_id, ...profileData } = parsed.data;
+  const { error: featuredError } = await supabase.rpc("set_featured_pokemon", {
+    p_pokemon: featured_pokemon_id ?? null,
+  });
+  if (featuredError) return { error: toKoreanError(featuredError) };
   const { error } = await supabase
     .from("profiles")
-    .update(parsed.data)
+    .update(profileData)
     .eq("id", profile.id);
 
   if (error) return { error: toKoreanError(error) };

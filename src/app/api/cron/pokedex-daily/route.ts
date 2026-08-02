@@ -26,13 +26,13 @@ export async function GET(request: NextRequest) {
 
   const { data: catalog } = await supabase
     .from("pokemon_catalog")
-    .select("id, dwell_minutes")
+    .select("id, dwell_minutes, spawn_weight")
     .eq("active", true);
   if (!catalog || catalog.length < 3) return NextResponse.json({ error: "출현 포켓몬이 부족해요" }, { status: 500 });
 
   const appearances = planDailyAppearances(
     new Date(),
-    catalog.map((pokemon) => ({ id: pokemon.id, dwellMinutes: pokemon.dwell_minutes })),
+    catalog.map((pokemon) => ({ id: pokemon.id, dwellMinutes: pokemon.dwell_minutes, spawnWeight: pokemon.spawn_weight })),
   );
   const { error } = await supabase.from("pokemon_appearances").insert(
     appearances.map((appearance, index) => ({

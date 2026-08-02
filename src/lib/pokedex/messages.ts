@@ -1,4 +1,5 @@
 import { formatKstTime } from "@/lib/format";
+import type { PokemonOwnerRanking } from "@/lib/pokedex/ranking";
 
 export type ThrowOutcome = "caught" | "escaped";
 export type ThrowRejection = "unlinked" | "invalid" | "expired" | "already_thrown" | "no_ball";
@@ -35,4 +36,9 @@ export function rejectionMessage(slackUserId: string, slackName: string, reason:
 
 export function remainingBallsMessage(slackUserId: string, remainingBalls: number) {
   return `<@${slackUserId}>의 남은 몬스터볼: ${remainingBalls}개`;
+}
+
+export function ownershipRankingMessage(rankings: PokemonOwnerRanking[]) {
+  if (rankings.length === 0) return "🏆 오늘의 포켓몬 도감 랭킹\n아직 포획한 포켓몬이 없어요.";
+  return `🏆 오늘의 포켓몬 도감 랭킹\n${rankings.map((ranking, index) => `${index + 1}위 <@${ranking.slackUserId}> · ${ranking.speciesCount}종 보유`).join("\n")}`;
 }

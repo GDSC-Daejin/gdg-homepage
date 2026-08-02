@@ -1,4 +1,4 @@
-export type PokemonScheduleItem = { id: string; dwellMinutes: number };
+export type PokemonScheduleItem = { id: string; dwellMinutes: number; spawnWeight: number };
 
 export type ScheduledAppearance = {
   pokemonId: string;
@@ -33,7 +33,15 @@ export function planDailyAppearances(
   if (pokemon.length < 3) throw new Error("AT_LEAST_THREE_POKEMON_REQUIRED");
 
   const choices = [...pokemon];
-  const selected = Array.from({ length: 3 }, () => choices.splice(Math.floor(random() * choices.length), 1)[0]);
+  const selected = Array.from({ length: 3 }, () => {
+    const target = random() * choices.reduce((sum, item) => sum + item.spawnWeight, 0);
+    let total = 0;
+    const index = choices.findIndex((item) => {
+      total += item.spawnWeight;
+      return total > target;
+    });
+    return choices.splice(index < 0 ? choices.length - 1 : index, 1)[0];
+  });
   const closingMinute = 23 * 60;
   let cursor = 7 * 60;
 

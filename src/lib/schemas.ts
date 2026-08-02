@@ -14,6 +14,7 @@ export const profileSchema = z.object({
     .enum(["enrolled", "leave", "graduated", "completed"])
     .nullable()
     .optional(),
+  featured_pokemon_id: z.string().uuid("대표 포켓몬 값이 올바르지 않아요").nullable().optional(),
 });
 
 export const eventSchema = z

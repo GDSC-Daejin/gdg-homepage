@@ -34,6 +34,10 @@ interface AttendanceHistoryItem {
   event: { id: string; title: string; type: EventType; starts_at: string } | null;
 }
 
+interface OwnedPokemonRow {
+  pokemon: { id: string; name_ko: string } | null;
+}
+
 const TYPE_LABELS: Record<EventType, string> = {
   session: "정기세션",
   study: "스터디",
@@ -58,6 +62,7 @@ export default async function ProfilePage() {
     { data: pointLogs },
     { data: myBadges },
     { data: allBadges },
+    { data: ownedPokemonRows },
   ] = await Promise.all([
     supabase
       .from("event_registrations")
@@ -87,6 +92,12 @@ export default async function ProfilePage() {
       .select("*")
       .order("name", { ascending: true })
       .returns<BadgeType[]>(),
+    supabase
+      .from("pokemon_throws")
+      .select("pokemon:pokemon_catalog(id, name_ko)")
+      .eq("user_id", profile.id)
+      .eq("outcome", "caught")
+      .returns<OwnedPokemonRow[]>(),
   ]);
 
   const attendedEventIds = new Set((attendances ?? []).map((a) => a.event_id));
@@ -101,6 +112,7 @@ export default async function ProfilePage() {
     (myBadges ?? []).map((ub) => ub.badge?.id).filter(Boolean),
   );
   const badgeCatalog = allBadges ?? [];
+  const ownedPokemon = [...new Map((ownedPokemonRows ?? []).flatMap((row) => row.pokemon ? [[row.pokemon.id, row.pokemon]] : [])).values()];
 
   return (
     <div className="mx-auto w-full max-w-6xl">
@@ -108,7 +120,7 @@ export default async function ProfilePage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[400px_1fr] lg:items-start">
         <div className="lg:sticky lg:top-8">
-          <ProfileForm profile={profile} />
+          <ProfileForm profile={profile} ownedPokemon={ownedPokemon} />
         </div>
 
         <div className="flex flex-col gap-8">

@@ -18,12 +18,28 @@ function kstMinutes(date: Date) {
 }
 
 describe("도감 일일 출현 예약", () => {
+  it("출현 가중치에 따라 세 포켓몬을 중복 없이 선택한다", async () => {
+    const { planDailyAppearances } = await import("@/lib/pokedex/schedule");
+    const appearances = planDailyAppearances(
+      new Date("2026-08-02T00:00:00.000Z"),
+      [
+        { id: "common", dwellMinutes: 30, spawnWeight: 100 },
+        { id: "rare", dwellMinutes: 30, spawnWeight: 1 },
+        { id: "uncommon", dwellMinutes: 30, spawnWeight: 55 },
+        { id: "epic", dwellMinutes: 30, spawnWeight: 12 },
+      ],
+      () => 0.2,
+    );
+
+    expect(appearances.map((appearance) => appearance.pokemonId)).toEqual(["common", "uncommon", "epic"]);
+  });
+
   it("서로 다른 세 포켓몬을 KST 07:00~23:00 안에서 겹치지 않게 예약한다", async () => {
     const module = await import("@/lib/pokedex/schedule").catch(() => null);
     const planDailyAppearances = module?.planDailyAppearances as
       | ((
           date: Date,
-          pokemon: { id: string; dwellMinutes: number }[],
+          pokemon: { id: string; dwellMinutes: number; spawnWeight: number }[],
           random: () => number,
         ) => ScheduledAppearance[])
       | undefined;
@@ -32,9 +48,9 @@ describe("도감 일일 출현 예약", () => {
     const appearances = planDailyAppearances?.(
       new Date("2026-08-02T00:00:00.000Z"),
       [
-        { id: "squirtle", dwellMinutes: 90 },
-        { id: "charmander", dwellMinutes: 60 },
-        { id: "pikachu", dwellMinutes: 30 },
+        { id: "squirtle", dwellMinutes: 90, spawnWeight: 100 },
+        { id: "charmander", dwellMinutes: 60, spawnWeight: 100 },
+        { id: "pikachu", dwellMinutes: 30, spawnWeight: 100 },
       ],
       () => 0.5,
     ) ?? [];

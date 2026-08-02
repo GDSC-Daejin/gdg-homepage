@@ -14,9 +14,10 @@ const INTEREST_OPTIONS = ["Android", "Web", "iOS", "ML", "Cloud", "Design"];
 
 interface ProfileFormProps {
   profile: Profile;
+  ownedPokemon: { id: string; name_ko: string }[];
 }
 
-export function ProfileForm({ profile }: ProfileFormProps) {
+export function ProfileForm({ profile, ownedPokemon }: ProfileFormProps) {
   const [error, setError] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -67,6 +68,14 @@ export function ProfileForm({ profile }: ProfileFormProps) {
         <Input name="student_no" label="학번" defaultValue={profile.student_no} />
         <Input name="major" label="전공" defaultValue={profile.major} />
         <Input name="phone" label="전화번호" defaultValue={profile.phone} />
+        <Select
+          name="featured_pokemon_id"
+          label="대표 포켓몬"
+          defaultValue={profile.featured_pokemon_id ?? ""}
+        >
+          <option value="">선택 안 함</option>
+          {ownedPokemon.map((pokemon) => <option key={pokemon.id} value={pokemon.id}>{pokemon.name_ko}</option>)}
+        </Select>
         <Select
           name="position"
           label="포지션"
