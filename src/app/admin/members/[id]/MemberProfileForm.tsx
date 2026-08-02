@@ -8,6 +8,7 @@ import { Button } from "@/components/Button";
 export function MemberProfileForm({
   userId,
   name,
+  nickname,
   studentNo,
   major,
   phone,
@@ -15,12 +16,14 @@ export function MemberProfileForm({
 }: {
   userId: string;
   name: string;
+  nickname: string;
   studentNo: string;
   major: string;
   phone: string;
   interests: string[];
 }) {
   const [nameValue, setNameValue] = useState(name);
+  const [nicknameValue, setNicknameValue] = useState(nickname);
   const [studentNoValue, setStudentNoValue] = useState(studentNo);
   const [majorValue, setMajorValue] = useState(major);
   const [phoneValue, setPhoneValue] = useState(phone);
@@ -36,6 +39,7 @@ export function MemberProfileForm({
     startTransition(async () => {
       const result = await updateMemberProfile(userId, {
         name: nameValue,
+        nickname: nicknameValue,
         student_no: studentNoValue,
         major: majorValue,
         phone: phoneValue,
@@ -59,6 +63,12 @@ export function MemberProfileForm({
           label="이름"
           value={nameValue}
           onChange={(e) => setNameValue(e.target.value)}
+          disabled={pending}
+        />
+        <Input
+          label="영어 닉네임"
+          value={nicknameValue}
+          onChange={(e) => setNicknameValue(e.target.value)}
           disabled={pending}
         />
         <Input

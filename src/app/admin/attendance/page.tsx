@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/Card";
+import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
+import { displayName } from "@/lib/format";
 import { ATTENDANCE_WARNING_THRESHOLD } from "./constants";
 import { SendWarningButton } from "./SendWarningButton";
 import { isDemoMode } from "@/lib/demo";
@@ -31,7 +33,7 @@ export default async function AdminAttendancePage() {
       supabase
         .from("profiles")
         .select("*")
-        .eq("role", "member")
+        .in("role", ["member", "organizer", "team_member"])
         .eq("status", "active")
         .order("name"),
       supabase.from("events").select("id").lt("starts_at", now),
@@ -90,49 +92,58 @@ export default async function AdminAttendancePage() {
       {rows.length === 0 ? (
         <EmptyState title="활동 회원이 없어요" />
       ) : (
-        <Card className="overflow-x-auto p-0">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
-                <th className="px-4 py-3 font-medium">이름</th>
-                <th className="px-4 py-3 font-medium">학번</th>
-                <th className="px-4 py-3 font-medium">확정 신청</th>
-                <th className="px-4 py-3 font-medium">출석</th>
-                <th className="px-4 py-3 font-medium">출석률</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr
-                  key={row.member.id}
-                  className="border-b border-gray-100 last:border-0"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {row.member.name || "(이름 없음)"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {row.member.student_no || "-"}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">{row.confirmed}</td>
-                  <td className="px-4 py-3 text-gray-700">{row.attended}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-700">
-                        {row.rate !== null
-                          ? `${Math.round(row.rate * 100)}%`
-                          : "-"}
-                      </span>
-                      {row.rate !== null &&
-                        row.rate < ATTENDANCE_WARNING_THRESHOLD && (
-                          <Badge tone="warning">경고</Badge>
-                        )}
-                    </div>
-                  </td>
+        <section className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 sm:px-6">
+            <h2 className="text-sm font-semibold text-gray-900">회원별 출석 현황</h2>
+            <p className="text-sm text-gray-500">{rows.length}명</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full whitespace-nowrap text-sm">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="px-4 py-3 font-medium">이름</th>
+                  <th className="hidden px-4 py-3 font-medium md:table-cell">학번</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">확정 신청</th>
+                  <th className="hidden px-4 py-3 font-medium lg:table-cell">출석</th>
+                  <th className="px-4 py-3 font-medium">출석률</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </Card>
+              </thead>
+              <tbody>
+                {rows.map((row) => {
+                  const name = displayName(row.member.name || "(이름 없음)", row.member.nickname);
+                  return (
+                    <tr
+                      key={row.member.id}
+                      className="border-b border-gray-100 last:border-0 transition-colors duration-100 hover:bg-gray-50"
+                    >
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar
+                            name={row.member.name || name}
+                            avatarPath={row.member.avatar_path}
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary"
+                          />
+                          <Link href={`/admin/members/${row.member.id}`} className="font-medium text-primary hover:underline">
+                            {name}
+                          </Link>
+                        </div>
+                      </td>
+                      <td className="hidden px-4 py-4 text-gray-700 md:table-cell">{row.member.student_no || "-"}</td>
+                      <td className="hidden px-4 py-4 text-gray-700 lg:table-cell">{row.confirmed}</td>
+                      <td className="hidden px-4 py-4 text-gray-700 lg:table-cell">{row.attended}</td>
+                      <td className="px-4 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">{row.rate !== null ? `${Math.round(row.rate * 100)}%` : "-"}</span>
+                          {row.rate !== null && row.rate < ATTENDANCE_WARNING_THRESHOLD && <Badge tone="warning">경고</Badge>}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
       )}
     </div>
   );

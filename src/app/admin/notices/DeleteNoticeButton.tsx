@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { deleteNotice } from "@/actions/notice";
 import { Button } from "@/components/Button";
-import { useDismiss } from "@/lib/useDismiss";
+import { Modal } from "@/components/Modal";
 
 function Spinner() {
   return (
@@ -50,7 +50,7 @@ export function DeleteNoticeButton({
   const router = useRouter();
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
-  const { ref, open, setOpen } = useDismiss<HTMLDivElement>();
+  const [open, setOpen] = useState(false);
 
   function handleDelete() {
     setError(undefined);
@@ -81,37 +81,33 @@ export function DeleteNoticeButton({
       {error && (
         <p className="rounded-md bg-danger-soft px-2 py-1 text-xs text-danger">{error}</p>
       )}
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div ref={ref} className="w-full max-w-sm rounded-xl bg-white p-6 shadow-card">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
-              <TrashIcon className="h-6 w-6 text-danger" />
-            </div>
-            <h2 className="mt-3 text-base font-semibold text-gray-900">공지를 삭제할까요?</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              삭제하면 되돌릴 수 없어요. 이미 발행된 공지라면 회원에게 더 이상 보이지 않게 돼요.
-            </p>
-            <p className="mt-3 truncate rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
-              {title}
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
-                취소
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handleDelete}
-                disabled={pending}
-                className="gap-1.5"
-              >
-                {pending && <Spinner />}
-                삭제
-              </Button>
-            </div>
-          </div>
+      <Modal open={open} onClose={() => setOpen(false)} ariaLabel="공지 삭제 확인">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-danger-soft">
+          <TrashIcon className="h-6 w-6 text-danger" />
         </div>
-      )}
+        <h2 className="mt-3 text-base font-semibold text-gray-900">공지를 삭제할까요?</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          삭제하면 되돌릴 수 없어요. 이미 발행된 공지라면 회원에게 더 이상 보이지 않게 돼요.
+        </p>
+        <p className="mt-3 truncate rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
+          {title}
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => setOpen(false)} disabled={pending}>
+            취소
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            onClick={handleDelete}
+            disabled={pending}
+            className="gap-1.5"
+          >
+            {pending && <Spinner />}
+            삭제
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -16,9 +16,13 @@ export function SendWarningButton() {
         setMessage(result.error);
         return;
       }
+      if (result.skipped) {
+        setMessage("오늘은 이미 보냈어요 (하루 한 번만 나가요)");
+        return;
+      }
       setMessage(
         result.count && result.count > 0
-          ? `출석 경고 ${result.count}명에게 슬랙 알림을 보냈어요`
+          ? `출석률 미달 ${result.count}명 명단을 운영진 채널로 보냈어요`
           : "출석률 미달 회원이 없어요",
       );
     });

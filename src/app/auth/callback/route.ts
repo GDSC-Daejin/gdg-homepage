@@ -7,30 +7,33 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.exchangeCodeForSession(code);
 
     if (!error) {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
       if (user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("name, role")
+          .select("student_no")
           .eq("id", user.id)
           .single();
 
-        if (profile && profile.name !== "") {
-          return NextResponse.redirect(
-            profile.role === "admin" ? `${origin}/admin` : `${origin}/`,
-          );
+        if (profile && profile.student_no !== "") {
+          return NextResponse.redirect(loginCompleteUrl(origin, "/"));
         }
       }
 
-      return NextResponse.redirect(`${origin}/onboarding`);
+      return NextResponse.redirect(loginCompleteUrl(origin, "/onboarding"));
     }
   }
 
-  return NextResponse.redirect(`${origin}/login`);
+  return NextResponse.redirect(`${origin}/`);
+}
+
+function loginCompleteUrl(origin: string, next: string): URL {
+  const url = new URL("/auth/complete", origin);
+  url.searchParams.set("next", next);
+  return url;
 }

@@ -1,13 +1,28 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { setMemberRole, setMemberStatus } from "@/actions/member";
+import {
+  approveMember,
+  setMemberRole,
+  setMemberPosition,
+  setMemberStatus,
+  setMemberAcademicStatus,
+} from "@/actions/member";
 import { Select, type SelectChangeEvent } from "@/components/Select";
 import { Badge } from "@/components/Badge";
-import type { Role, MemberStatus } from "@/lib/types";
+import { Button } from "@/components/Button";
+import {
+  POSITION_LABELS,
+  ACADEMIC_STATUS_LABELS,
+  type Role,
+  type Position,
+  type MemberStatus,
+  type AcademicStatus,
+} from "@/lib/types";
 
 const roleLabel: Record<Role, string> = {
-  admin: "관리자",
+  organizer: "오거나이저",
+  team_member: "팀 멤버",
   member: "회원",
   applicant: "지원자",
 };
@@ -18,8 +33,9 @@ const statusLabel: Record<MemberStatus, string> = {
   withdrawn: "탈퇴",
 };
 
-const roleTone: Record<Role, "primary" | "neutral" | "warning"> = {
-  admin: "primary",
+const roleTone: Record<Role, "primary" | "success" | "neutral" | "warning"> = {
+  organizer: "primary",
+  team_member: "success",
   member: "neutral",
   applicant: "warning",
 };
@@ -30,17 +46,36 @@ const statusTone: Record<MemberStatus, "success" | "neutral" | "danger"> = {
   withdrawn: "danger",
 };
 
+const academicStatusTone: Record<AcademicStatus, "primary" | "success" | "neutral" | "warning"> = {
+  enrolled: "success",
+  leave: "warning",
+  graduated: "neutral",
+  completed: "primary",
+};
+
 export function MemberRoleStatusForm({
   userId,
   role,
+  position,
   status,
+  academicStatus,
+  approvedAt,
+  organizerTaken,
 }: {
   userId: string;
   role: Role;
+  position: Position | null;
   status: MemberStatus;
+  academicStatus: AcademicStatus | null;
+  approvedAt: string | null;
+  organizerTaken: boolean;
 }) {
   const [roleValue, setRoleValue] = useState(role);
+  const [positionValue, setPositionValue] = useState<Position | "">(
+    position ?? "",
+  );
   const [statusValue, setStatusValue] = useState(status);
+  const [academicStatusValue, setAcademicStatusValue] = useState(academicStatus ?? null);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
@@ -53,6 +88,19 @@ export function MemberRoleStatusForm({
       if (result?.error) {
         setError(result.error);
         setRoleValue(role);
+      }
+    });
+  }
+
+  function handlePositionChange(e: SelectChangeEvent) {
+    const value = e.target.value as Position;
+    setPositionValue(value);
+    setError(undefined);
+    startTransition(async () => {
+      const result = await setMemberPosition(userId, value);
+      if (result?.error) {
+        setError(result.error);
+        setPositionValue(position ?? "");
       }
     });
   }
@@ -70,15 +118,50 @@ export function MemberRoleStatusForm({
     });
   }
 
+  function handleAcademicStatusChange(e: SelectChangeEvent) {
+    const value = (e.target.value || null) as AcademicStatus | null;
+    setAcademicStatusValue(value);
+    setError(undefined);
+    startTransition(async () => {
+      const result = await setMemberAcademicStatus(userId, value);
+      if (result?.error) {
+        setError(result.error);
+        setAcademicStatusValue(academicStatus ?? null);
+      }
+    });
+  }
+
+  function handleApprove() {
+    setError(undefined);
+    startTransition(async () => {
+      const result = await approveMember(userId);
+      if (result?.error) setError(result.error);
+    });
+  }
+
   return (
     <div className="flex flex-col gap-3 border-t border-gray-100 pt-4">
-      <p className="text-sm font-semibold text-gray-900">역할 · 상태</p>
+      <p className="text-sm font-semibold text-gray-900">역할 · 포지션 · 상태 · 재학여부</p>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2">
+          {!approvedAt && <Badge tone="warning">승인 대기</Badge>}
           <Badge tone={roleTone[roleValue]}>{roleLabel[roleValue]}</Badge>
+          {positionValue && (
+            <Badge tone="neutral">{POSITION_LABELS[positionValue]}</Badge>
+          )}
           <Badge tone={statusTone[statusValue]}>{statusLabel[statusValue]}</Badge>
+          {academicStatusValue && (
+            <Badge tone={academicStatusTone[academicStatusValue]}>
+              {ACADEMIC_STATUS_LABELS[academicStatusValue]}
+            </Badge>
+          )}
         </div>
         <div className="flex flex-wrap items-end gap-3">
+          {!approvedAt && (
+            <Button type="button" variant="primary" disabled={pending} onClick={handleApprove}>
+              승인
+            </Button>
+          )}
           <Select
             label="역할"
             value={roleValue}
@@ -86,9 +169,27 @@ export function MemberRoleStatusForm({
             disabled={pending}
             className="w-36"
           >
-            <option value="admin">관리자</option>
+            <option value="organizer" disabled={organizerTaken}>
+              오거나이저{organizerTaken ? " (이미 지정됨)" : ""}
+            </option>
+            <option value="team_member">팀 멤버</option>
             <option value="member">회원</option>
             <option value="applicant">지원자</option>
+          </Select>
+          <Select
+            label="포지션"
+            value={positionValue}
+            onChange={handlePositionChange}
+            disabled={pending}
+            className="w-36"
+          >
+            <option value="" disabled>
+              선택
+            </option>
+            <option value="frontend">프론트엔드</option>
+            <option value="backend">백엔드</option>
+            <option value="designer">디자이너</option>
+            <option value="beginner">비기너</option>
           </Select>
           <Select
             label="상태"
@@ -100,6 +201,19 @@ export function MemberRoleStatusForm({
             <option value="active">활동</option>
             <option value="dormant">휴면</option>
             <option value="withdrawn">탈퇴</option>
+          </Select>
+          <Select
+            label="재학여부"
+            value={academicStatusValue ?? ""}
+            onChange={handleAcademicStatusChange}
+            disabled={pending}
+            className="w-36"
+          >
+            <option value="">선택 안 함</option>
+            <option value="enrolled">재학</option>
+            <option value="leave">휴학</option>
+            <option value="graduated">졸업</option>
+            <option value="completed">수료</option>
           </Select>
         </div>
       </div>

@@ -29,10 +29,14 @@ export default async function AdminMemberDetailPage({
 
   let member: Profile | undefined;
   let attendances: AttendanceRow[] = [];
+  let organizerTaken = false;
 
   if (demo) {
     member = DEMO_MEMBERS.find((m) => m.id === id) ?? DEMO_MEMBERS[0];
     attendances = DEMO_MEMBER_ATTENDANCE[member.id] ?? [];
+    organizerTaken = DEMO_MEMBERS.some(
+      (m) => m.role === "organizer" && m.id !== member!.id,
+    );
   } else {
     const supabase = await createClient();
     const { data: memberData } = await supabase
@@ -43,6 +47,13 @@ export default async function AdminMemberDetailPage({
 
     if (!memberData) notFound();
     member = memberData as Profile;
+
+    const { count } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "organizer")
+      .neq("id", id);
+    organizerTaken = (count ?? 0) > 0;
 
     const { data: attendanceData } = await supabase
       .from("attendances")
@@ -64,6 +75,11 @@ export default async function AdminMemberDetailPage({
         <div>
           <h1 className="text-xl font-bold text-gray-900">
             {member.name || "(이름 없음)"}
+            {member.nickname && (
+              <span className="ml-1.5 text-base font-medium text-gray-500">
+                ({member.nickname})
+              </span>
+            )}
           </h1>
           <p className="text-sm text-gray-500">
             {member.student_no || "-"} · {member.major || "-"}
@@ -72,15 +88,16 @@ export default async function AdminMemberDetailPage({
       </div>
 
       <Card className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm font-semibold text-gray-900">프로필</p>
-          <p className="text-xs text-gray-400">
+          <p className="whitespace-nowrap text-xs text-gray-400">
             가입일 {formatKst(member.joined_at)} (KST)
           </p>
         </div>
         <MemberProfileForm
           userId={member.id}
           name={member.name}
+          nickname={member.nickname}
           studentNo={member.student_no}
           major={member.major}
           phone={member.phone}
@@ -89,7 +106,11 @@ export default async function AdminMemberDetailPage({
         <MemberRoleStatusForm
           userId={member.id}
           role={member.role}
+          position={member.position}
           status={member.status}
+          academicStatus={member.academic_status}
+          approvedAt={member.approved_at}
+          organizerTaken={organizerTaken}
         />
       </Card>
 
@@ -105,12 +126,14 @@ export default async function AdminMemberDetailPage({
         {attendances.length === 0 ? (
           <EmptyState title="출석 기록이 없어요" />
         ) : (
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-gray-500">
-                <th className="py-2 font-medium">이벤트</th>
-                <th className="py-2 font-medium">이벤트 일시 (KST)</th>
-                <th className="py-2 font-medium">출석 체크 (KST)</th>
+                <th className="py-2 pr-4 font-medium">이벤트</th>
+                {/* 날짜·시각은 값 하나라 절대 끊지 않는다 */}
+                <th className="whitespace-nowrap py-2 pr-4 font-medium">이벤트 일시 (KST)</th>
+                <th className="whitespace-nowrap py-2 font-medium">출석 체크 (KST)</th>
               </tr>
             </thead>
             <tbody>
@@ -121,21 +144,24 @@ export default async function AdminMemberDetailPage({
                 >
                   <td
                     className={
-                      row.events ? "py-2 text-gray-900" : "py-2 text-gray-400"
+                      row.events
+                        ? "py-2 pr-4 text-gray-900"
+                        : "py-2 pr-4 text-gray-400"
                     }
                   >
                     {row.events?.title ?? "(삭제된 이벤트)"}
                   </td>
-                  <td className="py-2 text-gray-500">
+                  <td className="whitespace-nowrap py-2 pr-4 text-gray-500">
                     {row.events ? formatKst(row.events.starts_at) : "-"}
                   </td>
-                  <td className="py-2 text-gray-500">
+                  <td className="whitespace-nowrap py-2 text-gray-500">
                     {formatKst(row.checked_at)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

@@ -1,11 +1,16 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
-import { formatKst } from "@/lib/format";
-import type { EventType, Survey } from "@/lib/types";
+import { displayName, formatKst, monthKst } from "@/lib/format";
+import type { EventType, Survey, RecruitingSettings, ApplicationStatus, Position } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
+import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
+import { OverviewTabs } from "./OverviewTabs";
+import { RecruitingWidget } from "./RecruitingWidget";
+import { SyncMeetingsButton } from "./SyncMeetingsButton";
 import {
   DEMO_DASHBOARD_STATS,
   DEMO_DASHBOARD_ROWS,
@@ -15,9 +20,10 @@ import {
 } from "@/lib/demoData";
 
 const EVENT_TYPE_LABEL: Record<EventType, string> = {
-  session: "세션",
+  session: "정기세션",
   study: "스터디",
-  devfest: "데브페스트",
+  mogakco: "모각코",
+  party: "파티",
 };
 
 interface RecentEventRow {
@@ -30,20 +36,92 @@ interface RecentEventRow {
   rate: number | null;
 }
 
+interface RecruitingCounts {
+  total: number;
+  waiting: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+  frontend: number;
+  backend: number;
+  designer: number;
+  beginner: number;
+  unassigned: number;
+}
+
+// demo(둘러보기) 모드 전용 인라인 상수 — demoData.ts는 수정하지 않는다
+const DEMO_RECRUITING_SETTINGS: RecruitingSettings = {
+  season: "2026-2",
+  is_open: true,
+  open_positions: ["frontend", "backend", "designer", "beginner"],
+  apply_start: null,
+  apply_end: null,
+};
+
+const DEMO_RECRUITING_COUNTS: RecruitingCounts = {
+  total: 12,
+  waiting: 5,
+  pending: 3,
+  accepted: 3,
+  rejected: 1,
+  frontend: 4,
+  backend: 5,
+  designer: 2,
+  beginner: 0,
+  unassigned: 1,
+};
+
+const DEMO_RECRUITING_TODAY_EVENTS: { id: string; title: string; starts_at: string }[] = [
+  { id: "demo-re1", title: "리크루팅 설명회", starts_at: "2026-01-01T09:00:00.000Z" },
+];
+
+// 최근 6개월 (KST 기준, 과거 → 현재). startUtc는 해당 월 KST 1일 00:00.
+function recentMonths() {
+  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  return Array.from({ length: 6 }, (_, i) => {
+    const first = Date.UTC(
+      kstNow.getUTCFullYear(),
+      kstNow.getUTCMonth() - (5 - i),
+      1,
+    );
+    const d = new Date(first);
+    return {
+      key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
+      label: `${d.getUTCMonth() + 1}월`,
+      startUtc: new Date(first - 9 * 60 * 60 * 1000),
+    };
+  });
+}
+
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
   const demo = await isDemoMode();
+  const months = recentMonths();
 
   let totalMembers = DEMO_DASHBOARD_STATS.totalMembers;
   let activeMembers = DEMO_DASHBOARD_STATS.activeMembers;
   let upcomingEvents = DEMO_DASHBOARD_STATS.upcomingEvents;
   let rows: RecentEventRow[] = DEMO_DASHBOARD_ROWS;
-  let joinCounts: number[] = DEMO_DASHBOARD_JOIN_COUNTS;
-  let satisfactionRows: { id: string; title: string; count: number; avg: number }[] =
-    DEMO_DASHBOARD_SATISFACTION;
-  let rankingRows: { rank: number; id: string; name: string; total: number }[] =
-    DEMO_DASHBOARD_RANKING;
+  let activeCounts: number[] = DEMO_DASHBOARD_JOIN_COUNTS;
+  let satisfactionRows: {
+    id: string;
+    surveyId: string | null;
+    title: string;
+    count: number;
+    avg: number;
+  }[] = DEMO_DASHBOARD_SATISFACTION;
+  let rankingRows: {
+    rank: number;
+    id: string;
+    name: string;
+    nickname: string;
+    total: number;
+  }[] = DEMO_DASHBOARD_RANKING;
+  let recruitingSettings: RecruitingSettings = DEMO_RECRUITING_SETTINGS;
+  let recruitingCounts: RecruitingCounts = DEMO_RECRUITING_COUNTS;
+  let recruitingTodayEvents: { id: string; title: string; starts_at: string }[] =
+    DEMO_RECRUITING_TODAY_EVENTS;
 
   if (!demo) {
     const supabase = await createClient();
@@ -57,12 +135,10 @@ export default async function AdminDashboardPage() {
     ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "member"),
+        .select("*", { count: "exact", head: true }),
       supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .eq("role", "member")
         .eq("status", "active"),
       supabase
         .from("events")
@@ -130,31 +206,19 @@ export default async function AdminDashboardPage() {
       };
     });
 
-    // 월별 신규 가입 추이 (최근 6개월)
-    const nowDate = new Date();
-    const sinceDate = new Date(
-      nowDate.getFullYear(),
-      nowDate.getMonth() - 5,
-      1,
-    ).toISOString();
-    const { data: joinRows } = await supabase
-      .from("profiles")
-      .select("joined_at")
-      .gte("joined_at", sinceDate);
+    // 월별 활동 회원 수 (최근 6개월) — 그 달에 이벤트를 한 번이라도 출석한 사람(중복 제외)
+    const { data: attendanceRows } = await supabase
+      .from("attendances")
+      .select("user_id, checked_at")
+      .gte("checked_at", months[0].startUtc.toISOString());
 
-    const monthKeys = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - (5 - i), 1);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    });
-    const joinCountByMonthReal = new Map(monthKeys.map((k) => [k, 0]));
-    for (const row of joinRows ?? []) {
-      const d = new Date(row.joined_at);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      if (joinCountByMonthReal.has(key)) {
-        joinCountByMonthReal.set(key, (joinCountByMonthReal.get(key) ?? 0) + 1);
-      }
+    const activeByMonth = new Map(months.map((m) => [m.key, new Set<string>()]));
+    for (const row of (attendanceRows as
+      | { user_id: string; checked_at: string }[]
+      | null) ?? []) {
+      activeByMonth.get(monthKst(row.checked_at))?.add(row.user_id);
     }
-    joinCounts = monthKeys.map((k) => joinCountByMonthReal.get(k) ?? 0);
+    activeCounts = months.map((m) => activeByMonth.get(m.key)?.size ?? 0);
 
     // 세션별 만족도 (설문 rating 질문 평균)
     const { data: eventSurveysData } = await supabase
@@ -217,9 +281,16 @@ export default async function AdminDashboardPage() {
         }
       }
     }
+    const surveyIdByEventId = new Map<string, string>();
+    for (const survey of eventSurveys) {
+      if (survey.event_id && !surveyIdByEventId.has(survey.event_id)) {
+        surveyIdByEventId.set(survey.event_id, survey.id);
+      }
+    }
     satisfactionRows = eventIdsWithSurvey
       .map((id) => ({
         id,
+        surveyId: surveyIdByEventId.get(id) ?? null,
         title: eventTitleById.get(id) ?? "(삭제된 이벤트)",
         count: ratingCountByEvent.get(id) ?? 0,
         avg:
@@ -244,20 +315,63 @@ export default async function AdminDashboardPage() {
     const topUserIds = topUsers.map(([id]) => id);
     const { data: topProfilesData } =
       topUserIds.length > 0
-        ? await supabase.from("profiles").select("id, name").in("id", topUserIds)
-        : { data: [] as { id: string; name: string }[] };
-    const topNameById = new Map(
-      ((topProfilesData as { id: string; name: string }[] | null) ?? []).map((p) => [
-        p.id,
-        p.name,
-      ]),
+        ? await supabase.from("profiles").select("id, name, nickname").in("id", topUserIds)
+        : { data: [] as { id: string; name: string; nickname: string }[] };
+    const topProfileById = new Map(
+      ((topProfilesData as { id: string; name: string; nickname: string }[] | null) ?? []).map(
+        (p) => [p.id, p],
+      ),
     );
     rankingRows = topUsers.map(([id, total], i) => ({
       rank: i + 1,
       id,
-      name: topNameById.get(id) ?? "(탈퇴)",
+      name: topProfileById.get(id)?.name ?? "(탈퇴)",
+      nickname: topProfileById.get(id)?.nickname ?? "",
       total,
     }));
+
+    // 리크루팅 위젯
+    recruitingSettings = await getRecruitingSettings();
+    if (recruitingSettings.is_open) {
+      const { data: applicationRows } = await supabase
+        .from("applications")
+        .select("status, position")
+        .eq("season", recruitingSettings.season);
+      const apps =
+        (applicationRows as { status: ApplicationStatus; position: Position | null }[] | null) ??
+        [];
+      recruitingCounts = {
+        total: apps.length,
+        waiting: apps.filter((a) => a.status === "waiting").length,
+        pending: apps.filter((a) => a.status === "pending").length,
+        accepted: apps.filter((a) => a.status === "accepted").length,
+        rejected: apps.filter((a) => a.status === "rejected").length,
+        frontend: apps.filter((a) => a.position === "frontend").length,
+        backend: apps.filter((a) => a.position === "backend").length,
+        designer: apps.filter((a) => a.position === "designer").length,
+        beginner: apps.filter((a) => a.position === "beginner").length,
+        unassigned: apps.filter((a) => a.position === null).length,
+      };
+
+      // 오늘(KST) 00:00~24:00 사이 시작하는 이벤트
+      const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
+      const todayStartUtc = new Date(
+        Date.UTC(
+          kstNow.getUTCFullYear(),
+          kstNow.getUTCMonth(),
+          kstNow.getUTCDate(),
+        ) -
+          9 * 60 * 60 * 1000,
+      );
+      const todayEndUtc = new Date(todayStartUtc.getTime() + 24 * 60 * 60 * 1000);
+      const { data: todayEventRows } = await supabase
+        .from("events")
+        .select("id, title, starts_at")
+        .gte("starts_at", todayStartUtc.toISOString())
+        .lt("starts_at", todayEndUtc.toISOString());
+      recruitingTodayEvents =
+        (todayEventRows as { id: string; title: string; starts_at: string }[] | null) ?? [];
+    }
   }
 
   const ratedRows = rows.filter((r) => r.rate !== null);
@@ -267,22 +381,28 @@ export default async function AdminDashboardPage() {
         ratedRows.length
       : null;
 
-  const nowDate = new Date();
-  const months = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - (5 - i), 1);
-    return {
-      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
-      label: `${d.getMonth() + 1}월`,
-    };
-  });
-  const joinCountByMonth = new Map(months.map((m, i) => [m.key, joinCounts[i] ?? 0]));
-  const maxJoinCount = Math.max(1, ...joinCountByMonth.values());
+  const maxActiveCount = Math.max(1, ...activeCounts);
 
   return (
     <div className="flex flex-col gap-6">
+      <OverviewTabs />
       <PageHeader title="대시보드" description="동아리 현황을 한눈에 확인해요" />
 
-      <div className="grid grid-cols-4 gap-4">
+      <Card>
+        <p className="mb-3 text-sm font-semibold text-gray-900">운영 도구</p>
+        <SyncMeetingsButton />
+      </Card>
+
+      {recruitingSettings.is_open && (
+        <RecruitingWidget
+          season={recruitingSettings.season}
+          open={isRecruitingOpen(recruitingSettings)}
+          counts={recruitingCounts}
+          todayEvents={recruitingTodayEvents}
+        />
+      )}
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard label="전체 회원 수" value={totalMembers ?? 0} />
         <StatCard label="활동 회원 수" value={activeMembers ?? 0} />
         <StatCard label="다가오는 이벤트 수" value={upcomingEvents ?? 0} />
@@ -342,13 +462,14 @@ export default async function AdminDashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
-          <p className="mb-4 text-sm font-semibold text-gray-900">
-            월별 신규 가입 추이
+          <p className="text-sm font-semibold text-gray-900">월별 활동 회원 수</p>
+          <p className="mb-4 mt-0.5 text-xs text-gray-400">
+            그 달에 이벤트를 한 번이라도 출석한 사람 (중복 제외)
           </p>
           <div className="flex h-32 items-end gap-3">
-            {months.map((m) => {
-              const count = joinCountByMonth.get(m.key) ?? 0;
-              const height = Math.max(4, (count / maxJoinCount) * 100);
+            {months.map((m, i) => {
+              const count = activeCounts[i] ?? 0;
+              const height = Math.max(4, (count / maxActiveCount) * 100);
               return (
                 <div
                   key={m.key}
@@ -378,22 +499,37 @@ export default async function AdminDashboardPage() {
             <EmptyState title="설문 응답 데이터가 없어요" />
           ) : (
             <div className="flex flex-col gap-3">
-              {satisfactionRows.map((r) => (
-                <div key={r.id} className="flex items-center gap-3">
-                  <span className="w-24 shrink-0 truncate text-sm text-gray-700">
-                    {r.title}
-                  </span>
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${(r.avg / 5) * 100}%` }}
-                    />
+              {satisfactionRows.map((r) => {
+                const content = (
+                  <>
+                    <span className="w-24 shrink-0 truncate text-sm text-gray-700">
+                      {r.title}
+                    </span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full bg-primary"
+                        style={{ width: `${(r.avg / 5) * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-16 shrink-0 text-right text-xs text-gray-500">
+                      {r.avg.toFixed(1)}점 ({r.count})
+                    </span>
+                  </>
+                );
+                return r.surveyId ? (
+                  <Link
+                    key={r.id}
+                    href={`/admin/surveys/${r.surveyId}/results`}
+                    className="flex items-center gap-3 rounded-md hover:bg-gray-50"
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div key={r.id} className="flex items-center gap-3">
+                    {content}
                   </div>
-                  <span className="w-16 shrink-0 text-right text-xs text-gray-500">
-                    {r.avg.toFixed(1)}점 ({r.count})
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </Card>
@@ -424,7 +560,9 @@ export default async function AdminDashboardPage() {
                   <td className="px-4 py-3 font-medium text-gray-900">
                     {r.rank}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{r.name}</td>
+                  <td className="px-4 py-3 text-gray-700">
+                    {displayName(r.name, r.nickname)}
+                  </td>
                   <td className="px-4 py-3 text-gray-700">{r.total}</td>
                 </tr>
               ))}

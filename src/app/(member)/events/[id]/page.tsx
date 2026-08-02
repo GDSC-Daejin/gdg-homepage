@@ -1,73 +1,206 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { getCommunity } from "@/lib/community";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
-import { formatKst } from "@/lib/format";
-import type { Event, EventType } from "@/lib/types";
+import { displayName, formatKst, formatKstRange } from "@/lib/format";
+import { EventLocation } from "@/components/EventLocation";
+import { NaverMap } from "@/components/NaverMap";
+import type { BoardType, Event, EventType, RegistrationStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 const TYPE_LABELS: Record<EventType, string> = {
-  session: "세션",
+  session: "정기세션",
   study: "스터디",
-  devfest: "데브페스트",
+  mogakco: "모각코",
+  party: "파티",
 };
 
-const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
+const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"> = {
   session: "primary",
   study: "success",
-  devfest: "warning",
+  mogakco: "warning",
+  party: "danger",
+};
+
+const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
+  confirmed: "확정",
+  waitlisted: "대기",
 };
 
 export default async function MemberEventDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ code?: string }>;
 }) {
   const profile = await requireProfile();
   const { id } = await params;
+  const { code } = await searchParams;
 
   const supabase = await createClient();
   const { data: event } = await supabase
     .from("events")
-    .select("*")
+    .select("*, place:places(lat, lng)")
     .eq("id", id)
     .single();
 
   if (!event) notFound();
-  const e = event as Event;
+  const e = event as Event & { place: { lat: number | null; lng: number | null } | null };
 
-  const { data: countRows } = await supabase.rpc("event_confirmed_counts", {
-    p_event_ids: [e.id],
-  });
-  const confirmed = Number(countRows?.[0]?.confirmed ?? 0);
+  const community = await getCommunity();
+  const countRows = await community.events.confirmedCounts([e.id]);
+  const confirmed = countRows?.[e.id] ?? 0;
+
+  const { data: registrantRows, error: registrantsError } = await supabase.rpc(
+    "event_registrants",
+    { p_event_id: e.id },
+  );
+  const registrants = (registrantRows ?? []) as {
+    user_id: string;
+    name: string;
+    nickname: string;
+    status: RegistrationStatus;
+  }[];
+  const registrantsBlocked =
+    !!registrantsError && registrantsError.message.includes("NOT_MEMBER");
+  const registrantsFailed = !!registrantsError && !registrantsBlocked;
+
+  const { data: postRows } = await supabase
+    .from("posts")
+    .select("id, board, title, created_at")
+    .eq("event_id", e.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  const relatedPosts = (postRows as
+    | { id: string; board: BoardType; title: string; created_at: string }[]
+    | null) ?? [];
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={e.title} />
+      <PageHeader
+        title={e.title}
+        action={<Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>}
+      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card className="divide-y divide-gray-200 p-0 dark:divide-gray-200">
+          <div className="p-5">
+            <p className="text-sm font-semibold text-gray-900">일시</p>
+            <p className="mt-2 text-sm text-gray-700">
+              {formatKstRange(e.starts_at, e.ends_at)}
+            </p>
+          </div>
+          {(e.location || e.address) && (
+            <div className="p-5">
+              <p className="text-sm font-semibold text-gray-900">장소</p>
+              <div className="mt-2">
+                <EventLocation location={e.location} address={e.address} />
+              </div>
+            </div>
+          )}
+          {e.speaker && (
+            <div className="p-5">
+              <p className="text-sm font-semibold text-gray-900">발표자</p>
+              <p className="mt-2 text-sm text-gray-700">{e.speaker}</p>
+            </div>
+          )}
+        </Card>
+        {(e.location || e.address) && (
+          <Card className="flex flex-col gap-4 p-0 overflow-hidden">
+            <p className="px-5 pt-5 text-sm font-semibold text-gray-900">오시는 길</p>
+            <NaverMap
+              coords={
+                e.place?.lat != null && e.place?.lng != null
+                  ? { lat: e.place.lat, lng: e.place.lng }
+                  : null
+              }
+              address={e.address || e.location}
+            />
+          </Card>
+        )}
+      </div>
       <Card className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <Badge tone={TYPE_TONES[e.type]}>{TYPE_LABELS[e.type]}</Badge>
-          <span className="text-sm text-gray-500">
-            {formatKst(e.starts_at)}
-          </span>
+        <div className="flex items-baseline justify-between gap-4">
+          <p className="text-sm font-semibold text-gray-900">신청 현황</p>
+          <p className="text-sm text-gray-700">
+            <span className="text-xl font-bold text-primary">{confirmed}</span>
+            {e.capacity ? ` / ${e.capacity}` : ""}명
+          </p>
         </div>
-        {e.location && (
-          <p className="text-sm text-gray-700">장소: {e.location}</p>
+        {e.capacity && (
+          <div
+            role="progressbar"
+            aria-label="신청 인원"
+            aria-valuemin={0}
+            aria-valuenow={confirmed}
+            aria-valuemax={e.capacity}
+            className="h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-200"
+          >
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${Math.min(100, (confirmed / e.capacity) * 100)}%` }}
+            />
+          </div>
         )}
-        {e.speaker && (
-          <p className="text-sm text-gray-700">발표자: {e.speaker}</p>
-        )}
-        {e.description && <p className="text-sm text-gray-700">{e.description}</p>}
-        <p className="text-sm text-gray-500">
-          신청 {confirmed}
-          {e.capacity ? ` / ${e.capacity}` : ""}명
-        </p>
+        <div className="border-t border-gray-200 pt-3 dark:border-gray-200">
+          <p className="text-sm font-semibold text-gray-900">신청한 멤버</p>
+          {registrants.length === 0 ? (
+            <p className="mt-2 text-sm text-gray-500">
+              {registrantsBlocked
+                ? "신청자 명단은 멤버만 볼 수 있어요."
+                : registrantsFailed
+                  ? "명단을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
+                  : "아직 신청한 멤버가 없어요."}
+            </p>
+          ) : (
+            <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+              {registrants.map((registrant) => (
+                <li
+                  key={registrant.user_id}
+                  className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 dark:bg-gray-50"
+                >
+                  <span className="truncate text-sm font-medium text-gray-900">
+                    {displayName(registrant.name || "(이름 없음)", registrant.nickname)}
+                  </span>
+                  <Badge tone={registrant.status === "confirmed" ? "success" : "neutral"}>
+                    {REGISTRATION_STATUS_LABELS[registrant.status]}
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </Card>
-      <RegistrationPanel eventId={e.id} profile={profile} />
+      {e.description && (
+        <Card className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-gray-900">세션 소개</p>
+          <p className="text-sm leading-6 text-gray-700">{e.description}</p>
+        </Card>
+      )}
+      <RegistrationPanel eventId={e.id} profile={profile} code={code} />
+      {relatedPosts.length > 0 && (
+        <Card className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-gray-900">이 이벤트 관련 글</p>
+          {relatedPosts.map((post) => (
+            <Link
+              key={post.id}
+              href={`${post.board === "qna" ? "/qna" : "/board"}/${post.id}`}
+              className="flex items-center justify-between gap-4 text-sm hover:text-primary"
+            >
+              <span className="truncate text-gray-700">{post.title}</span>
+              <span className="shrink-0 text-xs text-gray-500">
+                {formatKst(post.created_at)}
+              </span>
+            </Link>
+          ))}
+        </Card>
+      )}
     </div>
   );
 }

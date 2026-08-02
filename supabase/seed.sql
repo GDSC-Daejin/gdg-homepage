@@ -17,9 +17,19 @@ insert into public.badges (icon, name, description) values
   ('🔥', '개근', '한 시즌 확정 이벤트 출석률 100%'),
   ('🎤', '스피커', '세션/스터디에서 발표'),
   ('📚', '스터디 리더', '스터디 1회 이상 리드'),
-  ('🎉', 'DevFest', 'DevFest 참가'),
+  ('🎉', '모각코', '모각코 참여'),
   ('💡', '아이디어 뱅크', '채택된 건의 3회')
 on conflict (name) do nothing;
+
+-- 정기세션 만족도 기본 프리셋 (평점 5문항) — 설문 생성 시 '불러오기'로 사용
+insert into public.survey_presets (name, questions) values
+  ('정기세션 만족도 5문항', '[
+    {"id":"q1","type":"rating","label":"이번 정기세션의 전반적인 만족도는 어떠셨나요?"},
+    {"id":"q2","type":"rating","label":"세션에서 다룬 내용이 유익했나요?"},
+    {"id":"q3","type":"rating","label":"발표·진행 방식은 이해하기 쉬웠나요?"},
+    {"id":"q4","type":"rating","label":"세션 난이도는 적절했나요?"},
+    {"id":"q5","type":"rating","label":"세션 장소와 진행 시간은 적절했나요?"}
+  ]'::jsonb);
 
 -- 어드민 부트스트랩: 아래에 운영진 구글 이메일을 등록하면 가입 시 자동으로 admin 역할
 -- insert into public.admin_emails (email) values ('lead@gmail.com');

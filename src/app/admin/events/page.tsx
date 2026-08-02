@@ -3,77 +3,118 @@ import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_EVENTS, DEMO_EVENT_CONFIRMED_COUNTS } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
-import { Badge } from "@/components/Badge";
-import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { MonthFilter } from "@/components/MonthFilter";
-import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
-import type { Event, EventType } from "@/lib/types";
+import { EventCards } from "@/components/EventCards";
+import { cn } from "@/lib/cn";
+import { kstDayStartIso, monthGrid, nextDayKey } from "@/lib/calendar";
+import { dayKeyKst, formatMonthLabel, monthKst } from "@/lib/format";
+import type { Event, Place } from "@/lib/types";
+import {
+  EventCalendar,
+  type CalendarInterview,
+  type CalendarMeeting,
+} from "./EventCalendar";
 
 export const dynamic = "force-dynamic";
-
-const TYPE_LABELS: Record<EventType, string> = {
-  session: "세션",
-  study: "스터디",
-  devfest: "데브페스트",
-};
-
-const TYPE_TONES: Record<EventType, "primary" | "success" | "warning"> = {
-  session: "primary",
-  study: "success",
-  devfest: "warning",
-};
-
-const TYPE_BAR: Record<EventType, string> = {
-  session: "bg-primary",
-  study: "bg-success",
-  devfest: "bg-warning",
-};
-
-const TYPE_TEXT: Record<EventType, string> = {
-  session: "text-primary",
-  study: "text-success",
-  devfest: "text-warning",
-};
-
-function CalendarIcon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      className="h-3.5 w-3.5 shrink-0 text-gray-400"
-    >
-      <rect x="3" y="4" width="14" height="13" rx="2" />
-      <path d="M3 8h14M7 2v3M13 2v3" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function LocationIcon() {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      className="h-3.5 w-3.5 shrink-0 text-gray-400"
-    >
-      <path d="M10 18s6-5.7 6-10.2a6 6 0 1 0-12 0C4 12.3 10 18 10 18Z" />
-      <circle cx="10" cy="7.8" r="2" />
-    </svg>
-  );
-}
 
 export default async function AdminEventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; view?: string }>;
 }) {
-  const { month } = await searchParams;
+  const { month, view } = await searchParams;
   const demo = await isDemoMode();
+  const isCalendar = view === "calendar";
+  const today = dayKeyKst(new Date().toISOString());
+
+  if (isCalendar) {
+    // 격자에는 앞뒤 달 날짜도 보이므로 42칸 전체를 덮는 범위로 조회한다.
+    const gridMonth = month && /^\d{4}-\d{2}$/.test(month) ? month : today.slice(0, 7);
+    const grid = monthGrid(gridMonth);
+    const from = kstDayStartIso(grid[0]);
+    const to = kstDayStartIso(nextDayKey(grid[grid.length - 1]));
+
+    let events: Event[] = DEMO_EVENTS.filter(
+      (e) => e.starts_at >= from && e.starts_at < to,
+    );
+    let interviews: CalendarInterview[] = [];
+    let meetings: CalendarMeeting[] = [];
+    let places: Place[] = [];
+
+    if (!demo) {
+      const supabase = await createClient();
+      const [eventRes, interviewRes, meetingRes, placeRes] = await Promise.all([
+        supabase
+          .from("events")
+          .select("*")
+          .gte("starts_at", from)
+          .lt("starts_at", to)
+          .order("starts_at"),
+        supabase
+          .from("interview_slots")
+          .select("id, starts_at, status")
+          .gte("starts_at", from)
+          .lt("starts_at", to)
+          .in("status", ["open", "booked"])
+          .order("starts_at"),
+        supabase
+          .from("meeting_polls")
+          .select("id, title, confirmed_at, duration_min")
+          .gte("confirmed_at", from)
+          .lt("confirmed_at", to)
+          .order("confirmed_at"),
+        supabase.from("places").select("*").order("name"),
+      ]);
+      events = (eventRes.data ?? []) as Event[];
+      interviews = (interviewRes.data ?? []) as CalendarInterview[];
+      // 달력은 starts_at 하나로만 날짜를 묶는다 — 확정 시각을 그 이름으로 맞춰 넘긴다.
+      meetings = (
+        (meetingRes.data ?? []) as {
+          id: string;
+          title: string;
+          confirmed_at: string;
+          duration_min: number;
+        }[]
+      ).map((poll) => ({
+        id: poll.id,
+        title: poll.title,
+        starts_at: poll.confirmed_at,
+        duration_min: poll.duration_min,
+      }));
+      places = (placeRes.data ?? []) as Place[];
+    }
+
+    return (
+      <div>
+        <PageHeader
+          title="이벤트"
+          description="정기세션·스터디·모각코를 관리해요"
+          action={
+            <div className="flex items-center gap-2">
+              <ViewToggle isCalendar month={gridMonth} />
+              <Link href="/admin/events/new">
+                <Button type="button" variant="primary">
+                  <PlusIcon />
+                  이벤트 생성
+                </Button>
+              </Link>
+            </div>
+          }
+        />
+        <EventCalendar
+          month={gridMonth}
+          events={events}
+          interviews={interviews}
+          meetings={meetings}
+          places={places}
+          today={today}
+          readOnly={demo}
+        />
+      </div>
+    );
+  }
 
   let all: Event[] = DEMO_EVENTS;
   const counts: Record<string, number> = demo ? { ...DEMO_EVENT_CONFIRMED_COUNTS } : {};
@@ -109,9 +150,10 @@ export default async function AdminEventsPage({
     <div>
       <PageHeader
         title="이벤트"
-        description="세션·스터디·데브페스트를 관리해요"
+        description="정기세션·스터디·모각코를 관리해요"
         action={
           <div className="flex items-center gap-2">
+            <ViewToggle isCalendar={false} month={month || today.slice(0, 7)} />
             <MonthFilter
               options={monthOptions}
               value={month ?? ""}
@@ -119,16 +161,7 @@ export default async function AdminEventsPage({
             />
             <Link href="/admin/events/new">
               <Button type="button" variant="primary">
-                <svg
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                  className="mr-1.5 h-4 w-4"
-                >
-                  <path d="M10 4v12M4 10h12" />
-                </svg>
+                <PlusIcon />
                 이벤트 생성
               </Button>
             </Link>
@@ -138,7 +171,7 @@ export default async function AdminEventsPage({
       {list.length === 0 ? (
         <EmptyState
           title="등록된 이벤트가 없어요"
-          description="첫 세션·스터디·데브페스트를 만들어 신청을 받아보세요."
+          description="첫 정기세션·스터디·모각코를 만들어 신청을 받아보세요."
           action={
             <Link href="/admin/events/new">
               <Button type="button" variant="primary">
@@ -148,78 +181,50 @@ export default async function AdminEventsPage({
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {list.map((event) => {
-            const confirmed = counts[event.id] ?? 0;
-            const capacity = event.capacity;
-            const remaining = capacity ? capacity - confirmed : null;
-            const closingSoon =
-              capacity !== null &&
-              remaining !== null &&
-              remaining >= 0 &&
-              remaining / capacity <= 0.1;
-            const barWidth = capacity
-              ? Math.min(100, (confirmed / capacity) * 100)
-              : 100;
-
-            return (
-              <Link key={event.id} href={`/admin/events/${event.id}`}>
-                <Card className="h-full transition-shadow hover:shadow-md">
-                  <div className="flex items-start justify-between gap-2">
-                    <Badge tone={TYPE_TONES[event.type]}>
-                      {TYPE_LABELS[event.type]}
-                    </Badge>
-                    <span
-                      className={
-                        closingSoon
-                          ? `text-sm font-semibold ${TYPE_TEXT[event.type]}`
-                          : "text-sm text-gray-400"
-                      }
-                    >
-                      {capacity
-                        ? closingSoon
-                          ? `마감임박 · 잔여 ${remaining}석`
-                          : `잔여 ${remaining}석`
-                        : "정원 무제한"}
-                    </span>
-                  </div>
-
-                  <h2 className="mt-3 text-lg font-semibold text-gray-900">
-                    {event.title}
-                  </h2>
-
-                  <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
-                    <span className="inline-flex items-center gap-1">
-                      <CalendarIcon />
-                      {formatKst(event.starts_at)}
-                    </span>
-                    {event.location ? (
-                      <span className="inline-flex items-center gap-1">
-                        <span className="text-gray-300">·</span>
-                        <LocationIcon />
-                        {event.location}
-                      </span>
-                    ) : null}
-                  </p>
-
-                  <p className="mt-4 text-sm text-gray-500">
-                    <span className="text-xl font-bold text-gray-900">
-                      {confirmed}
-                    </span>
-                    {capacity ? ` / ${capacity}` : ""} 명 신청
-                  </p>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
-                    <div
-                      className={`h-full rounded-full ${TYPE_BAR[event.type]}`}
-                      style={{ width: `${barWidth}%` }}
-                    />
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+        <EventCards events={list} counts={counts} hrefBase="/admin/events" />
       )}
+    </div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      className="mr-1.5 h-4 w-4"
+    >
+      <path d="M10 4v12M4 10h12" />
+    </svg>
+  );
+}
+
+function ViewToggle({ isCalendar, month }: { isCalendar: boolean; month: string }) {
+  const base =
+    "rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors duration-100";
+  return (
+    <div
+      className="flex items-center gap-0.5 rounded-lg border border-gray-300 p-0.5"
+      role="group"
+      aria-label="보기 전환"
+    >
+      <Link
+        href="/admin/events"
+        aria-current={isCalendar ? undefined : "page"}
+        className={cn(base, isCalendar ? "text-gray-600 hover:bg-gray-100" : "bg-primary-soft text-primary")}
+      >
+        목록
+      </Link>
+      <Link
+        href={`/admin/events?view=calendar&month=${month}`}
+        aria-current={isCalendar ? "page" : undefined}
+        className={cn(base, isCalendar ? "bg-primary-soft text-primary" : "text-gray-600 hover:bg-gray-100")}
+      >
+        달력
+      </Link>
     </div>
   );
 }

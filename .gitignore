@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+/.cache/
 
 # debug
 npm-debug.log*
@@ -39,3 +40,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# supabase cli local state
+supabase/.temp
+
+# agent worktrees / scratch workspaces
+.claude/worktrees/
+.claude/settings.local.json
+_workspace/
+
+# lighthouse ad-hoc reports (keep perf/baseline.json)
+perf/lh-*

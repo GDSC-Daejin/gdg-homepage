@@ -1,187 +1,73 @@
-"use client";
-
-import { useState } from "react";
+import Link from "next/link";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
-import { ReviewButtons } from "./ReviewButtons";
-import type { Application, ApplicationStatus } from "@/lib/types";
+import type { Application } from "@/lib/types";
+import {
+  APPLICATION_STATUS_LABELS,
+  APPLICATION_STATUS_TONES,
+  POSITION_LABELS,
+} from "@/lib/types";
 
-const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  pending: "심사 중",
-  accepted: "합격",
-  rejected: "불합격",
-};
-
-const STATUS_TONE: Record<ApplicationStatus, "warning" | "success" | "danger"> = {
-  pending: "warning",
-  accepted: "success",
-  rejected: "danger",
-};
-
-const STATUS_ICON: Record<ApplicationStatus, React.ReactNode> = {
-  pending: (
-    <svg viewBox="0 0 20 20" fill="currentColor" className="h-3 w-3">
-      <path d="M10 2.5c.3 2.6 1.4 3.7 4 4-2.6.3-3.7 1.4-4 4-.3-2.6-1.4-3.7-4-4 2.6-.3 3.7-1.4 4-4Z" />
-    </svg>
-  ),
-  accepted: (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-3 w-3"
-    >
-      <circle cx="10" cy="10" r="7" />
-      <path d="m7 10 2 2 4-4" />
-    </svg>
-  ),
-  rejected: (
-    <svg
-      viewBox="0 0 20 20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="h-3 w-3"
-    >
-      <circle cx="10" cy="10" r="7" />
-      <path d="M8 8l4 4M12 8l-4 4" />
-    </svg>
-  ),
-};
-
-type ApplicantInfo = {
-  name: string;
-  student_no: string | null;
-  major: string | null;
-};
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}.${mm}.${dd}`;
+}
 
 export function ApplicationCard({
   application,
-  applicant,
 }: {
   application: Application;
-  applicant: ApplicantInfo | undefined;
 }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const name = applicant?.name ?? "알 수 없음";
-  const studentNo = applicant?.student_no ?? "정보 없음";
-  const major = applicant?.major ?? "정보 없음";
-  const initial = applicant?.name ? applicant.name.charAt(0) : "?";
-  const isUnknown = !applicant?.name;
-
-  const toggleButton = (
-    <button
-      type="button"
-      onClick={() => setExpanded((v) => !v)}
-      className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary-hover"
-    >
-      {expanded ? "접기" : "답변 전체 보기"}
-      <svg
-        viewBox="0 0 20 20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.75}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={`h-3.5 w-3.5 transition-transform ${expanded ? "rotate-180" : ""}`}
-      >
-        <path d="M6 8l4 4 4-4" />
-      </svg>
-    </button>
-  );
+  const name = application.applicant_name || "알 수 없음";
+  const studentNo = application.student_no || "정보 없음";
+  const positionLabel = application.position
+    ? POSITION_LABELS[application.position]
+    : "미지정";
+  const initial = application.applicant_name ? application.applicant_name.charAt(0) : "?";
+  const isUnknown = !application.applicant_name;
+  const excerpt =
+    application.answers.motivation ||
+    application.answers.intro ||
+    application.answers.interest ||
+    "작성된 답변이 없어요";
 
   return (
-    <Card>
-      <div className="flex items-start gap-3">
-        <div
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-            isUnknown ? "bg-gray-100 text-gray-400" : "bg-primary-soft text-primary"
-          }`}
-        >
-          {initial}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <p className="font-semibold text-gray-900">
-              {name}
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                {isUnknown ? "프로필 정보 없음" : `${studentNo} · ${major}`}
-              </span>
-            </p>
-            <Badge tone={STATUS_TONE[application.status]} className="mt-0.5 shrink-0 gap-1">
-              {STATUS_ICON[application.status]}
-              {STATUS_LABEL[application.status]}
-            </Badge>
+    <Link href={`/admin/applications/${application.id}`} className="block">
+      <Card className="flex h-full flex-col gap-3 p-5 transition-colors hover:border-gray-300 hover:bg-gray-50">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                isUnknown ? "bg-gray-100 text-gray-400" : "bg-primary-soft text-primary"
+              }`}
+            >
+              {initial}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-gray-900">{name}</p>
+              <p className="truncate text-xs text-gray-500">
+                {isUnknown ? "프로필 정보 없음" : `${positionLabel} · ${studentNo}`}
+              </p>
+            </div>
           </div>
-
-          {expanded ? (
-            <>
-              <dl className="mt-4 flex flex-col gap-3">
-                <div>
-                  <dt className="text-xs font-medium text-gray-500">자기소개</dt>
-                  <dd className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
-                    {application.answers.intro}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium text-gray-500">지원 동기</dt>
-                  <dd className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
-                    {application.answers.motivation}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-medium text-gray-500">관심 분야</dt>
-                  <dd className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
-                    {application.answers.interest}
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-4 flex items-center justify-between gap-4">
-                {toggleButton}
-                <ReviewButtons
-                  id={application.id}
-                  status={application.status}
-                  applicant={{ name, student_no: applicant?.student_no ?? null, major: applicant?.major ?? null }}
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="mt-2 flex gap-3">
-                <span className="shrink-0 pt-0.5 text-xs text-gray-400">자기소개</span>
-                <p className="line-clamp-2 text-sm text-gray-600">
-                  {application.answers.intro}
-                </p>
-              </div>
-              <div className="mt-3 flex justify-end">{toggleButton}</div>
-            </>
-          )}
-
-          {isUnknown && (
-            <p className="mt-3 flex items-start gap-1.5 rounded-md bg-gray-50 px-2.5 py-2 text-xs text-gray-500">
-              <svg
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.75}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mt-px h-3.5 w-3.5 shrink-0"
-              >
-                <circle cx="10" cy="10" r="7.5" />
-                <path d="M10 13.5v-4M10 6.5h.01" />
-              </svg>
-              회원 프로필이 연결되지 않아 이름 표시만 가능해요. 답변만 확인해 심사할 수 있어요.
-            </p>
-          )}
+          <Badge tone={APPLICATION_STATUS_TONES[application.status]} className="shrink-0">
+            {APPLICATION_STATUS_LABELS[application.status]}
+          </Badge>
         </div>
-      </div>
-    </Card>
+
+        <p className="line-clamp-2 min-h-[2.5rem] text-sm text-gray-700">{excerpt}</p>
+
+        <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-3">
+          <p className="text-xs text-gray-400">제출 {formatDate(application.created_at)}</p>
+          <span className="inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white">
+            심사하기
+          </span>
+        </div>
+      </Card>
+    </Link>
   );
 }

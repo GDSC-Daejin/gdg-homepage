@@ -3,10 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { surveySchema, surveyResponseSchema } from "@/lib/schemas";
+import {
+  surveySchema,
+  surveyResponseSchema,
+  surveyPresetSchema,
+} from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
-import type { ActionResult, Survey } from "@/lib/types";
+import type { ActionResult, Survey, SurveyPreset } from "@/lib/types";
 
 function parseSurveyForm(formData: FormData) {
   let questions: unknown = [];
@@ -43,6 +47,85 @@ export async function createSurvey(formData: FormData): Promise<ActionResult> {
   if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/surveys");
+  return {};
+}
+
+export async function editSurvey(
+  id: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const parsed = parseSurveyForm(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
+  }
+
+  const eventIdRaw = formData.get("event_id");
+  const event_id = typeof eventIdRaw === "string" && eventIdRaw ? eventIdRaw : null;
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("surveys")
+    .update({
+      title: parsed.data.title,
+      questions: parsed.data.questions,
+      event_id,
+    })
+    .eq("id", id);
+
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath("/admin/surveys");
+  revalidatePath(`/admin/surveys/${id}/results`);
+  revalidatePath("/surveys");
+  revalidatePath(`/surveys/${id}`);
+  return {};
+}
+
+export async function createSurveyPreset(
+  formData: FormData,
+): Promise<{ error?: string; preset?: SurveyPreset }> {
+  const profile = await requireAdmin();
+  if (await isDemoMode()) return { error: "둘러보기 모드에서는 저장할 수 없어요" };
+
+  let questions: unknown = [];
+  try {
+    questions = JSON.parse(String(formData.get("questions") ?? "[]"));
+  } catch {
+    questions = [];
+  }
+  const parsed = surveyPresetSchema.safeParse({
+    name: String(formData.get("name") ?? "").trim(),
+    questions,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("survey_presets")
+    .insert({
+      name: parsed.data.name,
+      questions: parsed.data.questions,
+      created_by: profile.id,
+    })
+    .select("*")
+    .single();
+
+  if (error) return { error: toKoreanError(error) };
+  return { preset: data as SurveyPreset };
+}
+
+export async function deleteSurveyPreset(id: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("survey_presets").delete().eq("id", id);
+  if (error) return { error: toKoreanError(error) };
   return {};
 }
 
@@ -85,6 +168,7 @@ export async function submitSurveyResponse(
   formData: FormData,
 ): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return {};
 
   const supabase = await createClient();
   const { data: survey } = await supabase
@@ -108,16 +192,25 @@ export async function submitSurveyResponse(
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
   }
 
-  const { error } = await supabase.from("survey_responses").insert({
-    survey_id: surveyId,
-    user_id: profile.id,
-    answers: parsed.data.answers,
-  });
+  const { data: existing } = await supabase
+    .from("survey_responses")
+    .select("id")
+    .eq("survey_id", surveyId)
+    .eq("user_id", profile.id)
+    .maybeSingle<{ id: string }>();
 
-  if (error) {
-    if (error.code === "23505") return { error: "이미 응답한 설문이에요" };
-    return { error: toKoreanError(error) };
-  }
+  const { error } = existing
+    ? await supabase
+        .from("survey_responses")
+        .update({ answers: parsed.data.answers })
+        .eq("id", existing.id)
+    : await supabase.from("survey_responses").insert({
+        survey_id: surveyId,
+        user_id: profile.id,
+        answers: parsed.data.answers,
+      });
+
+  if (error) return { error: toKoreanError(error) };
 
   revalidatePath(`/surveys/${surveyId}`);
   revalidatePath("/surveys");

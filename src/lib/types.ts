@@ -1,30 +1,106 @@
-export type Role = "admin" | "member" | "applicant";
+export type Role = "organizer" | "team_member" | "member" | "applicant";
+export type Position = "frontend" | "backend" | "designer" | "beginner";
+export const ADMIN_ROLES: Role[] = ["organizer", "team_member"];
+export function isStaff(profile: Pick<Profile, "role"> | null | undefined): boolean {
+  return !!profile && ADMIN_ROLES.includes(profile.role);
+}
+export const POSITION_LABELS: Record<Position, string> = {
+  frontend: "프론트엔드",
+  backend: "백엔드",
+  designer: "디자이너",
+  beginner: "비기너",
+};
 export type MemberStatus = "active" | "dormant" | "withdrawn";
-export type ApplicationStatus = "pending" | "accepted" | "rejected";
-export type EventType = "session" | "study" | "devfest";
+export type AcademicStatus = "enrolled" | "leave" | "graduated" | "completed";
+export const ACADEMIC_STATUS_LABELS: Record<AcademicStatus, string> = {
+  enrolled: "재학",
+  leave: "휴학",
+  graduated: "졸업",
+  completed: "수료",
+};
+export type ApplicationStatus = "waiting" | "pending" | "accepted" | "rejected";
+export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  waiting: "심사 대기",
+  pending: "심사 중",
+  accepted: "합격",
+  rejected: "불합격",
+};
+export const APPLICATION_STATUS_TONES: Record<
+  ApplicationStatus,
+  "neutral" | "warning" | "primary" | "success" | "danger"
+> = {
+  waiting: "warning",
+  pending: "primary",
+  accepted: "success",
+  rejected: "danger",
+};
+// 문서화 목적: 합법적 다음 상태 표. RPC(admin_set_application_status)나 UI가 이 순서를
+// 강제하지는 않음 — 강제는 별도 스코프.
+export const APPLICATION_STATUS_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
+  waiting: ["pending"],
+  pending: ["accepted", "rejected"],
+  accepted: [],
+  rejected: [],
+};
+export type EventType = "session" | "study" | "mogakco" | "party";
 export type RegistrationStatus = "confirmed" | "waitlisted";
 
 export interface Profile {
   id: string;
   name: string;
+  avatar_path?: string | null;
+  nickname: string;
+  // auth.users.email 미러 (0050) — 진실 원천은 auth.users
+  email?: string | null;
   student_no: string;
   major: string;
   phone: string;
   interests: string[];
   role: Role;
+  position: Position | null;
   status: MemberStatus;
+  academic_status: AcademicStatus | null;
   joined_at: string;
+  approved_at: string | null;
+  approved_by?: string | null;
 }
 
 export interface Application {
   id: string;
-  applicant_id: string;
+  applicant_id: string | null;
+  applicant_name: string;
+  student_no: string;
+  major: string;
+  phone: string;
+  email: string;
   season: string;
   answers: Record<string, string>;
   status: ApplicationStatus;
   reviewed_by: string | null;
   reviewed_at: string | null;
   created_at: string;
+  position: Position | null;
+  review_note: string;
+}
+
+export interface InterviewSlot {
+  id: string;
+  season: string;
+  starts_at: string;
+  duration_min: number;
+  application_id: string | null;
+  interviewer_id: string | null;
+  meet_uri: string | null;
+  meet_code: string | null;
+  status: "open" | "booked" | "completed" | "canceled";
+}
+
+export interface RecruitingSettings {
+  season: string;
+  is_open: boolean;
+  open_positions: Position[];
+  apply_start: string | null;
+  apply_end: string | null;
 }
 
 export interface Event {
@@ -33,10 +109,23 @@ export interface Event {
   title: string;
   description: string;
   starts_at: string;
+  ends_at: string | null;
   location: string;
+  address: string;
   speaker: string;
   capacity: number | null;
+  place_id?: string | null;
   created_by: string | null;
+  created_at: string;
+}
+
+export interface Place {
+  id: string;
+  name: string;
+  address: string;
+  lat: number | null;
+  lng: number | null;
+  notes: string;
   created_at: string;
 }
 
@@ -55,7 +144,14 @@ export interface Attendance {
   checked_at: string;
 }
 
-export type ActionResult = { error?: string };
+export interface Bot {
+  slug: string;
+  name: string;
+  description: string;
+  active: boolean;
+}
+
+export type ActionResult = { error?: string; warning?: string };
 
 export interface Notice {
   id: string;
@@ -64,6 +160,31 @@ export interface Notice {
   published: boolean;
   published_at: string | null;
   created_by: string | null;
+  created_at: string;
+}
+
+export interface InterviewQuestion {
+  id: string;
+  position: Position | null;
+  body: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type NotificationType =
+  | "registration_promoted"
+  | "inquiry_answered"
+  | "badge_awarded";
+
+export interface Notification {
+  id: string;
+  recipient_id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read_at: string | null;
   created_at: string;
 }
 
@@ -84,6 +205,14 @@ export interface Survey {
   created_at: string;
 }
 
+export interface SurveyPreset {
+  id: string;
+  name: string;
+  questions: SurveyQuestion[];
+  created_by: string | null;
+  created_at: string;
+}
+
 export interface SurveyResponse {
   id: string;
   survey_id: string;
@@ -94,9 +223,44 @@ export interface SurveyResponse {
 
 export type InquiryStatus = "pending" | "answered";
 
+export type InquiryCategory =
+  | "general"
+  | "suggestion"
+  | "bug"
+  | "activity"
+  | "etc";
+
+export const INQUIRY_CATEGORIES: InquiryCategory[] = [
+  "general",
+  "suggestion",
+  "bug",
+  "activity",
+  "etc",
+];
+
+export const INQUIRY_CATEGORY_LABEL: Record<InquiryCategory, string> = {
+  general: "일반",
+  suggestion: "건의",
+  bug: "버그",
+  activity: "활동",
+  etc: "기타",
+};
+
+export const INQUIRY_CATEGORY_TONE: Record<
+  InquiryCategory,
+  "primary" | "success" | "warning" | "danger" | "neutral"
+> = {
+  general: "neutral",
+  suggestion: "primary",
+  bug: "danger",
+  activity: "success",
+  etc: "neutral",
+};
+
 export interface Inquiry {
   id: string;
   user_id: string;
+  category: InquiryCategory;
   title: string;
   body: string;
   status: InquiryStatus;
@@ -144,22 +308,27 @@ export interface BudgetEntry {
   created_at: string;
 }
 
-export interface Sponsor {
+export type BoardType = "free" | "qna";
+
+export interface Post {
   id: string;
-  name: string;
-  amount: number;
-  season: string;
-  note: string;
+  board: BoardType;
+  author_id: string;
+  title: string;
+  body: string;
+  event_id: string | null;
+  accepted_comment_id: string | null;
   created_at: string;
+  updated_at: string;
 }
 
-export interface AuditLog {
-  id: number;
-  actor: string | null;
-  action: string;
-  target: string | null;
-  detail: Record<string, unknown>;
+export interface Comment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  body: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Material {
@@ -170,4 +339,78 @@ export interface Material {
   url: string;
   date: string;
   notionUrl: string;
+}
+
+export type GroupType = "study" | "project";
+export type GroupStatus = "recruiting" | "active" | "archived";
+
+export interface Group {
+  id: string;
+  type: GroupType;
+  title: string;
+  description: string;
+  season: string;
+  status: GroupStatus;
+  is_public: boolean;
+  capacity: number | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface GroupMember {
+  group_id: string;
+  user_id: string;
+  joined_at: string;
+}
+
+export interface PublicGroupCard {
+  id: string;
+  type: GroupType;
+  title: string;
+  description: string;
+  season: string;
+  member_count: number;
+}
+
+/** 회의 시간 조율. 아래 Meeting(모지숲 회의록)과 다른 개념이다. */
+export interface MeetingPoll {
+  id: string;
+  title: string;
+  /** 후보 날짜 "YYYY-MM-DD" 배열. 연속 범위가 아니어도 된다. */
+  dates: string[];
+  start_hour: number;
+  end_hour: number;
+  slot_min: number;
+  created_by: string;
+  confirmed_at: string | null;
+  duration_min: number | null;
+  due_at: string | null;
+  notify_before_due: boolean;
+  invite_token: string;
+  due_notified_at: string | null;
+  created_at: string;
+}
+
+/** 초대된 사람 한 줄이 곧 그 사람의 응답이다. responded_at이 null이면 아직 안 함. */
+export interface MeetingPollParticipant {
+  id: string;
+  poll_id: string;
+  user_id: string | null;
+  name: string;
+  email: string | null;
+  slots: string[];
+  responded_at: string | null;
+  created_at: string;
+}
+
+export interface Meeting {
+  id: string;
+  notion_page_id: string;
+  title: string;
+  meeting_date: string | null;
+  mode: "online" | "offline";
+  summary: string;
+  notion_url: string;
+  synced_at: string;
+  created_at: string;
 }

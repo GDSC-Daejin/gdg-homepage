@@ -1,19 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { computeAttendanceWarnings } from "@/lib/attendance-stats";
-import { postSlack } from "@/lib/slack";
+import { sendAttendanceWarnings } from "@/lib/attendance-warning";
+import { hasValidCronAuthorization } from "@/lib/cron";
+import { getCommunity } from "@/lib/community";
 
 export async function GET(request: NextRequest) {
-  if (!process.env.CRON_SECRET) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
     return NextResponse.json(
       { error: "CRON_SECRET이 설정되지 않았어요" },
       { status: 401 },
     );
   }
 
-  if (
-    request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`
-  ) {
+  if (!hasValidCronAuthorization(request.headers.get("authorization"), cronSecret)) {
     return NextResponse.json({ error: "권한이 없어요" }, { status: 401 });
   }
 
@@ -30,22 +30,16 @@ export async function GET(request: NextRequest) {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const warnings = await computeAttendanceWarnings(supabase);
-
-  if (warnings.length === 0) {
-    return NextResponse.json({ sent: false, count: 0 });
-  }
-
-  const lines = warnings
-    .map((w) => `- ${w.name} (${Math.round(w.rate * 100)}%)`)
-    .join("\n");
-  const { error } = await postSlack(
-    `[출석 경고] 출석률 50% 미만 회원 ${warnings.length}명\n${lines}`,
-  );
+  const community = await getCommunity({ client: supabase });
+  const { error, count, skipped } = await sendAttendanceWarnings(community.attendance, supabase);
 
   if (error) {
-    return NextResponse.json({ error, sent: false, count: warnings.length });
+    return NextResponse.json({ error, sent: false, count });
   }
 
-  return NextResponse.json({ sent: true, count: warnings.length });
+  if (skipped) {
+    return NextResponse.json({ sent: false, count: 0, reason: "already_sent_today" });
+  }
+
+  return NextResponse.json({ sent: count > 0, count });
 }

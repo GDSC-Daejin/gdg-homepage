@@ -45,6 +45,23 @@ function ExternalLinkIcon() {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg
+      className="h-3.5 w-3.5"
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M4 13.5V16h2.5l7.4-7.4-2.5-2.5L4 13.5Z" />
+      <path d="M12.1 5.4l2.5 2.5 1.2-1.2a1 1 0 0 0 0-1.4l-1.1-1.1a1 1 0 0 0-1.4 0l-1.2 1.2Z" />
+    </svg>
+  );
+}
+
 function ResponseIcon() {
   return (
     <svg
@@ -136,31 +153,47 @@ export default async function AdminSurveysPage() {
           {list.map((survey) => {
             const responseCount = counts[survey.id] ?? 0;
             return (
-              <Card key={survey.id} className="flex items-center justify-between gap-4">
-                <div>
+              <Card
+                key={survey.id}
+                className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+              >
+                <Link
+                  href={`/admin/surveys/${survey.id}/results`}
+                  className="absolute inset-0 z-0 rounded-xl"
+                  aria-label={survey.title}
+                />
+                <div className="relative z-10 min-w-0 pointer-events-none">
                   <div className="flex items-center gap-2">
                     <Badge
                       tone={survey.is_open ? "success" : "neutral"}
                       solid={survey.is_open}
-                      className="gap-1"
+                      className="shrink-0 gap-1"
                     >
                       {!survey.is_open && <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />}
-                      {survey.is_open ? "열림" : "닫힘"}
+                      {survey.is_open ? "게시됨" : "닫힘"}
                     </Badge>
-                    <Link
-                      href={`/admin/surveys/${survey.id}/results`}
-                      className="inline-flex items-center gap-1 text-base font-semibold text-gray-900 hover:underline"
-                    >
-                      {survey.title}
+                    <span className="inline-flex min-w-0 items-center gap-1 text-base font-semibold text-gray-900">
+                      <span className="truncate">{survey.title}</span>
                       <ExternalLinkIcon />
-                    </Link>
+                    </span>
                   </div>
                   <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
                     <ResponseIcon />
                     응답 {responseCount}건 · {formatKstDate(survey.created_at)}
                   </p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="relative z-10 flex shrink-0 flex-wrap items-center gap-2">
+                  <Link href={`/admin/surveys/${survey.id}/edit`}>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 border border-gray-300"
+                    >
+                      <EditIcon />
+                      수정
+                    </Button>
+                  </Link>
                   <ToggleSurveyButton surveyId={survey.id} isOpen={survey.is_open} />
                   <DeleteSurveyButton surveyId={survey.id} responseCount={responseCount} />
                 </div>

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isOwnAvatarPath } from "@/lib/avatar";
 import { getProfile } from "@/lib/auth";
 import { profileSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
@@ -10,14 +11,17 @@ import type { ActionResult } from "@/lib/types";
 
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
+  if (!profile) redirect("/");
 
   const parsed = profileSchema.safeParse({
     name: formData.get("name"),
+    nickname: formData.get("nickname"),
     student_no: formData.get("student_no"),
     major: formData.get("major"),
     phone: formData.get("phone"),
     interests: formData.getAll("interests"),
+    position: formData.get("position"),
+    academic_status: formData.get("academic_status") || null,
   });
 
   if (!parsed.success) {
@@ -34,12 +38,30 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 
   revalidatePath("/", "layout");
 
-  if (profile.name === "") redirect("/");
+  if (profile.student_no === "") redirect("/");
+  return {};
+}
+
+export async function setProfileAvatar(path: string): Promise<ActionResult> {
+  const profile = await getProfile();
+  if (!profile) redirect("/");
+  if (!isOwnAvatarPath(profile.id, path)) {
+    return { error: "프로필 사진 경로가 올바르지 않아요" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ avatar_path: path })
+    .eq("id", profile.id);
+
+  if (error) return { error: toKoreanError(error) };
+  revalidatePath("/", "layout");
   return {};
 }
 
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  redirect("/");
 }

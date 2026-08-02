@@ -5,13 +5,11 @@ import { Card } from "@/components/Card";
 import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
 import { formatKstDate } from "@/lib/format";
-import type { BudgetEntry, Sponsor } from "@/lib/types";
+import type { BudgetEntry } from "@/lib/types";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_BUDGET_ENTRIES, DEMO_SPONSORS } from "@/lib/demoData";
+import { DEMO_BUDGET_ENTRIES } from "@/lib/demoData";
 import { BudgetEntryForm } from "./BudgetEntryForm";
 import { DeleteBudgetEntryButton } from "./DeleteBudgetEntryButton";
-import { SponsorForm } from "./SponsorForm";
-import { DeleteSponsorButton } from "./DeleteSponsorButton";
 
 export const dynamic = "force-dynamic";
 
@@ -24,23 +22,15 @@ export default async function AdminBudgetPage() {
   const demo = await isDemoMode();
 
   let entries: BudgetEntry[] = DEMO_BUDGET_ENTRIES;
-  let sponsors: Sponsor[] = DEMO_SPONSORS;
 
   if (!demo) {
     const supabase = await createClient();
-    const [{ data: entriesData }, { data: sponsorsData }] = await Promise.all([
-      supabase
-        .from("budget_entries")
-        .select("*")
-        .order("entry_date", { ascending: false }),
-      supabase
-        .from("sponsors")
-        .select("*")
-        .order("created_at", { ascending: false }),
-    ]);
+    const { data: entriesData } = await supabase
+      .from("budget_entries")
+      .select("*")
+      .order("entry_date", { ascending: false });
 
     entries = (entriesData as BudgetEntry[]) ?? [];
-    sponsors = (sponsorsData as Sponsor[]) ?? [];
   }
 
   const totalIncome = entries
@@ -55,7 +45,7 @@ export default async function AdminBudgetPage() {
     <div>
       <PageHeader
         title="예산/후원 관리"
-        description="수입·지출 내역과 스폰서를 관리해요"
+        description="수입·지출 내역을 관리해요"
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -116,59 +106,6 @@ export default async function AdminBudgetPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <DeleteBudgetEntryButton id={entry.id} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        )}
-      </div>
-
-      <div className="mt-10">
-        <PageHeader title="스폰서" description="시즌별 후원 내역을 관리해요" />
-
-        <Card className="mb-6">
-          <h2 className="mb-4 text-base font-semibold text-gray-900">
-            스폰서 추가
-          </h2>
-          <SponsorForm />
-        </Card>
-
-        {sponsors.length === 0 ? (
-          <EmptyState title="등록된 스폰서가 없어요" />
-        ) : (
-          <Card className="overflow-x-auto p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-left text-gray-500">
-                  <th className="px-4 py-3 font-medium">이름</th>
-                  <th className="px-4 py-3 font-medium">금액</th>
-                  <th className="px-4 py-3 font-medium">시즌</th>
-                  <th className="px-4 py-3 font-medium">메모</th>
-                  <th className="px-4 py-3 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {sponsors.map((sponsor) => (
-                  <tr
-                    key={sponsor.id}
-                    className="border-b border-gray-100 last:border-0 hover:bg-gray-50"
-                  >
-                    <td className="px-4 py-3 font-medium text-gray-900">
-                      {sponsor.name}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {toWon(sponsor.amount)}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">
-                      {sponsor.season || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-gray-500">
-                      {sponsor.note || "-"}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <DeleteSponsorButton id={sponsor.id} />
                     </td>
                   </tr>
                 ))}

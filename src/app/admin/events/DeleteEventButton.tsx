@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import { deleteEvent } from "@/actions/event";
 import { Button } from "@/components/Button";
 
-export function DeleteEventButton({ eventId }: { eventId: string }) {
+export function DeleteEventButton({
+  eventId,
+  onDeleted,
+}: {
+  eventId: string;
+  /** 넘기면 목록으로 이동하는 대신 이 콜백을 부른다(모달에서 닫기용). */
+  onDeleted?: () => void;
+}) {
   const router = useRouter();
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
@@ -20,7 +27,12 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
         setError(result.error);
         return;
       }
-      router.push("/admin/events");
+      if (onDeleted) {
+        router.refresh();
+        onDeleted();
+      } else {
+        router.push("/admin/events");
+      }
     });
   }
 

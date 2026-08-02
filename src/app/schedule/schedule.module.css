@@ -1,0 +1,275 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 32px 44px;
+}
+
+.layoutBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 32px 0;
+}
+
+.listCard {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 22px;
+  background: var(--wds-bg);
+  border-radius: 14px;
+  box-shadow: var(--wds-shadow-card);
+  text-decoration: none;
+}
+
+.listContent {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.listProgress {
+  display: flex;
+  width: 160px;
+  flex-shrink: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.listTitleRow {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.listTitle {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.newPollLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 420px;
+  align-items: start;
+  gap: 20px;
+}
+
+.monthGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.rangePresets {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.timeRangeFields {
+  display: grid;
+  grid-template-columns: 1fr 1fr 220px;
+  align-items: end;
+  gap: 12px;
+}
+
+.newPollAside {
+  position: sticky;
+  top: 20px;
+}
+
+.detailPage {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px 32px 40px;
+}
+
+.detailHeader,
+.responseSummary,
+.confirmedBanner,
+.recommendationHeader,
+.gridHeader {
+  display: flex;
+}
+
+.detailHeader {
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.detailActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.detailTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gridLegend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.responseSummary {
+  align-items: center;
+  gap: 24px;
+  padding: 16px 20px;
+  background: var(--wds-bg);
+  border-radius: 14px;
+  box-shadow: var(--wds-shadow-card);
+}
+
+.responseStatus {
+  display: flex;
+  min-width: 280px;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.responseDivider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--wds-line-alternative);
+}
+
+.responsePeople {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 14px;
+}
+
+.confirmedBanner {
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--wds-primary-bg);
+  border-radius: 14px;
+  box-shadow: inset 0 0 0 1.5px rgba(0, 102, 255, 0.32);
+}
+
+.recommendationHeader {
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.recommendationCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.scheduleGrids {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 32px;
+  padding: 24px 28px 28px;
+  background: var(--wds-bg);
+  border-radius: 16px;
+  box-shadow: var(--wds-shadow-card);
+}
+
+.gridScroller {
+  overflow-x: auto;
+}
+
+@media (max-width: 1080px) {
+  .newPollLayout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .monthGrid,
+  .timeRangeFields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .newPollAside {
+    position: static;
+  }
+
+  .listCard {
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .listContent {
+    flex-basis: 100%;
+  }
+
+  .listProgress {
+    width: 100%;
+  }
+
+  .recommendationCards,
+  .scheduleGrids {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rangePresets,
+  .detailActions,
+  .responsePeople,
+  .detailTitleRow,
+  .gridLegend {
+    flex-wrap: wrap;
+  }
+
+  .detailHeader,
+  .responseSummary,
+  .confirmedBanner,
+  .recommendationHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .detailActions {
+    flex-shrink: 1;
+  }
+
+  .responseStatus {
+    min-width: 0;
+  }
+
+  .responseDivider {
+    width: auto;
+    height: 1px;
+  }
+}
+
+@media (max-width: 640px) {
+  .page,
+  .detailPage {
+    padding: 20px 16px 32px;
+  }
+
+  .layoutBar {
+    padding: 16px 16px 0;
+  }
+
+  .listCard {
+    padding: 16px;
+  }
+
+  .scheduleGrids {
+    gap: 24px;
+    padding: 20px 16px;
+  }
+}

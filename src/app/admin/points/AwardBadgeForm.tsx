@@ -6,6 +6,7 @@ import { Select } from "@/components/Select";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import type { Profile, Badge as BadgeType } from "@/lib/types";
+import { displayName } from "@/lib/format";
 
 interface AwardBadgeFormProps {
   members: Profile[];
@@ -75,7 +76,7 @@ export function AwardBadgeForm({ members, badges }: AwardBadgeFormProps) {
             </option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
-                {m.name || "(이름 없음)"}
+                {displayName(m.name || "(이름 없음)", m.nickname)}
               </option>
             ))}
           </Select>
@@ -103,7 +104,7 @@ export function AwardBadgeForm({ members, badges }: AwardBadgeFormProps) {
               <div>
                 <p className="text-xs text-gray-400">수여 미리보기</p>
                 <p className="text-sm font-medium text-gray-900">
-                  {previewMember.name} 님에게{" "}
+                  {displayName(previewMember.name, previewMember.nickname)} 님에게{" "}
                   <span className="text-primary">{previewBadge.name}</span>{" "}
                   뱃지
                 </p>

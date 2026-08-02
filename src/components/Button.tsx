@@ -10,11 +10,11 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: "bg-primary text-white hover:bg-primary-hover",
-  secondary: "bg-primary-soft text-primary hover:bg-primary-soft-hover",
-  ghost: "bg-transparent text-gray-700 hover:bg-gray-100",
-  danger: "bg-danger text-white hover:opacity-90",
-  "danger-outline": "border border-danger bg-transparent text-danger hover:bg-danger-soft",
+  primary: "bg-primary text-white hover:bg-primary-hover focus-visible:outline-primary",
+  secondary: "bg-primary-soft text-primary hover:bg-primary-soft-hover focus-visible:outline-primary",
+  ghost: "bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:outline-primary",
+  danger: "bg-danger text-white hover:opacity-90 focus-visible:outline-danger",
+  "danger-outline": "border border-danger bg-transparent text-danger hover:bg-danger-soft focus-visible:outline-danger",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -31,7 +31,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-lg font-semibold transition-colors disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center rounded-lg font-semibold transition-[color,background-color,border-color,scale] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 disabled:pointer-events-none disabled:opacity-50",
         variantClasses[variant],
         sizeClasses[size],
         className,

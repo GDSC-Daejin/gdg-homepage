@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 
 export default async function OnboardingPage() {
   const profile = await getProfile();
-  if (!profile) redirect("/login");
-  if (profile.name !== "") redirect("/");
+  if (!profile) redirect("/");
+  if (profile.student_no !== "") redirect("/");
 
   return (
     <div className="mx-auto w-full max-w-md">
@@ -16,7 +16,7 @@ export default async function OnboardingPage() {
         title="프로필 등록"
         description="동아리 활동을 위해 기본 정보를 입력해주세요"
       />
-      <OnboardingForm />
+      <OnboardingForm defaultName={profile.name} />
     </div>
   );
 }

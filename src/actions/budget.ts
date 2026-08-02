@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { budgetSchema, sponsorSchema } from "@/lib/schemas";
+import { budgetSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
@@ -45,42 +45,6 @@ export async function deleteBudgetEntry(id: string): Promise<ActionResult> {
     .from("budget_entries")
     .delete()
     .eq("id", id);
-
-  if (error) return { error: toKoreanError(error) };
-
-  revalidatePath("/admin/budget");
-  return {};
-}
-
-export async function createSponsor(formData: FormData): Promise<ActionResult> {
-  await requireAdmin();
-  if (await isDemoMode()) return {};
-
-  const parsed = sponsorSchema.safeParse({
-    name: formData.get("name"),
-    amount: formData.get("amount"),
-    season: formData.get("season") ?? "",
-    note: formData.get("note") ?? "",
-  });
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("sponsors").insert(parsed.data);
-
-  if (error) return { error: toKoreanError(error) };
-
-  revalidatePath("/admin/budget");
-  return {};
-}
-
-export async function deleteSponsor(id: string): Promise<ActionResult> {
-  await requireAdmin();
-  if (await isDemoMode()) return {};
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("sponsors").delete().eq("id", id);
 
   if (error) return { error: toKoreanError(error) };
 
