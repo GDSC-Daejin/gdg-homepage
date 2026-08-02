@@ -1,24 +1,95 @@
+.battleArena {
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 18rem;
+  border: 3px solid #1e293b;
+  background: linear-gradient(90deg, #3d6170 0 5%, #6c8f94 5% 95%, #3d6170 95%);
+  box-shadow: inset 0 -5px #294755, inset 0 5px #172554;
+}
+
+.battleArena::before, .battleArena::after { pointer-events: none; position: absolute; z-index: 0; content: ""; }
+.battleArena::before {
+  top: 0;
+  bottom: auto;
+  right: 0;
+  left: 0;
+  height: 15%;
+  background: repeating-linear-gradient(90deg, #172554 0 8px, #334155 8px 16px), repeating-linear-gradient(90deg, transparent 0 4px, #e2e8f0 4px 6px, transparent 6px 14px), linear-gradient(#537d85 0 72%, #98bec1 72%);
+  box-shadow: inset 0 -5px #426872;
+}
+.battleArena::after {
+  inset: 15% 7%;
+  border: 2px solid #fff9dc;
+  background: radial-gradient(circle at 50% 50%, #c8a45a 0 8px, #fff9dc 9px 11px, #c8a45a 12px 25px, #fff9dc 26px 28px, transparent 29px), linear-gradient(90deg, transparent calc(50% - 1px), #fff9dc calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)), linear-gradient(#d8ba73, #c8a45a);
+  box-shadow: inset 0 0 0 2px #b88f4a, 0 3px #294755;
+}
+
 .battleEffect {
   pointer-events: none;
   position: absolute;
   z-index: 2;
-  top: 0;
+  top: 50%;
+  bottom: auto;
   left: 0;
   width: 100%;
   height: 120px;
+  translate: 0 -50%;
   image-rendering: pixelated;
 }
 
+.monsterBall {
+  pointer-events: none;
+  position: absolute;
+  z-index: 20;
+  top: calc(50% - 9px);
+  bottom: auto;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  transform-origin: center;
+  image-rendering: pixelated;
+}
+
+.throwLeft { animation: throw-left .9s steps(12, end) both; }
+.throwRight { animation: throw-right .9s steps(12, end) both; }
+
+.ballRelease {
+  pointer-events: none;
+  position: absolute;
+  z-index: 20;
+  top: 50%;
+  bottom: auto;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  translate: -50% -50%;
+  background: #fff;
+  box-shadow: -6px 0 #fff, 6px 0 #fff, 0 -6px #fff, 0 6px #fff, -4px -4px #dbeafe, 4px -4px #dbeafe, -4px 4px #dbeafe, 4px 4px #dbeafe;
+  animation: ball-release .6s steps(6, end) both;
+}
+
+.ballRelease::before, .ballRelease::after { content: ""; position: absolute; background: #fff; }
+.ballRelease::before { top: 2px; left: 2px; width: 2px; height: 2px; box-shadow: -14px 0 #fff, 14px 0 #fff, 0 -14px #fff, 0 14px #fff; animation: release-rays .6s steps(6, end) both; }
+.ballRelease::after { top: 2px; left: 2px; width: 2px; height: 2px; box-shadow: -10px -10px #bfdbfe, 10px -10px #bfdbfe, -10px 10px #bfdbfe, 10px 10px #bfdbfe, -16px -4px #dbeafe, 16px 4px #dbeafe; animation: release-sparks .6s steps(6, end) both; }
+
+.pokemonReveal { animation: pokemon-reveal .6s steps(6, end) both; }
+.facingRight { transform: scaleX(-1); }
 .attackLeft { animation: attack-left .62s steps(7, end); }
 .attackRight { animation: attack-right .62s steps(7, end); }
 .hit { animation: hit .42s steps(5, end); }
 .screenShake { animation: screen-shake .38s steps(4, end); }
 
+@keyframes throw-left { 0% { opacity: 0; transform: translate(-128px, -62px) rotate(-450deg); } 12% { opacity: 1; } 28% { transform: translate(-94px, -78px) rotate(-300deg); } 52% { transform: translate(-58px, -92px) rotate(-105deg); } 76% { transform: translate(-28px, -58px) rotate(105deg); } 100% { transform: translate(-50%, 10px) rotate(270deg); } }
+@keyframes throw-right { 0% { opacity: 0; transform: translate(86px, -62px) rotate(450deg); } 12% { opacity: 1; } 28% { transform: translate(52px, -78px) rotate(300deg); } 52% { transform: translate(18px, -92px) rotate(105deg); } 76% { transform: translate(-12px, -58px) rotate(-105deg); } 100% { transform: translate(-50%, 10px) rotate(-270deg); } }
+@keyframes ball-release { 0% { opacity: 0; transform: scale(.4); } 34% { opacity: 1; transform: scale(1); } 68% { opacity: .95; transform: scale(1.6); } 100% { opacity: 0; transform: scale(2.4); } }
+@keyframes release-rays { 0%, 18% { opacity: 0; transform: scale(.2); } 48% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.45); } }
+@keyframes release-sparks { 0%, 32% { opacity: 0; transform: scale(.2); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.25); } }
+@keyframes pokemon-reveal { 0% { filter: brightness(3); opacity: 0; scale: .45; } 52% { filter: brightness(2.2); opacity: 1; scale: 1.16; } 100% { filter: none; opacity: 1; scale: 1; } }
 @keyframes attack-left { 18% { translate: -4px 0; } 56% { translate: 24px -3px; } 100% { translate: 0; } }
 @keyframes attack-right { 18% { translate: 4px 0; } 56% { translate: -24px -3px; } 100% { translate: 0; } }
 @keyframes hit { 22%, 66% { translate: -5px 1px; filter: brightness(1.45); } 44%, 82% { translate: 5px -1px; } 100% { translate: 0; } }
 @keyframes screen-shake { 25% { translate: -2px 1px; } 50% { translate: 3px -1px; } 75% { translate: -1px -1px; } 100% { translate: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .attackLeft, .attackRight, .hit, .screenShake { animation: none; }
+  .throwLeft, .throwRight, .ballRelease, .pokemonReveal, .attackLeft, .attackRight, .hit, .screenShake { animation: none; }
 }

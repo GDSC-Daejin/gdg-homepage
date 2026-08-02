@@ -30,16 +30,22 @@ describe("도감 포켓몬 결투", () => {
     expect(sql).toContain("battle_type");
     expect(sql).toContain("'water'");
     expect(sql).toContain("'flying'");
-    expect(panel).toContain("battleEffect(winner.battleType)");
+    expect(panel).toContain("battleEffect(duel.challenger.battleType)");
+    expect(panel).toContain("battleEffect(duel.opponent.battleType)");
   });
 
   it("자체 제작 픽셀 캔버스로 물 타입 공격을 충전·발사·명중 순서로 재생한다", async () => {
-    const [panel, effect] = await Promise.all([
+    const [panel, effect, styles] = await Promise.all([
       readFile("src/app/(member)/pokedex/DuelPanel.tsx", "utf8"),
       readFile("src/app/(member)/pokedex/PixelBattleEffect.tsx", "utf8"),
+      readFile("src/app/(member)/pokedex/DuelPanel.module.css", "utf8"),
     ]);
 
     expect(panel).toContain("setStage(3)");
+    expect(panel).toContain('"/pokedex/effects/monster-ball.png"');
+    expect(panel).toContain("setStage(8)");
+    expect(panel).toContain("setStage(2), 1800");
+    expect(panel).toContain("몬스터볼이 빛나며 포켓몬이 등장해요!");
     expect(panel).toContain("<PixelBattleEffect");
     expect(panel).toContain("styles.screenShake");
     expect(effect).toContain("<canvas");
@@ -53,6 +59,18 @@ describe("도감 포켓몬 결투", () => {
     expect(effect).toContain('"/pokedex/effects/grass.png"');
     expect(effect).toContain('"/pokedex/effects/electric.png"');
     expect(effect).toContain("stage === 2");
+    expect((await readFile("public/pokedex/effects/monster-ball.png")).length).toBeGreaterThan(100);
+    expect(styles).toContain("width: 18px");
+    expect(styles).toContain("rotate(-300deg)");
+    expect(styles).toContain(".ballRelease::before, .ballRelease::after");
+    expect(styles).toContain("release-sparks");
+    expect(styles).toContain(".battleArena");
+    expect(styles).toContain("#c8a45a");
+    expect(styles).toContain("#fff9dc");
+    expect(styles).toContain("min-height: 18rem");
+    expect(panel).toContain('className="max-w-[96rem] p-8"');
+    expect(panel).toContain('mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3');
+    expect(panel).toContain("styles.facingRight");
   });
 
   it("모든 공식 타입의 고정 이모지 픽셀 스프라이트를 제공한다", async () => {
@@ -71,8 +89,9 @@ describe("도감 포켓몬 결투", () => {
     expect(page).toContain("DuelPanel");
     expect(panel).toContain("result && <Modal");
     expect(panel).toContain("if (response.duel) setResult(response.duel)");
-    expect(panel).not.toContain("결투 미리보기");
-    expect(panel).not.toContain("EFFECT_PREVIEWS");
+    expect(panel).toContain("전투 연출 미리보기");
+    expect(panel).toContain("PREVIEW_DUEL");
+    expect(panel).toContain("setPreviewKey");
     expect(panel).toContain("col-start-2 row-start-1");
     expect(panel).toContain("displayName(fighter.name, fighter.nickname)");
     expect(panel).toContain("<Avatar");
