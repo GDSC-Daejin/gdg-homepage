@@ -67,12 +67,12 @@ export default async function PokemonDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div>
-      <PageHeader title={pokemon.name_ko} description={`No. ${String(pokemon.pokedex_no).padStart(3, "0")}`} action={<Link href="/pokedex" className="text-sm font-medium text-primary hover:underline">도감으로 돌아가기</Link>} />
+      <PageHeader title={caught ? pokemon.name_ko : "???"} description={`No. ${String(pokemon.pokedex_no).padStart(3, "0")}`} action={<Link href="/pokedex" className="text-sm font-medium text-primary hover:underline">도감으로 돌아가기</Link>} />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_1.35fr]">
         <Card className="flex flex-col items-center justify-center bg-primary-soft p-8 text-center">
           <img src={pokemon.image_path} alt={caught ? pokemon.name_ko : "미획득 포켓몬"} className={`h-48 w-48 object-contain sm:h-56 sm:w-56 ${caught ? "" : "grayscale brightness-0 opacity-45"}`} />
           <p className="mt-4 text-sm font-semibold text-primary">No. {String(pokemon.pokedex_no).padStart(3, "0")}</p>
-          <h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">{pokemon.name_ko}</h2>
+          <h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">{caught ? pokemon.name_ko : "???"}</h2>
         </Card>
         <Card>
           <p className="text-sm font-semibold text-gray-900">포켓몬 설명</p>

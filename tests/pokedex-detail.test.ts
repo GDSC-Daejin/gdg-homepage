@@ -28,7 +28,9 @@ describe("포켓몬 상세 도감", () => {
     const page = await readFile("src/app/(member)/pokedex/[pokedexNo]/page.tsx", "utf8");
 
     expect(page).toContain("const caught = myCatches.length > 0;");
+    expect(page).toContain('title={caught ? pokemon.name_ko : "???"}');
     expect(page).toContain('alt={caught ? pokemon.name_ko : "미획득 포켓몬"}');
+    expect(page).toContain('<h2 className="mt-1 text-3xl font-bold tracking-tight text-gray-900">{caught ? pokemon.name_ko : "???"}</h2>');
     expect(page).toContain('{caught ? pokemonDescription(pokemon.pokedex_no, pokemon.name_ko) : "???"}');
   });
 
