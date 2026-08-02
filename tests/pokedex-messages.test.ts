@@ -25,6 +25,7 @@ describe("도감봇 메시지", () => {
     const module = await import("@/lib/pokedex/messages");
 
     expect(module.remainingBallsMessage("U1", 2)).toBe("<@U1>의 남은 몬스터볼: 2개");
+    expect(module.ballCountMessage("U1", 2)).toBe("<@U1>의 남은 몬스터볼은 2개입니다.");
     expect(module.rejectionMessage("U1", "Jayden", "no_ball")).toBe("<@U1>의 남은 몬스터볼이 없어요!");
   });
 

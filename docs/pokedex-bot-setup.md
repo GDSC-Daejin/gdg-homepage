@@ -8,7 +8,7 @@ POKEDEX_SLACK_BOT_TOKEN=xoxb-...
 POKEDEX_SLACK_SIGNING_SECRET=...
 ```
 
-3. 배포 후 도감봇 Slack 앱의 **Event Subscriptions**를 활성화하고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/pokedex/events`로 설정한다. Bot Events에는 `reaction_added`를 추가한다.
+3. 배포 후 도감봇 Slack 앱의 **Event Subscriptions**를 활성화하고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/pokedex/events`로 설정한다. Bot Events에는 `reaction_added`를 추가한다. **Slash Commands**에는 `/몬스터볼`을 만들고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/pokedex/command`로 설정한다. Bot Token Scopes에 `commands`를 추가한 뒤 앱을 다시 설치한다.
 4. Supabase SQL Editor에서 `0057_pokedex.sql`을 적용한다.
 5. 기존 `cron_secret` Vault 시크릿을 사용해 다음 두 스케줄을 등록한다. 배포 도메인은 실제 서비스 주소로 바꾼다.
 

@@ -39,6 +39,10 @@ export function remainingBallsMessage(slackUserId: string, remainingBalls: numbe
   return `<@${slackUserId}>의 남은 몬스터볼: ${remainingBalls}개`;
 }
 
+export function ballCountMessage(slackUserId: string, remainingBalls: number) {
+  return `<@${slackUserId}>의 남은 몬스터볼은 ${remainingBalls}개입니다.`;
+}
+
 export function ownershipRankingMessage(rankings: PokemonOwnerRanking[]) {
   if (rankings.length === 0) return "🏆 오늘의 포켓몬 도감 랭킹\n아직 포획한 포켓몬이 없어요.";
   return `🏆 오늘의 포켓몬 도감 랭킹\n${rankings.map((ranking, index) => `${index + 1}위 <@${ranking.slackUserId}> · ${ranking.speciesCount}종 보유`).join("\n")}`;
