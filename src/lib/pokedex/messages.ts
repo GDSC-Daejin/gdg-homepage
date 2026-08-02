@@ -13,8 +13,8 @@ function subjectParticle(name: string) {
 
 export function appearanceMessage(name: string, emoji: string, startsAt: string, endsAt: string, combatPower?: number | null) {
   const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000);
-  const power = combatPower ? ` 전투력 ${combatPower}.` : "";
-  return `야생의 ${name}${subjectParticle(name)} 나타났어요!${power} ${minutes}분간 출현해요. ${formatKstTime(endsAt)}까지 :${emoji}:을 눌러 포획해보세요.`;
+  const power = combatPower ? `전투력 ${combatPower}.\n` : "";
+  return `야생의 ${name}${subjectParticle(name)} 나타났어요!\n${power}${minutes}분간 출현해요.\n${formatKstTime(endsAt)}까지 :${emoji}:을 눌러 잡아보세요.`;
 }
 
 export function throwMessage(slackUserId: string, slackName: string) {
