@@ -7,8 +7,51 @@ const KST = "+09:00";
 export const SLOT_UNITS = [30, 60] as const;
 export type SlotUnit = (typeof SLOT_UNITS)[number];
 
+export interface MeetingPollInput {
+  title: string;
+  dates: string[];
+  startHour: number;
+  endHour: number;
+  slotMin: number;
+  dueAt: string | null;
+  notifyBeforeDue: boolean;
+}
+
 /** 후보 날짜 최대 개수. 격자 폭 상한이자 마이그레이션 0056의 check와 같은 값. */
 export const MAX_POLL_DAYS = 14;
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** 생성·수정 action이 공통으로 받는 후보·시간 입력을 신뢰할 수 있게 만든다. */
+export function prepareMeetingPollInput(
+  input: MeetingPollInput,
+): { value: MeetingPollInput } | { error: string } {
+  const title = input.title.trim();
+  const dates = [...new Set(input.dates)].filter((date) => DAY.test(date)).sort();
+
+  if (!title) return { error: "일정 이름을 입력해주세요" };
+  if (dates.length === 0) return { error: "날짜를 하나 이상 고르세요" };
+  if (dates.length > MAX_POLL_DAYS) {
+    return { error: `날짜는 ${MAX_POLL_DAYS}일까지만 고를 수 있어요` };
+  }
+  if (!Number.isInteger(input.startHour) || input.startHour < 0 || input.startHour > 23) {
+    return { error: "시작 시간을 선택해주세요" };
+  }
+  if (!Number.isInteger(input.endHour) || input.endHour < 1 || input.endHour > 24) {
+    return { error: "종료 시간을 선택해주세요" };
+  }
+  if (input.endHour <= input.startHour) {
+    return { error: "종료 시간이 시작 시간보다 늦어야 해요" };
+  }
+  if (!SLOT_UNITS.includes(input.slotMin as SlotUnit)) {
+    return { error: "칸 단위를 선택해주세요" };
+  }
+  if (input.dueAt && Number.isNaN(Date.parse(input.dueAt))) {
+    return { error: "응답 마감을 다시 선택해주세요" };
+  }
+
+  return { value: { ...input, title, dates } };
+}
 
 /** 확정 모달의 소요시간 선택지(분). */
 export const DURATION_OPTIONS = [30, 60, 90, 120] as const;

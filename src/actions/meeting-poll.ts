@@ -8,28 +8,19 @@ import { toKoreanError } from "@/lib/errors";
 import { nudgeAdminChannel } from "@/lib/meeting-poll-nudge";
 import {
   DURATION_OPTIONS,
-  MAX_POLL_DAYS,
   normalizeSlots,
   pollSlotSet,
+  prepareMeetingPollInput,
   remapAvailabilitySlots,
-  SLOT_UNITS,
-  type SlotUnit,
+  type MeetingPollInput,
 } from "@/lib/meeting-poll";
 import { createWeeklyPage } from "@/lib/notion";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult, MeetingPoll } from "@/lib/types";
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export interface NewPollInput {
-  title: string;
-  dates: string[];
-  startHour: number;
-  endHour: number;
-  slotMin: number;
-  dueAt: string | null;
-  notifyBeforeDue: boolean;
+export interface NewPollInput extends MeetingPollInput {
   /** 만들기 화면이 미리 보여준 초대 링크를 그대로 쓴다 */
   inviteToken: string;
   /** 우리 회원 참여자 (profiles.id) */
@@ -38,14 +29,7 @@ export interface NewPollInput {
   guests: { name: string; email: string | null }[];
 }
 
-export interface UpdatePollInput {
-  title: string;
-  dates: string[];
-  startHour: number;
-  endHour: number;
-  slotMin: number;
-  dueAt: string | null;
-  notifyBeforeDue: boolean;
+export interface UpdatePollInput extends MeetingPollInput {
   participants: { id: string | null; userId: string | null; name: string; email: string | null }[];
 }
 
@@ -56,29 +40,9 @@ export async function createMeetingPoll(
   // 폼은 성공하면 /schedule/<id>로 넘어간다 — 빈 응답을 주면 /schedule/undefined로 가 404가 난다.
   if (await isDemoMode()) return { id: DEMO_MEETING_POLLS[0].id };
 
-  const title = input.title.trim();
-  const dates = [...new Set(input.dates)].filter((d) => DAY.test(d)).sort();
-
-  if (!title) return { error: "일정 이름을 입력해주세요" };
-  if (dates.length === 0) return { error: "날짜를 하나 이상 고르세요" };
-  if (dates.length > MAX_POLL_DAYS) {
-    return { error: `날짜는 ${MAX_POLL_DAYS}일까지만 고를 수 있어요` };
-  }
-  if (!Number.isInteger(input.startHour) || input.startHour < 0 || input.startHour > 23) {
-    return { error: "시작 시간을 선택해주세요" };
-  }
-  if (!Number.isInteger(input.endHour) || input.endHour < 1 || input.endHour > 24) {
-    return { error: "종료 시간을 선택해주세요" };
-  }
-  if (input.endHour <= input.startHour) {
-    return { error: "종료 시간이 시작 시간보다 늦어야 해요" };
-  }
-  if (!SLOT_UNITS.includes(input.slotMin as SlotUnit)) {
-    return { error: "칸 단위를 선택해주세요" };
-  }
-  if (input.dueAt && Number.isNaN(Date.parse(input.dueAt))) {
-    return { error: "응답 마감을 다시 선택해주세요" };
-  }
+  const prepared = prepareMeetingPollInput(input);
+  if ("error" in prepared) return prepared;
+  const pollInput = prepared.value;
 
   const guests = input.guests
     .map((g) => ({ name: g.name.trim(), email: g.email?.trim() || null }))
@@ -92,13 +56,13 @@ export async function createMeetingPoll(
   const { data: poll, error } = await supabase
     .from("meeting_polls")
     .insert({
-      title,
-      dates,
-      start_hour: input.startHour,
-      end_hour: input.endHour,
-      slot_min: input.slotMin,
-      due_at: input.dueAt,
-      notify_before_due: input.notifyBeforeDue,
+      title: pollInput.title,
+      dates: pollInput.dates,
+      start_hour: pollInput.startHour,
+      end_hour: pollInput.endHour,
+      slot_min: pollInput.slotMin,
+      due_at: pollInput.dueAt,
+      notify_before_due: pollInput.notifyBeforeDue,
       invite_token: UUID.test(input.inviteToken) ? input.inviteToken : undefined,
       created_by: profile.id,
     })
@@ -155,22 +119,9 @@ export async function updateMeetingPoll(
   const profile = await requireAdmin();
   if (await isDemoMode()) return {};
 
-  const title = input.title.trim();
-  const dates = [...new Set(input.dates)].filter((d) => DAY.test(d)).sort();
-  if (!title) return { error: "일정 이름을 입력해주세요" };
-  if (dates.length === 0) return { error: "날짜를 하나 이상 고르세요" };
-  if (dates.length > MAX_POLL_DAYS) return { error: `날짜는 ${MAX_POLL_DAYS}일까지만 고를 수 있어요` };
-  if (!Number.isInteger(input.startHour) || input.startHour < 0 || input.startHour > 23) {
-    return { error: "시작 시간을 선택해주세요" };
-  }
-  if (!Number.isInteger(input.endHour) || input.endHour < 1 || input.endHour > 24) {
-    return { error: "종료 시간을 선택해주세요" };
-  }
-  if (input.endHour <= input.startHour) return { error: "종료 시간이 시작 시간보다 늦어야 해요" };
-  if (!SLOT_UNITS.includes(input.slotMin as SlotUnit)) return { error: "칸 단위를 선택해주세요" };
-  if (input.dueAt && Number.isNaN(Date.parse(input.dueAt))) {
-    return { error: "응답 마감을 다시 선택해주세요" };
-  }
+  const prepared = prepareMeetingPollInput(input);
+  if ("error" in prepared) return prepared;
+  const pollInput = prepared.value;
 
   const supabase = await createClient();
   const [{ data: pollRow, error: pollError }, { data: participantRows, error: participantError }] =
@@ -232,22 +183,22 @@ export async function updateMeetingPoll(
   newRows.push(...newGuests.map((p) => ({ poll_id: pollId, user_id: null, ...p })));
 
   const nextPoll = {
-    dates,
-    start_hour: input.startHour,
-    end_hour: input.endHour,
-    slot_min: input.slotMin,
+    dates: pollInput.dates,
+    start_hour: pollInput.startHour,
+    end_hour: pollInput.endHour,
+    slot_min: pollInput.slotMin,
   };
   const { error: updateError } = await supabase
     .from("meeting_polls")
     .update({
-      title,
-      dates,
-      start_hour: input.startHour,
-      end_hour: input.endHour,
-      slot_min: input.slotMin,
-      due_at: input.dueAt,
-      notify_before_due: input.notifyBeforeDue,
-      due_notified_at: poll.due_at === input.dueAt ? poll.due_notified_at : null,
+      title: pollInput.title,
+      dates: pollInput.dates,
+      start_hour: pollInput.startHour,
+      end_hour: pollInput.endHour,
+      slot_min: pollInput.slotMin,
+      due_at: pollInput.dueAt,
+      notify_before_due: pollInput.notifyBeforeDue,
+      due_notified_at: poll.due_at === pollInput.dueAt ? poll.due_notified_at : null,
     })
     .eq("id", pollId);
   if (updateError) return { error: toKoreanError(updateError) };

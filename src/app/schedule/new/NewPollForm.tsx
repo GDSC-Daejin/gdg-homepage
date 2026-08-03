@@ -15,32 +15,25 @@ import {
 } from "@/components/wds/primitives";
 import { ScheduleGrid } from "@/components/wds/ScheduleGrid";
 import styles from "../schedule.module.css";
-import { monthGrid, nextDayKey, shiftMonth } from "@/lib/calendar";
+import { monthGrid, shiftMonth } from "@/lib/calendar";
 import {
   avatarInitial,
   AVATAR_COLORS,
   dateWithWeekday,
-  MAX_POLL_DAYS,
   pollTimes,
   shortDate,
   SLOT_UNITS,
   suggestPollTitle,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
+import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, togglePollDate, type PollDraftPerson } from "./poll-draft";
 
 export interface StaffOption {
   id: string;
   name: string;
 }
 
-interface Picked {
-  key: string;
-  participantId: string | null;
-  name: string;
-  /** 우리 회원이면 profiles.id */
-  userId: string | null;
-  email: string | null;
-}
+type Picked = PollDraftPerson;
 
 export interface EditableParticipant {
   id: string;
@@ -74,7 +67,7 @@ export function NewPollForm({
   const router = useRouter();
   // 제목은 날짜에서 지어 미리 채워 둔다(원본도 값이 들어가 있다). 한 번 손대면 따라가지 않는다.
   const [typedTitle, setTypedTitle] = useState<string | null>(edit?.poll.title ?? null);
-  const [dates, setDates] = useState<string[]>(() => edit?.poll.dates ?? defaultWeek(today));
+  const [dates, setDates] = useState<string[]>(() => edit?.poll.dates ?? defaultPollDates(today));
   const [startHour, setStartHour] = useState(edit?.poll.start_hour ?? 18);
   const [endHour, setEndHour] = useState(edit?.poll.end_hour ?? 24);
   const [slotMin, setSlotMin] = useState<number>(edit?.poll.slot_min ?? 30);
@@ -117,11 +110,7 @@ export function NewPollForm({
   }, [today]);
 
   function toggleDate(dateKey: string) {
-    setDates((prev) => {
-      if (prev.includes(dateKey)) return prev.filter((d) => d !== dateKey);
-      if (prev.length >= MAX_POLL_DAYS) return prev;
-      return [...prev, dateKey];
-    });
+    setDates((prev) => togglePollDate(prev, dateKey));
   }
 
   function addPerson() {
@@ -130,21 +119,7 @@ export function NewPollForm({
       setAdding(false);
       return;
     }
-    // 지웠던 회원 이름을 다시 적으면 게스트가 아니라 회원으로 되돌린다.
-    const member = staff.find((s) => s.name === value && !people.some((p) => p.userId === s.id));
-    const isEmail = value.includes("@");
-    setPeople((prev) => [
-      ...prev,
-      member
-        ? { key: member.id, participantId: null, name: member.name, userId: member.id, email: null }
-        : {
-            key: `guest-${value}-${prev.length}`,
-            participantId: null,
-            name: isEmail ? value.split("@")[0] : value,
-            userId: null,
-            email: isEmail ? value : null,
-          },
-    ]);
+    setPeople((prev) => addPollDraftPerson(prev, value, staff));
     setDraftName("");
   }
 
@@ -186,22 +161,10 @@ export function NewPollForm({
   }
 
   // 마감 후보는 오늘부터 마지막 후보 날짜까지의 자정. 원본처럼 후보 기간 안에도 걸 수 있다.
-  const dueOptions = useMemo(() => {
-    const options = [{ value: "", label: "마감 없음" }];
-    if (sorted.length === 0) return options;
-    const last = sorted[sorted.length - 1];
-    for (let day = today; day <= last; day = nextDayKey(day)) {
-      options.push({
-        value: dueIso(day),
-        label: `${dateWithWeekday(day)} 자정`,
-      });
-      if (options.length > 15) break;
-    }
-    return options;
-  }, [sorted, today]);
+  const dueOptions = useMemo(() => pollDueOptions(today, sorted), [sorted, today]);
 
   // 기본 마감은 두 번째 후보 날짜 자정 — 원본 시안도 시작(7/30) 다음 날인 7/31 자정이다.
-  const defaultDue = sorted.length ? dueIso(sorted[Math.min(1, sorted.length - 1)]) : "";
+  const defaultDue = sorted.length ? dueAtEnd(sorted[Math.min(1, sorted.length - 1)]) : "";
   const dueValue = dueAt ?? defaultDue;
 
   return (
@@ -731,16 +694,4 @@ function MonthPicker({
       </div>
     </div>
   );
-}
-
-/** 기본 선택: 오늘부터 7일. 원본 시안도 7일이 선택된 상태다. */
-function defaultWeek(today: string): string[] {
-  const days = [today];
-  for (let i = 0; i < 6; i++) days.push(nextDayKey(days[days.length - 1]));
-  return days;
-}
-
-/** 그 날 KST 자정(하루 끝) ISO. 응답 마감 값. */
-function dueIso(dateKey: string): string {
-  return `${dateKey}T23:59:59+09:00`;
 }

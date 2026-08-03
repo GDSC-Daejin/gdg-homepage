@@ -16,13 +16,13 @@ import {
   HEAT_STEPS,
   heatStep,
   pollTimes,
-  rectSlots,
   slotIso,
   timeAmPm,
   toViews,
   type Cell,
   type Participant,
 } from "@/lib/meeting-poll";
+import { availabilityViews, draftAvailability, type AvailabilityDrag } from "@/lib/meeting-poll-availability";
 
 export interface GuestPoll {
   id: string;
@@ -59,7 +59,7 @@ export function GuestRespond({
 
   const [meId, setMeId] = useState<string | null>(null);
   const [mine, setMine] = useState<Set<string>>(new Set());
-  const [drag, setDrag] = useState<{ mode: "paint" | "erase"; anchor: Cell; cursor: Cell } | null>(null);
+  const [drag, setDrag] = useState<AvailabilityDrag | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState(false);
@@ -68,20 +68,9 @@ export function GuestRespond({
     Boolean(poll.confirmed_at) ||
     Boolean(poll.due_at && Date.now() > Date.parse(poll.due_at));
 
-  const draft = useMemo(() => {
-    if (!drag) return mine;
-    const next = new Set(mine);
-    for (const slot of rectSlots(dates, times, drag.anchor, drag.cursor)) {
-      if (drag.mode === "paint") next.add(slot);
-      else next.delete(slot);
-    }
-    return next;
-  }, [drag, mine, dates, times]);
+  const draft = useMemo(() => draftAvailability(mine, drag, dates, times), [drag, mine, dates, times]);
 
-  const liveViews = useMemo(
-    () => views.map((v) => (v.id === meId ? { ...v, slots: draft, responded: true } : v)),
-    [views, meId, draft],
-  );
+  const liveViews = useMemo(() => availabilityViews(views, meId, draft, true), [views, meId, draft]);
   const responded = liveViews.filter((v) => v.responded);
   const available = useMemo(() => aggregate(liveViews), [liveViews]);
 

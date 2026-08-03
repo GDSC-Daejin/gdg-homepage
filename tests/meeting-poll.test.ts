@@ -13,6 +13,7 @@ import {
   MAX_POLL_DAYS,
   MIN_BLOCK_MIN,
   normalizeSlots,
+  prepareMeetingPollInput,
   pollSlotSet,
   pollTimes,
   recommendBlocks,
@@ -89,6 +90,46 @@ describe("dateRange", () => {
     expect(dateRange("2026-01-01", "2026-12-31").length).toBeLessThanOrEqual(
       MAX_POLL_DAYS + 1,
     );
+  });
+});
+
+describe("prepareMeetingPollInput", () => {
+  it("제목과 후보 날짜를 정리한 뒤 공통 입력값을 돌려준다", () => {
+    expect(
+      prepareMeetingPollInput({
+        title: "  8월 모지숲 회의  ",
+        dates: ["2026-08-03", "invalid", "2026-08-02", "2026-08-03"],
+        startHour: 18,
+        endHour: 21,
+        slotMin: 30,
+        dueAt: null,
+        notifyBeforeDue: true,
+      }),
+    ).toEqual({
+      value: {
+        title: "8월 모지숲 회의",
+        dates: ["2026-08-02", "2026-08-03"],
+        startHour: 18,
+        endHour: 21,
+        slotMin: 30,
+        dueAt: null,
+        notifyBeforeDue: true,
+      },
+    });
+  });
+
+  it("생성과 수정에서 같아야 하는 시간 규칙을 한 오류로 돌려준다", () => {
+    expect(
+      prepareMeetingPollInput({
+        title: "회의",
+        dates: ["2026-08-02"],
+        startHour: 20,
+        endHour: 20,
+        slotMin: 30,
+        dueAt: null,
+        notifyBeforeDue: false,
+      }),
+    ).toEqual({ error: "종료 시간이 시작 시간보다 늦어야 해요" });
   });
 });
 

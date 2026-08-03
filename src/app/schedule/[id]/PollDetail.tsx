@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   confirmMeetingPoll,
@@ -14,7 +14,6 @@ import {
   Callout,
   ContentBadge,
   ProgressBar,
-  SelectBox,
 } from "@/components/wds/primitives";
 import { cellFromPoint, ScheduleGrid } from "@/components/wds/ScheduleGrid";
 import { useToast } from "@/components/wds/Toast";
@@ -22,13 +21,11 @@ import {
   aggregate,
   dateWithWeekday,
   durationLabel,
-  DURATION_OPTIONS,
   HEAT_STEPS,
   heatStep,
   MIN_BLOCK_MIN,
   pollTimes,
   recommendBlocks,
-  rectSlots,
   shortDate,
   slotIso,
   timeAmPm,
@@ -36,9 +33,19 @@ import {
   weekdayKo,
   type Cell,
   type Participant,
-  type ParticipantView,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
+import { ConfirmDialog, NudgeDialog } from "./PollDetailDialogs";
+import { availabilityViews, draftAvailability, type AvailabilityDrag } from "@/lib/meeting-poll-availability";
+import { MetaChip, PeopleTooltip, PersonRow } from "./PollDetailPeople";
+import {
+  addMinutes,
+  endOf,
+  kstDayKey,
+  kstTime,
+  nearestDuration,
+  pastDue,
+} from "./poll-detail-time";
 import styles from "../schedule.module.css";
 
 interface PollDetailProps {
@@ -71,7 +78,7 @@ export function PollDetail({
   const locked = Boolean(poll.confirmed_at) || pastDue(poll.due_at);
 
   const [mine, setMine] = useState<Set<string>>(() => new Set(me?.slots ?? []));
-  const [drag, setDrag] = useState<{ mode: "paint" | "erase"; anchor: Cell; cursor: Cell } | null>(null);
+  const [drag, setDrag] = useState<AvailabilityDrag | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   /** 말풍선은 마우스를 뗀 순간 사라져야 한다 — 클릭으로 남는 selected와 따로 둔다. */
   const [hovered, setHovered] = useState<Cell | null>(null);
@@ -85,26 +92,10 @@ export function PollDetail({
   const { show, toast } = useToast();
 
   /** 드래그 중에는 커밋 전 미리보기를 그린다. 히트맵도 같은 값으로 즉시 반응한다. */
-  const draft = useMemo(() => {
-    if (!drag) return mine;
-    const next = new Set(mine);
-    for (const slot of rectSlots(dates, times, drag.anchor, drag.cursor)) {
-      if (drag.mode === "paint") next.add(slot);
-      else next.delete(slot);
-    }
-    return next;
-  }, [drag, mine, dates, times]);
+  const draft = useMemo(() => draftAvailability(mine, drag, dates, times), [drag, mine, dates, times]);
 
   // 내 응답은 화면 상태가 진실이다. 나머지는 서버에서 받은 그대로.
-  const liveViews = useMemo(
-    () =>
-      views.map((v) =>
-        v.id === myParticipantId
-          ? { ...v, slots: draft, responded: v.responded || draft.size > 0 }
-          : v,
-      ),
-    [views, myParticipantId, draft],
-  );
+  const liveViews = useMemo(() => availabilityViews(views, myParticipantId, draft, false), [views, myParticipantId, draft]);
 
   const responded = liveViews.filter((v) => v.responded);
   const pending = liveViews.filter((v) => !v.responded);
@@ -969,339 +960,4 @@ function TinyIcon({ d }: { d: string }) {
       <path d={d} />
     </svg>
   );
-}
-
-/** 제목 아래 한 줄 요약. 라벨과 값을 나눠 담아 어디까지가 한 항목인지 눈으로 끊기게 한다. */
-function MetaChip({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        height: 28,
-        padding: "0 10px",
-        borderRadius: 8,
-        background: "var(--wds-bg)",
-        boxShadow: "inset 0 0 0 1px var(--wds-line-alternative)",
-      }}
-    >
-      <span
-        style={{
-          font: "500 12px/1 var(--wds-font-sans)",
-          color: "var(--wds-label-assistive)",
-        }}
-      >
-        {label}
-      </span>
-      <span
-        style={{
-          font: "600 13px/1 var(--wds-font-sans)",
-          color: "var(--wds-label-normal)",
-        }}
-      >
-        {children}
-      </span>
-    </span>
-  );
-}
-
-/**
- * 사람 목록 말풍선. 격자 칸(그 시간에 가능한 사람)과 "아직 안 함 · 외 N명"이 함께 쓴다.
- * 붙일 자리 안에 절대배치로 그려서 그 자리가 움직여도 따라다닌다.
- * pointerEvents: none — 말풍선이 아래 칸의 hover를 가로채면 깜빡인다.
- */
-function PeopleTooltip({
-  people,
-  align,
-  below,
-  max = 8,
-}: {
-  people: ParticipantView[];
-  align: "start" | "center" | "end";
-  below: boolean;
-  max?: number;
-}) {
-  const shown = people.slice(0, max);
-  return (
-    <div
-      style={{
-        position: "absolute",
-        ...(below ? { top: "calc(100% + 6px)" } : { bottom: "calc(100% + 6px)" }),
-        ...(align === "start"
-          ? { left: 0 }
-          : align === "end"
-            ? { right: 0 }
-            : { left: "50%", transform: "translateX(-50%)" }),
-        zIndex: 30,
-        pointerEvents: "none",
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-        padding: "10px 12px",
-        borderRadius: 12,
-        background: "var(--wds-bg)",
-        boxShadow: "var(--wds-shadow-card), 0 0 0 1px var(--wds-line-alternative)",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {shown.map((p) => (
-        <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Avatar initial={p.initial} color={p.color} size={24} avatarPath={p.avatarPath} />
-          <span
-            style={{
-              font: "500 13px/1.4 var(--wds-font-sans)",
-              color: "var(--wds-label-normal)",
-            }}
-          >
-            {p.name}
-          </span>
-        </div>
-      ))}
-      {people.length > shown.length && (
-        <span
-          style={{
-            font: "400 12px/1.4 var(--wds-font-sans)",
-            color: "var(--wds-label-alternative)",
-          }}
-        >
-          외 {people.length - shown.length}명
-        </span>
-      )}
-    </div>
-  );
-}
-
-function PersonRow({
-  label,
-  labelColor,
-  people,
-  strike = false,
-  pending = false,
-}: {
-  label: string;
-  labelColor: string;
-  people: ParticipantView[];
-  strike?: boolean;
-  pending?: boolean;
-}) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <span
-        style={{
-          width: 44,
-          flexShrink: 0,
-          font: "500 12px/1.4 var(--wds-font-sans)",
-          color: labelColor,
-        }}
-      >
-        {label}
-      </span>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {people.length === 0 && (
-          <span style={{ font: "400 13px/1.4 var(--wds-font-sans)", color: "var(--wds-label-assistive)" }}>
-            없음
-          </span>
-        )}
-        {people.map((p) => (
-          <span
-            key={p.id}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              height: 28,
-              padding: "0 10px 0 4px",
-              borderRadius: 999,
-              background: strike || pending ? "transparent" : "var(--wds-bg)",
-              boxShadow: "inset 0 0 0 1px var(--wds-line-alternative)",
-            }}
-          >
-            {pending ? (
-              // 점선 테두리는 그대로 둔다 — 사진이 들어가도 미응답인 건 보여야 한다.
-              <Avatar initial={p.initial} size={20} pending avatarPath={p.avatarPath} />
-            ) : (
-              // 안 되는 사람은 회색 — 프로필 사진까지 띄우면 가능한 사람과 구분이 흐려진다.
-              <Avatar
-                initial={p.initial}
-                color={strike ? "var(--wds-fill-strong)" : p.color}
-                size={20}
-                avatarPath={strike ? null : p.avatarPath}
-                style={strike ? { color: "var(--wds-label-alternative)" } : undefined}
-              />
-            )}
-            <span
-              style={{
-                font: "500 13px/1 var(--wds-font-sans)",
-                color: pending
-                  ? "var(--wds-label-assistive)"
-                  : strike
-                    ? "var(--wds-label-alternative)"
-                    : "var(--wds-label-neutral)",
-                textDecoration: strike ? "line-through" : undefined,
-              }}
-            >
-              {p.name}
-            </span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** 확정·알림 모달이 같이 쓰는 껍데기. 바깥을 누르면 닫힌다. */
-function Modal({ onClose, children }: { onClose: () => void; children: ReactNode }) {
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.44)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 100,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 380,
-          background: "var(--wds-bg-elevated)",
-          borderRadius: 16,
-          boxShadow: "var(--wds-shadow-heavy)",
-          padding: "24px 24px 20px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 14,
-          fontFamily: "var(--wds-font-sans)",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function NudgeDialog({
-  count,
-  busy,
-  onClose,
-  onSubmit,
-}: {
-  count: number;
-  busy: boolean;
-  onClose: () => void;
-  onSubmit: () => void;
-}) {
-  return (
-    <Modal onClose={onClose}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ font: "700 18px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
-          {count}명에게 알림을 보낼까요?
-        </span>
-        <span style={{ font: "400 14px/1.5 var(--wds-font-sans)", color: "var(--wds-label-alternative)" }}>
-          아직 응답하지 않은 {count}명에게 운영진 슬랙 채널에서 멘션으로 알림이 발송돼요.
-        </span>
-      </div>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 2 }}>
-        <Button variant="text" color="assistive" size="medium" onClick={onClose}>
-          취소
-        </Button>
-        <Button variant="solid" color="primary" size="medium" disabled={busy} onClick={onSubmit}>
-          보내기
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
-function ConfirmDialog({
-  startIso,
-  durationMin,
-  busy,
-  onDuration,
-  onClose,
-  onSubmit,
-}: {
-  startIso: string;
-  durationMin: number;
-  busy: boolean;
-  onDuration: (min: number) => void;
-  onClose: () => void;
-  onSubmit: () => void;
-}) {
-  return (
-    <Modal onClose={onClose}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={{ font: "700 18px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
-          이 시간으로 확정할까요?
-        </span>
-        <span style={{ font: "400 14px/1.5 var(--wds-font-sans)", color: "var(--wds-label-alternative)" }}>
-          {dateWithWeekday(kstDayKey(startIso))} {timeAmPm(kstTime(startIso))}
-        </span>
-      </div>
-      <SelectBox
-        label="소요 시간"
-        value={String(durationMin)}
-        options={DURATION_OPTIONS.map((min) => ({
-          value: String(min),
-          label: durationLabel(min),
-        }))}
-        onChange={(v) => onDuration(Number(v))}
-      />
-      <span style={{ font: "400 13px/1.5 var(--wds-font-sans)", color: "var(--wds-label-alternative)" }}>
-        확정하면 응답이 잠기고 이벤트 달력에 표시돼요.
-      </span>
-      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 2 }}>
-        <Button variant="text" color="assistive" size="medium" onClick={onClose}>
-          취소
-        </Button>
-        <Button variant="solid" color="primary" size="medium" disabled={busy} onClick={onSubmit}>
-          확정
-        </Button>
-      </div>
-    </Modal>
-  );
-}
-
-function pastDue(dueAt: string | null): boolean {
-  return Boolean(dueAt && Date.now() > Date.parse(dueAt));
-}
-
-function nearestDuration(mins: number): number {
-  return (
-    DURATION_OPTIONS.find((d) => d >= mins) ?? DURATION_OPTIONS[DURATION_OPTIONS.length - 1]
-  );
-}
-
-/** "HH:mm"에 분을 더한 "HH:mm" (24시 넘어가면 24:00으로 잘라 자정 표기가 되게) */
-function addMinutes(time: string, add: number): string {
-  const [h, m] = time.split(":").map(Number);
-  const total = Math.min(24 * 60, h * 60 + m + add);
-  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-}
-
-function kstDayKey(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date(iso));
-}
-
-function kstTime(iso: string): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Seoul",
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  }).format(new Date(iso));
-}
-
-function endOf(r: { from: number; to: number; dateIndex: number }, times: string[], dates: string[]): string {
-  return slotIso(dates[r.dateIndex], times[r.to]);
 }
