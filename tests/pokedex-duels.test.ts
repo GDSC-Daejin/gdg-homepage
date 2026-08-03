@@ -128,4 +128,13 @@ describe("도감 포켓몬 결투", () => {
     expect(panel).toContain("<Avatar");
     expect(modal).toContain("if (!mounted || !open) return;");
   });
+
+  it("전투력 포획 관계를 단일 객체로 읽어 결투 목록에 전달한다", async () => {
+    const page = await readFile("src/app/(member)/pokedex/page.tsx", "utf8");
+
+    expect(page).toContain(".returns<OwnedThrow[]>()");
+    expect(page).toContain("const caughtPokemon = throwRecord.pokemon;");
+    expect(page).toContain("const combatPower = throwRecord.appearance?.combat_power;");
+    expect(page).not.toContain("throwRecord.pokemon[0]");
+  });
 });

@@ -27,6 +27,14 @@ describe("포켓몬 상세 도감", () => {
     expect(page).toContain("<Avatar");
   });
 
+  it("포획 전투력 관계를 단일 객체로 읽는다", async () => {
+    const page = await readFile("src/app/(member)/pokedex/[pokedexNo]/page.tsx", "utf8");
+
+    expect(page).toContain(".returns<CatchRow[]>()");
+    expect(page).toContain("appearance: catchRecord.appearance,");
+    expect(page).not.toContain("catchRecord.appearance[0]");
+  });
+
   it("미획득 포켓몬의 이미지와 설명을 숨긴다", async () => {
     const page = await readFile("src/app/(member)/pokedex/[pokedexNo]/page.tsx", "utf8");
 

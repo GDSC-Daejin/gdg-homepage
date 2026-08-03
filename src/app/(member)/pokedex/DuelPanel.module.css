@@ -136,11 +136,11 @@
   top: 72%;
   left: 50%;
   width: var(--beam-width);
-  height: 6px;
+  height: 3px;
   transform: var(--beam-transform);
   transform-origin: left center;
-  background: #ff5a5f;
-  box-shadow: 0 -3px #ffd0d2, 0 3px #9f1239, 8px 0 rgba(255, 76, 93, .45);
+  background: repeating-linear-gradient(90deg, #fff 0 1px, #ff8589 1px 2px, #ff5a5f 2px 4px);
+  box-shadow: 0 -1px #ffd0d2, 0 1px #9f1239, 4px 0 #ff8589, 8px 0 #ffd0d2;
 }
 .beamLeft { --beam-width: 134px; --beam-transform: translate(-119px, -62px) rotate(27deg); }
 .beamRight { --beam-width: 114px; --beam-transform: translate(95px, -62px) rotate(147deg); }
@@ -172,7 +172,7 @@
 .pokemonReveal { animation: pokemon-reveal .6s steps(6, end) both; }
 .pokemonFaint { animation: pokemon-faint .7s steps(7, end) both; }
 .pokemonCapture { animation: pokemon-capture .9s steps(9, end) both; }
-.pokemonRecall { animation: pokemon-recall .25s steps(4, end) both; }
+.pokemonRecall { animation: pokemon-recall .9s steps(9, end) both; }
 .facingRight { transform: scaleX(-1); }
 .attackLeft { animation: attack-left .62s steps(7, end); }
 .attackRight { animation: attack-right .62s steps(7, end); }

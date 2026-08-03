@@ -23,6 +23,7 @@ describe("도감 일일 출현 예약", () => {
     const appearances = planDailyAppearances(
       new Date("2026-08-02T00:00:00.000Z"),
       [
+        { id: "morning", dwellMinutes: 30, spawnWeight: 100, activityPeriod: "morning" },
         { id: "common", dwellMinutes: 30, spawnWeight: 100, activityPeriod: "day" },
         { id: "rare", dwellMinutes: 30, spawnWeight: 1, activityPeriod: "day" },
         { id: "uncommon", dwellMinutes: 30, spawnWeight: 55, activityPeriod: "day" },
@@ -38,12 +39,12 @@ describe("도감 일일 출현 예약", () => {
     expect(appearances.map((appearance) => appearance.pokemonId)).toContain("night");
   });
 
-  it("낮형과 야행성을 각 활동 시간대 안에서 겹치지 않게 예약한다", async () => {
+  it("아침 한 마리·낮 세 마리·저녁 한 마리를 각 시간대에 겹치지 않게 예약한다", async () => {
     const module = await import("@/lib/pokedex/schedule").catch(() => null);
     const planDailyAppearances = module?.planDailyAppearances as
       | ((
           date: Date,
-          pokemon: { id: string; dwellMinutes: number; spawnWeight: number; activityPeriod: "day" | "night" }[],
+          pokemon: { id: string; dwellMinutes: number; spawnWeight: number; activityPeriod: "morning" | "day" | "night" }[],
           random: () => number,
         ) => ScheduledAppearance[])
       | undefined;
@@ -52,26 +53,29 @@ describe("도감 일일 출현 예약", () => {
     const appearances = planDailyAppearances?.(
       new Date("2026-08-02T00:00:00.000Z"),
       [
+        { id: "pidgey", dwellMinutes: 90, spawnWeight: 100, activityPeriod: "morning" },
         { id: "squirtle", dwellMinutes: 90, spawnWeight: 100, activityPeriod: "day" },
         { id: "charmander", dwellMinutes: 60, spawnWeight: 100, activityPeriod: "day" },
         { id: "pikachu", dwellMinutes: 30, spawnWeight: 100, activityPeriod: "day" },
-        { id: "bulbasaur", dwellMinutes: 60, spawnWeight: 100, activityPeriod: "day" },
         { id: "zubat", dwellMinutes: 60, spawnWeight: 100, activityPeriod: "night" },
-        { id: "gastly", dwellMinutes: 90, spawnWeight: 100, activityPeriod: "night" },
       ],
       () => 0.5,
     ) ?? [];
 
     expect(appearances).toHaveLength(5);
     expect(new Set(appearances.map((appearance) => appearance.pokemonId)).size).toBe(5);
-    const nightIds = new Set(["zubat", "gastly"]);
+    const morningIds = new Set(["pidgey"]);
+    const nightIds = new Set(["zubat"]);
     for (const appearance of appearances) {
       const minute = kstMinutes(appearance.startsAt);
-      if (nightIds.has(appearance.pokemonId)) {
+      if (morningIds.has(appearance.pokemonId)) {
+        expect(minute).toBeGreaterThanOrEqual(7 * 60);
+        expect(kstMinutes(appearance.endsAt)).toBeLessThanOrEqual(11 * 60);
+      } else if (nightIds.has(appearance.pokemonId)) {
         expect(minute).toBeGreaterThanOrEqual(19 * 60);
         expect(kstMinutes(appearance.endsAt)).toBeLessThanOrEqual(23 * 60);
       } else {
-        expect(minute).toBeGreaterThanOrEqual(7 * 60);
+        expect(minute).toBeGreaterThanOrEqual(11 * 60);
         expect(kstMinutes(appearance.endsAt)).toBeLessThanOrEqual(19 * 60);
       }
     }

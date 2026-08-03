@@ -1,4 +1,4 @@
-export type PokemonScheduleItem = { id: string; dwellMinutes: number; spawnWeight: number; activityPeriod: "day" | "night" };
+export type PokemonScheduleItem = { id: string; dwellMinutes: number; spawnWeight: number; activityPeriod: "morning" | "day" | "night" };
 
 export type ScheduledAppearance = {
   pokemonId: string;
@@ -44,7 +44,8 @@ export function planDailyAppearances(
     });
   };
 
-  const dayPokemon = pick(pokemon.filter((item) => item.activityPeriod === "day"), 4);
+  const morningPokemon = pick(pokemon.filter((item) => item.activityPeriod === "morning"), 1);
+  const dayPokemon = pick(pokemon.filter((item) => item.activityPeriod === "day"), 3);
   const nightPokemon = pick(pokemon.filter((item) => item.activityPeriod === "night"), 1);
   const schedule = (items: PokemonScheduleItem[], startMinute: number, endMinute: number) => {
     let cursor = startMinute;
@@ -58,7 +59,8 @@ export function planDailyAppearances(
   };
 
   return [
-    ...schedule(dayPokemon, 7 * 60, 19 * 60),
+    ...schedule(morningPokemon, 7 * 60, 11 * 60),
+    ...schedule(dayPokemon, 11 * 60, 19 * 60),
     ...schedule(nightPokemon, 19 * 60, 23 * 60),
   ];
 }

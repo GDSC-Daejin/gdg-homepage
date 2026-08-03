@@ -26,4 +26,12 @@ describe("도감 전투력", () => {
     expect(sql).toContain("a.combat_power is null");
     expect(sql).toContain("floor(random() * (p.cp_max - p.cp_min + 1))::int + p.cp_min");
   });
+
+  it("포획자는 만료된 출현의 전투력도 다시 읽을 수 있다", async () => {
+    const sql = await readFile("supabase/migrations/0079_pokedex_owned_appearance_read.sql", "utf8").catch(() => "");
+
+    expect(sql).toContain('drop policy "pokemon_appearances: posted read" on public.pokemon_appearances');
+    expect(sql).toContain("t.appearance_id = pokemon_appearances.id");
+    expect(sql).toContain("t.user_id = auth.uid()");
+  });
 });

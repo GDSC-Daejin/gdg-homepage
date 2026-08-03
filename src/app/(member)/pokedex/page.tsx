@@ -13,7 +13,7 @@ import type { RankingLeagueState } from "@/lib/pokedex/ranking-league";
 
 type Pokemon = { id: string; pokedex_no: number; name_ko: string; image_path: string; rarity: Rarity; spawn_weight: number; catch_rate: number };
 type Rarity = "common" | "uncommon" | "rare" | "very_rare" | "legendary";
-type OwnedThrow = { id: string; pokemon: { name_ko: string; image_path: string }[]; appearance: { combat_power: number | null }[] };
+type OwnedThrow = { id: string; pokemon: { name_ko: string; image_path: string } | null; appearance: { combat_power: number | null } | null };
 type DuelRow = {
   id: string; status: PokemonDuel["status"]; created_at: string; winner_id: string | null;
   challenger_id: string; challenger_name: string; challenger_pokemon_name: string; challenger_image_path: string; challenger_combat_power: number; challenger_score: number | null;
@@ -52,7 +52,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
       supabase.from("pokemon_catalog").select("id, pokedex_no, name_ko, image_path, rarity, spawn_weight, catch_rate").order("pokedex_no"),
       supabase.from("pokemon_ball_inventory").select("quantity").eq("user_id", profile.id).eq("ball_slug", "poke_ball").maybeSingle(),
       supabase.from("pokemon_throws").select("pokemon_id").eq("user_id", profile.id).eq("outcome", "caught"),
-      supabase.from("pokemon_throws").select("id, pokemon:pokemon_catalog(name_ko, image_path), appearance:pokemon_appearances(combat_power)").eq("user_id", profile.id).eq("outcome", "caught").order("created_at", { ascending: false }),
+      supabase.from("pokemon_throws").select("id, pokemon:pokemon_catalog(name_ko, image_path), appearance:pokemon_appearances(combat_power)").eq("user_id", profile.id).eq("outcome", "caught").order("created_at", { ascending: false }).returns<OwnedThrow[]>(),
       supabase.rpc("pokedex_duel_members"),
       supabase.rpc("pokedex_duel_list"),
       supabase.rpc("pokedex_rank_state"),
@@ -60,9 +60,9 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
     pokemon = (catalog ?? []) as Pokemon[];
     ballCount = inventory?.quantity ?? 0;
     caughtIds = ((throws ?? []) as { pokemon_id: string }[]).map((throwRecord) => throwRecord.pokemon_id);
-    ownedBattlePokemon = ((ownedThrows ?? []) as OwnedThrow[]).flatMap((throwRecord) => {
-      const caughtPokemon = throwRecord.pokemon[0];
-      const combatPower = throwRecord.appearance[0]?.combat_power;
+    ownedBattlePokemon = (ownedThrows ?? []).flatMap((throwRecord) => {
+      const caughtPokemon = throwRecord.pokemon;
+      const combatPower = throwRecord.appearance?.combat_power;
       return caughtPokemon && combatPower !== null && combatPower !== undefined ? [{ id: throwRecord.id, pokemonName: caughtPokemon.name_ko, imagePath: caughtPokemon.image_path, combatPower }] : [];
     });
     duelMembers = ((members ?? []) as { id: string; name: string; nickname: string | null; avatar_path: string | null }[]).map((member) => ({ ...member, avatarPath: member.avatar_path }));

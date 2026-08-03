@@ -9,6 +9,7 @@ import { displayName, formatKst } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OverviewTabs } from "../OverviewTabs";
 import { DuelPreview } from "../../(member)/pokedex/DuelPanel";
+import { RankingLeaguePreview } from "../../(member)/pokedex/RankingLeaguePanel";
 
 type Catch = { user_id: string; pokemon_id: string; created_at: string };
 type Appearance = { pokemon_id: string; starts_at: string };
@@ -87,13 +88,13 @@ export default async function AdminPokedexPage({ searchParams }: { searchParams:
   return (
     <div className="flex flex-col gap-6">
       <OverviewTabs />
-      <PageHeader title="포켓몬" description="도감 현황을 확인하고 개발용 결투 연출을 미리 봐요." />
+      <PageHeader title="포켓몬" description="도감 현황과 개발용 결투·랭킹전을 미리 봐요." />
       <nav aria-label="포켓몬 관리" className="flex gap-1 border-b border-gray-200">
         <Link href="/admin/pokedex" aria-current={tab === "overview" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium ${tab === "overview" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>도감 현황</Link>
         <Link href="/admin/pokedex?tab=development" aria-current={tab === "development" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium ${tab === "development" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>개발</Link>
       </nav>
 
-      {tab === "development" ? <DuelPreview /> : <>
+      {tab === "development" ? <><DuelPreview /><RankingLeaguePreview /></> : <>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="총 포획 성공" value={`${catches.length}마리`} />

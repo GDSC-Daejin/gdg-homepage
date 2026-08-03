@@ -25,4 +25,12 @@ describe("도감 랭킹전", () => {
     expect(sql).toContain("p.rarity = 'legendary'");
     expect(sql).toContain("if b.attacker_id <> v_user and b.defender_id <> v_user then raise exception 'FORBIDDEN'; end if;");
   });
+
+  it("쓰러진 방어 포켓몬은 반격하지 않는 턴제 전투를 사용한다", async () => {
+    const sql = await readFile("supabase/migrations/0080_pokedex_ranking_turn_based.sql", "utf8").catch(() => "");
+
+    expect(sql).toContain("create or replace function public.pokedex_rank_start_battle");
+    expect(sql).toContain("v_counter_damage := 0;");
+    expect(sql).toContain("if v_defender_hp[v_defender_index + 1] > 0 then");
+  });
 });

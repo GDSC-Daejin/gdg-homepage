@@ -12,6 +12,7 @@ import { createClient } from "@/lib/supabase/server";
 
 type Pokemon = { id: string; pokedex_no: number; name_ko: string; image_path: string };
 type Catch = { ball_slug: string; caught_at: string; appearance: { combat_power: number | null } | null };
+type CatchRow = { ball_slug: string; created_at: string; appearance: { combat_power: number | null } | null };
 type Ball = { slug: string; name_ko: string };
 type Catcher = { user_id: string; name: string; nickname: string | null; avatar_path: string | null; ball_slug: string; caught_at: string; combat_power: number | null };
 
@@ -38,15 +39,15 @@ export default async function PokemonDetailPage({ params }: { params: Promise<{ 
     pokemon = (data as Pokemon | null) ?? null;
     if (pokemon) {
       const [{ data: catches }, { data: ballTypes }, { data: catcherRows }] = await Promise.all([
-        supabase.from("pokemon_throws").select("ball_slug, created_at, appearance:pokemon_appearances(combat_power)").eq("user_id", profile.id).eq("pokemon_id", pokemon.id).eq("outcome", "caught").order("created_at", { ascending: false }),
+        supabase.from("pokemon_throws").select("ball_slug, created_at, appearance:pokemon_appearances(combat_power)").eq("user_id", profile.id).eq("pokemon_id", pokemon.id).eq("outcome", "caught").order("created_at", { ascending: false }).returns<CatchRow[]>(),
         supabase.from("pokemon_ball_types").select("slug, name_ko"),
         supabase.rpc("pokedex_catchers", { p_pokemon: pokemon.id }),
       ]);
       myCatches = (catches ?? []).map((catchRecord) => ({
         ball_slug: catchRecord.ball_slug,
         caught_at: catchRecord.created_at,
-        appearance: catchRecord.appearance[0] ?? null,
-      })) as Catch[];
+        appearance: catchRecord.appearance,
+      }));
       balls = (ballTypes ?? []) as Ball[];
       catchers = (catcherRows ?? []) as Catcher[];
     }
