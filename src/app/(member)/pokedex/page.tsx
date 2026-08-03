@@ -34,6 +34,29 @@ const RARITY_INFO: Record<Rarity, { label: string; weight: number; catchRate: nu
   legendary: { label: "전설/환상", weight: 8, catchRate: 28, tone: "danger" },
 };
 
+const RANKING_LEAGUE_OPEN = false;
+
+export function RankingLeagueComingSoon() {
+  return <section>
+    <Card className="relative overflow-hidden border-primary bg-primary p-6 text-white sm:p-8">
+      <div className="relative z-10 max-w-xl"><p className="inline-flex rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide">✨ 추후 오픈 예정</p><h2 className="mt-4 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">도감 랭킹전</h2><p className="mt-3 text-sm leading-6 text-white/90 sm:text-base sm:leading-7">포켓몬을 모으는 동안 규칙을 미리 익혀두세요.<br />준비가 되면 나만의 팀으로 바로 도전할 수 있어요.</p></div>
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png" alt="피카츄" className="absolute bottom-0 right-3 h-36 w-36 object-contain drop-shadow-lg sm:right-8 sm:h-48 sm:w-48" />
+    </Card>
+    <div className="mt-4 rounded-xl border border-primary-soft-hover bg-primary-soft px-5 py-4"><h3 className="text-base font-bold leading-6 tracking-tight text-primary">처음이라면, 이 순서대로 준비해요</h3><p className="mt-1 text-sm leading-6 text-gray-700">랭킹전은 포켓몬을 모으고, 팀을 만들고,<br />매일 다른 트레이너와 겨루는 3:3 대결이에요.</p></div>
+    <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <Card className="relative min-h-56 overflow-hidden p-5 pr-36"><p className="text-xs font-extrabold tracking-[0.12em] text-primary">STEP 1</p><h3 className="mt-2 min-h-12 text-lg font-bold leading-7 tracking-tight text-gray-900">서로 다른<br />포켓몬 6종을 모아요</h3><p className="mt-2 text-sm leading-6 text-gray-600">같은 포켓몬을 여러 마리 포획해도 좋아요.<br /><strong className="font-bold text-primary">서로 다른 6종</strong>을 모으면 참가할 수 있어요.</p><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" alt="꼬부기" className="absolute right-1 top-[5.75rem] h-32 w-32 object-contain drop-shadow-md sm:h-36 sm:w-36" /></Card>
+      <Card className="relative min-h-56 overflow-hidden p-5 pr-36"><p className="text-xs font-extrabold tracking-[0.12em] text-primary">STEP 2</p><h3 className="mt-2 min-h-12 text-lg font-bold leading-7 tracking-tight text-gray-900">공격 팀과<br />방어 팀을 만들어요</h3><p className="mt-2 text-sm leading-6 text-gray-600">각 팀은 <strong className="font-bold text-primary">서로 다른 3마리</strong>로 구성해요.<br />전설·환상 포켓몬은 한 마리까지예요.</p><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png" alt="이브이" className="absolute right-1 top-[5.75rem] h-32 w-32 object-contain drop-shadow-md sm:h-36 sm:w-36" /></Card>
+      <Card className="relative min-h-56 overflow-hidden p-5 pr-36"><p className="text-xs font-extrabold tracking-[0.12em] text-primary">STEP 3</p><h3 className="mt-2 min-h-12 text-lg font-bold leading-7 tracking-tight text-gray-900">매일 바뀌는<br />상대에게 도전해요</h3><p className="mt-2 text-sm leading-6 text-gray-600">하루에 <strong className="font-bold text-primary">최대 3번</strong> 공격할 수 있어요.<br />상대는 매일 오전 6시에 바뀌어요.</p><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png" alt="파이리" className="absolute right-1 top-[5.75rem] h-32 w-32 object-contain drop-shadow-md sm:h-36 sm:w-36" /></Card>
+      <Card className="relative min-h-56 overflow-hidden p-5 pr-36"><p className="text-xs font-extrabold tracking-[0.12em] text-primary">STEP 4</p><h3 className="mt-2 min-h-12 text-lg font-bold leading-7 tracking-tight text-gray-900">타입과 팀 조합으로<br />승부해요</h3><p className="mt-2 text-sm leading-6 text-gray-600">전투력과 타입 상성이 승부에 반영돼요.<br />같은 타입 팀에는 보너스가 더해져요.</p><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png" alt="이상해씨" className="absolute right-1 top-[5.75rem] h-32 w-32 object-contain drop-shadow-md sm:h-36 sm:w-36" /></Card>
+    </div>
+    <Card className="mt-4 p-5"><h3 className="text-base font-bold leading-6 tracking-tight text-gray-900">점수는 이렇게 바뀌어요</h3><p className="mt-1 text-sm leading-6 text-gray-600">공격에서 이기면 30점, 지면 30점이 바뀌어요. 방어에 성공한 팀도 10점을 얻어요.<br />방어 팀을 바꿨다면 다음 날 오전 6시부터 매칭에 반영돼요.</p></Card>
+  </section>;
+}
+
+export function RankingLeagueTab({ profileId, state }: { profileId: string; state: RankingLeagueState | null }) {
+  return !RANKING_LEAGUE_OPEN ? <RankingLeagueComingSoon /> : state ? <RankingLeaguePanel profileId={profileId} state={state} /> : <EmptyState title="랭킹전을 준비하고 있어요" description="데모에서는 랭킹전을 이용할 수 없어요." />;
+}
+
 export default async function PokedexPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
   const profile = await requireProfile();
   const requestedTab = (await searchParams).tab;
@@ -55,7 +78,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
       supabase.from("pokemon_throws").select("id, pokemon:pokemon_catalog(name_ko, image_path), appearance:pokemon_appearances(combat_power)").eq("user_id", profile.id).eq("outcome", "caught").order("created_at", { ascending: false }).returns<OwnedThrow[]>(),
       supabase.rpc("pokedex_duel_members"),
       supabase.rpc("pokedex_duel_list"),
-      supabase.rpc("pokedex_rank_state"),
+      RANKING_LEAGUE_OPEN ? supabase.rpc("pokedex_rank_state") : Promise.resolve({ data: null }),
     ]);
     pokemon = (catalog ?? []) as Pokemon[];
     ballCount = inventory?.quantity ?? 0;
@@ -105,7 +128,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
           const count = countByPokemon.get(entry.id) ?? 0;
           return <Link key={entry.id} href={`/pokedex/${entry.pokedex_no}`} className="rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"><Card className={`p-4 text-center transition-transform hover:-translate-y-0.5 ${count ? "" : "grayscale opacity-45"}`}><img src={entry.image_path} alt={count ? entry.name_ko : "미획득 포켓몬"} className={`mx-auto h-20 w-20 object-contain ${count ? "" : "brightness-0"}`} /><p className="mt-2 text-sm font-semibold text-gray-900">{count ? entry.name_ko : "???"}</p><p className="mt-1 text-xs text-gray-500">{count ? `${count}마리 보유` : `No. ${entry.pokedex_no}`}</p></Card></Link>;
         })}</div>}
-      </> : tab === "duels" ? <DuelPanel profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : tab === "ranking" ? rankingState ? <RankingLeaguePanel profileId={profile.id} state={rankingState} /> : <EmptyState title="랭킹전을 준비하고 있어요" description="데모에서는 랭킹전을 이용할 수 없어요." /> : <>
+      </> : tab === "duels" ? <DuelPanel profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : tab === "ranking" ? <RankingLeagueTab profileId={profile.id} state={rankingState} /> : <>
         <Card className="mb-6 overflow-x-auto p-0">
           <div className="border-b border-gray-100 px-5 py-4"><h2 className="font-semibold text-gray-900">희귀도별 확률</h2><p className="mt-1 text-sm text-gray-500">하루 3회, 가중치 비례·중복 없이 선정돼요.</p></div>
           <table className="w-full text-sm"><thead><tr className="border-b border-gray-200 text-left text-gray-500"><th className="px-5 py-3 font-medium">희귀도</th><th className="px-5 py-3 text-right font-medium">출현 가중치</th><th className="px-5 py-3 text-right font-medium">기본 몬스터볼 포획률</th></tr></thead><tbody>{Object.entries(RARITY_INFO).map(([rarity, info]) => <tr key={rarity} className="border-b border-gray-100 last:border-0"><td className="px-5 py-3"><Badge tone={info.tone}>{info.label}</Badge></td><td className="px-5 py-3 text-right font-mono text-gray-700">{info.weight}</td><td className="px-5 py-3 text-right font-mono text-gray-700">{info.catchRate}%</td></tr>)}</tbody></table>
