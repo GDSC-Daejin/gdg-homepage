@@ -1,7 +1,29 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
-import { RankingLeagueTab } from "@/app/(member)/pokedex/page";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  createClient: vi.fn(),
+  isDemoMode: vi.fn(),
+  requireProfile: vi.fn(),
+}));
+
+vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
+vi.mock("@/lib/demo", () => ({ isDemoMode: mocks.isDemoMode }));
+vi.mock("@/lib/auth", () => ({ requireProfile: mocks.requireProfile }));
+
+import PokedexPage, { RankingLeagueTab } from "@/app/(member)/pokedex/page";
+
+function query(data: unknown) {
+  const result = Promise.resolve({ data });
+  return { select: () => query(data), eq: () => query(data), order: () => query(data), maybeSingle: () => result, returns: () => result, then: result.then.bind(result) };
+}
+
+beforeEach(() => {
+  mocks.createClient.mockResolvedValue({ from: () => query([]), rpc: () => Promise.resolve({ data: [] }) });
+  mocks.isDemoMode.mockResolvedValue(false);
+  mocks.requireProfile.mockResolvedValue({ id: "member" });
+});
 
 describe("도감 랭킹전 탭", () => {
   it("오픈 전에는 포켓몬 그림과 랭킹전 준비 규칙을 안내한다", () => {
@@ -15,5 +37,11 @@ describe("도감 랭킹전 탭", () => {
     expect(text).toContain("점수는 이렇게 바뀌어요");
     expect(page).toContain('alt="피카츄"');
     expect(page).not.toContain("참전하기");
+  });
+
+  it("오픈 전 랭킹 탭은 Supabase 조회를 시작하지 않는다", async () => {
+    await PokedexPage({ searchParams: Promise.resolve({ tab: "ranking" }) });
+
+    expect(mocks.createClient).not.toHaveBeenCalled();
   });
 });

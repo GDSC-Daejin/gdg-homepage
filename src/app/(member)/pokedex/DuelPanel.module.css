@@ -3,7 +3,7 @@
   overflow: hidden;
   min-height: 18rem;
   border: 4px solid #4f8992;
-  background: #dceff0 url("/pokedex/effects/battle-arena-v4.png") center / cover no-repeat;
+  background: #dceff0 image-set(url("/pokedex/effects/battle-arena.webp") 1x, url("/pokedex/effects/battle-arena@2x.webp") 2x) center / cover no-repeat;
   box-shadow: inset 0 0 0 2px #c5ffff, inset 0 -12px 20px rgba(37, 117, 125, .24);
 }
 
