@@ -55,10 +55,10 @@ describe("도감 포켓몬 결투", () => {
     expect(effect).toContain("const HIT_SPRITE");
     expect(effect).toContain("water:");
     expect(effect).toContain("FIXED_SPRITE_PATHS");
-    expect(effect).toContain('"/pokedex/effects/water.png"');
-    expect(effect).toContain('"/pokedex/effects/wind.png"');
-    expect(effect).toContain('"/pokedex/effects/grass.png"');
-    expect(effect).toContain('"/pokedex/effects/electric.png"');
+    expect(effect).toContain('"/pokedex/effects/water.webp"');
+    expect(effect).toContain('"/pokedex/effects/wind.webp"');
+    expect(effect).toContain('"/pokedex/effects/grass.webp"');
+    expect(effect).toContain('"/pokedex/effects/electric.webp"');
     expect(effect).toContain("stage === 2");
     expect(effect).toContain('width="960" height="288"');
     expect(effect).toContain("const battleY = 144");
@@ -68,7 +68,7 @@ describe("도감 포켓몬 결투", () => {
     expect(styles).toContain(".ballRelease::before, .ballRelease::after");
     expect(styles).toContain("release-sparks");
     expect(styles).toContain(".battleArena");
-    expect(styles).toContain('url("/pokedex/effects/battle-arena-v4.png")');
+    expect(styles).toContain('url("/pokedex/effects/battle-arena.webp")');
     expect(styles).toContain(".battleFighter");
     expect(styles).toContain("translateY(4rem)");
     expect(styles).toContain("aspect-ratio: 10 / 3");
@@ -96,13 +96,13 @@ describe("도감 포켓몬 결투", () => {
     expect(styles).toContain("recall-sparkle");
     expect(styles).toContain("grounded-ball-drop");
     expect(styles).toContain(".groundedBall");
-    expect((await readFile("public/pokedex/effects/battle-arena-v4.png")).length).toBeGreaterThan(100_000);
+    expect((await readFile("public/pokedex/effects/battle-arena.webp")).length).toBeGreaterThan(10_000);
     expect((await readFile("public/pokedex/effects/monster-ball-side.png")).length).toBeGreaterThan(100);
   });
 
   it("모든 공식 타입의 고정 이모지 픽셀 스프라이트를 제공한다", async () => {
     const sprites = ["normal", "fire", "water", "electric", "grass", "ice", "fighting", "poison", "ground", "wind", "psychic", "bug", "rock", "ghost", "dragon", "fairy", "steel"];
-    const files = await Promise.all(sprites.map((sprite) => readFile(`public/pokedex/effects/${sprite}.png`)));
+    const files = await Promise.all(sprites.map((sprite) => readFile(`public/pokedex/effects/${sprite}.webp`)));
 
     expect(files.every((file) => file.length > 100)).toBe(true);
   });
@@ -116,7 +116,7 @@ describe("도감 포켓몬 결투", () => {
     ]);
 
     expect(page).toContain("결투");
-    expect(page).toContain("DuelPanel");
+    expect(page).toContain("PokedexBattleTab");
     expect(panel).toContain("result && <Modal");
     expect(panel).toContain("if (response.duel) setResult(response.duel)");
     expect(admin).toContain("<DuelPreview />");
