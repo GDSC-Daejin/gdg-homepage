@@ -4,6 +4,7 @@ import { useState, useTransition, type FormEvent } from "react";
 import { updateMemberProfile } from "@/actions/member";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
+import { toMemberProfileInput } from "../member-editor";
 
 export function MemberProfileForm({
   userId,
@@ -37,17 +38,14 @@ export function MemberProfileForm({
     setError(undefined);
     setSaved(false);
     startTransition(async () => {
-      const result = await updateMemberProfile(userId, {
+      const result = await updateMemberProfile(userId, toMemberProfileInput({
         name: nameValue,
         nickname: nicknameValue,
-        student_no: studentNoValue,
+        studentNo: studentNoValue,
         major: majorValue,
         phone: phoneValue,
-        interests: interestsValue
-          .split(",")
-          .map((v) => v.trim())
-          .filter(Boolean),
-      });
+        interests: interestsValue,
+      }));
       if (result?.error) {
         setError(result.error);
       } else {

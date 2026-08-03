@@ -21,6 +21,7 @@ const PAGE_LABELS: Record<string, string> = {
   "/inquiries": "문의",
   "/materials": "자료실",
   "/profile": "프로필",
+  "/pokedex": "포켓몬도감",
   "/landing-preview": "랜딩 미리보기",
 };
 

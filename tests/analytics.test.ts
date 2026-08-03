@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EVENTS, trackEvent } from "@/lib/analytics";
+import { labelPage } from "@/lib/analytics-labels";
+
+describe("labelPage", () => {
+  it("도감 경로를 포켓몬도감으로 표시한다", () => {
+    expect(labelPage("/pokedex")).toBe("포켓몬도감");
+  });
+});
 
 describe("trackEvent", () => {
   afterEach(() => {

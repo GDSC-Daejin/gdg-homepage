@@ -3,15 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { createPortal } from "react-dom";
-import {
-  setMemberRole,
-  setMemberPosition,
-  setMemberStatus,
-  setMemberAcademicStatus,
-  updateMemberProfile,
-  deleteMember,
-} from "@/actions/member";
-import { Select, type SelectChangeEvent } from "@/components/Select";
+import { updateMemberProfile, deleteMember } from "@/actions/member";
+import { Select } from "@/components/Select";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -22,44 +15,16 @@ import {
   POSITION_LABELS,
   ACADEMIC_STATUS_LABELS,
   type Profile,
-  type Role,
-  type Position,
-  type MemberStatus,
-  type AcademicStatus,
 } from "@/lib/types";
-
-const roleLabel: Record<Role, string> = {
-  organizer: "오거나이저",
-  team_member: "팀 멤버",
-  member: "회원",
-  applicant: "지원자",
-};
-
-const statusLabel: Record<MemberStatus, string> = {
-  active: "활동",
-  dormant: "휴면",
-  withdrawn: "탈퇴",
-};
-
-const statusTone: Record<MemberStatus, "success" | "neutral" | "danger"> = {
-  active: "success",
-  dormant: "neutral",
-  withdrawn: "danger",
-};
-
-const roleTone: Record<Role, "primary" | "success" | "neutral" | "warning"> = {
-  organizer: "primary",
-  team_member: "success",
-  member: "neutral",
-  applicant: "warning",
-};
-
-const academicStatusTone: Record<AcademicStatus, "primary" | "success" | "neutral" | "warning"> = {
-  enrolled: "success",
-  leave: "warning",
-  graduated: "neutral",
-  completed: "primary",
-};
+import {
+  MEMBER_ACADEMIC_STATUS_TONES,
+  MEMBER_ROLE_LABELS,
+  MEMBER_ROLE_TONES,
+  MEMBER_STATUS_LABELS,
+  MEMBER_STATUS_TONES,
+  toMemberProfileInput,
+  useMemberAttributes,
+} from "./member-editor";
 
 export function MemberRow({
   member,
@@ -71,13 +36,7 @@ export function MemberRow({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-  const [role, setRole] = useState(member.role);
-  const [position, setPosition] = useState<Position | "">(member.position ?? "");
-  const [status, setStatus] = useState(member.status);
-  const [academicStatus, setAcademicStatus] = useState(member.academic_status ?? null);
-  const [error, setError] = useState<string>();
   const [saved, setSaved] = useState(false);
-  const [pending, startTransition] = useTransition();
 
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function flashSaved() {
@@ -85,6 +44,22 @@ export function MemberRow({
     if (savedTimer.current) clearTimeout(savedTimer.current);
     savedTimer.current = setTimeout(() => setSaved(false), 1600);
   }
+
+  const {
+    values: { role, position, status, academicStatus },
+    error,
+    pending,
+    change,
+  } = useMemberAttributes(
+    member.id,
+    {
+      role: member.role,
+      position: member.position ?? "",
+      status: member.status,
+      academicStatus: member.academic_status ?? null,
+    },
+    flashSaved,
+  );
 
   const [name, setName] = useState(member.name);
   const [nickname, setNickname] = useState(member.nickname);
@@ -101,17 +76,14 @@ export function MemberRow({
     setProfileError(undefined);
     setProfileSaved(false);
     startProfileTransition(async () => {
-      const result = await updateMemberProfile(member.id, {
+      const result = await updateMemberProfile(member.id, toMemberProfileInput({
         name,
         nickname,
-        student_no: studentNo,
+        studentNo,
         major,
         phone,
-        interests: interests
-          .split(",")
-          .map((v) => v.trim())
-          .filter(Boolean),
-      });
+        interests,
+      }));
       if (result?.error) setProfileError(result.error);
       else setProfileSaved(true);
     });
@@ -133,62 +105,6 @@ export function MemberRow({
       const result = await deleteMember(member.id);
       if (result?.error) setDeleteError(result.error);
       else dialogRef.current?.close();
-    });
-  }
-
-  function handleRoleChange(e: SelectChangeEvent) {
-    const next = e.target.value as Role;
-    setRole(next);
-    setError(undefined);
-    setSaved(false);
-    startTransition(async () => {
-      const result = await setMemberRole(member.id, next);
-      if (result?.error) {
-        setError(result.error);
-        setRole(member.role);
-      } else flashSaved();
-    });
-  }
-
-  function handlePositionChange(e: SelectChangeEvent) {
-    const next = e.target.value as Position;
-    setPosition(next);
-    setError(undefined);
-    setSaved(false);
-    startTransition(async () => {
-      const result = await setMemberPosition(member.id, next);
-      if (result?.error) {
-        setError(result.error);
-        setPosition(member.position ?? "");
-      } else flashSaved();
-    });
-  }
-
-  function handleStatusChange(e: SelectChangeEvent) {
-    const next = e.target.value as MemberStatus;
-    setStatus(next);
-    setError(undefined);
-    setSaved(false);
-    startTransition(async () => {
-      const result = await setMemberStatus(member.id, next);
-      if (result?.error) {
-        setError(result.error);
-        setStatus(member.status);
-      } else flashSaved();
-    });
-  }
-
-  function handleAcademicStatusChange(e: SelectChangeEvent) {
-    const next = (e.target.value || null) as AcademicStatus | null;
-    setAcademicStatus(next);
-    setError(undefined);
-    setSaved(false);
-    startTransition(async () => {
-      const result = await setMemberAcademicStatus(member.id, next);
-      if (result?.error) {
-        setError(result.error);
-        setAcademicStatus(member.academic_status ?? null);
-      } else flashSaved();
     });
   }
 
@@ -221,13 +137,13 @@ export function MemberRow({
         <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.major || "-"}</td>
         <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.phone || "-"}</td>
         <td className="px-4 py-4">
-          <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>
+          <Badge tone={MEMBER_ROLE_TONES[role]}>{MEMBER_ROLE_LABELS[role]}</Badge>
         </td>
         <td className="hidden px-4 py-4 text-gray-700 xl:table-cell">
           {position ? POSITION_LABELS[position] : "-"}
         </td>
         <td className="px-4 py-4">
-          <Badge tone={statusTone[status]}>{statusLabel[status]}</Badge>
+          <Badge tone={MEMBER_STATUS_TONES[status]}>{MEMBER_STATUS_LABELS[status]}</Badge>
         </td>
         <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">
           {academicStatus ? ACADEMIC_STATUS_LABELS[academicStatus] : "-"}
@@ -307,10 +223,10 @@ export function MemberRow({
               <div className="flex flex-col gap-3 bg-gray-50 p-4 sm:p-6">
                 <p className="text-sm font-semibold text-gray-900">역할 · 상태 · 재학여부</p>
                 <div className="flex items-center gap-2">
-                  <Badge tone={roleTone[role]}>{roleLabel[role]}</Badge>
-                  <Badge tone={statusTone[status]}>{statusLabel[status]}</Badge>
+                  <Badge tone={MEMBER_ROLE_TONES[role]}>{MEMBER_ROLE_LABELS[role]}</Badge>
+                  <Badge tone={MEMBER_STATUS_TONES[status]}>{MEMBER_STATUS_LABELS[status]}</Badge>
                   {academicStatus && (
-                    <Badge tone={academicStatusTone[academicStatus]}>
+                    <Badge tone={MEMBER_ACADEMIC_STATUS_TONES[academicStatus]}>
                       {ACADEMIC_STATUS_LABELS[academicStatus]}
                     </Badge>
                   )}
@@ -318,7 +234,10 @@ export function MemberRow({
                 <Select
                   label="역할"
                   value={role}
-                  onChange={handleRoleChange}
+                  onChange={(e) => {
+                    setSaved(false);
+                    change("role", e.target.value);
+                  }}
                   disabled={pending}
                 >
                   <option value="organizer" disabled={organizerTaken}>
@@ -331,7 +250,10 @@ export function MemberRow({
                 <Select
                   label="포지션"
                   value={position}
-                  onChange={handlePositionChange}
+                  onChange={(e) => {
+                    setSaved(false);
+                    change("position", e.target.value);
+                  }}
                   disabled={pending}
                 >
                   <option value="" disabled>
@@ -345,7 +267,10 @@ export function MemberRow({
                 <Select
                   label="상태"
                   value={status}
-                  onChange={handleStatusChange}
+                  onChange={(e) => {
+                    setSaved(false);
+                    change("status", e.target.value);
+                  }}
                   disabled={pending}
                 >
                   <option value="active">활동</option>
@@ -355,7 +280,10 @@ export function MemberRow({
                 <Select
                   label="재학여부"
                   value={academicStatus ?? ""}
-                  onChange={handleAcademicStatusChange}
+                  onChange={(e) => {
+                    setSaved(false);
+                    change("academicStatus", e.target.value);
+                  }}
                   disabled={pending}
                 >
                   <option value="">선택 안 함</option>

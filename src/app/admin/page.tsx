@@ -12,6 +12,13 @@ import { OverviewTabs } from "./OverviewTabs";
 import { RecruitingWidget } from "./RecruitingWidget";
 import { SyncMeetingsButton } from "./SyncMeetingsButton";
 import {
+  countApplications,
+  recentEventRows,
+  recentMonths,
+  type RecentEventRow,
+  type RecruitingCounts,
+} from "./dashboard-data";
+import {
   DEMO_DASHBOARD_STATS,
   DEMO_DASHBOARD_ROWS,
   DEMO_DASHBOARD_JOIN_COUNTS,
@@ -25,29 +32,6 @@ const EVENT_TYPE_LABEL: Record<EventType, string> = {
   mogakco: "모각코",
   party: "파티",
 };
-
-interface RecentEventRow {
-  id: string;
-  title: string;
-  type: EventType;
-  starts_at: string;
-  confirmed: number;
-  attended: number;
-  rate: number | null;
-}
-
-interface RecruitingCounts {
-  total: number;
-  waiting: number;
-  pending: number;
-  accepted: number;
-  rejected: number;
-  frontend: number;
-  backend: number;
-  designer: number;
-  beginner: number;
-  unassigned: number;
-}
 
 // demo(둘러보기) 모드 전용 인라인 상수 — demoData.ts는 수정하지 않는다
 const DEMO_RECRUITING_SETTINGS: RecruitingSettings = {
@@ -74,24 +58,6 @@ const DEMO_RECRUITING_COUNTS: RecruitingCounts = {
 const DEMO_RECRUITING_TODAY_EVENTS: { id: string; title: string; starts_at: string }[] = [
   { id: "demo-re1", title: "리크루팅 설명회", starts_at: "2026-01-01T09:00:00.000Z" },
 ];
-
-// 최근 6개월 (KST 기준, 과거 → 현재). startUtc는 해당 월 KST 1일 00:00.
-function recentMonths() {
-  const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);
-  return Array.from({ length: 6 }, (_, i) => {
-    const first = Date.UTC(
-      kstNow.getUTCFullYear(),
-      kstNow.getUTCMonth() - (5 - i),
-      1,
-    );
-    const d = new Date(first);
-    return {
-      key: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
-      label: `${d.getUTCMonth() + 1}월`,
-      startUtc: new Date(first - 9 * 60 * 60 * 1000),
-    };
-  });
-}
 
 export const dynamic = "force-dynamic";
 
@@ -159,9 +125,8 @@ export default async function AdminDashboardPage() {
     const recentEvents = recentEventsData ?? [];
     const recentEventIds = recentEvents.map((e) => e.id);
 
-    const confirmedByEvent = new Map<string, number>();
-    const attendedByEvent = new Map<string, number>();
-
+    let registrations: { user_id: string; event_id: string }[] = [];
+    let attendances: { user_id: string; event_id: string }[] = [];
     if (recentEventIds.length > 0) {
       const [{ data: regs }, { data: attends }] = await Promise.all([
         supabase
@@ -174,37 +139,10 @@ export default async function AdminDashboardPage() {
           .select("user_id, event_id")
           .in("event_id", recentEventIds),
       ]);
-      const confirmedPairs = new Set<string>();
-      for (const r of regs ?? []) {
-        confirmedPairs.add(`${r.user_id}:${r.event_id}`);
-        confirmedByEvent.set(
-          r.event_id,
-          (confirmedByEvent.get(r.event_id) ?? 0) + 1,
-        );
-      }
-      for (const a of attends ?? []) {
-        if (confirmedPairs.has(`${a.user_id}:${a.event_id}`)) {
-          attendedByEvent.set(
-            a.event_id,
-            (attendedByEvent.get(a.event_id) ?? 0) + 1,
-          );
-        }
-      }
+      registrations = (regs ?? []) as { user_id: string; event_id: string }[];
+      attendances = (attends ?? []) as { user_id: string; event_id: string }[];
     }
-
-    rows = recentEvents.map((e) => {
-      const confirmed = confirmedByEvent.get(e.id) ?? 0;
-      const attended = attendedByEvent.get(e.id) ?? 0;
-      return {
-        id: e.id,
-        title: e.title,
-        type: e.type,
-        starts_at: e.starts_at,
-        confirmed,
-        attended,
-        rate: confirmed > 0 ? attended / confirmed : null,
-      };
-    });
+    rows = recentEventRows(recentEvents as RecentEventRow[], registrations, attendances);
 
     // 월별 활동 회원 수 (최근 6개월) — 그 달에 이벤트를 한 번이라도 출석한 사람(중복 제외)
     const { data: attendanceRows } = await supabase
@@ -340,18 +278,7 @@ export default async function AdminDashboardPage() {
       const apps =
         (applicationRows as { status: ApplicationStatus; position: Position | null }[] | null) ??
         [];
-      recruitingCounts = {
-        total: apps.length,
-        waiting: apps.filter((a) => a.status === "waiting").length,
-        pending: apps.filter((a) => a.status === "pending").length,
-        accepted: apps.filter((a) => a.status === "accepted").length,
-        rejected: apps.filter((a) => a.status === "rejected").length,
-        frontend: apps.filter((a) => a.position === "frontend").length,
-        backend: apps.filter((a) => a.position === "backend").length,
-        designer: apps.filter((a) => a.position === "designer").length,
-        beginner: apps.filter((a) => a.position === "beginner").length,
-        unassigned: apps.filter((a) => a.position === null).length,
-      };
+      recruitingCounts = countApplications(apps);
 
       // 오늘(KST) 00:00~24:00 사이 시작하는 이벤트
       const kstNow = new Date(Date.now() + 9 * 60 * 60 * 1000);

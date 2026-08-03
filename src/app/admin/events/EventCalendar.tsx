@@ -15,39 +15,24 @@ import {
   WEEKDAY_LABELS,
 } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
-import {
-  EVENT_TYPE_BG,
-  EVENT_TYPE_CHIP,
-  EVENT_TYPE_LABELS,
-  EVENT_TYPE_OPTIONS,
-} from "@/lib/event-type";
+import { EVENT_TYPE_BG, EVENT_TYPE_CHIP, EVENT_TYPE_LABELS } from "@/lib/event-type";
 import { dayKeyKst, formatMonthLabel, timeKeyKst } from "@/lib/format";
-import type { Event, EventType, Place } from "@/lib/types";
+import type { Event, Place } from "@/lib/types";
 import { DeleteEventButton } from "./DeleteEventButton";
 import { EventForm } from "./EventForm";
+import {
+  buildCalendarProjection,
+  type CalendarFilter,
+  type CalendarInterview,
+  type CalendarMeeting,
+} from "./calendar-data";
 
-/** 면접 슬롯은 달력에 표시만 한다. 수정은 /admin/interviews에서. */
-export interface CalendarInterview {
-  id: string;
-  starts_at: string;
-  status: string;
-}
-
-/** 확정된 회의 시간도 표시만 한다. 수정은 /schedule에서. */
-export interface CalendarMeeting {
-  id: string;
-  title: string;
-  starts_at: string;
-  duration_min: number;
-}
+export type { CalendarInterview, CalendarMeeting } from "./calendar-data";
 
 type Editing =
   | { mode: "create"; date: string }
   | { mode: "edit"; event: Event }
   | null;
-
-/** 툴바 유형 필터. null이면 전체. */
-type Filter = EventType | "interview" | "meeting" | null;
 
 interface EventCalendarProps {
   month: string;
@@ -59,20 +44,6 @@ interface EventCalendarProps {
   today: string;
   /** 데모 모드에서는 쓰기가 막혀 있어 편집 UI를 열지 않는다. */
   readOnly?: boolean;
-}
-
-function groupByDay<T extends { starts_at: string }>(items: T[]) {
-  const map = new Map<string, T[]>();
-  for (const item of items) {
-    const key = dayKeyKst(item.starts_at);
-    const bucket = map.get(key);
-    if (bucket) bucket.push(item);
-    else map.set(key, [item]);
-  }
-  for (const bucket of map.values()) {
-    bucket.sort((a, b) => a.starts_at.localeCompare(b.starts_at));
-  }
-  return map;
 }
 
 function MonthArrow({ d }: { d: string }) {
@@ -111,102 +82,13 @@ export function EventCalendar({
   const router = useRouter();
   const [editing, setEditing] = useState<Editing>(null);
   const [dragOver, setDragOver] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>(null);
+  const [filter, setFilter] = useState<CalendarFilter>(null);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
 
   const days = monthGrid(month);
-  const eventsByDay = groupByDay(events);
-  const interviewsByDay = groupByDay(interviews);
-  const meetingsByDay = groupByDay(meetings);
-
-  // 툴바·요약은 이번 달만 센다. 격자에는 앞뒤 달 날짜도 섞여 있다.
-  const monthEvents = events.filter((e) => dayKeyKst(e.starts_at).startsWith(month));
-  const monthInterviews = interviews.filter((s) =>
-    dayKeyKst(s.starts_at).startsWith(month),
-  );
-  const monthMeetings = meetings.filter((m) => dayKeyKst(m.starts_at).startsWith(month));
-  const countByType = new Map<EventType, number>();
-  for (const e of monthEvents) {
-    countByType.set(e.type, (countByType.get(e.type) ?? 0) + 1);
-  }
-  const legend = [
-    ...EVENT_TYPE_OPTIONS.filter((o) => countByType.has(o.value)).map((o) => ({
-      key: o.value as Filter,
-      label: o.label,
-      dot: EVENT_TYPE_BG[o.value],
-      count: countByType.get(o.value) ?? 0,
-      dashed: false,
-    })),
-    ...(monthInterviews.length > 0
-      ? [
-          {
-            key: "interview" as Filter,
-            label: "면접",
-            dot: "bg-gray-400",
-            count: monthInterviews.length,
-            dashed: true,
-          },
-        ]
-      : []),
-    ...(monthMeetings.length > 0
-      ? [
-          {
-            key: "meeting" as Filter,
-            label: "회의",
-            dot: "bg-primary/60",
-            count: monthMeetings.length,
-            dashed: true,
-          },
-        ]
-      : []),
-  ];
-  const totalCount = monthEvents.length + monthInterviews.length + monthMeetings.length;
-
-  // 다가오는 일정: 오늘 이후만, 면접은 날짜별로 한 줄로 묶는다.
-  const upcoming = [
-    ...events
-      .filter((e) => dayKeyKst(e.starts_at) >= today)
-      .map((e) => ({
-        key: e.id,
-        dateKey: dayKeyKst(e.starts_at),
-        sortKey: e.starts_at,
-        dot: EVENT_TYPE_BG[e.type],
-        title: e.title,
-        muted: false,
-        meta: [timeKeyKst(e.starts_at), e.location].filter(Boolean).join(" · "),
-        href: `/admin/events/${e.id}`,
-      })),
-    ...[...interviewsByDay.entries()]
-      .filter(([dateKey]) => dateKey >= today)
-      .map(([dateKey, slots]) => {
-        const booked = slots.filter((s) => s.status === "booked").length;
-        return {
-          key: `interview-${dateKey}`,
-          dateKey,
-          sortKey: slots[0].starts_at,
-          dot: "bg-gray-400",
-          title: `면접${booked > 0 ? " · 예약" : ""} ${slots.length}건`,
-          muted: true,
-          meta: `${timeKeyKst(slots[0].starts_at)} · 표시 전용`,
-          href: "/admin/interviews",
-        };
-      }),
-    ...meetings
-      .filter((m) => dayKeyKst(m.starts_at) >= today)
-      .map((m) => ({
-        key: `meeting-${m.id}`,
-        dateKey: dayKeyKst(m.starts_at),
-        sortKey: m.starts_at,
-        dot: "bg-primary/60",
-        title: m.title,
-        muted: true,
-        meta: `${timeKeyKst(m.starts_at)} · 회의 ${m.duration_min}분`,
-        href: `/schedule/${m.id}`,
-      })),
-  ]
-    .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
-    .slice(0, 5);
+  const { eventsByDay, interviewsByDay, meetingsByDay, legend, totalCount, upcoming } =
+    buildCalendarProjection({ events, interviews, meetings, month, today });
 
   function handleDrop(dateKey: string, eventId: string) {
     setDragOver(null);

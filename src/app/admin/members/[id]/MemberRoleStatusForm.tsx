@@ -1,14 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import {
-  approveMember,
-  setMemberRole,
-  setMemberPosition,
-  setMemberStatus,
-  setMemberAcademicStatus,
-} from "@/actions/member";
-import { Select, type SelectChangeEvent } from "@/components/Select";
+import { approveMember } from "@/actions/member";
+import { Select } from "@/components/Select";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import {
@@ -19,39 +13,14 @@ import {
   type MemberStatus,
   type AcademicStatus,
 } from "@/lib/types";
-
-const roleLabel: Record<Role, string> = {
-  organizer: "오거나이저",
-  team_member: "팀 멤버",
-  member: "회원",
-  applicant: "지원자",
-};
-
-const statusLabel: Record<MemberStatus, string> = {
-  active: "활동",
-  dormant: "휴면",
-  withdrawn: "탈퇴",
-};
-
-const roleTone: Record<Role, "primary" | "success" | "neutral" | "warning"> = {
-  organizer: "primary",
-  team_member: "success",
-  member: "neutral",
-  applicant: "warning",
-};
-
-const statusTone: Record<MemberStatus, "success" | "neutral" | "danger"> = {
-  active: "success",
-  dormant: "neutral",
-  withdrawn: "danger",
-};
-
-const academicStatusTone: Record<AcademicStatus, "primary" | "success" | "neutral" | "warning"> = {
-  enrolled: "success",
-  leave: "warning",
-  graduated: "neutral",
-  completed: "primary",
-};
+import {
+  MEMBER_ACADEMIC_STATUS_TONES,
+  MEMBER_ROLE_LABELS,
+  MEMBER_ROLE_TONES,
+  MEMBER_STATUS_LABELS,
+  MEMBER_STATUS_TONES,
+  useMemberAttributes,
+} from "../member-editor";
 
 export function MemberRoleStatusForm({
   userId,
@@ -70,72 +39,33 @@ export function MemberRoleStatusForm({
   approvedAt: string | null;
   organizerTaken: boolean;
 }) {
-  const [roleValue, setRoleValue] = useState(role);
-  const [positionValue, setPositionValue] = useState<Position | "">(
-    position ?? "",
-  );
-  const [statusValue, setStatusValue] = useState(status);
-  const [academicStatusValue, setAcademicStatusValue] = useState(academicStatus ?? null);
-  const [error, setError] = useState<string>();
-  const [pending, startTransition] = useTransition();
+  const {
+    values: {
+      role: roleValue,
+      position: positionValue,
+      status: statusValue,
+      academicStatus: academicStatusValue,
+    },
+    error,
+    pending,
+    change,
+    clearError,
+  } = useMemberAttributes(userId, {
+    role,
+    position: position ?? "",
+    status,
+    academicStatus: academicStatus ?? null,
+  });
 
-  function handleRoleChange(e: SelectChangeEvent) {
-    const value = e.target.value as Role;
-    setRoleValue(value);
-    setError(undefined);
-    startTransition(async () => {
-      const result = await setMemberRole(userId, value);
-      if (result?.error) {
-        setError(result.error);
-        setRoleValue(role);
-      }
-    });
-  }
-
-  function handlePositionChange(e: SelectChangeEvent) {
-    const value = e.target.value as Position;
-    setPositionValue(value);
-    setError(undefined);
-    startTransition(async () => {
-      const result = await setMemberPosition(userId, value);
-      if (result?.error) {
-        setError(result.error);
-        setPositionValue(position ?? "");
-      }
-    });
-  }
-
-  function handleStatusChange(e: SelectChangeEvent) {
-    const value = e.target.value as MemberStatus;
-    setStatusValue(value);
-    setError(undefined);
-    startTransition(async () => {
-      const result = await setMemberStatus(userId, value);
-      if (result?.error) {
-        setError(result.error);
-        setStatusValue(status);
-      }
-    });
-  }
-
-  function handleAcademicStatusChange(e: SelectChangeEvent) {
-    const value = (e.target.value || null) as AcademicStatus | null;
-    setAcademicStatusValue(value);
-    setError(undefined);
-    startTransition(async () => {
-      const result = await setMemberAcademicStatus(userId, value);
-      if (result?.error) {
-        setError(result.error);
-        setAcademicStatusValue(academicStatus ?? null);
-      }
-    });
-  }
+  const [approvePending, startApproveTransition] = useTransition();
+  const [approveError, setApproveError] = useState<string>();
 
   function handleApprove() {
-    setError(undefined);
-    startTransition(async () => {
+    clearError();
+    setApproveError(undefined);
+    startApproveTransition(async () => {
       const result = await approveMember(userId);
-      if (result?.error) setError(result.error);
+      if (result?.error) setApproveError(result.error);
     });
   }
 
@@ -145,27 +75,27 @@ export function MemberRoleStatusForm({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-center gap-2">
           {!approvedAt && <Badge tone="warning">승인 대기</Badge>}
-          <Badge tone={roleTone[roleValue]}>{roleLabel[roleValue]}</Badge>
+          <Badge tone={MEMBER_ROLE_TONES[roleValue]}>{MEMBER_ROLE_LABELS[roleValue]}</Badge>
           {positionValue && (
             <Badge tone="neutral">{POSITION_LABELS[positionValue]}</Badge>
           )}
-          <Badge tone={statusTone[statusValue]}>{statusLabel[statusValue]}</Badge>
+          <Badge tone={MEMBER_STATUS_TONES[statusValue]}>{MEMBER_STATUS_LABELS[statusValue]}</Badge>
           {academicStatusValue && (
-            <Badge tone={academicStatusTone[academicStatusValue]}>
+            <Badge tone={MEMBER_ACADEMIC_STATUS_TONES[academicStatusValue]}>
               {ACADEMIC_STATUS_LABELS[academicStatusValue]}
             </Badge>
           )}
         </div>
         <div className="flex flex-wrap items-end gap-3">
           {!approvedAt && (
-            <Button type="button" variant="primary" disabled={pending} onClick={handleApprove}>
+            <Button type="button" variant="primary" disabled={approvePending || pending} onClick={handleApprove}>
               승인
             </Button>
           )}
           <Select
             label="역할"
             value={roleValue}
-            onChange={handleRoleChange}
+            onChange={(e) => change("role", e.target.value)}
             disabled={pending}
             className="w-36"
           >
@@ -179,7 +109,7 @@ export function MemberRoleStatusForm({
           <Select
             label="포지션"
             value={positionValue}
-            onChange={handlePositionChange}
+            onChange={(e) => change("position", e.target.value)}
             disabled={pending}
             className="w-36"
           >
@@ -194,7 +124,7 @@ export function MemberRoleStatusForm({
           <Select
             label="상태"
             value={statusValue}
-            onChange={handleStatusChange}
+            onChange={(e) => change("status", e.target.value)}
             disabled={pending}
             className="w-36"
           >
@@ -205,7 +135,7 @@ export function MemberRoleStatusForm({
           <Select
             label="재학여부"
             value={academicStatusValue ?? ""}
-            onChange={handleAcademicStatusChange}
+            onChange={(e) => change("academicStatus", e.target.value)}
             disabled={pending}
             className="w-36"
           >
@@ -220,7 +150,7 @@ export function MemberRoleStatusForm({
       <p className="text-xs text-gray-400">
         역할·상태는 변경 즉시 사이트에 반영돼요.
       </p>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {(approveError ?? error) && <p className="text-xs text-danger">{approveError ?? error}</p>}
     </div>
   );
 }

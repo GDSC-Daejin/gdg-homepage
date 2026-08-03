@@ -3,18 +3,8 @@ import { type ReactNode } from "react";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
 import { StatCard } from "@/components/StatCard";
-import {
-  getAcquisition,
-  getDomainEvents,
-  getTopPages,
-  getTrafficOverview,
-  TRACKED_EVENTS,
-  type DateRange,
-  type EventRow,
-  type TrafficPoint,
-} from "@/lib/ga4";
 import { labelChannel, labelEvent, labelPage } from "@/lib/analytics-labels";
-import { getLatestDeployment, type Deployment } from "@/lib/vercel";
+import { type Deployment } from "@/lib/vercel";
 import { OverviewTabs } from "../OverviewTabs";
 import {
   isMetricKey,
@@ -22,17 +12,9 @@ import {
   TRAFFIC_METRICS,
   type MetricKey,
 } from "./TrafficChart";
+import { loadAnalyticsOverview } from "./analytics-data";
 
 const clarityProjectId = process.env.NEXT_PUBLIC_CLARITY_PROJECT_ID;
-
-function rangeFor(days: number): DateRange {
-  return { startDate: `${days}daysAgo`, endDate: "today" };
-}
-
-// 증감률 비교용 직전 동일 길이 구간.
-function previousRangeFor(days: number): DateRange {
-  return { startDate: `${days * 2}daysAgo`, endDate: `${days + 1}daysAgo` };
-}
 
 export default async function AdminAnalyticsPage({
   searchParams,
@@ -45,18 +27,8 @@ export default async function AdminAnalyticsPage({
     ? metricParam
     : "sessions";
   const days = selectedRange === "7d" ? 7 : 30;
-  const range = rangeFor(days);
-  const previousRange = previousRangeFor(days);
-  const [traffic, channels, pages, events, deployment, prevTraffic, prevEvents] =
-    await Promise.all([
-      getTrafficOverview(range),
-      getAcquisition(range),
-      getTopPages(range),
-      getDomainEvents(range),
-      getLatestDeployment(),
-      getTrafficOverview(previousRange),
-      getDomainEvents(previousRange),
-    ]);
+  const overview = await loadAnalyticsOverview(days);
+  const { traffic, channels, pages, deployment } = overview;
 
   if (traffic === null) {
     return (
@@ -71,23 +43,8 @@ export default async function AdminAnalyticsPage({
     );
   }
 
-  const totals = sumTraffic(traffic);
-  const prevTotals = prevTraffic ? sumTraffic(prevTraffic) : undefined;
-  const conversions = sumEvents(events);
-  const prevConversions = prevEvents ? sumEvents(prevEvents) : undefined;
-
-  // 총합 3개(유저·세션·페이지뷰)는 같은 질문의 반복이라, 뒤 둘은 비율로 바꿔
-  // "다시 오나 / 깊게 보나"라는 다른 질문에 답하게 한다.
-  const visits = ratio(totals.sessions, totals.users);
-  const prevVisits = prevTotals && ratio(prevTotals.sessions, prevTotals.users);
-  const depth = ratio(totals.views, totals.sessions);
-  const prevDepth = prevTotals && ratio(prevTotals.views, prevTotals.sessions);
-
-  // 추적 대상 이벤트는 0건이어도 행을 남겨 "미발생"과 "미추적"을 구분한다.
-  const eventRows = TRACKED_EVENTS.map((name) => ({
-    name,
-    count: (events ?? []).find((event) => event.name === name)?.count ?? 0,
-  }));
+  const { totals, previousTotals: prevTotals, conversions, previousConversions: prevConversions,
+    visits, previousVisits: prevVisits, depth, previousDepth: prevDepth, eventRows } = overview;
 
   return (
     <div className="flex flex-col gap-6">
@@ -320,26 +277,6 @@ function Section({
       {children}
     </Card>
   );
-}
-
-function sumTraffic(points: TrafficPoint[]) {
-  return points.reduce(
-    (total, point) => ({
-      users: total.users + point.activeUsers,
-      sessions: total.sessions + point.sessions,
-      views: total.views + point.pageViews,
-    }),
-    { users: 0, sessions: 0, views: 0 },
-  );
-}
-
-function sumEvents(events: EventRow[] | null) {
-  return (events ?? []).reduce((total, event) => total + event.count, 0);
-}
-
-// 소수 1자리 비율. Delta가 그대로 비교할 수 있게 반올림된 값을 쓴다.
-function ratio(numerator: number, denominator: number): number {
-  return denominator > 0 ? Math.round((numerator / denominator) * 10) / 10 : 0;
 }
 
 function StatHint({
