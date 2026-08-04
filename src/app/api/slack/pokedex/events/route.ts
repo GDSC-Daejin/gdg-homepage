@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { rejectionMessage, remainingBallsMessage, resultMessage, throwMessage, type ThrowOutcome } from "@/lib/pokedex/messages";
+import { rejectionMessage, remainingBallsMessage, resultMessage, shouldAnnounceCatch, throwMessage, type ThrowOutcome } from "@/lib/pokedex/messages";
 import { listWorkspaceMembers, postMessage } from "@/lib/slack/api";
 import { verifySlackSignature } from "@/lib/slack/verify";
 
@@ -46,8 +46,10 @@ async function handleReaction(event: ReactionEvent, eventId: string) {
   const slackUser = event.user;
   const messageTs = event.item.ts;
 
-  const { data: appearance } = await supabase.from("pokemon_appearances").select("id").eq("message_ts", messageTs).maybeSingle();
+  const { data: appearance } = await supabase.from("pokemon_appearances").select("id, pokemon_catalog(rarity)").eq("message_ts", messageTs).maybeSingle();
   if (!appearance) return;
+  const catalog = appearance.pokemon_catalog as { rarity?: string } | { rarity?: string }[] | null;
+  const rarity = (Array.isArray(catalog) ? catalog[0] : catalog)?.rarity;
   const { data: config } = await supabase.from("squirtle_config").select("channel_id").eq("id", 1).single();
   if (!config) return;
   const slackName = (await listWorkspaceMembers()).find((member) => member.id === slackUser)?.name ?? slackUser;
@@ -73,7 +75,7 @@ async function handleReaction(event: ReactionEvent, eventId: string) {
   const outcomeText = resultMessage(slackUser, slackName, pokemonName, result.outcome!);
   await postMessage({ channel: config.channel_id, threadTs: messageTs, text: outcomeText, botToken });
   await postMessage({ channel: config.channel_id, threadTs: messageTs, text: remainingBallsMessage(slackUser, result.remaining_balls ?? 0), botToken });
-  if (result.outcome === "caught") await postMessage({ channel: config.channel_id, text: outcomeText, botToken });
+  if (result.outcome === "caught" && shouldAnnounceCatch(rarity)) await postMessage({ channel: config.channel_id, text: outcomeText, botToken });
 }
 
 export async function POST(request: Request) {

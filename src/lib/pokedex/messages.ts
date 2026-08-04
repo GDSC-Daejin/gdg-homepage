@@ -35,6 +35,13 @@ export function rejectionMessage(slackUserId: string, slackName: string, reason:
   return null;
 }
 
+// 흔한 포켓몬까지 채널에 축하하면 하루 열몇 개가 쌓여 사람 대화가 묻힌다. 스레드 축하는 그대로 두고 채널만 막는다.
+const CHANNEL_ANNOUNCE_RARITIES = new Set(["rare", "very_rare", "legendary"]);
+
+export function shouldAnnounceCatch(rarity: string | null | undefined) {
+  return Boolean(rarity && CHANNEL_ANNOUNCE_RARITIES.has(rarity));
+}
+
 export function remainingBallsMessage(slackUserId: string, remainingBalls: number) {
   return `<@${slackUserId}>의 남은 몬스터볼: ${remainingBalls}개`;
 }

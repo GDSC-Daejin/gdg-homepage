@@ -29,6 +29,18 @@ describe("도감봇 메시지", () => {
     expect(module.rejectionMessage("U1", "Jayden", "no_ball")).toBe("<@U1>의 남은 몬스터볼이 없어요!");
   });
 
+  it("rare 이상만 채널에 축하하고 흔한 포켓몬은 스레드에 남긴다", async () => {
+    const module = await import("@/lib/pokedex/messages");
+
+    expect(module.shouldAnnounceCatch("common")).toBe(false);
+    expect(module.shouldAnnounceCatch("uncommon")).toBe(false);
+    expect(module.shouldAnnounceCatch("rare")).toBe(true);
+    expect(module.shouldAnnounceCatch("very_rare")).toBe(true);
+    expect(module.shouldAnnounceCatch("legendary")).toBe(true);
+    expect(module.shouldAnnounceCatch(null)).toBe(false);
+    expect(module.shouldAnnounceCatch(undefined)).toBe(false);
+  });
+
   it("영문 Slack 표시명의 한국어 발음에 맞게 이/가를 붙인다", async () => {
     const module = await import("@/lib/pokedex/messages");
 
