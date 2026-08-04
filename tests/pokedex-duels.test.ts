@@ -1,7 +1,15 @@
 import { readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { shouldShowDuelPokemon } from "@/app/(member)/pokedex/DuelPanel";
 
 describe("도감 포켓몬 결투", () => {
+  it("코인과 선공 안내 중에는 결투 포켓몬을 숨긴다", () => {
+    expect(shouldShowDuelPokemon("coin")).toBe(false);
+    expect(shouldShowDuelPokemon("firstTurn")).toBe(false);
+    expect(shouldShowDuelPokemon("throw")).toBe(false);
+    expect(shouldShowDuelPokemon("release")).toBe(true);
+  });
+
   it("결투를 소유 포켓몬으로만 생성하고 상대만 수락하게 한다", async () => {
     const migration = (await readdir("supabase/migrations")).find((file) => file === "0074_pokedex_duels.sql");
     expect(migration).toBeDefined();

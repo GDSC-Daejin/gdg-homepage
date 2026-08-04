@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useTransition, type CSSProperties, type SyntheticEvent } from "react";
+import { useEffect, useRef, useState, useTransition, type CSSProperties, type SyntheticEvent } from "react";
+import { useRouter } from "next/navigation";
 import { acceptPokemonDuel, cancelPokemonDuel, createPokemonDuel, rejectPokemonDuel } from "@/actions/pokedex-duel";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -8,17 +9,32 @@ import { Modal } from "@/components/Modal";
 import { Avatar } from "@/components/Avatar";
 import { displayName } from "@/lib/format";
 import { battleEffect } from "@/lib/pokedex/battle-effects";
-import type { DuelMember, OwnedBattlePokemon, PokemonDuel } from "@/lib/pokedex/duel";
+import { findAcceptedDuel, type DuelMember, type OwnedBattlePokemon, type PokemonDuel } from "@/lib/pokedex/duel";
+import { createClient } from "@/lib/supabase/client";
 import styles from "./DuelPanel.module.css";
+import { BattleCoin } from "./BattleCoin";
 import { PixelBattleEffect } from "./PixelBattleEffect";
 
 type DuelPanelProps = { profileId: string; members: DuelMember[]; ownedPokemon: OwnedBattlePokemon[]; duels: PokemonDuel[] };
+type DuelIntroPhase = "coin" | "firstTurn" | "throw" | "release" | "battle";
+
+export function shouldShowDuelPokemon(phase: DuelIntroPhase) {
+  return phase === "release" || phase === "battle";
+}
 
 const PREVIEW_DUEL: PokemonDuel = {
   id: "preview-duel",
   status: "accepted",
   createdAt: "2026-08-02T00:00:00.000Z",
   winnerId: "preview-blastoise",
+  firstTurnUserId: "preview-blastoise",
+  battleLog: [
+    { actor: "challenger", damage: 420, challengerHealth: 1682, opponentHealth: 1214 },
+    { actor: "opponent", damage: 380, challengerHealth: 1302, opponentHealth: 1214 },
+    { actor: "challenger", damage: 460, challengerHealth: 1302, opponentHealth: 754 },
+    { actor: "opponent", damage: 330, challengerHealth: 972, opponentHealth: 754 },
+    { actor: "challenger", damage: 754, challengerHealth: 972, opponentHealth: 0 },
+  ],
   challenger: { userId: "preview-blastoise", name: "도감 트레이너", nickname: "물 타입", avatarPath: null, battleType: "water", pokemonName: "거북왕", imagePath: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png", combatPower: 682, score: 682 },
   opponent: { userId: "preview-charizard", name: "도감 트레이너", nickname: "불꽃 타입", avatarPath: null, battleType: "fire", pokemonName: "리자몽", imagePath: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png", combatPower: 634, score: 634 },
 };
@@ -62,7 +78,7 @@ function BattleStatus({ fighter, side, health }: { fighter: PokemonDuel["challen
   </div>;
 }
 
-function DuelAnimation({ duel }: { duel: PokemonDuel }) {
+function LegacyDuelAnimation({ duel }: { duel: PokemonDuel }) {
   const [stage, setStage] = useState(0);
   const challengerWon = duel.winnerId === duel.challenger.userId;
   const winner = challengerWon ? duel.challenger : duel.opponent;
@@ -132,12 +148,71 @@ function DuelAnimation({ duel }: { duel: PokemonDuel }) {
   </div>;
 }
 
+function DuelAnimation({ duel }: { duel: PokemonDuel }) {
+  const log = duel.battleLog ?? [];
+  const [turn, setTurn] = useState(-1);
+  const [effectStage, setEffectStage] = useState(1);
+  const [intro, setIntro] = useState<DuelIntroPhase>("coin");
+  const first = duel.firstTurnUserId === duel.challenger.userId ? duel.challenger : duel.opponent;
+
+  useEffect(() => {
+    setTurn(-1);
+    setEffectStage(1);
+    setIntro("coin");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const coinDelay = reduced ? 0 : 1_600;
+    const firstTurnDelay = reduced ? 0 : 1_000;
+    const throwAt = coinDelay + firstTurnDelay;
+    const releaseAt = throwAt + 700;
+    const battleAt = releaseAt + 700;
+    const timers = [window.setTimeout(() => setIntro("firstTurn"), coinDelay), window.setTimeout(() => setIntro("throw"), throwAt), window.setTimeout(() => setIntro("release"), releaseAt), window.setTimeout(() => setIntro("battle"), battleAt), ...log.flatMap((_, index) => [
+      window.setTimeout(() => { setTurn(index); setEffectStage(1); }, battleAt + index * 1_200),
+      window.setTimeout(() => setEffectStage(2), battleAt + index * 1_200 + 600),
+    ])];
+    timers.push(window.setTimeout(() => setTurn(log.length), battleAt + log.length * 1_200));
+    return () => timers.forEach(window.clearTimeout);
+  }, [duel.id, log]);
+
+  if (!duel.firstTurnUserId || !log.length) return <LegacyDuelAnimation duel={duel} />;
+
+  const coinTossing = intro === "coin";
+  const firstTurnShowing = intro === "firstTurn";
+  const throwing = intro === "throw";
+  const releasing = intro === "release";
+  const preBattle = intro !== "battle";
+  const entry = log[Math.max(0, turn)] ?? log.at(-1)!;
+  const attacker = entry.actor === "challenger" ? duel.challenger : duel.opponent;
+  const defender = entry.actor === "challenger" ? duel.opponent : duel.challenger;
+  const challengerHealth = preBattle ? 1_000 + (duel.challenger.combatPower ?? 0) : entry.challengerHealth;
+  const opponentHealth = preBattle ? 1_000 + (duel.opponent.combatPower ?? 0) : entry.opponentHealth;
+  const complete = turn >= log.length;
+  const health = (fighter: PokemonDuel["challenger"], current: number) => Math.max(0, Math.min(100, current / (1_000 + (fighter.combatPower ?? 0)) * 100));
+
+  return <div className="text-center">
+    <p className="text-sm font-semibold text-primary">결투 시작!</p>
+    <div className={`${styles.battleArena} relative mt-7 grid grid-cols-[1fr_auto_1fr] items-center gap-3 ${!preBattle && !complete ? styles.screenShake : ""}`}>
+      {coinTossing && <div className={`${styles.coinToss} absolute inset-0 z-30`}><BattleCoin heads={duel.firstTurnUserId === duel.challenger.userId} className={styles.coinFlip} /></div>}
+      {firstTurnShowing && <div className={`${styles.firstTurn} absolute inset-0 z-30`} role="status"><span>{first.name}</span><strong>선공!</strong></div>}
+      <BattleStatus fighter={duel.challenger} side="left" health={health(duel.challenger, challengerHealth)} />
+      <BattleStatus fighter={duel.opponent} side="right" health={health(duel.opponent, opponentHealth)} />
+      {!preBattle && !complete && <PixelBattleEffect type={attacker.battleType} stage={effectStage} fromLeft={attacker.userId === duel.challenger.userId} className={styles.battleEffect} />}
+      {[duel.challenger, duel.opponent].map((fighter, index) => {
+        const isAttacker = fighter.userId === attacker.userId;
+        const fainted = fighter.userId === duel.challenger.userId ? challengerHealth === 0 : opponentHealth === 0;
+        return <div key={fighter.userId} className={`${index ? "col-start-3 row-start-1" : "col-start-1 row-start-1"} ${styles.battleFighter} relative z-10`}>{throwing && <img src="/pokedex/effects/monster-ball.png" alt="" aria-hidden className={`${styles.monsterBall} ${index ? styles.throwRight : styles.throwLeft}`} />}{releasing && <span aria-hidden className={styles.ballRelease} />}<BattlePokemonSprite fighter={fighter} index={index} stage={shouldShowDuelPokemon(intro) ? 1 : 0} attacking={!preBattle && !complete && isAttacker} hit={!preBattle && !complete && !isAttacker} fainted={fainted} captured={false} recalled={false} /></div>;
+      })}
+    </div>
+    <div className={styles.battleMessage}><p>{coinTossing || firstTurnShowing ? "" : throwing ? "두 트레이너가 몬스터볼을 던졌어요!" : releasing ? "몬스터볼이 빛나며 포켓몬이 등장해요!" : complete ? `${duel.winnerId === duel.challenger.userId ? duel.challenger.name : duel.opponent.name}의 승리!` : `${attacker.pokemonName}의 ${battleEffect(attacker.battleType).label} 공격! ${defender.pokemonName}에게 ${entry.damage} 피해!`}</p></div>
+  </div>;
+}
+
 export function DuelPreview() {
   const [previewKey, setPreviewKey] = useState(0);
   return <Card className="mx-auto w-full max-w-[96rem] p-8"><h2 className="text-lg font-semibold text-gray-900">결투 연출 미리보기</h2><p className="mt-1 text-sm text-gray-500">친선 결투의 전투 연출을 확인할 수 있어요.</p><div className="mt-6"><DuelAnimation key={previewKey} duel={PREVIEW_DUEL} /></div><Button variant="secondary" className="mt-8 w-full" onClick={() => setPreviewKey((key) => key + 1)}>다시 보기</Button></Card>;
 }
 
 export function DuelPanel({ profileId, members, ownedPokemon, duels }: DuelPanelProps) {
+  const router = useRouter();
   const [opponentId, setOpponentId] = useState(members[0]?.id ?? "");
   const [throwId, setThrowId] = useState(ownedPokemon[0]?.id ?? "");
   const [acceptThrows, setAcceptThrows] = useState<Record<string, string>>({});
@@ -146,6 +221,34 @@ export function DuelPanel({ profileId, members, ownedPokemon, duels }: DuelPanel
   const [pending, startTransition] = useTransition();
   const outgoing = duels.filter((duel) => duel.status === "pending" && duel.challenger.userId === profileId);
   const incoming = duels.filter((duel) => duel.status === "pending" && duel.opponent.userId === profileId);
+  const waitingDuelIds = useRef(new Set(outgoing.map((duel) => duel.id)));
+
+  useEffect(() => {
+    const accepted = findAcceptedDuel(waitingDuelIds.current, duels);
+    if (accepted) {
+      waitingDuelIds.current.delete(accepted.id);
+      setResult(accepted);
+    }
+    outgoing.forEach((duel) => waitingDuelIds.current.add(duel.id));
+  }, [duels, outgoing]);
+
+  useEffect(() => {
+    if (!outgoing.length) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`pokemon-duel:${profileId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "pokemon_duels", filter: `challenger_id=eq.${profileId}` },
+        ({ new: duel }) => {
+          if (duel.status === "accepted" && waitingDuelIds.current.has(duel.id)) router.refresh();
+        },
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [outgoing.length, profileId, router]);
 
   function run(task: () => Promise<{ error?: string }>) {
     setError(undefined);
