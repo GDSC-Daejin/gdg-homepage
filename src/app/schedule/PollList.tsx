@@ -69,6 +69,11 @@ export function PollList({
                 >
                   {poll.title}
                 </span>
+                {poll.is_mojisoop && (
+                  <ContentBadge variant="solid" color="violet" size="small">
+                    모지숲
+                  </ContentBadge>
+                )}
                 {poll.confirmed_at ? (
                   <ContentBadge variant="solid" color="primary" size="small">
                     확정됨

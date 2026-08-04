@@ -4,6 +4,7 @@ export type SlackResult = { ok: true; ts: string } | { ok: false; error: string 
 export type SlackBlock = Record<string, unknown>;
 
 type SlackResponse = { ok: boolean; error?: string; ts?: string };
+type SlackConversationResponse = SlackResponse & { channel?: { id?: string } };
 
 // 토큰을 넘기지 않으면 꼬북봇(SLACK_BOT_TOKEN)으로 보낸다. 다른 봇 이름으로 보내려면 그 봇의 토큰을 넘긴다.
 async function call(
@@ -40,6 +41,12 @@ export async function postMessage(opts: { channel: string; text: string; threadT
   if (opts.threadTs) body.thread_ts = opts.threadTs;
   if (opts.blocks) body.blocks = opts.blocks;
   return toResult(await call("chat.postMessage", body, opts.botToken));
+}
+
+export async function openDirectMessage(opts: { user: string; botToken?: string }): Promise<{ ok: true; channel: string } | { ok: false; error: string }> {
+  const res = (await call("conversations.open", { users: opts.user }, opts.botToken)) as SlackConversationResponse;
+  if (!res.ok || !res.channel?.id) return { ok: false, error: res.error ?? "unknown_error" };
+  return { ok: true, channel: res.channel.id };
 }
 
 export async function updateMessage(opts: { channel: string; ts: string; text: string }): Promise<SlackResult> {

@@ -2,10 +2,12 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const postMessage = vi.fn();
 const addReaction = vi.fn();
+const openDirectMessage = vi.fn();
 
 vi.mock("@/lib/slack/api", () => ({
   postMessage: (...args: unknown[]) => postMessage(...args),
   addReaction: (...args: unknown[]) => addReaction(...args),
+  openDirectMessage: (...args: unknown[]) => openDirectMessage(...args),
 }));
 
 const { sendMeetingPollConfirmation } = await import("@/lib/meeting-poll-confirmation");
@@ -66,5 +68,31 @@ describe("sendMeetingPollConfirmation", () => {
         durationMin: 60,
       }),
     ).resolves.toContain("확인 이모지 반응");
+  });
+
+  it("모지숲이 아닌 일정은 참여자 DM으로 확정 시각을 보낸다", async () => {
+    configured();
+    openDirectMessage.mockResolvedValue({ ok: true, channel: "D_LUMI" });
+    postMessage.mockResolvedValue({ ok: true, ts: "123.456" });
+    addReaction.mockResolvedValue({ ok: true });
+
+    await expect(
+      sendMeetingPollConfirmation({
+        id: "poll-1",
+        title: "디자이너 작당모의",
+        startIso: "2026-08-04T10:30:00.000Z",
+        durationMin: 60,
+        isMojisoop: false,
+        slackUserIds: ["U_LUMI"],
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(openDirectMessage).toHaveBeenCalledWith({ user: "U_LUMI", botToken: "xoxb-jarvis" });
+    expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({
+      channel: "D_LUMI",
+      botToken: "xoxb-jarvis",
+      text: expect.stringContaining('"디자이너 작당모의" 일정이 확정됐어요'),
+    }));
+    expect(addReaction).not.toHaveBeenCalled();
   });
 });

@@ -1,20 +1,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { postMessage } from "@/lib/slack/api";
+import { openDirectMessage, postMessage } from "@/lib/slack/api";
 
 /**
- * 아직 응답 안 한 사람을 운영진 슬랙 채널에 멘션한다.
+ * 아직 응답 안 한 사람에게 Slack 응답 요청을 보낸다.
  *
  * 어드민의 "알림 보내기" 버튼과 마감 전날 크론이 함께 쓴다 — 두 경로가 같은 함수를 지나야
- * 채널·봇·문구가 갈라지지 않는다. 운영진 알림은 Jarvis 이름으로 나간다(출석 경고와 같은 규칙).
- * 슬랙이 연결된 사람은 <@id>로, 아닌 사람과 이름만 초대된 게스트는 이름 그대로 적는다 —
- * 인앱 알림은 회원만 받을 수 있어 게스트가 조용히 빠지기 때문이다.
+ * 모지숲 일정은 운영진 채널 멘션, 그 외 일정은 참여자 DM으로 보낸다.
  *
  * 실패하면 사람이 읽을 문장, 성공하거나 보낼 사람이 없으면 undefined.
  * 인앱 알림은 이미 나간 뒤라 여기서 예외를 던지지 않는다.
  */
 export async function nudgeAdminChannel(
   client: SupabaseClient,
-  poll: { id: string; title: string },
+  poll: { id: string; title: string; is_mojisoop: boolean },
   note?: string,
 ): Promise<string | undefined> {
   const { data } = await client
@@ -30,13 +28,31 @@ export async function nudgeAdminChannel(
   }[];
   if (pending.length === 0) return undefined;
 
-  const channel = process.env.SLACK_ADMIN_CHANNEL_ID;
   const botToken = process.env.SLACK_JARVIS_BOT_TOKEN;
-  if (!channel || !botToken) {
-    return "앱 알림은 보냈어요. 슬랙 설정이 없어 채널 멘션은 못 보냈어요";
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  if (!botToken) return "앱 알림은 보냈어요. Jarvis 설정이 없어 슬랙 알림은 못 보냈어요";
+
+  if (!poll.is_mojisoop) {
+    const results = await Promise.all(
+      pending.map(async (participant) => {
+        const user = participant.profiles?.slack_user_id;
+        if (!user) return participant.name;
+        const dm = await openDirectMessage({ user, botToken });
+        if (!dm.ok) return participant.name;
+        const result = await postMessage({
+          channel: dm.channel,
+          botToken,
+          text: `[스케줄] "${poll.title}" 응답을 부탁드려요.\n${siteUrl}/schedule/${poll.id}`,
+        });
+        return result.ok ? null : participant.name;
+      }),
+    );
+    const failed = results.filter(Boolean);
+    return failed.length ? `앱 알림은 보냈어요. DM을 못 보낸 참여자: ${failed.join(", ")}` : undefined;
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const channel = process.env.SLACK_ADMIN_CHANNEL_ID;
+  if (!channel) return "앱 알림은 보냈어요. 슬랙 설정이 없어 채널 멘션은 못 보냈어요";
   const mentions = pending
     .map((p) => (p.profiles?.slack_user_id ? `<@${p.profiles.slack_user_id}>` : p.name))
     .join(" ");

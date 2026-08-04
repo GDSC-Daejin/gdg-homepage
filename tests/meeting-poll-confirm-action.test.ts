@@ -31,7 +31,7 @@ describe("confirmMeetingPoll", () => {
     };
     query.eq.mockReturnValue(query);
     query.is.mockReturnValue(query);
-    query.select.mockResolvedValue({ data: [{ id: "poll-1", title: "8월 정기 회의" }], error: null });
+    query.select.mockResolvedValue({ data: [{ id: "poll-1", title: "8월 정기 회의", is_mojisoop: true }], error: null });
     mocks.createClient.mockResolvedValue({
       from: vi.fn(() => ({ update: vi.fn(() => query) })),
     });
@@ -48,6 +48,37 @@ describe("confirmMeetingPoll", () => {
       title: "8월 정기 회의",
       startIso: "2026-08-04T10:30:00.000Z",
       durationMin: 60,
+      isMojisoop: true,
+      slackUserIds: [],
+    });
+  });
+
+  it("모지숲이 아닌 일정은 노션 없이 참여자 DM을 보낸다", async () => {
+    const updateQuery = { eq: vi.fn(), is: vi.fn(), select: vi.fn() };
+    updateQuery.eq.mockReturnValue(updateQuery);
+    updateQuery.is.mockReturnValue(updateQuery);
+    updateQuery.select.mockResolvedValue({ data: [{ id: "poll-1", title: "디자이너 작당모의", is_mojisoop: false }], error: null });
+    const participantQuery = { select: vi.fn(), eq: vi.fn() };
+    participantQuery.select.mockReturnValue(participantQuery);
+    participantQuery.eq.mockResolvedValue({ data: [{ profiles: { slack_user_id: "U_LUMI" } }], error: null });
+    mocks.createClient.mockResolvedValue({
+      from: vi.fn((table: string) => table === "meeting_polls"
+        ? { update: vi.fn(() => updateQuery) }
+        : participantQuery),
+    });
+    mocks.sendMeetingPollConfirmation.mockResolvedValue(undefined);
+
+    const { confirmMeetingPoll } = await import("@/actions/meeting-poll");
+    await confirmMeetingPoll("poll-1", "2026-08-04T10:30:00.000Z", 60);
+
+    expect(mocks.createWeeklyPage).not.toHaveBeenCalled();
+    expect(mocks.sendMeetingPollConfirmation).toHaveBeenCalledWith({
+      id: "poll-1",
+      title: "디자이너 작당모의",
+      startIso: "2026-08-04T10:30:00.000Z",
+      durationMin: 60,
+      isMojisoop: false,
+      slackUserIds: ["U_LUMI"],
     });
   });
 });

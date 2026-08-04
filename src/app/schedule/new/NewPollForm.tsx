@@ -86,6 +86,7 @@ export function NewPollForm({
   const [draftName, setDraftName] = useState("");
   const [dueAt, setDueAt] = useState<string | null>(edit?.poll.due_at ?? null);
   const [notifyBeforeDue, setNotifyBeforeDue] = useState(edit?.poll.notify_before_due ?? true);
+  const [isMojisoop, setIsMojisoop] = useState(edit?.poll.is_mojisoop ?? true);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -134,6 +135,7 @@ export function NewPollForm({
       slotMin,
       dueAt: dueValue || null,
       notifyBeforeDue,
+      isMojisoop,
       memberIds: people.filter((p) => p.userId).map((p) => p.userId as string),
       guests: people.filter((p) => !p.userId).map((p) => ({ name: p.name, email: p.email })),
     };
@@ -548,6 +550,34 @@ export function NewPollForm({
               boxShadow: "var(--wds-shadow-card)",
             }}
           >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span
+                  style={{
+                    font: "600 14px/1.4 var(--wds-font-sans)",
+                    color: "var(--wds-label-normal)",
+                  }}
+                >
+                  모지숲 일정
+                </span>
+                <span
+                  style={{
+                    font: "400 12px/1.4 var(--wds-font-sans)",
+                    color: "var(--wds-label-alternative)",
+                  }}
+                >
+                  끄면 응답 요청을 참여자 DM으로 보내요
+                </span>
+              </div>
+              <Switch checked={isMojisoop} onChange={setIsMojisoop} />
+            </div>
             <SelectBox
               label="응답 마감"
               value={dueValue}

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addReaction, listUserEmails, postMessage, updateMessage } from "@/lib/slack/api";
+import { addReaction, listUserEmails, openDirectMessage, postMessage, updateMessage } from "@/lib/slack/api";
 
 const originalFetch = globalThis.fetch;
 
@@ -30,6 +30,13 @@ describe("Slack Web API 클라이언트", () => {
     expect(url).toBe("https://slack.com/api/chat.postMessage");
     expect(init?.headers).toMatchObject({ Authorization: "Bearer xoxb-test" });
     expect(JSON.parse(String(init?.body))).toEqual({ channel: "C1", text: "안녕" });
+  });
+  it("openDirectMessage가 사용자와의 DM 채널을 연다", async () => {
+    const spy = mockFetch({ ok: true, channel: { id: "D1" } });
+    expect(await openDirectMessage({ user: "U1" })).toEqual({ ok: true, channel: "D1" });
+    const [url, init] = spy.mock.calls[0];
+    expect(url).toBe("https://slack.com/api/conversations.open");
+    expect(JSON.parse(String(init?.body))).toEqual({ users: "U1" });
   });
   it("threadTs를 주면 thread_ts로 보낸다", async () => {
     const spy = mockFetch({ ok: true, ts: "2" });

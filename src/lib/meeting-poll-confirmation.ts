@@ -1,5 +1,5 @@
 import { durationLabel } from "@/lib/meeting-poll";
-import { addReaction, postMessage } from "@/lib/slack/api";
+import { addReaction, openDirectMessage, postMessage } from "@/lib/slack/api";
 
 const CONFIRMATION_EMOJI = "cb3dc3d2-fd74-4a3b-a9e1-f7ad58497090";
 
@@ -8,15 +8,18 @@ export async function sendMeetingPollConfirmation({
   title,
   startIso,
   durationMin,
+  isMojisoop = true,
+  slackUserIds = [],
 }: {
   id: string;
   title: string;
   startIso: string;
   durationMin: number;
+  isMojisoop?: boolean;
+  slackUserIds?: string[];
 }): Promise<string | undefined> {
-  const channel = process.env.SLACK_ADMIN_CHANNEL_ID;
   const botToken = process.env.SLACK_JARVIS_BOT_TOKEN;
-  if (!channel || !botToken) {
+  if (!botToken) {
     return "슬랙 설정이 없어 확정 알림을 보내지 못했어요";
   }
 
@@ -26,6 +29,25 @@ export async function sendMeetingPollConfirmation({
     timeStyle: "short",
     timeZone: "Asia/Seoul",
   }).format(new Date(startIso));
+  if (!isMojisoop) {
+    const recipients = [...new Set(slackUserIds)];
+    if (recipients.length === 0) return "Slack이 연결된 참여자가 없어 확정 DM을 보내지 못했어요";
+    const results = await Promise.all(recipients.map(async (user) => {
+      const dm = await openDirectMessage({ user, botToken });
+      if (!dm.ok) return false;
+      const posted = await postMessage({
+        channel: dm.channel,
+        botToken,
+        text: `[스케줄] "${title}" 일정이 확정됐어요. 확인해주세요.\n${when} · ${durationLabel(durationMin)}\n${siteUrl}/schedule/${id}`,
+      });
+      return posted.ok;
+    }));
+    const failed = results.filter((ok) => !ok).length;
+    return failed ? `${failed}명에게 확정 DM을 보내지 못했어요` : undefined;
+  }
+
+  const channel = process.env.SLACK_ADMIN_CHANNEL_ID;
+  if (!channel) return "슬랙 설정이 없어 확정 알림을 보내지 못했어요";
   const posted = await postMessage({
     channel,
     botToken,

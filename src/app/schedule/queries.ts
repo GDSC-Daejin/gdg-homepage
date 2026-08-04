@@ -9,6 +9,10 @@ type CardParticipant = Pick<MeetingPollParticipant, "poll_id" | "name" | "respon
   avatarPath: string | null;
 };
 
+export function prioritizeMojisoopPolls<T extends { is_mojisoop: boolean }>(polls: T[]): T[] {
+  return [...polls].sort((a, b) => Number(b.is_mojisoop) - Number(a.is_mojisoop));
+}
+
 /** 목록 두 화면(내 일정 / 지난 일정)이 같은 조회를 쓴다. */
 export async function loadPollCards(kind: "active" | "past"): Promise<PollCard[]> {
   const { polls, participants } = await loadRows();
@@ -17,7 +21,7 @@ export async function loadPollCards(kind: "active" | "past"): Promise<PollCard[]
   const isPast = (poll: MeetingPoll) =>
     Boolean(poll.confirmed_at) || Boolean(poll.due_at && now > Date.parse(poll.due_at));
 
-  return polls
+  return prioritizeMojisoopPolls(polls)
     .filter((poll) => (kind === "past" ? isPast(poll) : !isPast(poll)))
     .map((poll) => {
       const mine = participants.filter((p) => p.poll_id === poll.id);

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   const dayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const { data: polls, error } = await supabase
     .from("meeting_polls")
-    .select("id, title")
+    .select("id, title, is_mojisoop")
     .eq("notify_before_due", true)
     .is("confirmed_at", null)
     .is("due_notified_at", null)
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
   let sent = 0;
   const slackErrors: string[] = [];
-  for (const poll of (polls ?? []) as { id: string; title: string }[]) {
+  for (const poll of (polls ?? []) as { id: string; title: string; is_mojisoop: boolean }[]) {
     const { data: pending, error: pendingError } = await supabase
       .from("meeting_poll_participants")
       .select("user_id")

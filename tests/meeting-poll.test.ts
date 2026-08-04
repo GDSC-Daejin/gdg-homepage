@@ -116,6 +116,7 @@ describe("prepareMeetingPollInput", () => {
         slotMin: 30,
         dueAt: null,
         notifyBeforeDue: true,
+        isMojisoop: true,
       },
     });
   });

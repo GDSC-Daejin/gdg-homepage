@@ -15,6 +15,7 @@ export interface MeetingPollInput {
   slotMin: number;
   dueAt: string | null;
   notifyBeforeDue: boolean;
+  isMojisoop?: boolean;
 }
 
 /** 후보 날짜 최대 개수. 격자 폭 상한이자 마이그레이션 0056의 check와 같은 값. */
@@ -50,7 +51,7 @@ export function prepareMeetingPollInput(
     return { error: "응답 마감을 다시 선택해주세요" };
   }
 
-  return { value: { ...input, title, dates } };
+  return { value: { ...input, title, dates, isMojisoop: input.isMojisoop ?? true } };
 }
 
 /** 확정 모달의 소요시간 선택지(분). */

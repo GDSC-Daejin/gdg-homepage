@@ -64,6 +64,7 @@ export async function createMeetingPoll(
       slot_min: pollInput.slotMin,
       due_at: pollInput.dueAt,
       notify_before_due: pollInput.notifyBeforeDue,
+      is_mojisoop: pollInput.isMojisoop,
       invite_token: UUID.test(input.inviteToken) ? input.inviteToken : undefined,
       created_by: profile.id,
     })
@@ -199,6 +200,7 @@ export async function updateMeetingPoll(
       slot_min: pollInput.slotMin,
       due_at: pollInput.dueAt,
       notify_before_due: pollInput.notifyBeforeDue,
+      is_mojisoop: pollInput.isMojisoop,
       due_notified_at: poll.due_at === pollInput.dueAt ? poll.due_notified_at : null,
     })
     .eq("id", pollId);
@@ -295,7 +297,7 @@ export async function confirmMeetingPoll(
     })
     .eq("id", pollId)
     .is("confirmed_at", null)
-    .select("id, title");
+    .select("id, title, is_mojisoop");
 
   if (error) return { error: toKoreanError(error) };
   if (!data?.length) return { error: "확정 권한이 없거나 이미 확정된 일정이에요" };
@@ -304,20 +306,34 @@ export async function confirmMeetingPoll(
   revalidatePath("/schedule");
   revalidatePath("/admin/events");
 
+  const confirmed = data[0] as { id: string; title: string; is_mojisoop: boolean };
+  const { data: participantRows, error: participantError } = confirmed.is_mojisoop
+    ? { data: [], error: null }
+    : await supabase
+      .from("meeting_poll_participants")
+      .select("profiles(slack_user_id)")
+      .eq("poll_id", confirmed.id);
+  const slackUserIds = ((participantRows ?? []) as unknown as { profiles: { slack_user_id: string | null } | null }[])
+    .flatMap((participant) => participant.profiles?.slack_user_id ?? []);
+
   // 확정은 이미 끝났다. 노션·슬랙이 실패해도 되돌리지 않고 경고만 올린다.
   const [weekly, slackWarning] = await Promise.all([
-    createWeeklyPage(startIso),
-    sendMeetingPollConfirmation({
-      id: data[0].id,
-      title: data[0].title,
-      startIso,
-      durationMin,
-    }),
+    confirmed.is_mojisoop ? createWeeklyPage(startIso) : Promise.resolve(undefined),
+    participantError
+      ? Promise.resolve("참여자 Slack 정보를 읽지 못해 확정 DM을 보내지 못했어요")
+      : sendMeetingPollConfirmation({
+        id: confirmed.id,
+        title: confirmed.title,
+        startIso,
+        durationMin,
+        isMojisoop: confirmed.is_mojisoop,
+        slackUserIds,
+      }),
   ]);
   const warnings = [
-    weekly.error
+    weekly?.error
       ? `${weekly.error} — 노션에 "${weekly.title}"을 직접 만들어주세요`
-      : `노션에 "${weekly.title}" 페이지를 만들었어요`,
+      : weekly ? `노션에 "${weekly.title}" 페이지를 만들었어요` : undefined,
     slackWarning,
   ].filter(Boolean);
   return { warning: warnings.join(" · ") };
@@ -383,12 +399,13 @@ export async function nudgeMeetingPoll(
 
   const { data: pollRow } = await supabase
     .from("meeting_polls")
-    .select("title")
+    .select("title, is_mojisoop")
     .eq("id", pollId)
     .single();
   const slackError = await nudgeAdminChannel(supabase, {
     id: pollId,
     title: (pollRow as { title: string } | null)?.title ?? "일정",
+    is_mojisoop: (pollRow as { is_mojisoop: boolean } | null)?.is_mojisoop ?? true,
   });
   return slackError ? { sent, error: slackError } : { sent };
 }

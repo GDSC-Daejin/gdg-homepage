@@ -389,6 +389,7 @@ export interface MeetingPoll {
   notify_before_due: boolean;
   invite_token: string;
   due_notified_at: string | null;
+  is_mojisoop: boolean;
   created_at: string;
 }
 
