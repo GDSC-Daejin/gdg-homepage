@@ -111,5 +111,10 @@ _참고_: Sponsor(스폰서)는 제거됨 (마이그레이션 0015). 용어에�
 _Avoid_: repository/DAO(구현 레이어 명칭), "demo 분기"(더 이상 호출부에 없음).
 → [설계](docs/design/community-store-design.md)
 
+**살아있는 정의** (Live Definition):
+한 DB 함수를 정의한 마이그레이션 중 **번호가 가장 큰 것**. 함수는 `create or replace`로 덮어써지므로 앞 번호의 정의는 파일로만 남은 죽은 사본이다. 함수 본문을 이야기하거나 단언할 때는 항상 살아있는 정의를 가리킨다.
+_Avoid_: "최신 마이그레이션"(그 함수를 안 건드린 파일일 수 있다), "원본"(정본 파일은 따로 두지 않는다)
+→ [ADR-0002](docs/adr/0002-db-functions-live-in-migrations.md)
+
 **둘러보기** (Demo Mode):
 `demo_mode` 쿠키로 켜지는 **영구 제품 기능**(임시 아님). 켜지면 Community Store가 Demo adapter를 선택해 모든 read는 예시 데이터, 모든 write는 **믿을 만한 성공 형태의 no-op**(에러 아님)을 반환한다. Staff가 `/admin`에서 토글.
