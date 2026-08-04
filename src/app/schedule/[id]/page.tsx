@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdmin } from "@/lib/auth";
+import { requireProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 import {
   DEMO_MEETING_POLLS,
@@ -8,7 +8,7 @@ import {
 } from "@/lib/demoData";
 import { displayName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import type { MeetingPoll, MeetingPollParticipant } from "@/lib/types";
+import { isStaff, type MeetingPoll, type MeetingPollParticipant } from "@/lib/types";
 import { PollDetail } from "./PollDetail";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export default async function SchedulePollPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const profile = await requireAdmin();
+  const profile = await requireProfile();
 
   // 초대 링크는 정식 주소로만 만든다 — 요청 host를 쓰면 프리뷰 배포에서 복사한 링크가
   // 외부인이 못 여는 프리뷰 도메인으로 나간다.
@@ -68,7 +68,7 @@ export default async function SchedulePollPage({
   const ownerProfile = owner as { name: string; nickname: string } | null;
 
   const me = participants.find((p) => p.user_id === profile.id) ?? null;
-  const canManage = poll.created_by === profile.id || profile.role === "organizer";
+  const canManage = isStaff(profile) && (poll.created_by === profile.id || profile.role === "organizer");
   const inviteUrl = `${siteUrl}/j/${poll.invite_token}`;
 
   return (

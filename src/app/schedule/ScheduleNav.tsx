@@ -36,10 +36,10 @@ export function ScheduleNav() {
   );
 }
 
-export function NewPollButton() {
+export function NewPollButton({ canCreate }: { canCreate: boolean }) {
   const pathname = usePathname();
   // 목록 두 화면에서만 띄운다. 만들기·상세 화면에는 그 화면의 버튼이 따로 있다.
-  if (pathname !== "/schedule" && pathname !== "/schedule/past") return null;
+  if (!canCreate || (pathname !== "/schedule" && pathname !== "/schedule/past")) return null;
   return (
     <Link href="/schedule/new">
       <Button variant="solid" color="primary" size="small" round>

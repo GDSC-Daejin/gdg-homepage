@@ -240,7 +240,7 @@ export function PollDetail({
           </div>
         </div>
         <div className={styles.detailActions}>
-          <Button
+          {canManage && <Button
             variant="solid"
             color="assistive"
             size="medium"
@@ -251,7 +251,7 @@ export function PollDetail({
             }}
           >
             초대 링크 복사
-          </Button>
+          </Button>}
           <Button
             variant="text"
             color="assistive"

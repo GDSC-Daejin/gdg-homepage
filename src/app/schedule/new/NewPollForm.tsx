@@ -28,7 +28,7 @@ import {
 import type { MeetingPoll } from "@/lib/types";
 import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, togglePollDate, type PollDraftPerson } from "./poll-draft";
 
-export interface StaffOption {
+export interface MemberOption {
   id: string;
   name: string;
 }
@@ -52,13 +52,13 @@ const HOURS = Array.from({ length: 25 }, (_, hour) => hour);
 
 export function NewPollForm({
   today,
-  staff,
+  members,
   inviteToken,
   inviteOrigin,
   edit,
 }: {
   today: string;
-  staff: StaffOption[];
+  members: MemberOption[];
   /** 만들기 전에도 초대 링크를 보여줄 수 있게 토큰을 서버에서 미리 받아온다. */
   inviteToken: string;
   inviteOrigin: string;
@@ -80,7 +80,7 @@ export function NewPollForm({
           userId: p.user_id,
           email: p.email,
         }))
-      : staff.map((s) => ({ key: s.id, participantId: null, name: s.name, userId: s.id, email: null })),
+      : [],
   );
   const [adding, setAdding] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -119,7 +119,7 @@ export function NewPollForm({
       setAdding(false);
       return;
     }
-    setPeople((prev) => addPollDraftPerson(prev, value, staff));
+    setPeople((prev) => addPollDraftPerson(prev, value, members));
     setDraftName("");
   }
 
@@ -392,6 +392,7 @@ export function NewPollForm({
               ))}
               {adding ? (
                 <input
+                  list="schedule-members"
                   autoFocus
                   value={draftName}
                   placeholder="이름 또는 이메일"
@@ -442,6 +443,9 @@ export function NewPollForm({
                 </button>
               )}
             </div>
+            <datalist id="schedule-members">
+              {members.map((member) => <option key={member.id} value={member.name} />)}
+            </datalist>
             <div
               style={{
                 display: "flex",

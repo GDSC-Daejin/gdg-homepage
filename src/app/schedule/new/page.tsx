@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 import { dayKeyKst, displayName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { NewPollForm, type StaffOption } from "./NewPollForm";
+import { NewPollForm, type MemberOption } from "./NewPollForm";
 
 export const dynamic = "force-dynamic";
 
@@ -12,16 +12,16 @@ export default async function NewSchedulePage() {
   await requireAdmin();
   const demo = await isDemoMode();
 
-  // 기본 참여자는 Staff 전원. 원본 시안도 운영 인원이 미리 들어가 있다.
-  let staff: StaffOption[] = [];
+  let members: MemberOption[] = [];
   if (!demo) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("profiles")
       .select("id, name, nickname")
-      .in("role", ["organizer", "team_member"])
+      .in("role", ["organizer", "team_member", "member"])
+      .not("approved_at", "is", null)
       .order("name");
-    staff = ((data ?? []) as { id: string; name: string; nickname: string }[]).map((p) => ({
+    members = ((data ?? []) as { id: string; name: string; nickname: string }[]).map((p) => ({
       id: p.id,
       name: displayName(p.name, p.nickname),
     }));
@@ -33,7 +33,7 @@ export default async function NewSchedulePage() {
   return (
     <NewPollForm
       today={dayKeyKst(new Date().toISOString())}
-      staff={staff}
+      members={members}
       inviteToken={randomUUID()}
       inviteOrigin={`${proto}://${host}`}
     />

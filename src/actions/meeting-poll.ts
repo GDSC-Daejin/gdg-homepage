@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { toKoreanError } from "@/lib/errors";
@@ -237,7 +237,7 @@ export async function saveMyAvailability(
   pollId: string,
   slots: string[],
 ): Promise<ActionResult> {
-  const profile = await requireAdmin();
+  const profile = await requireProfile();
   if (await isDemoMode()) return {};
 
   const supabase = await createClient();

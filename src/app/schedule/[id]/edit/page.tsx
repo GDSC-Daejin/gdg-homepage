@@ -5,7 +5,7 @@ import { DEMO_MEETING_POLL_PARTICIPANTS, DEMO_MEETING_POLLS } from "@/lib/demoDa
 import { dayKeyKst, displayName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import type { MeetingPoll } from "@/lib/types";
-import { NewPollForm, type EditableParticipant, type StaffOption } from "../../new/NewPollForm";
+import { NewPollForm, type EditableParticipant, type MemberOption } from "../../new/NewPollForm";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
 
   let poll: MeetingPoll | undefined;
   let participants: EditableParticipant[] = [];
-  let staff: StaffOption[] = [];
+  let members: MemberOption[] = [];
 
   if (demo) {
     poll = DEMO_MEETING_POLLS.find((item) => item.id === id);
@@ -29,12 +29,13 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
       supabase
         .from("profiles")
         .select("id, name, nickname")
-        .in("role", ["organizer", "team_member"])
+        .in("role", ["organizer", "team_member", "member"])
+        .not("approved_at", "is", null)
         .order("name"),
     ]);
     poll = pollRow as MeetingPoll | null ?? undefined;
     participants = (participantRows ?? []) as EditableParticipant[];
-    staff = ((staffRows ?? []) as { id: string; name: string; nickname: string }[]).map((item) => ({
+    members = ((staffRows ?? []) as { id: string; name: string; nickname: string }[]).map((item) => ({
       id: item.id,
       name: displayName(item.name, item.nickname),
     }));
@@ -48,7 +49,7 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
   return (
     <NewPollForm
       today={dayKeyKst(new Date().toISOString())}
-      staff={staff}
+      members={members}
       inviteToken={poll.invite_token}
       inviteOrigin={(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "")}
       edit={{ poll, participants }}
