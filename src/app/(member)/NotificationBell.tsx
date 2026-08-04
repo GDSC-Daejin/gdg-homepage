@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import { markAllRead, markNotificationsRead } from "@/actions/notification";
 import { formatRelativeKst } from "@/lib/format";
 import { useDismiss } from "@/lib/useDismiss";
@@ -12,11 +13,28 @@ interface NotificationBellProps {
   unreadCount: number;
 }
 
+export function notificationMenuPosition(
+  trigger: Pick<DOMRect, "top" | "bottom" | "right">,
+  viewport: { width: number; height: number },
+): CSSProperties {
+  const inset = 16;
+  const gap = 8;
+  const width = Math.min(320, viewport.width - inset * 2);
+  const spaceAbove = trigger.top - inset - gap;
+  const spaceBelow = viewport.height - trigger.bottom - inset - gap;
+  const left = Math.max(inset, Math.min(trigger.right - width, viewport.width - width - inset));
+
+  return spaceAbove >= spaceBelow
+    ? { position: "fixed", left, bottom: viewport.height - trigger.top + gap, width, maxHeight: spaceAbove }
+    : { position: "fixed", left, top: trigger.bottom + gap, width, maxHeight: spaceBelow };
+}
+
 export function NotificationBell({ notifications, unreadCount }: NotificationBellProps) {
   const router = useRouter();
   const { ref, open, setOpen } = useDismiss<HTMLDivElement>();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>();
   const [items, setItems] = useState(notifications);
   const [unread, setUnread] = useState(unreadCount);
 
@@ -28,6 +46,33 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
   useEffect(() => {
     if (open) menuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = () => setOpen(false);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [open, setOpen]);
+
+  function toggleMenu() {
+    if (open) {
+      setOpen(false);
+      return;
+    }
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    setMenuStyle(
+      notificationMenuPosition(trigger.getBoundingClientRect(), {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      }),
+    );
+    setOpen(true);
+  }
 
   function handleMenuKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const items = [...(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])];
@@ -78,7 +123,7 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
         aria-label={unread > 0 ? `알림 ${unread}건 안 읽음` : "알림"}
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
+        onClick={toggleMenu}
         className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700"
       >
         <svg
@@ -100,12 +145,14 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
         )}
       </button>
 
-      {open && (
+      {open && menuStyle && createPortal(
         <div
           ref={menuRef}
           role="menu"
           onKeyDown={handleMenuKeyDown}
-          className="select-menu absolute bottom-full right-0 z-50 mb-2 w-80 rounded-xl border border-gray-200 bg-white p-1 shadow-card dark:bg-gray-100"
+          onMouseDown={(event) => event.stopPropagation()}
+          style={menuStyle}
+          className="select-menu z-50 overflow-y-auto rounded-xl border border-gray-200 bg-white p-1 shadow-card dark:bg-gray-100"
         >
           <div className="flex items-center justify-between px-3 py-2">
             <p className="text-sm font-semibold text-gray-900">알림</p>
@@ -156,7 +203,8 @@ export function NotificationBell({ notifications, unreadCount }: NotificationBel
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
