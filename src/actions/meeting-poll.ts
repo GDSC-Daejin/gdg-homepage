@@ -5,6 +5,7 @@ import { requireAdmin } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { toKoreanError } from "@/lib/errors";
+import { sendMeetingPollConfirmation } from "@/lib/meeting-poll-confirmation";
 import { nudgeAdminChannel } from "@/lib/meeting-poll-nudge";
 import {
   DURATION_OPTIONS,
@@ -294,7 +295,7 @@ export async function confirmMeetingPoll(
     })
     .eq("id", pollId)
     .is("confirmed_at", null)
-    .select("id");
+    .select("id, title");
 
   if (error) return { error: toKoreanError(error) };
   if (!data?.length) return { error: "확정 권한이 없거나 이미 확정된 일정이에요" };
@@ -303,11 +304,23 @@ export async function confirmMeetingPoll(
   revalidatePath("/schedule");
   revalidatePath("/admin/events");
 
-  // 확정은 이미 끝났다. 노션이 실패해도 되돌리지 않고 경고만 올린다.
-  const weekly = await createWeeklyPage(startIso);
-  return weekly.error
-    ? { warning: `${weekly.error} — 노션에 "${weekly.title}"을 직접 만들어주세요` }
-    : { warning: `노션에 "${weekly.title}" 페이지를 만들었어요` };
+  // 확정은 이미 끝났다. 노션·슬랙이 실패해도 되돌리지 않고 경고만 올린다.
+  const [weekly, slackWarning] = await Promise.all([
+    createWeeklyPage(startIso),
+    sendMeetingPollConfirmation({
+      id: data[0].id,
+      title: data[0].title,
+      startIso,
+      durationMin,
+    }),
+  ]);
+  const warnings = [
+    weekly.error
+      ? `${weekly.error} — 노션에 "${weekly.title}"을 직접 만들어주세요`
+      : `노션에 "${weekly.title}" 페이지를 만들었어요`,
+    slackWarning,
+  ].filter(Boolean);
+  return { warning: warnings.join(" · ") };
 }
 
 /** 확정 취소. 시간을 다시 잡을 때 일정을 새로 만들지 않아도 되게 둔다. */

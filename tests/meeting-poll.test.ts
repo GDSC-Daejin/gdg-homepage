@@ -5,6 +5,7 @@ import {
   avatarColor,
   avatarInitial,
   AVATAR_COLORS,
+  backupRecommendations,
   dateRange,
   dateWithWeekday,
   durationLabel,
@@ -26,6 +27,7 @@ import {
   toViews,
   weekdayColor,
   type Participant,
+  type Recommendation,
 } from "@/lib/meeting-poll";
 
 const DATES = ["2026-07-30", "2026-07-31", "2026-08-01", "2026-08-02"];
@@ -464,5 +466,20 @@ describe("둘러보기 예시 데이터", () => {
     expect(recs.map((r) => r.available.length)).toEqual([6, 5, 5]);
     expect(recs[0].missing).toHaveLength(0);
     expect(recs.every((r) => r.durationMin === MIN_BLOCK_MIN)).toBe(true);
+  });
+});
+
+describe("backupRecommendations", () => {
+  it("확정 시간을 제외하고 두 개의 대체 후보만 남긴다", () => {
+    const recommendations = [
+      { startIso: "2026-08-04T10:30:00.000Z" },
+      { startIso: "2026-08-04T11:30:00.000Z" },
+      { startIso: "2026-08-04T12:30:00.000Z" },
+    ] as Recommendation[];
+
+    expect(backupRecommendations(recommendations, "2026-08-04T10:30:00.000Z")).toEqual([
+      recommendations[1],
+      recommendations[2],
+    ]);
   });
 });

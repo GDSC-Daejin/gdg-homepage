@@ -19,6 +19,7 @@ import { cellFromPoint, ScheduleGrid } from "@/components/wds/ScheduleGrid";
 import { useToast } from "@/components/wds/Toast";
 import {
   aggregate,
+  backupRecommendations,
   dateWithWeekday,
   durationLabel,
   HEAT_STEPS,
@@ -113,6 +114,9 @@ export function PollDetail({
         : [],
     [responded.length, recommendGate, dates, times, liveViews, poll.slot_min],
   );
+  const visibleRecommendations = poll.confirmed_at
+    ? backupRecommendations(recommendations, poll.confirmed_at)
+    : recommendations;
 
   const blockAt = (cell: Cell) =>
     recommendations.find(
@@ -382,11 +386,16 @@ export function PollDetail({
       {/* ── 확정 배너 ── */}
       {poll.confirmed_at && (
         <div className={styles.confirmedBanner}>
-          <span style={{ font: "700 16px/1.4 var(--wds-font-sans)", color: "var(--wds-primary-strong)" }}>
-            {dateWithWeekday(kstDayKey(poll.confirmed_at))} {timeAmPm(kstTime(poll.confirmed_at))}
-            {" 로 확정 · "}
-            {durationLabel(poll.duration_min ?? 0)}
-          </span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <span style={{ font: "700 13px/1.4 var(--wds-font-sans)", color: "var(--wds-primary-strong)" }}>
+              확정된 일정
+            </span>
+            <span style={{ font: "700 20px/1.35 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
+              {dateWithWeekday(kstDayKey(poll.confirmed_at))} {timeAmPm(kstTime(poll.confirmed_at))}
+              {" · "}
+              {durationLabel(poll.duration_min ?? 0)}
+            </span>
+          </div>
           {canManage && (
             <Button
               variant="text"
@@ -401,8 +410,8 @@ export function PollDetail({
         </div>
       )}
 
-      {/* ── 추천 시간 ── */}
-      <div
+      {/* ── 추천 시간 / 백업 플랜 ── */}
+      {(!poll.confirmed_at || visibleRecommendations.length > 0) && <div
         style={{
           display: "flex",
           flexDirection: "column",
@@ -423,7 +432,7 @@ export function PollDetail({
                 color: "var(--wds-label-normal)",
               }}
             >
-              이 시간이 제일 좋아요
+              {poll.confirmed_at ? "백업 플랜" : "이 시간이 제일 좋아요"}
             </h2>
             <p
               style={{
@@ -432,8 +441,10 @@ export function PollDetail({
                 color: "var(--wds-label-alternative)",
               }}
             >
-              {recommendations.length > 0
-                ? `응답한 ${responded.length}명 기준으로 가장 많이 겹치는 시간을 골랐어요. 격자에 표시된 번호와 같은 시간이에요.`
+              {visibleRecommendations.length > 0
+                ? poll.confirmed_at
+                  ? "확정 시간을 바꿔야 할 때 검토할 수 있는 다음 후보예요."
+                  : `응답한 ${responded.length}명 기준으로 가장 많이 겹치는 시간을 골랐어요. 격자에 표시된 번호와 같은 시간이에요.`
                 : `${recommendGate}명 이상 응답하면 가장 많이 겹치는 시간을 골라드려요. 지금 ${responded.length}명이에요.`}
             </p>
           </div>
@@ -448,10 +459,10 @@ export function PollDetail({
           </span>
         </div>
 
-        {recommendations.length > 0 && (
-          <div className={styles.recommendationCards}>
-            {recommendations.map((r) => {
-              const first = r.rank === 1;
+        {visibleRecommendations.length > 0 && (
+          <div className={`${styles.recommendationCards} ${poll.confirmed_at ? styles.backupCards : ""}`}>
+            {visibleRecommendations.map((r, index) => {
+              const first = !poll.confirmed_at && r.rank === 1;
               const endTime = addMinutes(times[r.from], r.durationMin);
               return (
                 <div
@@ -483,7 +494,7 @@ export function PollDetail({
                           justifyContent: "center",
                         }}
                       >
-                        {r.rank}
+                        {poll.confirmed_at ? index + 1 : r.rank}
                       </span>
                       <span
                         style={{
@@ -491,7 +502,9 @@ export function PollDetail({
                           color: first ? "var(--wds-primary-strong)" : "var(--wds-label-alternative)",
                         }}
                       >
-                        {r.rank === 1 ? "가장 좋아요" : r.rank === 2 ? "두 번째로 좋아요" : "세 번째로 좋아요"}
+                        {poll.confirmed_at
+                          ? `${index === 0 ? "첫 번째" : "두 번째"} 백업`
+                          : r.rank === 1 ? "가장 좋아요" : r.rank === 2 ? "두 번째로 좋아요" : "세 번째로 좋아요"}
                       </span>
                     </div>
                     <span
@@ -555,7 +568,7 @@ export function PollDetail({
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 2 }}>
-                    <Button
+                    {!poll.confirmed_at && <Button
                       variant={first ? "solid" : "outlined"}
                       color="primary"
                       size="medium"
@@ -569,7 +582,7 @@ export function PollDetail({
                       }
                     >
                       이 시간으로 확정하기
-                    </Button>
+                    </Button>}
                     <Button
                       variant="text"
                       color="assistive"
@@ -584,7 +597,7 @@ export function PollDetail({
             })}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ── 격자 2단 ── */}
       <div className={styles.scheduleGrids}>

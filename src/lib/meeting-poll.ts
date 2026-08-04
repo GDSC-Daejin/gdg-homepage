@@ -283,6 +283,14 @@ export interface Recommendation {
   missing: ParticipantView[];
 }
 
+/** 확정 뒤에는 같은 시작 시각을 뺀 상위 두 후보만 대체안으로 보인다. */
+export function backupRecommendations(
+  recommendations: Recommendation[],
+  confirmedAt: string,
+): Recommendation[] {
+  return recommendations.filter((recommendation) => recommendation.startIso !== confirmedAt).slice(0, 2);
+}
+
 /**
  * 가장 많이 겹치는 연속 구간 top N.
  * 구간 길이는 MIN_BLOCK_MIN을 채우는 최소 칸 수로 고정하고(30분 단위면 2칸),
