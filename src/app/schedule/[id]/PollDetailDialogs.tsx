@@ -81,14 +81,18 @@ export function NudgeDialog({
 export function ConfirmDialog({
   startIso,
   durationMin,
+  timeOptions,
   busy,
+  onStart,
   onDuration,
   onClose,
   onSubmit,
 }: {
   startIso: string;
   durationMin: number;
+  timeOptions?: { value: string; label: string }[];
   busy: boolean;
+  onStart?: (startIso: string) => void;
   onDuration: (min: number) => void;
   onClose: () => void;
   onSubmit: () => void;
@@ -103,6 +107,14 @@ export function ConfirmDialog({
           {dateWithWeekday(kstDayKey(startIso))} {timeAmPm(kstTime(startIso))}
         </span>
       </div>
+      {timeOptions && onStart && (
+        <SelectBox
+          label="시작 시간"
+          value={startIso}
+          options={timeOptions}
+          onChange={onStart}
+        />
+      )}
       <SelectBox
         label="소요 시간"
         value={String(durationMin)}

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   addMinutes,
+  adjustmentOptions,
   endOf,
   nearestDuration,
   pastDue,
@@ -31,5 +32,18 @@ describe("poll detail time helpers", () => {
         ["2026-08-02"],
       ),
     ).toBe("2026-08-02T09:30:00.000Z");
+  });
+
+  it("추천 시간 안에서 30분 단위로 조정할 시간을 만든다", () => {
+    expect(
+      adjustmentOptions(
+        { dateIndex: 0, from: 0, durationMin: 60 },
+        ["10:00", "10:30"],
+        ["2026-08-05"],
+      ),
+    ).toEqual([
+      { startIso: "2026-08-05T01:00:00.000Z", label: "오전 10:00 ~ 오전 10:30" },
+      { startIso: "2026-08-05T01:30:00.000Z", label: "오전 10:30 ~ 오전 11:00" },
+    ]);
   });
 });

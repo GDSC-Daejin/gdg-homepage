@@ -41,10 +41,10 @@ import { availabilityViews, draftAvailability, type AvailabilityDrag } from "@/l
 import { MetaChip, PeopleTooltip, PersonRow } from "./PollDetailPeople";
 import {
   addMinutes,
+  adjustmentOptions,
   endOf,
   kstDayKey,
   kstTime,
-  nearestDuration,
   pastDue,
 } from "./poll-detail-time";
 import styles from "../schedule.module.css";
@@ -85,7 +85,11 @@ export function PollDetail({
   const [hovered, setHovered] = useState<Cell | null>(null);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [showCounts, setShowCounts] = useState(false);
-  const [confirming, setConfirming] = useState<{ startIso: string; durationMin: number } | null>(null);
+  const [confirming, setConfirming] = useState<{
+    startIso: string;
+    durationMin: number;
+    timeOptions?: { value: string; label: string }[];
+  } | null>(null);
   const [nudging, setNudging] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
@@ -574,14 +578,16 @@ export function PollDetail({
                       size="medium"
                       fullWidth
                       disabled={!canManage || locked || busy}
-                      onClick={() =>
+                      onClick={() => {
+                        const options = adjustmentOptions(r, times, dates);
                         setConfirming({
-                          startIso: r.startIso,
-                          durationMin: nearestDuration(r.durationMin),
-                        })
-                      }
+                          startIso: options[0]?.startIso ?? r.startIso,
+                          durationMin: 30,
+                          timeOptions: options.map(({ startIso, label }) => ({ value: startIso, label })),
+                        });
+                      }}
                     >
-                      이 시간으로 확정하기
+                      시간 조정하기
                     </Button>}
                     <Button
                       variant="text"
@@ -944,7 +950,9 @@ export function PollDetail({
         <ConfirmDialog
           startIso={confirming.startIso}
           durationMin={confirming.durationMin}
+          timeOptions={confirming.timeOptions}
           busy={busy}
+          onStart={(startIso) => setConfirming({ ...confirming, startIso })}
           onDuration={(min) => setConfirming({ ...confirming, durationMin: min })}
           onClose={() => setConfirming(null)}
           onSubmit={() => {
