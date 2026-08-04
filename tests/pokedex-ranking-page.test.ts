@@ -36,6 +36,7 @@ describe("도감 랭킹전 탭", () => {
     expect(text).toContain("하루에 최대 3번 공격할 수 있어요");
     expect(text).toContain("점수는 이렇게 바뀌어요");
     expect(page).toContain('alt="피카츄"');
+    expect(page).toContain("!bg-primary");
     expect(page).not.toContain("참전하기");
   });
 
@@ -43,5 +44,33 @@ describe("도감 랭킹전 탭", () => {
     await PokedexPage({ searchParams: Promise.resolve({ tab: "ranking" }) });
 
     expect(mocks.createClient).not.toHaveBeenCalled();
+  });
+
+  it("확률표에서 포켓몬 이름을 검색한다", async () => {
+    mocks.isDemoMode.mockResolvedValue(true);
+
+    const page = await PokedexPage({ searchParams: Promise.resolve({ tab: "probabilities", q: "피카" }) });
+    const markup = renderToStaticMarkup(page);
+
+    expect(markup).toContain('name="q"');
+    expect(markup).toContain('value="피카"');
+    expect(markup).toContain("피카츄");
+    expect(markup).not.toContain("꼬부기");
+  });
+
+  it("확률표 검색 결과가 없으면 안내한다", async () => {
+    mocks.isDemoMode.mockResolvedValue(true);
+
+    const page = await PokedexPage({ searchParams: Promise.resolve({ tab: "probabilities", q: "없는포켓몬" }) });
+
+    expect(renderToStaticMarkup(page)).toContain("검색한 포켓몬이 없어요.");
+  });
+
+  it("랭킹전 안내 카드는 태블릿에서 한 열로 표시한다", () => {
+    const page = renderToStaticMarkup(createElement(RankingLeagueTab, { profileId: "member", state: null }));
+
+    expect(page).toContain("lg:grid-cols-2");
+    expect(page).not.toContain("<br/>");
+    expect(page).toContain("포켓몬을 모으는 동안 규칙을 미리 익혀두세요.</span><span class=\"block\">준비가 되면 나만의 팀으로 바로 도전할 수 있어요.");
   });
 });
