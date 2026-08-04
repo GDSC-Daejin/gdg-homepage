@@ -16,6 +16,18 @@ describe("멤버 스케줄 접근", () => {
     expect(layout).toContain("canCreate={isStaff(profile)}");
   });
 
+  it("사이드바에서 고른 모드를 스케줄 셸에 반영한다", async () => {
+    const [memberNav, adminNav, layout] = await Promise.all([
+      readFile("src/app/(member)/SidebarNav.tsx", "utf8"),
+      readFile("src/app/admin/AdminSidebarNav.tsx", "utf8"),
+      readFile("src/app/schedule/layout.tsx", "utf8"),
+    ]);
+
+    expect(memberNav).toContain("schedule-shell=member");
+    expect(adminNav).toContain("schedule-shell=admin");
+    expect(layout).toContain('get("schedule-shell")');
+  });
+
   it("참여한 멤버만 스케줄과 전체 응답을 조회·수정할 수 있다", async () => {
     const migration = await readFile("supabase/migrations/0087_meeting_poll_member_access.sql", "utf8");
 

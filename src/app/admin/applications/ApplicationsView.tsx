@@ -100,7 +100,7 @@ export function ApplicationsView({
               <circle cx="10" cy="10" r="7.5" />
               <circle cx="10" cy="10" r="2.5" />
             </svg>
-            GDG DJU 운영진 · 시즌별 지원서 심사
+            GDGOC DJU 운영진 · 시즌별 지원서 심사
           </span>
         }
       />

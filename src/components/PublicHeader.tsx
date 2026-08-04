@@ -23,7 +23,7 @@ export async function PublicHeader() {
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
         <Link href="/" className="flex items-center gap-2.5">
           <Logo className="h-7 w-7" />
-          <span className="text-sm font-bold text-white">GDG DJU</span>
+          <span className="text-sm font-bold text-white">GDGOC DJU</span>
         </Link>
         <nav className="hidden items-center gap-1 md:flex">
           {NAV_ITEMS.map((item) => (

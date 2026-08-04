@@ -168,6 +168,9 @@ export function AdminSidebarNav() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={item.href === "/schedule" ? () => {
+                      document.cookie = "schedule-shell=admin; Path=/schedule; SameSite=Lax";
+                    } : undefined}
                     aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-100 ${
                       active

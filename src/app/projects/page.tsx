@@ -3,7 +3,7 @@ import { JsonLd, breadcrumb } from "@/components/JsonLd";
 
 export const metadata = {
   title: "프로젝트",
-  description: "GDG on Campus DJU 멤버들이 진행 중인 프로젝트 모음.",
+  description: "GDGOC DJU 멤버들이 진행 중인 프로젝트 모음.",
   alternates: { canonical: "/projects" },
 };
 

@@ -8,7 +8,7 @@ import { loadTeamMembers } from "./team-data";
 export const metadata = {
   title: "팀",
   description:
-    "GDG on Campus DJU 운영진을 소개합니다. 오거나이저와 팀 멤버가 프론트엔드·백엔드·디자이너 파트로 활동해요.",
+    "GDGOC DJU 운영진을 소개합니다. 오거나이저와 팀 멤버가 프론트엔드·백엔드·디자이너 파트로 활동해요.",
   alternates: { canonical: "/team" },
 };
 
@@ -46,7 +46,7 @@ export default async function TeamPage() {
       <PublicHeader />
       <div className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="text-4xl font-extrabold tracking-tight">TEAM</h1>
-        <p className="mt-4 text-white/70">GDG on Campus DJU 운영진입니다.</p>
+        <p className="mt-4 text-white/70">GDGOC DJU 운영진입니다.</p>
 
         <h2 className="mt-14 text-sm font-bold tracking-widest text-white/40">
           오거나이저

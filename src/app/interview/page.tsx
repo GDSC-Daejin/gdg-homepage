@@ -7,7 +7,7 @@ import { BookingForm } from "./BookingForm";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "면접 일정 예약 · GDG DJU",
+  title: "면접 일정 예약 · GDGOC DJU",
   robots: { index: false, follow: false },
 };
 
@@ -53,7 +53,7 @@ export default async function InterviewPage({
     <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-4 py-12">
       <div className="mb-6">
         <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-          ← GDG DJU
+          ← GDGOC DJU
         </Link>
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-gray-900">면접 일정 예약</h1>
       </div>

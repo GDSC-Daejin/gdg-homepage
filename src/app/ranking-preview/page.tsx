@@ -4,7 +4,7 @@ import "./ranking-preview.css";
 import { RankingPreview } from "./RankingPreview";
 
 export const metadata = {
-  title: "랭킹전 디자인 프리뷰 · GDG on Campus DJU",
+  title: "랭킹전 디자인 프리뷰 · GDGOC DJU",
   robots: { index: false, follow: false },
 };
 

@@ -1,5 +1,6 @@
 // WDS 토큰. globals.css의 @import는 Tailwind 파이프라인을 통과하지 못해 여기서 직접 싣는다.
 import "../wds.css";
+import { cookies } from "next/headers";
 import { requireProfile } from "@/lib/auth";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { AdminSidebar } from "@/app/admin/AdminSidebar";
@@ -22,6 +23,7 @@ export default async function ScheduleLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireProfile();
+  const scheduleShell = (await cookies()).get("schedule-shell")?.value;
   const content = (
     <div
       className="wds-surface"
@@ -44,6 +46,6 @@ export default async function ScheduleLayout({
     </div>
   );
 
-  if (!isStaff(profile)) return <MemberShell profile={profile}>{content}</MemberShell>;
+  if (scheduleShell === "member" || !isStaff(profile)) return <MemberShell profile={profile}>{content}</MemberShell>;
   return <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />} mainClassName="">{content}</ResponsiveShell>;
 }

@@ -10,14 +10,14 @@ import { JsonLd } from "@/components/JsonLd";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "GDG on Campus DJU", alternates: { canonical: "/" } };
+export const metadata = { title: "GDGOC DJU", alternates: { canonical: "/" } };
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 const organizationLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "GDG on Campus DJU",
+  name: "GDGOC DJU",
   alternateName: "Google Developer Groups on Campus Daejin University",
   url: siteUrl,
   logo: `${siteUrl}/icon.svg`,
@@ -65,7 +65,7 @@ async function AuthenticatedHome({
 
   return (
     <MemberShell profile={profile}>
-      <div className="flex flex-col gap-8 sm:gap-10">
+      <div className="flex flex-col gap-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-card dark:bg-gray-100 sm:gap-10 sm:p-8">
         <header>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
             안녕하세요, {profile.name}님

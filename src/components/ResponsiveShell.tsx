@@ -57,7 +57,7 @@ export function ResponsiveShell({
           </svg>
         </button>
         <Logo className="h-7 w-7 shrink-0" />
-        <p className="text-base font-bold text-gray-900">GDG DJU</p>
+        <p className="text-base font-bold text-gray-900">GDGOC DJU</p>
       </header>
 
       <div className="flex min-h-screen w-full">

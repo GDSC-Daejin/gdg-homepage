@@ -73,7 +73,7 @@ function EventCard({
       href={`/events/${event.id}`}
       className="block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
-      <Card className="transition-shadow hover:shadow-md">
+      <Card className="!shadow-none transition-shadow hover:shadow-sm">
         {featured ? (
           <div className="flex items-center gap-5 sm:gap-7">
             <CalendarIllustration />
@@ -223,7 +223,7 @@ export async function HomeDashboard({
       {notice && (
         <Link
           href={`/notices/${notice.id}`}
-          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:bg-gray-100"
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 transition-shadow hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:bg-gray-100"
         >
           <Badge tone="primary">공지</Badge>
           <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
@@ -237,7 +237,7 @@ export async function HomeDashboard({
       {unanswered.length > 0 && (
         <Link
           href="/surveys"
-          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 shadow-card transition-shadow hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warning dark:bg-gray-100"
+          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 transition-shadow hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warning dark:bg-gray-100"
         >
           <Badge tone="warning">설문</Badge>
           <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
@@ -262,7 +262,7 @@ export async function HomeDashboard({
         </div>
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(260px,0.55fr)]">
           {upcoming.length === 0 ? (
-            <EmptyState title="예정된 이벤트가 없어요" />
+            <EmptyState title="예정된 이벤트가 없어요" className="!shadow-none" />
           ) : (
             <div className="flex flex-col gap-3">
               <EventCard
@@ -288,7 +288,7 @@ export async function HomeDashboard({
             href="/profile"
             className="block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            <Card className="relative flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
+            <Card className="relative flex h-full flex-col overflow-hidden !shadow-none transition-shadow hover:shadow-sm">
               <img
                 src="/point-coin.png"
                 alt=""
@@ -313,7 +313,7 @@ export async function HomeDashboard({
           </h2>
           {myGroups.length > 0 && <Badge tone="primary">{myGroups.length}개</Badge>}
         </div>
-        <Card>
+        <Card className="!shadow-none">
           {myGroups.length > 0 ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {myGroups.map((group) => (
@@ -365,6 +365,7 @@ export async function HomeDashboard({
           <EmptyState
             title="지난 이벤트가 없어요"
             description="참여했던 이벤트가 여기에 표시됩니다."
+            className="!shadow-none"
             icon={
               <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7">
                 <rect x="3" y="5" width="18" height="16" rx="2" />

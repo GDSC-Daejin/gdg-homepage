@@ -20,7 +20,7 @@ const faqLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "GDG on Campus DJU는 어떻게 지원하나요?",
+      name: "GDGOC DJU는 어떻게 지원하나요?",
       acceptedAnswer: {
         "@type": "Answer",
         text: "서류 접수 → 운영진 심사 → 결과 이메일 안내 순으로 진행돼요. 로그인 없이 이 페이지에서 바로 지원서를 작성할 수 있어요.",
@@ -52,7 +52,7 @@ export default async function ApplyPage() {
       <JsonLd data={breadcrumb("지원하기", "/apply")} />
       <div className="mb-6">
         <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
-          ← GDG DJU
+          ← GDGOC DJU
         </Link>
         <h1 className="mt-3 text-2xl font-bold tracking-tight text-gray-900">지원하기</h1>
         <p className="mt-1 text-sm text-gray-500">

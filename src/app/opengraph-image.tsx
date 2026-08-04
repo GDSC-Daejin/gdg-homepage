@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-export const alt = "GDG DJU 동아리 관리 시스템";
+export const alt = "GDGOC DJU 동아리 관리 시스템";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -29,7 +29,7 @@ export default function OpengraphImage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={logoDataUri} width={300} height={300} alt="" />
         <div style={{ fontSize: 76, fontWeight: 700, color: "#202124" }}>
-          GDG DJU
+          GDGOC DJU
         </div>
       </div>
     ),

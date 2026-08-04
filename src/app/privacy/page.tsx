@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 export const metadata = {
-  title: "개인정보처리방침 · GDG on Campus DJU",
+  title: "개인정보처리방침 · GDGOC DJU",
   alternates: { canonical: "/privacy" },
 };
 
@@ -26,8 +26,8 @@ export default function PrivacyPage() {
       </p>
 
       <p style={{ marginBottom: 32 }}>
-        GDG on Campus 대진대학교(이하 &ldquo;GDG DJU&rdquo;)는 이용자의 개인정보를
-        중요하게 생각하며, 「개인정보 보호법」을 준수합니다. 본 방침은 GDG DJU
+        GDG on Campus 대진대학교(이하 &ldquo;GDGOC DJU&rdquo;)는 이용자의 개인정보를
+        중요하게 생각하며, 「개인정보 보호법」을 준수합니다. 본 방침은 GDGOC DJU
         웹사이트에서 어떤 정보를 어떻게 수집·이용하는지 안내합니다.
       </p>
 

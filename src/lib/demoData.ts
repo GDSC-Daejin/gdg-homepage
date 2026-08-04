@@ -136,7 +136,7 @@ export const DEMO_ATTENDANCE_ROWS: {
 ];
 
 export const DEMO_NOTICES: Notice[] = [
-  { id: "demo-n1", title: "2026년 하계 정기 모임 안내", body: "안녕하세요, GDG DJU입니다. 하계 정기 모임 일정을 안내드립니다.", published: true, published_at: "2026-07-05T00:00:00.000Z", created_by: "demo-m1", created_at: "2026-07-04T00:00:00.000Z" },
+  { id: "demo-n1", title: "2026년 하계 정기 모임 안내", body: "안녕하세요, GDGOC DJU입니다. 하계 정기 모임 일정을 안내드립니다.", published: true, published_at: "2026-07-05T00:00:00.000Z", created_by: "demo-m1", created_at: "2026-07-04T00:00:00.000Z" },
   { id: "demo-n2", title: "8월 모각코 안내", body: "8월 모각코를 진행합니다. 다같이 모여 각자 할 일을 하는 자율 세션이에요. 관심 있는 분은 신청해주세요.", published: true, published_at: "2026-06-20T00:00:00.000Z", created_by: "demo-m2", created_at: "2026-06-18T00:00:00.000Z" },
   { id: "demo-n3", title: "동아리방 이용 규칙 변경 안내", body: "동아리방 이용 시간이 오전 9시부터 오후 10시로 변경됩니다.", published: true, published_at: "2026-05-01T00:00:00.000Z", created_by: "demo-m1", created_at: "2026-04-28T00:00:00.000Z" },
   { id: "demo-n4", title: "2026-2 시즌 지원서 양식 초안", body: "다음 시즌 지원서 문항 초안입니다. 검토 부탁드립니다.", published: false, published_at: null, created_by: "demo-m2", created_at: "2026-07-08T00:00:00.000Z" },

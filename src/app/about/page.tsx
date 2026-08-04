@@ -4,12 +4,12 @@ import { JsonLd, breadcrumb } from "@/components/JsonLd";
 export const metadata = {
   title: "소개",
   description:
-    "GDG on Campus DJU는 함께 성장·실전 빌드·커뮤니티·오픈소스를 가치로 하는 대진대학교 개발자 동아리입니다. 정기세션·스터디·모각코·프로젝트로 활동해요.",
+    "GDGOC DJU는 함께 성장·실전 빌드·커뮤니티·오픈소스를 가치로 하는 대진대학교 개발자 동아리입니다. 정기세션·스터디·모각코·프로젝트로 활동해요.",
   alternates: { canonical: "/about" },
 };
 
 const HISTORY = [
-  { year: "2023", desc: "GDG on Campus DJU 창립" },
+  { year: "2023", desc: "GDGOC DJU 창립" },
   { year: "2024", desc: "첫 연합 해커톤 개최, 회원 50명 돌파" },
   { year: "2025", desc: "웹·안드로이드·AI 스터디 트랙 신설" },
   { year: "2026", desc: "회원 150명 돌파, 12개 프로젝트 진행 중" },
@@ -37,7 +37,7 @@ export default function AboutPage() {
       <div className="mx-auto max-w-2xl px-6 py-16">
         <h1 className="text-4xl font-extrabold tracking-tight">ABOUT</h1>
         <p className="mt-4 text-white/70 leading-relaxed">
-          GDG on Campus DJU는 대진대학교 학생 개발자들이 구글 기술을 함께 배우고,
+          GDGOC DJU는 대진대학교 학생 개발자들이 구글 기술을 함께 배우고,
           실제 서비스를 만들어보고, 서로의 성장을 돕는 커뮤니티입니다. 매주 스터디와
           코드리뷰, 정기 해커톤과 모각코를 통해 아이디어를 제품으로 완성하는 경험을
           제공합니다.
@@ -49,7 +49,7 @@ export default function AboutPage() {
         <p className="mt-4 text-white/70 leading-relaxed">
           GDG on Campus는 구글이 전 세계 대학생 개발자 커뮤니티를 지원하는
           프로그램이에요. 학생들이 캠퍼스 안에서 스스로 학습 문화를 만들고, 실전
-          프로젝트를 통해 성장할 수 있도록 돕습니다. GDG DJU는 대진대학교의 공식
+          프로젝트를 통해 성장할 수 있도록 돕습니다. GDGOC DJU는 대진대학교의 공식
           GDG on Campus 챕터입니다.
         </p>
 
