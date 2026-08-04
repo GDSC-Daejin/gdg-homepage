@@ -1,0 +1,1187 @@
+/* ── 도감 랭킹전 화면 ────────────────────────────────────────────
+   .rk 스코프 안에서만 동작한다. WDS는 라이트 전용이라 여기서 랭킹전 전용
+   토큰을 라이트/다크 두 벌로 정의한다. 원본 시안은 /ranking-preview 참고.
+
+   히어로(점수 패널)는 두 테마 모두 어둡게 둔다 — 게임 화면다운 인상이
+   시안의 핵심이라서다. 대신 다크에서는 본문과 붙어 보이지 않게 살짝 밝히고
+   테두리를 준다. */
+
+.rk {
+  --rk-page: 1240px;
+  --rk-font: "Pretendard JP", "Pretendard", "Pretendard Variable", -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --rk-bg: rgb(247, 247, 248);
+  --rk-card: rgb(255, 255, 255);
+  --rk-line: rgba(112, 115, 124, 0.16);
+  --rk-line-soft: rgba(112, 115, 124, 0.08);
+  --rk-text: rgb(23, 23, 23);
+  --rk-text-1: rgba(46, 47, 51, 0.88);
+  --rk-text-2: rgba(55, 56, 60, 0.61);
+  --rk-text-3: rgba(55, 56, 60, 0.28);
+  --rk-fill: rgba(112, 115, 124, 0.08);
+  --rk-fill-soft: rgba(112, 115, 124, 0.05);
+  --rk-fill-strong: rgba(112, 115, 124, 0.16);
+  --rk-primary: rgb(0, 102, 255);
+  --rk-primary-heavy: rgb(0, 84, 209);
+  --rk-primary-bg: rgb(234, 242, 254);
+  --rk-on-primary: rgb(255, 255, 255);
+  --rk-pos: rgb(0, 191, 64);
+  --rk-pos-fg: rgb(0, 150, 52);
+  --rk-neg: rgb(255, 66, 66);
+  --rk-neg-fg: rgb(226, 52, 52);
+  --rk-warn: rgb(255, 153, 0);
+  --rk-shadow: 0 1px 2px 0 rgba(23, 23, 23, 0.06), 0 0 1px 0 rgba(23, 23, 23, 0.07);
+
+  --rk-hero: rgb(27, 28, 30);
+  --rk-hero-line: transparent;
+  --rk-on-hero: rgb(247, 247, 248);
+  --rk-hero-primary: rgb(51, 133, 255);
+}
+
+/* 다크: 카드·본문은 어두운 표면으로, 강조색은 어두운 배경에서 읽히도록 밝힌다. */
+.dark .rk {
+  --rk-bg: rgb(16, 17, 19);
+  --rk-card: rgb(28, 29, 32);
+  --rk-line: rgba(255, 255, 255, 0.10);
+  --rk-line-soft: rgba(255, 255, 255, 0.06);
+  --rk-text: rgb(236, 237, 239);
+  --rk-text-1: rgba(236, 237, 239, 0.86);
+  --rk-text-2: rgba(236, 237, 239, 0.62);
+  --rk-text-3: rgba(236, 237, 239, 0.34);
+  --rk-fill: rgba(255, 255, 255, 0.06);
+  --rk-fill-soft: rgba(255, 255, 255, 0.04);
+  --rk-fill-strong: rgba(255, 255, 255, 0.14);
+  --rk-primary: rgb(77, 147, 255);
+  --rk-primary-heavy: rgb(140, 186, 255);
+  --rk-primary-bg: rgba(51, 133, 255, 0.16);
+  --rk-on-primary: rgb(9, 10, 12);
+  --rk-pos: rgb(62, 212, 124);
+  --rk-pos-fg: rgb(88, 222, 143);
+  --rk-neg: rgb(255, 122, 122);
+  --rk-neg-fg: rgb(255, 138, 138);
+  --rk-warn: rgb(255, 178, 66);
+  --rk-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+
+  /* 본문이 어두워지므로 히어로를 한 단계 밝히고 테두리로 경계를 만든다. */
+  --rk-hero: rgb(35, 37, 41);
+  --rk-hero-line: rgba(255, 255, 255, 0.09);
+}
+
+.rk {
+  min-height: 100dvh;
+  width: 100%;
+  max-width: calc(var(--rk-page) + 56px);
+  margin: 0 auto;
+  padding-bottom: 0;
+  overflow: clip;
+  background: var(--rk-bg);
+  color: var(--rk-text);
+  font-family: var(--rk-font);
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  border: 1px solid var(--rk-line);
+  border-radius: 20px;
+  box-shadow: 0 14px 36px rgba(23, 23, 23, 0.08);
+}
+
+.rk *,
+.rk *::before,
+.rk *::after {
+  box-sizing: border-box;
+}
+
+.rk button {
+  font-family: inherit;
+}
+
+.rk-inner {
+  max-width: var(--rk-page);
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* ── 상단 바 (데스크톱) ── */
+
+.rk-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--rk-hero);
+  height: 58px;
+}
+
+.rk-topbar > .rk-inner {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.rk-brand {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--rk-on-hero);
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.rk-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.rk-tab {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 7px 13px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(247, 247, 248, 0.5);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rk-tab:hover {
+  color: var(--rk-on-hero);
+}
+
+.rk-tab[aria-current="page"] {
+  color: var(--rk-on-hero);
+  background: rgba(51, 133, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(51, 133, 255, 0.45);
+}
+
+.rk-scorechip {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(247, 247, 248, 0.08);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
+.rk-mutedark {
+  font-size: 12px;
+  color: rgba(247, 247, 248, 0.5);
+}
+
+/* ── 하단 탭 (모바일) ── */
+
+.rk-bottomnav {
+  display: none;
+}
+
+/* ── 본문 ── */
+
+.rk-page {
+  padding: 28px 0 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.rk-pagehead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.rk-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.rk-lede {
+  font-size: 13.5px;
+  color: var(--rk-text-2);
+  line-height: 1.55;
+  margin: 6px 0 0;
+}
+
+.rk-sectionhead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rk-sectiontitle {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.rk-sectionnote {
+  font-size: 12.5px;
+  color: var(--rk-text-2);
+}
+
+.rk-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rk-rule {
+  height: 1px;
+  background: var(--rk-line-soft);
+}
+
+/* ── 카드 ── */
+
+.rk-card {
+  background: var(--rk-card);
+  border: 1px solid var(--rk-line);
+  border-radius: 16px;
+  box-shadow: var(--rk-shadow);
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rk-card--accent {
+  border-color: rgba(0, 102, 255, 0.3);
+}
+
+.rk-card--warn {
+  border-color: rgba(255, 153, 0, 0.35);
+}
+
+.rk-card--flush {
+  padding: 8px 24px 12px;
+}
+
+/* 홈 하단의 "할 일" 카드 — 데스크톱은 한 줄, 모바일은 세로로 접힌다. */
+.rk-actioncard {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  flex-wrap: wrap;
+}
+
+/* 공격 화면 상단의 "내 공격 덱" 요약 줄. */
+.rk-deckbar {
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 22px;
+  flex-wrap: wrap;
+}
+
+.rk-cardhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rk-decktabs {
+  width: 180px;
+  flex: none;
+}
+
+.rk-cardtitle {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.rk-cardsub {
+  font-size: 12px;
+  color: var(--rk-text-2);
+  margin: 3px 0 0;
+}
+
+/* ── 그리드 ── */
+
+.rk-grid2,
+.rk-grid3,
+.rk-grid6 {
+  display: grid;
+  gap: 16px;
+}
+
+.rk-grid2 { grid-template-columns: 1fr 1fr; }
+.rk-grid3 { grid-template-columns: repeat(3, 1fr); }
+.rk-grid6 { grid-template-columns: repeat(6, 1fr); gap: 12px; }
+
+/* 덱 슬롯 3칸은 모바일에서도 가로로 유지한다 — 파티는 한 줄로 봐야 읽힌다. */
+.rk-slots {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.rk-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 16px;
+  align-items: start;
+}
+
+.rk-split--log {
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: stretch;
+}
+
+.rk-split--deck {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}
+
+.rk-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── 홈 히어로 (4a) ── */
+
+.rk-hero {
+  background: var(--rk-hero);
+  border-block: 1px solid var(--rk-hero-line);
+  background-image: radial-gradient(rgba(247, 247, 248, 0.07) 1px, transparent 1px);
+  background-size: 18px 18px;
+  color: var(--rk-on-hero);
+}
+
+.rk-hero > .rk-inner {
+  padding-top: 26px;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 300px;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.rk-heroscore {
+  font-size: 60px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-tierchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background: rgba(255, 153, 0, 0.16);
+  border: 1px solid rgba(255, 153, 0, 0.35);
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffb84d;
+  letter-spacing: -0.01em;
+}
+
+.rk-attackbox {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(247, 247, 248, 0.06);
+}
+
+.rk-party {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+  padding-bottom: 22px;
+}
+
+.rk-partyrow {
+  display: flex;
+  align-items: flex-end;
+  gap: 26px;
+}
+
+.rk-partyslot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.rk-stage {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.rk-stage::before {
+  content: "";
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 68px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  filter: blur(5px);
+}
+
+.rk-stage img {
+  position: relative;
+  animation: rk-float 3.2s ease-in-out infinite;
+}
+
+.rk-partyslot:nth-child(2) .rk-stage img { animation-delay: -1.1s; }
+.rk-partyslot:nth-child(3) .rk-stage img { animation-delay: -2.2s; }
+
+@keyframes rk-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.rk-nameplate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: rgba(247, 247, 248, 0.07);
+  border: 1px solid rgba(247, 247, 248, 0.1);
+}
+
+.rk-todaycard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  margin-bottom: 28px;
+  border-radius: 16px;
+  background: rgba(51, 133, 255, 0.12);
+  border: 1px solid rgba(51, 133, 255, 0.3);
+}
+
+.rk-todayface {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 4px 9px;
+  border-radius: 12px;
+  background: rgba(27, 28, 30, 0.45);
+}
+
+/* ── 시즌 여정 ── */
+
+.rk-journey {
+  position: relative;
+  height: 96px;
+  margin: 0 44px;
+}
+
+.rk-journey-track,
+.rk-journey-fill {
+  position: absolute;
+  top: 60px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.rk-journey-track {
+  left: 0;
+  right: 0;
+  background: var(--rk-fill);
+}
+
+.rk-journey-fill {
+  left: 0;
+  background: var(--rk-primary);
+}
+
+.rk-journey-step {
+  position: absolute;
+  top: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transform: translateX(-50%);
+}
+
+/* 양 끝 눈금은 트랙 밖으로 삐져나가지 않게 안쪽으로 당긴다. */
+.rk-journey-step:first-of-type { transform: translateX(-35%); }
+.rk-journey-step:last-of-type { transform: translateX(-65%); }
+
+.rk-journey-me {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transform: translateX(-50%);
+}
+
+.rk-journey-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── 덱 슬롯 ── */
+
+.rk-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 16px 6px 12px;
+  border-radius: 12px;
+  background: var(--rk-primary-bg);
+  border: 1px solid rgba(0, 102, 255, 0.2);
+  cursor: pointer;
+  text-align: center;
+}
+
+.rk-slot--empty {
+  background: var(--rk-fill-soft);
+  border: 1px dashed rgba(112, 115, 124, 0.28);
+  color: var(--rk-text-3);
+  justify-content: center;
+  min-height: 106px;
+  cursor: default;
+}
+
+.rk-order {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--rk-primary);
+  color: var(--rk-on-primary);
+  font-size: 10.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rk-pick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 8px 13px;
+  background: var(--rk-card);
+  border: 1px solid var(--rk-line);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease;
+}
+
+.rk-pick:hover {
+  border-color: var(--rk-line);
+}
+
+.rk-pick[aria-pressed="true"] {
+  border-color: var(--rk-primary);
+  box-shadow: inset 0 0 0 1px var(--rk-primary);
+  background: rgba(0, 102, 255, 0.04);
+}
+
+.rk-pick .rk-order {
+  left: auto;
+  right: 8px;
+}
+
+/* ── 상대 카드 ── */
+
+.rk-oppcard {
+  background: var(--rk-card);
+  border: 1px solid var(--rk-line);
+  border-radius: 16px;
+  box-shadow: var(--rk-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rk-oppstrip {
+  padding: 9px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.rk-oppbody {
+  padding: 20px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  flex: 1;
+}
+
+.rk-oppslot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 78px;
+  border-radius: 12px;
+  background: var(--rk-bg);
+  border: 1px solid var(--rk-line-soft);
+}
+
+.rk-oppslot--hidden {
+  background: var(--rk-fill-soft);
+  border: 1px dashed rgba(112, 115, 124, 0.28);
+  color: var(--rk-text-3);
+}
+
+.rk-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--rk-fill);
+  overflow: hidden;
+}
+
+.rk-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+/* ── 목록 행 ── */
+
+.rk-logrow {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) 90px auto;
+  gap: 18px;
+  align-items: center;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--rk-line-soft);
+}
+
+.rk-logrow:last-child {
+  border-bottom: 0;
+}
+
+.rk-chip {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.rk-kindchip {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.rk-rankrow {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--rk-fill-soft);
+}
+
+.rk-rankrow--me {
+  background: var(--rk-primary-bg);
+  border: 1px solid rgba(0, 102, 255, 0.22);
+  color: var(--rk-primary-heavy);
+}
+
+.rk-rankrow--plain {
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  background: transparent;
+  border-radius: 0;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--rk-line-soft);
+}
+
+.rk-feedrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+}
+
+.rk-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rk-num {
+  font-variant-numeric: tabular-nums;
+}
+
+.rk-statrow {
+  background: var(--rk-card);
+  border: 1px solid var(--rk-line);
+  border-radius: 14px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* 모바일 전용 묶음. 자식(카드·버튼)이 각자의 display를 지키도록 래퍼로만 쓴다. */
+.rk-onlymobile {
+  display: none;
+}
+
+/* ── 모바일 ─────────────────────────────────────────────── */
+
+@media (max-width: 1023px) {
+  .rk {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .rk-inner {
+    padding: 0 16px;
+  }
+
+  .rk-topbar {
+    position: static;
+    height: auto;
+  }
+
+  .rk-topbar > .rk-inner {
+    height: auto;
+    padding-top: 14px;
+    padding-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .rk-tabs {
+    display: none;
+  }
+
+  .rk-onlymobile {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .rk-desktoponly {
+    display: none !important;
+  }
+
+  .rk-page {
+    padding: 16px 0 24px;
+    gap: 20px;
+  }
+
+  .rk-title {
+    font-size: 22px;
+    letter-spacing: -0.035em;
+  }
+
+  .rk-sectiontitle {
+    font-size: 16px;
+  }
+
+  .rk-card {
+    padding: 16px;
+    border-radius: 14px;
+    gap: 12px;
+  }
+
+  .rk-card--flush {
+    padding: 4px 14px 8px;
+  }
+
+  .rk-actioncard {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .rk-actioncard > :last-child {
+    align-self: flex-start;
+  }
+
+  .rk-deckbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .rk-deckbar > :last-child {
+    align-self: flex-start;
+  }
+
+  .rk-cardhead {
+    flex-wrap: wrap;
+  }
+
+  .rk-decktabs {
+    width: 100%;
+  }
+
+
+  .rk-grid2,
+  .rk-grid3,
+  .rk-split,
+  .rk-split--log,
+  .rk-split--deck {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .rk-grid6 {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .rk-hero > .rk-inner {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 4px;
+    padding-bottom: 18px;
+    gap: 16px;
+  }
+
+  .rk-heroscore {
+    font-size: 44px;
+  }
+
+  .rk-party {
+    padding-bottom: 0;
+  }
+
+  .rk-partyrow {
+    gap: 12px;
+  }
+
+  .rk-stage {
+    width: 78px;
+    height: 78px;
+  }
+
+  .rk-stage::before {
+    width: 50px;
+    height: 10px;
+    bottom: 9px;
+  }
+
+  .rk-nameplate {
+    padding: 6px 10px;
+  }
+
+  .rk-todaycard {
+    margin-bottom: 0;
+  }
+
+  .rk-attackbox {
+    margin-top: 0;
+  }
+
+  .rk-journey {
+    height: 58px;
+    margin: 0 24px;
+  }
+
+  .rk-journey-track,
+  .rk-journey-fill {
+    top: 40px;
+    height: 8px;
+  }
+
+  .rk-journey-step {
+    top: 34px;
+    gap: 4px;
+  }
+
+  .rk-journey-step span:last-child {
+    font-size: 9.5px;
+  }
+
+  .rk-journey-dot {
+    width: 20px;
+    height: 20px;
+  }
+
+  .rk-logrow {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 11px 0;
+  }
+
+  .rk-rankrow {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .rk-rankrow--plain {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+  }
+
+  .rk-bottomnav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--rk-card);
+    border-top: 1px solid var(--rk-line-soft);
+    padding: 6px 0 calc(10px + env(safe-area-inset-bottom));
+  }
+
+  .rk-bottomnav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 0;
+    border: 0;
+    background: transparent;
+    color: var(--rk-text-3);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .rk-bottomnav a[aria-current="page"] {
+    color: var(--rk-primary);
+    font-weight: 700;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-stage img {
+    animation: none;
+  }
+}
+
+/* ── 배지 · 링크 · 버튼 ─────────────────────────────────────── */
+
+.rk-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--rk-fill);
+  color: var(--rk-text-1);
+}
+
+.rk-badge--primary { background: var(--rk-primary-bg); color: var(--rk-primary-heavy); }
+.rk-badge--pos { background: rgba(0, 191, 64, 0.14); color: var(--rk-pos-fg); }
+.rk-badge--neg { background: rgba(255, 66, 66, 0.14); color: var(--rk-neg-fg); }
+.rk-badge--warn { background: rgba(255, 153, 0, 0.16); color: rgb(190, 110, 0); }
+
+.dark .rk-badge--warn { color: var(--rk-warn); }
+
+.rk-link {
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rk-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.rk-link:hover { text-decoration: underline; }
+
+/* 히어로 위의 링크는 어두운 배경 기준으로 색을 잡는다. */
+.rk-herolink {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--rk-hero-primary);
+  text-decoration: none;
+}
+
+.rk-herolink:hover { text-decoration: underline; }
+
+.rk-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  border-radius: 10px;
+  background: var(--rk-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.rk-cta:hover { background: var(--rk-primary-heavy); }
+
+.rk-cta[aria-disabled="true"] {
+  background: rgba(247, 247, 248, 0.12);
+  color: rgba(247, 247, 248, 0.45);
+  pointer-events: none;
+}
+
+.rk-morebtn {
+  width: 100%;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--rk-text-1);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rk-morebtn:hover { background: var(--rk-fill); }
+
+/* ── 버튼 · 세그먼트 · 프리셋 칩 ─────────────────────────────── */
+
+.rk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rk-btn:disabled { cursor: default; opacity: 0.45; }
+
+.rk-btn--solid { background: var(--rk-primary); color: #fff; }
+.rk-btn--solid:not(:disabled):hover { background: var(--rk-primary-heavy); }
+
+.rk-btn--outline {
+  background: var(--rk-card);
+  color: var(--rk-text-1);
+  box-shadow: inset 0 0 0 1px var(--rk-line);
+}
+
+.rk-btn--outline:not(:disabled):hover { background: var(--rk-fill); }
+
+.rk-btn--block { width: 100%; height: 44px; font-size: 14px; }
+
+.rk-segment {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--rk-fill);
+}
+
+.rk-segment button {
+  min-width: 68px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--rk-text-2);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rk-segment button[aria-pressed="true"] {
+  background: var(--rk-card);
+  color: var(--rk-text);
+  box-shadow: var(--rk-shadow);
+}
+
+.rk-slotchip {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--rk-card);
+  box-shadow: inset 0 0 0 1px var(--rk-line);
+  color: var(--rk-text-1);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rk-slotchip.is-on {
+  background: var(--rk-primary);
+  box-shadow: none;
+  color: #fff;
+}
+
+.rk-slot:disabled { cursor: default; }
+
+button.rk-link {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+
+button.rk-link:disabled { opacity: 0.45; cursor: default; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

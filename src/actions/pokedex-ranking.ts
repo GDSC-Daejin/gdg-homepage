@@ -45,6 +45,15 @@ export async function activateRankingDefense(slot: number): Promise<ActionResult
   return {};
 }
 
+export async function activateRankingAttack(slot: number): Promise<ActionResult> {
+  const supabase = await rankingClient();
+  if (!supabase) return { error: "데모에서는 공격 덱을 활성화할 수 없어요" };
+  const { error } = await supabase.rpc("pokedex_rank_activate_attack", { p_slot: slot });
+  if (error) return { error: toKoreanError(error) };
+  refresh();
+  return {};
+}
+
 export async function rerollRankingOpponents(): Promise<ActionResult> {
   const supabase = await rankingClient();
   if (!supabase) return { error: "데모에서는 상대를 리롤할 수 없어요" };
