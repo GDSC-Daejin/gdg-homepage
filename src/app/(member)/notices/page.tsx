@@ -25,7 +25,7 @@ export default async function MemberNoticesPage() {
           {list.map((notice) => (
             <details
               key={notice.id}
-              className="group rounded-xl border border-gray-200 bg-white shadow-card"
+              className="group rounded-xl border border-gray-200 bg-white shadow-card dark:bg-gray-100"
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-6 [&::-webkit-details-marker]:hidden">
                 <span className="min-w-0">

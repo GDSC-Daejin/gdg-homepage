@@ -30,6 +30,7 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
         .from("profiles")
         .select("id, name, nickname")
         .in("role", ["organizer", "team_member", "member"])
+        .eq("status", "active")
         .not("approved_at", "is", null)
         .order("name"),
     ]);

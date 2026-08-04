@@ -20,6 +20,16 @@ export function togglePollDate(dates: string[], dateKey: string): string[] {
   return dates.length >= MAX_POLL_DAYS ? dates : [...dates, dateKey];
 }
 
+export function setPollDateSelection(dates: string[], dateKeys: string[], selected: boolean): string[] {
+  const next = new Set(dates);
+  for (const dateKey of dateKeys) {
+    if (selected && next.size >= MAX_POLL_DAYS && !next.has(dateKey)) break;
+    if (selected) next.add(dateKey);
+    else next.delete(dateKey);
+  }
+  return [...next];
+}
+
 export function addPollDraftPerson(
   people: PollDraftPerson[],
   value: string,
@@ -28,10 +38,9 @@ export function addPollDraftPerson(
   const name = value.trim();
   if (!name) return people;
   const member = staff.find((person) => person.name === name && !people.some((picked) => picked.userId === person.id));
-  const email = name.includes("@") ? name : null;
-  return [...people, member ? { key: member.id, participantId: null, name: member.name, userId: member.id, email: null } : {
-    key: `guest-${name}-${people.length}`, participantId: null, name: email ? name.split("@")[0] : name, userId: null, email,
-  }];
+  return member
+    ? [...people, { key: member.id, participantId: null, name: member.name, userId: member.id, email: null }]
+    : people;
 }
 
 export function dueAtEnd(dateKey: string): string {

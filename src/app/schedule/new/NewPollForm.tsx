@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMeetingPoll, updateMeetingPoll } from "@/actions/meeting-poll";
 import { Avatar } from "@/components/wds/Avatar";
@@ -21,12 +21,11 @@ import {
   AVATAR_COLORS,
   dateWithWeekday,
   pollTimes,
-  shortDate,
   SLOT_UNITS,
   suggestPollTitle,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
-import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, togglePollDate, type PollDraftPerson } from "./poll-draft";
+import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, setPollDateSelection, togglePollDate, type PollDraftPerson } from "./poll-draft";
 
 export interface MemberOption {
   id: string;
@@ -43,8 +42,8 @@ export interface EditableParticipant {
 }
 
 const RANGE_PRESETS = [
-  { key: "evening", label: "저녁 18~24시", start: 18, end: 24 },
   { key: "work", label: "업무시간 9~18시", start: 9, end: 18 },
+  { key: "evening", label: "저녁 18~24시", start: 18, end: 24 },
   { key: "allday", label: "하루 종일", start: 0, end: 24 },
 ] as const;
 
@@ -68,8 +67,8 @@ export function NewPollForm({
   // 제목은 날짜에서 지어 미리 채워 둔다(원본도 값이 들어가 있다). 한 번 손대면 따라가지 않는다.
   const [typedTitle, setTypedTitle] = useState<string | null>(edit?.poll.title ?? null);
   const [dates, setDates] = useState<string[]>(() => edit?.poll.dates ?? defaultPollDates(today));
-  const [startHour, setStartHour] = useState(edit?.poll.start_hour ?? 18);
-  const [endHour, setEndHour] = useState(edit?.poll.end_hour ?? 24);
+  const [startHour, setStartHour] = useState(edit?.poll.start_hour ?? 9);
+  const [endHour, setEndHour] = useState(edit?.poll.end_hour ?? 23);
   const [slotMin, setSlotMin] = useState<number>(edit?.poll.slot_min ?? 30);
   const [people, setPeople] = useState<Picked[]>(() =>
     edit
@@ -90,6 +89,7 @@ export function NewPollForm({
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [pending, setPending] = useState(false);
+  const [dragMode, setDragMode] = useState<boolean | null>(null);
 
   const sorted = useMemo(() => [...dates].sort(), [dates]);
   const times = useMemo(
@@ -101,6 +101,12 @@ export function NewPollForm({
     : "";
   const title = typedTitle ?? suggestion;
   const activePreset = RANGE_PRESETS.find((p) => p.start === startHour && p.end === endHour);
+  const memberSuggestions = useMemo(
+    () => members.filter((member) =>
+      !people.some((person) => person.userId === member.id) && member.name.includes(draftName.trim()),
+    ),
+    [draftName, members, people],
+  );
   const inviteUrl = `${inviteOrigin}/j/${edit?.poll.invite_token ?? inviteToken}`;
   // 원본의 "6명 이상 응답하면" = 초대 7명의 80%. 같은 식으로 문턱을 잡는다.
   const recommendGate = Math.max(2, Math.ceil(people.length * 0.8));
@@ -113,6 +119,16 @@ export function NewPollForm({
   function toggleDate(dateKey: string) {
     setDates((prev) => togglePollDate(prev, dateKey));
   }
+
+  function selectDraggedDate(dateKey: string, selected: boolean) {
+    setDates((prev) => setPollDateSelection(prev, [dateKey], selected));
+  }
+
+  useEffect(() => {
+    const endDrag = () => setDragMode(null);
+    window.addEventListener("pointerup", endDrag);
+    return () => window.removeEventListener("pointerup", endDrag);
+  }, []);
 
   function addPerson() {
     const value = draftName.trim();
@@ -137,7 +153,6 @@ export function NewPollForm({
       notifyBeforeDue,
       isMojisoop,
       memberIds: people.filter((p) => p.userId).map((p) => p.userId as string),
-      guests: people.filter((p) => !p.userId).map((p) => ({ name: p.name, email: p.email })),
     };
     const request = edit
       ? updateMeetingPoll(edit.poll.id, {
@@ -184,7 +199,7 @@ export function NewPollForm({
         >
           {edit
             ? "후보를 바꾸면 새 시간에도 유효한 응답만 유지해요."
-            : "날짜와 시간 범위만 정하면 돼요. 나머지는 참여자가 칠해줄 거예요."}
+            : "날짜와 시간 범위만 정하면돼요. 나머지는 참여자가 스스로 응답해요."}
         </p>
       </div>
 
@@ -215,7 +230,6 @@ export function NewPollForm({
                 // 지우고 Tab을 누르면 날짜에서 지은 제목으로 되돌린다.
                 if (e.key === "Tab" && !e.shiftKey && !title) setTypedTitle(null);
               }}
-              message="참여자에게 이렇게 보여요"
             />
 
             <div style={{ height: 1, background: "var(--wds-line-alternative)" }} />
@@ -226,16 +240,6 @@ export function NewPollForm({
                 <span style={{ font: "600 15px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
                   날짜 고르기
                 </span>
-                <span
-                  style={{
-                    font: "500 13px/1.4 var(--wds-font-sans)",
-                    color: "var(--wds-primary-strong)",
-                  }}
-                >
-                  {sorted.length}일 선택됨
-                  {sorted.length > 0 &&
-                    ` · ${shortDate(sorted[0])} ~ ${shortDate(sorted[sorted.length - 1])}`}
-                </span>
               </div>
               <div className={styles.monthGrid}>
                 {months.map((month) => (
@@ -244,6 +248,14 @@ export function NewPollForm({
                     month={month}
                     selected={dates}
                     onToggle={toggleDate}
+                    dragMode={dragMode}
+                    onPointerDown={(dateKey, selected) => {
+                      setDragMode(selected);
+                      selectDraggedDate(dateKey, selected);
+                    }}
+                    onPointerEnter={(dateKey) => {
+                      if (dragMode !== null) selectDraggedDate(dateKey, dragMode);
+                    }}
                   />
                 ))}
               </div>
@@ -344,7 +356,7 @@ export function NewPollForm({
                   color: "var(--wds-label-alternative)",
                 }}
               >
-                이름만 있어도 초대할 수 있어요
+                활성 회원만 추가할 수 있어요
               </span>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -393,35 +405,86 @@ export function NewPollForm({
                 </span>
               ))}
               {adding ? (
-                <input
-                  list="schedule-members"
-                  autoFocus
-                  value={draftName}
-                  placeholder="이름 또는 이메일"
-                  onChange={(e) => setDraftName(e.target.value)}
-                  onBlur={addPerson}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      addPerson();
-                    }
-                    if (e.key === "Escape") {
-                      setDraftName("");
-                      setAdding(false);
-                    }
-                  }}
-                  style={{
-                    height: 34,
-                    padding: "0 14px",
-                    borderRadius: 999,
-                    border: "none",
-                    outline: "none",
-                    boxShadow: "inset 0 0 0 1px var(--wds-primary)",
-                    font: "500 14px/1 var(--wds-font-sans)",
-                    color: "var(--wds-label-normal)",
-                    minWidth: 180,
-                  }}
-                />
+                <div style={{ position: "relative", minWidth: 280 }}>
+                  <input
+                    autoFocus
+                    value={draftName}
+                    placeholder="회원 이름"
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onBlur={addPerson}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addPerson();
+                      }
+                      if (e.key === "Escape") {
+                        setDraftName("");
+                        setAdding(false);
+                      }
+                    }}
+                    style={{
+                      width: "100%",
+                      height: 48,
+                      padding: "0 16px",
+                      boxSizing: "border-box",
+                      borderRadius: 10,
+                      border: "none",
+                      outline: "none",
+                      boxShadow: "inset 0 0 0 1.5px var(--wds-primary)",
+                      font: "500 16px/1 var(--wds-font-sans)",
+                      color: "var(--wds-label-normal)",
+                    }}
+                  />
+                  {memberSuggestions.length > 0 && (
+                    <div
+                      role="listbox"
+                      aria-label="활성 회원"
+                      style={{
+                        position: "absolute",
+                        zIndex: 1,
+                        top: "calc(100% + 6px)",
+                        width: "100%",
+                        maxHeight: 240,
+                        overflowY: "auto",
+                        padding: 6,
+                        boxSizing: "border-box",
+                        borderRadius: 10,
+                        background: "var(--wds-bg)",
+                        boxShadow: "var(--wds-shadow-card)",
+                      }}
+                    >
+                      {memberSuggestions.map((member) => (
+                        <button
+                          key={member.id}
+                          type="button"
+                          role="option"
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            setPeople((prev) => addPollDraftPerson(prev, member.name, members));
+                            setDraftName("");
+                            setAdding(false);
+                          }}
+                          style={{
+                            display: "flex",
+                            width: "100%",
+                            height: 40,
+                            alignItems: "center",
+                            padding: "0 10px",
+                            border: "none",
+                            borderRadius: 6,
+                            background: "transparent",
+                            color: "var(--wds-label-normal)",
+                            cursor: "pointer",
+                            font: "500 15px/1 var(--wds-font-sans)",
+                            textAlign: "left",
+                          }}
+                        >
+                          {member.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <button
                   type="button"
@@ -441,13 +504,10 @@ export function NewPollForm({
                     cursor: "pointer",
                   }}
                 >
-                  + 이름 또는 이메일 추가
+                  + 회원 추가
                 </button>
               )}
             </div>
-            <datalist id="schedule-members">
-              {members.map((member) => <option key={member.id} value={member.name} />)}
-            </datalist>
             <div
               style={{
                 display: "flex",
@@ -498,19 +558,6 @@ export function NewPollForm({
               boxShadow: "var(--wds-shadow-card)",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <span style={{ font: "700 16px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
-                이렇게 보여요
-              </span>
-              <span
-                style={{
-                  font: "400 13px/1.5 var(--wds-font-sans)",
-                  color: "var(--wds-label-alternative)",
-                }}
-              >
-                {sorted.length}일 × {times.length}칸 · 참여자가 칠할 격자
-              </span>
-            </div>
             {sorted.length > 0 && times.length > 0 ? (
               <ScheduleGrid
                 dates={sorted}
@@ -578,13 +625,6 @@ export function NewPollForm({
               </div>
               <Switch checked={isMojisoop} onChange={setIsMojisoop} />
             </div>
-            <SelectBox
-              label="응답 마감"
-              value={dueValue}
-              placeholder="마감 없음"
-              options={dueOptions}
-              onChange={setDueAt}
-            />
             <div
               style={{
                 display: "flex",
@@ -617,6 +657,13 @@ export function NewPollForm({
                 onChange={setNotifyBeforeDue}
               />
             </div>
+            <SelectBox
+              label="응답 마감"
+              value={dueValue}
+              placeholder="마감 없음"
+              options={dueOptions}
+              onChange={setDueAt}
+            />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -653,10 +700,16 @@ function MonthPicker({
   month,
   selected,
   onToggle,
+  dragMode,
+  onPointerDown,
+  onPointerEnter,
 }: {
   month: string;
   selected: string[];
   onToggle: (dateKey: string) => void;
+  dragMode: boolean | null;
+  onPointerDown: (dateKey: string, selected: boolean) => void;
+  onPointerEnter: (dateKey: string) => void;
 }) {
   const grid = monthGrid(month);
   const [year, mon] = month.split("-").map(Number);
@@ -681,7 +734,7 @@ function MonthPicker({
       >
         {year}년 {mon}월
       </span>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", columnGap: 0, rowGap: 2 }}>
         {DOW.map((w) => (
           <span
             key={w}
@@ -697,15 +750,24 @@ function MonthPicker({
             {w}
           </span>
         ))}
-        {grid.map((dateKey) => {
+        {grid.map((dateKey, index) => {
           const inMonth = dateKey.startsWith(month);
           const on = selected.includes(dateKey);
+          const previousOn = grid[index - 1]?.startsWith(month) && selected.includes(grid[index - 1]);
+          const nextOn = grid[index + 1]?.startsWith(month) && selected.includes(grid[index + 1]);
           if (!inMonth) return <span key={dateKey} style={{ height: 28 }} />;
           return (
             <button
               key={dateKey}
               type="button"
               onClick={() => onToggle(dateKey)}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                onPointerDown(dateKey, !on);
+              }}
+              onPointerEnter={() => {
+                if (dragMode !== null) onPointerEnter(dateKey);
+              }}
               aria-pressed={on}
               aria-label={`${dateWithWeekday(dateKey)} ${on ? "선택 해제" : "선택"}`}
               style={{
@@ -714,7 +776,7 @@ function MonthPicker({
                 alignItems: "center",
                 justifyContent: "center",
                 border: "none",
-                borderRadius: 8,
+                borderRadius: `${previousOn ? 0 : 8}px ${nextOn ? 0 : 8}px ${nextOn ? 0 : 8}px ${previousOn ? 0 : 8}px`,
                 cursor: "pointer",
                 background: on ? "var(--wds-primary)" : "transparent",
                 color: on ? "#fff" : "var(--wds-label-neutral)",

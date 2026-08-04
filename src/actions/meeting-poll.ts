@@ -26,8 +26,6 @@ export interface NewPollInput extends MeetingPollInput {
   inviteToken: string;
   /** 우리 회원 참여자 (profiles.id) */
   memberIds: string[];
-  /** 이름만/이메일만 있는 참여자 */
-  guests: { name: string; email: string | null }[];
 }
 
 export interface UpdatePollInput extends MeetingPollInput {
@@ -45,15 +43,21 @@ export async function createMeetingPoll(
   if ("error" in prepared) return prepared;
   const pollInput = prepared.value;
 
-  const guests = input.guests
-    .map((g) => ({ name: g.name.trim(), email: g.email?.trim() || null }))
-    .filter((g) => g.name.length > 0);
   const memberIds = [...new Set(input.memberIds)];
-  if (memberIds.length + guests.length === 0) {
+  if (memberIds.length === 0) {
     return { error: "참여자를 한 명 이상 초대하세요" };
   }
 
   const supabase = await createClient();
+  const { data: members, error: memberError } = await supabase
+    .from("profiles")
+    .select("id, name, nickname, email")
+    .in("id", memberIds)
+    .in("role", ["organizer", "team_member", "member"])
+    .eq("status", "active");
+  if (memberError) return { error: toKoreanError(memberError) };
+  if ((members ?? []).length !== memberIds.length) return { error: "활성 회원만 참여자로 추가할 수 있어요" };
+
   const { data: poll, error } = await supabase
     .from("meeting_polls")
     .insert({
@@ -77,33 +81,17 @@ export async function createMeetingPoll(
   // 회원 참여자는 표시 이름을 profiles에서 굳혀 넣는다 — 나중에 닉네임이 바뀌어도
   // 이 폴의 아바타 색·이니셜이 흔들리지 않는다.
   let rows: { poll_id: string; user_id: string | null; name: string; email: string | null }[] = [];
-  if (memberIds.length > 0) {
-    const { data: members, error: memberError } = await supabase
-      .from("profiles")
-      .select("id, name, nickname, email")
-      .in("id", memberIds);
-    if (memberError) return { error: toKoreanError(memberError) };
-    rows = (members ?? []).map((m) => {
-      const person = m as { id: string; name: string; nickname: string; email: string | null };
-      return {
-        poll_id: pollId,
-        user_id: person.id,
-        name: person.nickname?.trim()
-          ? `${person.nickname}(${person.name})`
-          : person.name,
-        email: person.email ?? null,
-      };
-    });
-  }
-  rows.push(
-    ...guests.map((g) => ({
+  rows = (members ?? []).map((m) => {
+    const person = m as { id: string; name: string; nickname: string; email: string | null };
+    return {
       poll_id: pollId,
-      user_id: null,
-      name: g.name,
-      email: g.email,
-    })),
-  );
-
+      user_id: person.id,
+      name: person.nickname?.trim()
+        ? `${person.nickname}(${person.name})`
+        : person.name,
+      email: person.email ?? null,
+    };
+  });
   const { error: participantError } = await supabase
     .from("meeting_poll_participants")
     .insert(rows);
@@ -155,11 +143,7 @@ export async function updateMeetingPoll(
     participants.flatMap((p) => (p.user_id ? (memberIds.includes(p.user_id) ? [p.id] : []) : keptGuestIds.has(p.id) ? [p.id] : [])),
   );
   const newMemberIds = memberIds.filter((id) => !existingMemberIds.has(id));
-  const newGuests = input.participants
-    .filter((p) => !p.userId && !p.id)
-    .map((p) => ({ name: p.name.trim(), email: p.email?.trim() || null }))
-    .filter((p) => p.name);
-  if (memberIds.length + keptGuestIds.size + newGuests.length === 0) {
+  if (memberIds.length + keptGuestIds.size === 0) {
     return { error: "참여자를 한 명 이상 초대하세요" };
   }
   let newRows: { poll_id: string; user_id: string | null; name: string; email: string | null }[] = [];
@@ -167,7 +151,9 @@ export async function updateMeetingPoll(
     const { data: members, error } = await supabase
       .from("profiles")
       .select("id, name, nickname, email")
-      .in("id", newMemberIds);
+      .in("id", newMemberIds)
+      .in("role", ["organizer", "team_member", "member"])
+      .eq("status", "active");
     if (error) return { error: toKoreanError(error) };
     if ((members ?? []).length !== newMemberIds.length) {
       return { error: "참여자를 다시 선택해주세요" };
@@ -182,8 +168,6 @@ export async function updateMeetingPoll(
       };
     });
   }
-  newRows.push(...newGuests.map((p) => ({ poll_id: pollId, user_id: null, ...p })));
-
   const nextPoll = {
     dates: pollInput.dates,
     start_hour: pollInput.startHour,

@@ -19,6 +19,7 @@ export default async function NewSchedulePage() {
       .from("profiles")
       .select("id, name, nickname")
       .in("role", ["organizer", "team_member", "member"])
+      .eq("status", "active")
       .not("approved_at", "is", null)
       .order("name");
     members = ((data ?? []) as { id: string; name: string; nickname: string }[]).map((p) => ({

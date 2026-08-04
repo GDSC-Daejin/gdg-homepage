@@ -10,4 +10,10 @@ describe("회원 공지 목록", () => {
     expect(page).toContain("{notice.body}");
     expect(page).not.toContain("href={`/notices/${notice.id}`}");
   });
+
+  it("다크 모드에서 공지 카드 배경 토큰을 사용한다", async () => {
+    const page = await readFile("src/app/(member)/notices/page.tsx", "utf8");
+
+    expect(page).toContain("dark:bg-gray-100");
+  });
 });
