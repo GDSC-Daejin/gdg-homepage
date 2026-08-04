@@ -1,22 +1,16 @@
 import Link from "next/link";
+import { Avatar } from "@/components/Avatar";
 import { PublicHeader } from "@/components/PublicHeader";
 import { JsonLd, breadcrumb } from "@/components/JsonLd";
 import { POSITION_LABELS } from "@/lib/types";
+import { loadTeamMembers } from "./team-data";
 
 export const metadata = {
   title: "팀",
   description:
-    "GDG on Campus DJU 운영진을 소개합니다. 챕터 리드와 웹·AI·안드로이드·클라우드 트랙 코어 팀, 프론트엔드·백엔드·디자이너 파트로 활동해요.",
+    "GDG on Campus DJU 운영진을 소개합니다. 오거나이저와 팀 멤버가 프론트엔드·백엔드·디자이너 파트로 활동해요.",
   alternates: { canonical: "/team" },
 };
-
-const CHAPTER_LEAD = { name: "김도현", role: "회장 · 웹트랙", initials: "DH" };
-
-const CORE_TEAM = [
-  { name: "이서윤", role: "부회장 · AI트랙", initials: "SY" },
-  { name: "박준영", role: "운영진 · 안드로이드트랙", initials: "JY" },
-  { name: "최지아", role: "운영진 · 클라우드트랙", initials: "JA" },
-];
 
 const PARTS = [
   { key: "frontend", desc: "사용자가 만나는 화면을 세심하게 만들어요" },
@@ -25,28 +19,27 @@ const PARTS = [
 ] as const;
 
 function MemberCard({
-  name,
-  role,
-  initials,
+  nickname,
+  avatarPath,
 }: {
-  name: string;
-  role: string;
-  initials: string;
+  nickname: string;
+  avatarPath: string | null;
 }) {
   return (
     <div className="flex items-center gap-4">
-      <span className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-gradient-to-br from-[#4285F4] to-[#34A853] text-sm font-bold">
-        {initials}
-      </span>
-      <div>
-        <div className="font-bold">{name}</div>
-        <div className="text-sm text-white/60">{role}</div>
-      </div>
+      <Avatar
+        name={nickname}
+        avatarPath={avatarPath}
+        className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-gradient-to-br from-[#4285F4] to-[#34A853] text-sm font-bold"
+      />
+      <div className="font-bold">{nickname}</div>
     </div>
   );
 }
 
-export default function TeamPage() {
+export default async function TeamPage() {
+  const { organizers, teamMembers } = await loadTeamMembers();
+
   return (
     <div className="min-h-dvh bg-[#060608] text-white">
       <JsonLd data={breadcrumb("팀", "/team")} />
@@ -56,19 +49,23 @@ export default function TeamPage() {
         <p className="mt-4 text-white/70">GDG on Campus DJU 운영진입니다.</p>
 
         <h2 className="mt-14 text-sm font-bold tracking-widest text-white/40">
-          CHAPTER LEAD
-        </h2>
-        <div className="mt-4">
-          <MemberCard {...CHAPTER_LEAD} />
-        </div>
-
-        <h2 className="mt-14 text-sm font-bold tracking-widest text-white/40">
-          CORE TEAM
+          오거나이저
         </h2>
         <ul className="mt-4 space-y-4">
-          {CORE_TEAM.map((m) => (
-            <li key={m.name}>
-              <MemberCard {...m} />
+          {organizers.map((member) => (
+            <li key={member.id}>
+              <MemberCard {...member} />
+            </li>
+          ))}
+        </ul>
+
+        <h2 className="mt-14 text-sm font-bold tracking-widest text-white/40">
+          팀 멤버
+        </h2>
+        <ul className="mt-4 space-y-4">
+          {teamMembers.map((member) => (
+            <li key={member.id}>
+              <MemberCard {...member} />
             </li>
           ))}
         </ul>
