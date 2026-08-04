@@ -23,9 +23,12 @@ const roleLabel: Record<string, string> = {
 export function MemberShell({
   profile,
   children,
+  // 홈처럼 넓게 쓰는 화면만 폭을 늘린다. 나머지는 읽기 폭 1100 유지.
+  contentClassName = "max-w-[1100px]",
 }: {
   profile: Profile;
   children: React.ReactNode;
+  contentClassName?: string;
 }) {
   return (
     <ResponsiveShell
@@ -80,7 +83,7 @@ export function MemberShell({
         </>
       }
     >
-      <div className="mx-auto w-full max-w-[1100px]">{children}</div>
+      <div className={`mx-auto w-full ${contentClassName}`}>{children}</div>
     </ResponsiveShell>
   );
 }

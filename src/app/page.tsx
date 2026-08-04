@@ -1,3 +1,5 @@
+// WDS 토큰. globals.css의 @import는 Tailwind 파이프라인을 통과하지 못해 여기서 직접 싣는다.
+import "./wds.css";
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
@@ -64,25 +66,17 @@ async function AuthenticatedHome({
   const { month } = await searchParams;
 
   return (
-    <MemberShell profile={profile}>
-      <div className="flex flex-col gap-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-card dark:bg-gray-100 sm:gap-10 sm:p-8">
-        <header>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-            안녕하세요, {profile.name}님
-          </h1>
-        </header>
-        <Suspense fallback={<HomeDashboardSkeleton />}>
-          <HomeDashboard month={month} profileId={profile.id} />
-        </Suspense>
-      </div>
+    <MemberShell profile={profile} contentClassName="max-w-[1520px]">
+      <Suspense fallback={<HomeDashboardSkeleton />}>
+        <HomeDashboard month={month} name={profile.name} profileId={profile.id} />
+      </Suspense>
     </MemberShell>
   );
 }
 
 function HomeLoading() {
   return (
-    <main className="mx-auto w-full max-w-[1100px] px-4 py-6 sm:px-8 sm:py-8">
-      <div className="mb-8 h-9 w-56 animate-pulse rounded bg-gray-100 dark:bg-gray-100" />
+    <main className="mx-auto w-full max-w-[1520px] px-4 py-6 sm:px-8 sm:py-8">
       <HomeDashboardSkeleton />
     </main>
   );

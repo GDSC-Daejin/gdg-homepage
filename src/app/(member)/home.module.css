@@ -1,0 +1,659 @@
+/* ============================================================
+   홈 대시보드 — Claude Design "GDGoC 홈 리디자인" 2a
+   (벤토 그리드 · 무채색 기반 · 액센트 최소)
+   색은 전부 wds.css 토큰. 유채색은 히어로와 진행 중 표시 두 곳만 쓴다.
+   ============================================================ */
+
+.home {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 20px;
+  background: var(--wds-bg);
+  box-shadow: var(--wds-shadow-card);
+  font-family: var(--wds-font-sans);
+  color: var(--wds-label-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* WDS 원본에는 다크 값이 없다. 회원 화면의 테마 토글이 홈에서도 살아 있도록
+   .dark 아래에서만 토큰을 뒤집는다(원본 wds.css는 건드리지 않는다). */
+:global(.dark) .home {
+  --wds-bg: #1b1c1e;
+  --wds-bg-alt: #232427;
+  --wds-bg-elevated: #232427;
+  --wds-label-normal: rgb(246, 247, 249);
+  --wds-label-neutral: rgba(246, 247, 249, 0.88);
+  --wds-label-alternative: rgba(246, 247, 249, 0.6);
+  --wds-label-assistive: rgba(246, 247, 249, 0.34);
+  --wds-line-normal: rgba(160, 163, 172, 0.32);
+  --wds-line-neutral: rgba(160, 163, 172, 0.22);
+  --wds-line-alternative: rgba(160, 163, 172, 0.14);
+  --wds-fill-normal: rgba(160, 163, 172, 0.12);
+  --wds-fill-strong: rgba(160, 163, 172, 0.24);
+  --wds-inverse-bg: #2b2d31;
+  color-scheme: dark;
+}
+
+/* ---------------- 헤더 ---------------- */
+
+.head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.greeting {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.9px;
+  line-height: 1.2;
+  color: var(--wds-label-normal);
+}
+
+.sub {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  color: var(--wds-label-alternative);
+}
+
+/* ---------------- 배너(설문 등) ---------------- */
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--wds-fill-normal);
+  text-decoration: none;
+  color: var(--wds-label-normal);
+}
+
+.banner:hover {
+  background: var(--wds-fill-strong);
+}
+
+.bannerTag {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--wds-bg);
+  box-shadow: var(--wds-shadow-card);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--wds-label-neutral);
+}
+
+.bannerText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.chev {
+  flex: none;
+  color: var(--wds-label-assistive);
+}
+
+/* ---------------- 히어로 ---------------- */
+
+.hero {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  padding: 28px;
+  border-radius: 20px;
+  background: var(--wds-primary);
+  color: #fff;
+  text-decoration: none;
+}
+
+.hero:hover {
+  background: var(--wds-primary-strong);
+}
+
+.heroMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroTags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tagSolid,
+.tagOutline {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  padding: 4px 9px;
+  border-radius: 6px;
+}
+
+.tagSolid {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.tagOutline {
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.heroWhen {
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0.7;
+  margin-bottom: 6px;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.25;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 14px;
+  font-size: 13.5px;
+  opacity: 0.75;
+}
+
+.heroMetaItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.heroSide {
+  flex: none;
+  width: 200px;
+  padding: 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.heroSideLabel {
+  font-size: 12.5px;
+  opacity: 0.85;
+}
+
+.heroSideValue {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1.1;
+}
+
+.heroBar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.28);
+  margin: 12px 0 16px;
+  overflow: hidden;
+}
+
+.heroBarFill {
+  height: 6px;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.heroCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--wds-primary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.heroEmpty {
+  padding: 40px 28px;
+  border-radius: 20px;
+  background: var(--wds-bg-alt);
+  text-align: center;
+  color: var(--wds-label-alternative);
+  font-size: 14px;
+}
+
+/* ---------------- 벤토 그리드 ---------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* ---------------- 카드 공통 ---------------- */
+
+.card {
+  border-radius: 16px;
+  border: 1px solid var(--wds-line-neutral);
+  overflow: hidden;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 18px;
+}
+
+.cardHeadFilled {
+  background: var(--wds-bg-alt);
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--wds-label-normal);
+}
+
+.accent {
+  width: 4px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--wds-label-normal);
+}
+
+.accentMuted {
+  background: var(--wds-line-normal);
+}
+
+.cardMeta {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--wds-label-alternative);
+  white-space: nowrap;
+}
+
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 0 18px 16px;
+}
+
+.empty {
+  padding: 18px;
+  font-size: 13px;
+  color: var(--wds-label-alternative);
+}
+
+.emptyCta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 18px;
+}
+
+.emptyCtaTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--wds-label-normal);
+}
+
+.emptyCtaSub {
+  margin: 3px 0 0;
+  font-size: 12.5px;
+  color: var(--wds-label-alternative);
+}
+
+.emptyCtaButton {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--wds-fill-normal);
+  color: var(--wds-label-assistive);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: not-allowed;
+}
+
+/* ---------------- 스터디·프로젝트 ---------------- */
+
+.groupRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 18px;
+}
+
+.groupRow + .groupRow {
+  border-top: 1px solid var(--wds-line-alternative);
+}
+
+.groupBar {
+  flex: none;
+  width: 4px;
+  height: 38px;
+  border-radius: 2px;
+  background: var(--wds-primary);
+}
+
+.groupBarMuted {
+  background: var(--wds-line-normal);
+}
+
+.groupInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.groupTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--wds-label-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.groupSub {
+  font-size: 12.5px;
+  color: var(--wds-label-alternative);
+  margin-top: 2px;
+}
+
+.groupStatus {
+  flex: none;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--wds-label-neutral);
+}
+
+/* ---------------- 지난 이벤트 ---------------- */
+
+.pastRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.pastDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--wds-label-normal);
+}
+
+.pastDate {
+  flex: none;
+  width: 40px;
+  font-size: 12.5px;
+  color: var(--wds-label-alternative);
+}
+
+.pastTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  color: var(--wds-label-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pastCount {
+  flex: none;
+  font-size: 12px;
+  color: var(--wds-label-alternative);
+}
+
+/* ---------------- 내 활동(반전 카드) ---------------- */
+
+.activity {
+  border-radius: 16px;
+  padding: 18px 20px;
+  background: var(--wds-inverse-bg);
+  color: var(--wds-inverse-label);
+  text-decoration: none;
+  display: block;
+}
+
+.activityHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.activityLink {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.6;
+}
+
+.activityValue {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.activityNum {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -1.2px;
+  line-height: 1;
+}
+
+.activityUnit {
+  font-size: 15px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.activityDelta {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--wds-inverse-primary);
+}
+
+.activityFoot {
+  display: flex;
+  gap: 24px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.activityFootLabel {
+  font-size: 11.5px;
+  opacity: 0.6;
+}
+
+.activityFootValue {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ---------------- 리스트(공지·커뮤니티) ---------------- */
+
+.listItem {
+  display: block;
+  text-decoration: none;
+}
+
+.listTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--wds-label-normal);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listTitleLead {
+  font-weight: 700;
+}
+
+.listSub {
+  font-size: 11.5px;
+  color: var(--wds-label-alternative);
+  margin-top: 2px;
+}
+
+/* ---------------- 반응형 ---------------- */
+
+/* 넓은 화면에서는 여백만 늘리지 말고 글자·카드도 같이 키운다 */
+@media (min-width: 1280px) {
+  .home {
+    gap: 20px;
+    padding: 32px;
+  }
+
+  .greeting {
+    font-size: 34px;
+  }
+
+  .sub {
+    font-size: 14.5px;
+  }
+
+  .hero {
+    padding: 36px;
+    gap: 36px;
+  }
+
+  .heroTitle {
+    font-size: 38px;
+  }
+
+  .heroSide {
+    width: 240px;
+    padding: 24px;
+  }
+
+  .heroSideValue {
+    font-size: 46px;
+  }
+
+  .grid {
+    gap: 20px;
+  }
+
+  .col {
+    gap: 20px;
+  }
+
+  .cardHead {
+    padding: 17px 22px;
+  }
+
+  .cardBody {
+    padding: 0 22px 18px;
+  }
+
+  .cardTitle {
+    font-size: 16px;
+  }
+
+  .groupRow,
+  .emptyCta {
+    padding: 17px 22px;
+  }
+
+  .activity {
+    padding: 22px 24px;
+  }
+
+  .activityNum {
+    font-size: 44px;
+  }
+
+  .listTitle,
+  .pastTitle,
+  .groupTitle {
+    font-size: 14.5px;
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    padding: 22px;
+  }
+
+  .heroSide {
+    width: auto;
+  }
+
+  .heroTitle {
+    font-size: 26px;
+  }
+
+  .greeting {
+    font-size: 24px;
+  }
+
+  .home {
+    padding: 18px;
+  }
+}
+
+/* ---------------- 스켈레톤 ---------------- */
+
+.skeleton {
+  border-radius: 16px;
+  background: var(--wds-fill-normal);
+  animation: homePulse 1.4s ease-in-out infinite;
+}
+
+@keyframes homePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}

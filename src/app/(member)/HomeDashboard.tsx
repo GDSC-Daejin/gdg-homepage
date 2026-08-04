@@ -1,12 +1,17 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Card } from "@/components/Card";
-import { Badge } from "@/components/Badge";
-import { EmptyState } from "@/components/EmptyState";
 import { MonthFilter } from "@/components/MonthFilter";
-import { formatKst, formatMonthLabel, monthKst } from "@/lib/format";
+import {
+  dayKeyKst,
+  displayName,
+  formatKstTime,
+  formatMonthLabel,
+  formatRelativeKst,
+  monthKst,
+} from "@/lib/format";
 import { sumPointsInMonth } from "@/lib/points";
 import type { Event, EventType, Group, Notice } from "@/lib/types";
+import styles from "./home.module.css";
 
 const TYPE_LABELS: Record<EventType, string> = {
   session: "정기세션",
@@ -15,149 +20,101 @@ const TYPE_LABELS: Record<EventType, string> = {
   party: "파티",
 };
 
-const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"> = {
-  session: "primary",
-  study: "success",
-  mogakco: "warning",
-  party: "danger",
-};
-
 const GROUP_TYPE_LABELS = { study: "스터디", project: "프로젝트" } as const;
 const GROUP_STATUS_LABELS = { recruiting: "모집중", active: "진행중", archived: "종료" } as const;
-
-function CalendarIllustration() {
-  return (
-    <div
-      aria-hidden
-      className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary-soft sm:h-36 sm:w-36"
-    >
-      <div className="absolute h-20 w-20 rounded-full bg-primary/15 sm:h-24 sm:w-24" />
-      <svg
-        viewBox="0 0 96 96"
-        fill="none"
-        className="relative h-20 w-20 text-primary sm:h-24 sm:w-24"
-      >
-        <rect x="22" y="25" width="52" height="48" rx="7" fill="white" />
-        <path d="M22 34a7 7 0 0 1 7-7h38a7 7 0 0 1 7 7v9H22v-9Z" fill="currentColor" />
-        <path d="M35 19v15M61 19v15" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
-        <path d="M33 52h7M45 52h7M57 52h7M33 62h7M45 62h7" stroke="#D6E2FD" strokeWidth="6" strokeLinecap="round" />
-        <circle cx="70" cy="67" r="13" fill="currentColor" />
-        <path d="m64 67 4 4 8-9" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
-  );
-}
 
 // 종료 시각이 없으면 시작 시각을 종료로 본다
 function eventEnd(event: Event) {
   return new Date(event.ends_at ?? event.starts_at).getTime();
 }
 
-function isOngoing(event: Event) {
-  const now = Date.now();
-  return new Date(event.starts_at).getTime() <= now && now < eventEnd(event);
+/** "8월 12일 화요일 오후 7:00" — 히어로용 긴 표기 */
+function heroWhen(iso: string) {
+  const date = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  }).format(new Date(iso));
+  return `${date} ${formatKstTime(iso)}`;
 }
 
-function EventCard({
-  event,
-  confirmed,
-  featured = false,
-}: {
-  event: Event;
-  confirmed: number;
-  featured?: boolean;
-}) {
-  const ongoing = isOngoing(event);
+/** "7/23" — 지난 이벤트 줄용 짧은 표기 */
+function shortDate(iso: string) {
+  const [, m, d] = dayKeyKst(iso).split("-");
+  return `${Number(m)}/${d}`;
+}
+
+/** 시작까지 남은 일수 라벨. 이미 시작했으면 "진행 중". */
+function dDay(event: Event) {
+  const now = Date.now();
+  const start = new Date(event.starts_at).getTime();
+  if (start <= now) return now < eventEnd(event) ? "진행 중" : null;
+  const days = Math.ceil((start - now) / 86_400_000);
+  return days === 0 ? "D-DAY" : `D-${days}`;
+}
+
+function ChevronRight() {
   return (
-    <Link
-      href={`/events/${event.id}`}
-      className="block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-    >
-      <Card className="!shadow-none transition-shadow hover:shadow-sm">
-        {featured ? (
-          <div className="flex items-center gap-5 sm:gap-7">
-            <CalendarIllustration />
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
-                {ongoing && <Badge tone="success">진행중</Badge>}
-              </div>
-              <h3 className="mt-3 text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-                {event.title}
-              </h3>
-              <div className="mt-4 space-y-2 text-sm text-gray-500">
-                <p className="flex items-center gap-2">
-                  <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 shrink-0">
-                    <rect x="3" y="5" width="18" height="16" rx="2" />
-                    <path d="M7 3v4M17 3v4M3 10h18" />
-                  </svg>
-                  {formatKst(event.starts_at)}
-                </p>
-                {event.location && (
-                  <p className="flex items-center gap-2">
-                    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 shrink-0">
-                      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
-                      <circle cx="12" cy="10" r="2.5" />
-                    </svg>
-                    {event.location}
-                  </p>
-                )}
-                <p className="flex items-center gap-2">
-                  <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 shrink-0">
-                    <circle cx="9" cy="8" r="3" />
-                    <path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 0 1 0-6M18 20a5 5 0 0 0-2-4" />
-                  </svg>
-                  {confirmed}
-                  {event.capacity ? ` / ${event.capacity}` : ""}명 신청
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2">
-              <Badge tone={TYPE_TONES[event.type]}>{TYPE_LABELS[event.type]}</Badge>
-              {ongoing && <Badge tone="success">진행중</Badge>}
-              <h3 className="text-base font-semibold text-gray-900">{event.title}</h3>
-            </div>
-            <p className="mt-2 text-sm text-gray-500">{formatKst(event.starts_at)}</p>
-            {event.location && <p className="text-sm text-gray-500">{event.location}</p>}
-            <p className="mt-3 text-xs text-gray-400">
-              {confirmed}
-              {event.capacity ? ` / ${event.capacity}` : ""}명 신청
-            </p>
-          </>
-        )}
-      </Card>
-    </Link>
+    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" className={styles.chev}>
+      <path d="m9 6 6 6-6 6" />
+    </svg>
   );
+}
+
+function PinIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="16" height="16">
+      <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
+function PeopleIcon() {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="16" height="16">
+      <circle cx="9" cy="8" r="3" />
+      <path d="M3 20a6 6 0 0 1 12 0M16 11a3 3 0 0 1 0-6M18 20a5 5 0 0 0-2-4" />
+    </svg>
+  );
+}
+
+interface PostRow {
+  id: string;
+  title: string;
+  board: "free" | "qna";
+  created_at: string;
+  member_public: { name: string; nickname: string | null } | null;
 }
 
 export async function HomeDashboard({
   month,
+  name,
   profileId,
 }: {
   month?: string;
+  name: string;
   profileId: string;
 }) {
   const supabase = await createClient();
 
   // 서로 의존 없는 쿼리는 한 번에 병렬 실행 (서버 워터폴 제거)
   const [
-    { data: latestNotice },
+    { data: noticeRows },
     { data: openSurveys },
     { data: myResponses },
     { data: pointLogs },
     { data: groupMembers },
     { data: events },
+    { data: postRows },
   ] = await Promise.all([
     supabase
       .from("notices")
-      .select("id, title")
+      .select("id, title, published_at")
       .eq("published", true)
       .order("published_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(3),
     supabase
       .from("surveys")
       .select("id, title")
@@ -167,6 +124,11 @@ export async function HomeDashboard({
     supabase.from("point_logs").select("amount, created_at").eq("user_id", profileId),
     supabase.from("group_members").select("group_id").eq("user_id", profileId),
     supabase.from("events").select("*").order("starts_at", { ascending: false }),
+    supabase
+      .from("posts")
+      .select("id, title, board, created_at, member_public(name, nickname)")
+      .order("created_at", { ascending: false })
+      .limit(3),
   ]);
 
   const list = (events ?? []) as Event[];
@@ -191,10 +153,10 @@ export async function HomeDashboard({
 
   const respondedIds = new Set((myResponses ?? []).map((response) => response.survey_id));
   const unanswered = (openSurveys ?? []).filter((survey) => !respondedIds.has(survey.id));
-  const monthPoints = sumPointsInMonth(
-    (pointLogs ?? []) as { amount: number; created_at: string }[],
-    monthKst(new Date().toISOString()),
-  );
+
+  const logs = (pointLogs ?? []) as { amount: number; created_at: string }[];
+  const monthPoints = sumPointsInMonth(logs, monthKst(new Date().toISOString()));
+  const totalPoints = logs.reduce((sum, log) => sum + log.amount, 0);
 
   const now = Date.now();
   const upcoming = list.filter((e) => eventEnd(e) >= now).reverse();
@@ -216,196 +178,247 @@ export async function HomeDashboard({
     ...pastMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
   ];
 
-  const notice = latestNotice as Pick<Notice, "id" | "title"> | null;
+  const notices = (noticeRows ?? []) as Pick<Notice, "id" | "title" | "published_at">[];
+  const posts = (postRows as unknown as PostRow[] | null) ?? [];
+
+  const hero = upcoming[0];
+  const heroConfirmed = hero ? (counts[hero.id] ?? 0) : 0;
+  const heroLeft = hero?.capacity ? Math.max(0, hero.capacity - heroConfirmed) : null;
+  const heroBadge = hero ? dDay(hero) : null;
 
   return (
-    <>
-      {notice && (
-        <Link
-          href={`/notices/${notice.id}`}
-          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 transition-shadow hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary dark:bg-gray-100"
-        >
-          <Badge tone="primary">공지</Badge>
-          <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
-            {notice.title}
+    <div className={`wds-surface ${styles.home}`}>
+      <header className={styles.head}>
+        <div>
+          <h1 className={styles.greeting}>안녕하세요, {name}님</h1>
+          <p className={styles.sub}>
+            {upcoming.length > 0
+              ? `다가오는 이벤트 ${upcoming.length}개 · 이번 달 ${monthPoints}P 적립`
+              : `이번 달 ${monthPoints}P 적립`}
           </p>
-          <span aria-hidden className="text-2xl leading-none text-gray-400 transition-transform group-hover:translate-x-0.5">
-            ›
-          </span>
-        </Link>
-      )}
+        </div>
+      </header>
+
       {unanswered.length > 0 && (
-        <Link
-          href="/surveys"
-          className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-5 py-4 transition-shadow hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-warning dark:bg-gray-100"
-        >
-          <Badge tone="warning">설문</Badge>
-          <p className="min-w-0 flex-1 truncate text-sm font-medium text-gray-900">
+        <Link href="/surveys" className={styles.banner}>
+          <span className={styles.bannerTag}>설문</span>
+          <span className={styles.bannerText}>
             응답을 기다리는 설문 {unanswered.length}개 — {unanswered[0].title}
-          </p>
-          <span aria-hidden className="text-2xl leading-none text-gray-400 transition-transform group-hover:translate-x-0.5">
-            ›
           </span>
+          <ChevronRight />
         </Link>
       )}
 
-      <section>
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <h2 className="text-xl font-bold tracking-tight text-gray-900">
-            다가오는 이벤트
-          </h2>
-          {upcoming.length > 1 && (
-            <span className="text-xs text-gray-500">
-              {upcoming.length}개 예정
-            </span>
-          )}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(260px,0.55fr)]">
-          {upcoming.length === 0 ? (
-            <EmptyState title="예정된 이벤트가 없어요" className="!shadow-none" />
-          ) : (
-            <div className="flex flex-col gap-3">
-              <EventCard
-                event={upcoming[0]}
-                confirmed={counts[upcoming[0].id] ?? 0}
-                featured
-              />
-              {upcoming.length > 1 && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {upcoming.slice(1).map((event) => (
-                    <EventCard
-                      key={event.id}
-                      event={event}
-                      confirmed={counts[event.id] ?? 0}
-                    />
-                  ))}
-                </div>
+      {hero ? (
+        <Link href={`/events/${hero.id}`} className={styles.hero}>
+          <div className={styles.heroMain}>
+            <div className={styles.heroTags}>
+              <span className={styles.tagSolid}>{TYPE_LABELS[hero.type]}</span>
+              {heroBadge && <span className={styles.tagOutline}>{heroBadge}</span>}
+            </div>
+            <div className={styles.heroWhen}>{heroWhen(hero.starts_at)}</div>
+            <h2 className={styles.heroTitle}>{hero.title}</h2>
+            <div className={styles.heroMeta}>
+              {hero.location && (
+                <span className={styles.heroMetaItem}>
+                  <PinIcon />
+                  {hero.location}
+                </span>
               )}
+              <span className={styles.heroMetaItem}>
+                <PeopleIcon />
+                {heroConfirmed}
+                {hero.capacity ? ` / ${hero.capacity}` : ""}명 신청
+              </span>
             </div>
-          )}
-
-          <Link
-            href="/profile"
-            className="block rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          >
-            <Card className="relative flex h-full flex-col overflow-hidden !shadow-none transition-shadow hover:shadow-sm">
-              <img
-                src="/point-coin.png"
-                alt=""
-                className="absolute right-5 top-5 h-16 w-16 object-contain drop-shadow-[0_4px_6px_rgba(0,0,0,0.2)]"
-              />
-              <p className="text-base font-medium text-gray-700">이번 달 포인트</p>
-              <p className="mt-auto text-5xl font-bold tracking-tight text-primary">
-                {monthPoints}<span className="ml-1 text-xl">P</span>
-              </p>
-              <p className="mt-8 flex items-center justify-between text-sm text-gray-500">
-                프로필에서 내역 보기 <span aria-hidden className="text-2xl leading-none text-gray-400">›</span>
-              </p>
-            </Card>
-          </Link>
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <h2 className="text-xl font-bold tracking-tight text-gray-900">
-            내 스터디·프로젝트
-          </h2>
-          {myGroups.length > 0 && <Badge tone="primary">{myGroups.length}개</Badge>}
-        </div>
-        <Card className="!shadow-none">
-          {myGroups.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {myGroups.map((group) => (
-                <div key={group.id} className="rounded-lg bg-gray-50 px-4 py-3 dark:bg-gray-50">
-                  <div className="flex items-center gap-2">
-                    <Badge tone={group.type === "study" ? "success" : "primary"}>
-                      {GROUP_TYPE_LABELS[group.type]}
-                    </Badge>
-                    <span className="text-xs text-gray-500">{GROUP_STATUS_LABELS[group.status]}</span>
-                  </div>
-                  <p className="mt-2 truncate font-semibold text-gray-900">{group.title}</p>
-                </div>
-              ))}
+          </div>
+          <div className={styles.heroSide}>
+            <div className={styles.heroSideLabel}>{heroLeft === null ? "신청 인원" : "남은 자리"}</div>
+            <div className={styles.heroSideValue}>
+              {heroLeft === null ? `${heroConfirmed}명` : `${heroLeft}석`}
             </div>
-          ) : (
-            <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-semibold text-gray-900">아직 참여 중인 스터디·프로젝트가 없어요</p>
-                <p className="mt-1 text-sm text-gray-500">모집 중인 활동은 곧 목록에서 확인할 수 있어요.</p>
+            {hero.capacity ? (
+              <div className={styles.heroBar}>
+                <div
+                  className={styles.heroBarFill}
+                  style={{ width: `${Math.min(100, Math.round((heroConfirmed / hero.capacity) * 100))}%` }}
+                />
               </div>
-              <button
-                type="button"
-                disabled
-                className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                모집 중인 스터디·프로젝트 보기
-              </button>
-            </div>
-          )}
-        </Card>
-      </section>
+            ) : (
+              <div style={{ height: 16 }} />
+            )}
+            <span className={styles.heroCta}>자세히 보기</span>
+          </div>
+        </Link>
+      ) : (
+        <p className={styles.heroEmpty}>예정된 이벤트가 없어요.</p>
+      )}
 
-      <section>
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-gray-900">
-              지난 이벤트
-            </h2>
-          </div>
-          <div>
-            <MonthFilter
-              options={monthOptions}
-              value={month ?? ""}
-              basePath="/"
-            />
-          </div>
+      <div className={styles.grid}>
+        <div className={styles.col}>
+          <section className={styles.card}>
+            <div className={`${styles.cardHead} ${styles.cardHeadFilled}`}>
+              <h2 className={styles.cardTitle}>내 스터디·프로젝트</h2>
+              {myGroups.length > 0 && <span className={styles.cardMeta}>{myGroups.length}개</span>}
+            </div>
+            {myGroups.length === 0 ? (
+              <div className={styles.emptyCta}>
+                <div>
+                  <p className={styles.emptyCtaTitle}>아직 참여 중인 스터디·프로젝트가 없어요</p>
+                  <p className={styles.emptyCtaSub}>모집 중인 활동은 곧 목록에서 확인할 수 있어요.</p>
+                </div>
+                <button type="button" disabled className={styles.emptyCtaButton}>
+                  모집 중인 스터디·프로젝트 보기
+                </button>
+              </div>
+            ) : (
+              myGroups.map((group) => (
+                <div key={group.id} className={styles.groupRow}>
+                  <span
+                    className={`${styles.groupBar} ${group.status === "active" ? "" : styles.groupBarMuted}`}
+                  />
+                  <div className={styles.groupInfo}>
+                    <div className={styles.groupTitle}>{group.title}</div>
+                    <div className={styles.groupSub}>{GROUP_TYPE_LABELS[group.type]}</div>
+                  </div>
+                  <span className={styles.groupStatus}>{GROUP_STATUS_LABELS[group.status]}</span>
+                </div>
+              ))
+            )}
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <h2 className={styles.cardTitle}>지난 이벤트</h2>
+              <MonthFilter options={monthOptions} value={month ?? ""} basePath="/" />
+            </div>
+            {past.length === 0 ? (
+              <p className={styles.empty}>지난 이벤트가 없어요.</p>
+            ) : (
+              <div className={styles.cardBody} style={{ gap: 9 }}>
+                {past.map((event) => (
+                  <Link key={event.id} href={`/events/${event.id}`} className={styles.pastRow}>
+                    <span className={styles.pastDot} />
+                    <span className={styles.pastDate}>{shortDate(event.starts_at)}</span>
+                    <span className={styles.pastTitle}>
+                      {event.title}
+                      {event.location ? ` · ${event.location}` : ""}
+                    </span>
+                    <span className={styles.pastCount}>
+                      {counts[event.id] ?? 0}
+                      {event.capacity ? `/${event.capacity}` : ""}명
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
-        {past.length === 0 ? (
-          <EmptyState
-            title="지난 이벤트가 없어요"
-            description="참여했던 이벤트가 여기에 표시됩니다."
-            className="!shadow-none"
-            icon={
-              <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-7 w-7">
-                <rect x="3" y="5" width="18" height="16" rx="2" />
-                <path d="M7 3v4M17 3v4M3 10h18M8 14h8M8 17h5" />
-              </svg>
-            }
-          />
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {past.map((event) => (
-              <EventCard
-                key={event.id}
-                event={event}
-                confirmed={counts[event.id] ?? 0}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-    </>
+
+        <div className={styles.col}>
+          <Link href="/profile" className={styles.activity}>
+            <div className={styles.activityHead}>
+              내 활동
+              <span className={styles.activityLink}>내역 보기</span>
+            </div>
+            <div className={styles.activityValue}>
+              <span className={styles.activityNum}>{totalPoints}</span>
+              <span className={styles.activityUnit}>P</span>
+              {monthPoints > 0 && <span className={styles.activityDelta}>이번 달 +{monthPoints}P</span>}
+            </div>
+            <div className={styles.activityFoot}>
+              <div>
+                <div className={styles.activityFootLabel}>참여 중인 활동</div>
+                <div className={styles.activityFootValue}>{myGroups.length}개</div>
+              </div>
+              <div>
+                <div className={styles.activityFootLabel}>다가오는 이벤트</div>
+                <div className={styles.activityFootValue}>{upcoming.length}개</div>
+              </div>
+            </div>
+          </Link>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <h2 className={styles.cardTitle}>
+                <span className={styles.accent} />
+                공지
+              </h2>
+              <Link href="/notices" className={styles.cardMeta}>
+                전체 보기
+              </Link>
+            </div>
+            {notices.length === 0 ? (
+              <p className={styles.empty}>등록된 공지가 없어요.</p>
+            ) : (
+              <div className={styles.cardBody}>
+                {notices.map((notice, i) => (
+                  <Link key={notice.id} href={`/notices/${notice.id}`} className={styles.listItem}>
+                    <div className={`${styles.listTitle} ${i === 0 ? styles.listTitleLead : ""}`}>
+                      {notice.title}
+                    </div>
+                    {notice.published_at && (
+                      <div className={styles.listSub}>{formatRelativeKst(notice.published_at)}</div>
+                    )}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <h2 className={styles.cardTitle}>
+                <span className={`${styles.accent} ${styles.accentMuted}`} />
+                커뮤니티
+              </h2>
+              <Link href="/board" className={styles.cardMeta}>
+                전체 보기
+              </Link>
+            </div>
+            {posts.length === 0 ? (
+              <p className={styles.empty}>아직 올라온 글이 없어요.</p>
+            ) : (
+              <div className={styles.cardBody}>
+                {posts.map((post) => (
+                  <Link
+                    key={post.id}
+                    href={`${post.board === "qna" ? "/qna" : "/board"}/${post.id}`}
+                    className={styles.listItem}
+                  >
+                    <div className={styles.listTitle}>{post.title}</div>
+                    <div className={styles.listSub}>
+                      {post.member_public
+                        ? displayName(post.member_public.name, post.member_public.nickname)
+                        : "탈퇴한 회원"}{" "}
+                      · {formatRelativeKst(post.created_at)}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export function HomeDashboardSkeleton() {
-  const block = "animate-pulse rounded-xl bg-gray-100 dark:bg-gray-100";
-  const heading = "mb-5 h-7 w-40 animate-pulse rounded bg-gray-100 dark:bg-gray-100";
   return (
-    <>
-      <div className={`h-14 ${block}`} />
-      <section>
-        <div className={heading} />
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(260px,0.55fr)]">
-          <div className={`h-44 ${block}`} />
-          <div className={`h-44 ${block}`} />
+    <div className={`wds-surface ${styles.home}`}>
+      <div className={styles.skeleton} style={{ height: 44, width: 260, borderRadius: 8 }} />
+      <div className={styles.skeleton} style={{ height: 208, borderRadius: 20 }} />
+      <div className={styles.grid}>
+        <div className={styles.col}>
+          <div className={styles.skeleton} style={{ height: 140 }} />
+          <div className={styles.skeleton} style={{ height: 180 }} />
         </div>
-      </section>
-      <section>
-        <div className={heading} />
-        <div className={`h-28 ${block}`} />
-      </section>
-    </>
+        <div className={styles.col}>
+          <div className={styles.skeleton} style={{ height: 150 }} />
+          <div className={styles.skeleton} style={{ height: 150 }} />
+        </div>
+      </div>
+    </div>
   );
 }
