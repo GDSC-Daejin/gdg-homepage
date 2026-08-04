@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 import { isStaff, type Profile } from "@/lib/types";
@@ -10,9 +10,13 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
   if (!hasAuthCookie(cookieStore.getAll())) return null;
 
   const supabase = await createClient();
-  // getClaims: JWKS 로컬 검증(ECC 비대칭 키) → Auth 서버 네트워크 왕복 제거
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const userId = claimsData?.claims.sub;
+  const requestHeaders = await headers();
+  let userId = requestHeaders.get("x-gdg-user-id");
+  if (!userId) {
+    // proxy를 거치지 않는 실행 문맥의 안전한 폴백
+    const { data: claimsData } = await supabase.auth.getClaims();
+    userId = claimsData?.claims.sub ?? null;
+  }
   if (!userId) return null;
 
   const { data } = await supabase

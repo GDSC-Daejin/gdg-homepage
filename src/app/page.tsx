@@ -1,6 +1,8 @@
 import { Suspense } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getProfile, assertApproved } from "@/lib/auth";
+import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 import { MemberShell } from "./(member)/MemberShell";
 import { HomeDashboard, HomeDashboardSkeleton } from "./(member)/HomeDashboard";
 import Landing from "./landing-preview/Landing";
@@ -33,14 +35,30 @@ export default async function RootPage({
 }: {
   searchParams: Promise<{ month?: string }>;
 }) {
-  const profile = await getProfile();
-  if (!profile)
+  const cookieStore = await cookies();
+  if (!hasAuthCookie(cookieStore.getAll())) {
     return (
       <>
         <JsonLd data={organizationLd} />
         <Landing />
       </>
     );
+  }
+
+  return (
+    <Suspense fallback={<HomeLoading />}>
+      <AuthenticatedHome searchParams={searchParams} />
+    </Suspense>
+  );
+}
+
+async function AuthenticatedHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
+  const profile = await getProfile();
+  if (!profile) return <Landing />;
   if (profile.student_no === "") redirect("/onboarding");
   assertApproved(profile);
   const { month } = await searchParams;
@@ -58,5 +76,14 @@ export default async function RootPage({
         </Suspense>
       </div>
     </MemberShell>
+  );
+}
+
+function HomeLoading() {
+  return (
+    <main className="mx-auto w-full max-w-[1100px] px-4 py-6 sm:px-8 sm:py-8">
+      <div className="mb-8 h-9 w-56 animate-pulse rounded bg-gray-100 dark:bg-gray-100" />
+      <HomeDashboardSkeleton />
+    </main>
   );
 }
