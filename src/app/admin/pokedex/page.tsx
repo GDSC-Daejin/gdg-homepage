@@ -9,7 +9,6 @@ import { displayName, formatKst } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { OverviewTabs } from "../OverviewTabs";
 import { DuelPreview } from "../../(member)/pokedex/DuelPanel";
-import { RankingLeaguePreview } from "../../(member)/pokedex/RankingLeaguePanel";
 
 type Catch = { user_id: string; pokemon_id: string; created_at: string };
 type Appearance = { pokemon_id: string; starts_at: string };
@@ -94,7 +93,7 @@ export default async function AdminPokedexPage({ searchParams }: { searchParams:
         <Link href="/admin/pokedex?tab=development" aria-current={tab === "development" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium ${tab === "development" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>개발</Link>
       </nav>
 
-      {tab === "development" ? <><DuelPreview /><RankingLeaguePreview /></> : <>
+      {tab === "development" ? <><DuelPreview /><Card><h2 className="text-lg font-semibold text-gray-900">새 랭킹전 화면</h2><p className="mt-1 text-sm text-gray-500">최근 디자인을 반영한 홈·공격·내 덱·기록 화면을 확인할 수 있어요.</p><Link href="/admin/pokedex/ranking" className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline">새 랭킹전 화면 보기</Link></Card></> : <>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="총 포획 성공" value={`${catches.length}마리`} />

@@ -19,9 +19,25 @@ describe("어드민 포켓몬 도감 대시보드", () => {
     expect(page).toContain("<DuelPreview />");
   });
 
-  it("개발 탭에서 랭킹전 전체 흐름을 미리 본다", async () => {
+  it("개발 탭에서 새 랭킹전 화면으로 이동한다", async () => {
     const page = await readFile("src/app/admin/pokedex/page.tsx", "utf8");
-    expect(page).toContain("<RankingLeaguePreview />");
+    expect(page).toContain('href="/admin/pokedex/ranking"');
+  });
+
+  it("개발 탭에서 새 랭킹전 네 화면으로 이동한다", async () => {
+    const [page, home, attack, deck, log] = await Promise.all([
+      readFile("src/app/admin/pokedex/page.tsx", "utf8"),
+      readFile("src/app/admin/pokedex/ranking/page.tsx", "utf8"),
+      readFile("src/app/admin/pokedex/ranking/attack/page.tsx", "utf8"),
+      readFile("src/app/admin/pokedex/ranking/deck/page.tsx", "utf8"),
+      readFile("src/app/admin/pokedex/ranking/log/page.tsx", "utf8"),
+    ]);
+
+    expect(page).toContain('href="/admin/pokedex/ranking"');
+    expect(home).toContain('page="home"');
+    expect(attack).toContain('page="attack"');
+    expect(deck).toContain('page="deck"');
+    expect(log).toContain('page="log"');
   });
 
   it("대시보드 탭에서 도감 현황으로 이동할 수 있다", () => {

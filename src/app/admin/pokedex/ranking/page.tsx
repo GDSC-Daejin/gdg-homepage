@@ -1,0 +1,6 @@
+import { RankingScreen } from "@/app/(member)/pokedex/ranking/RankingScreen";
+import { PREVIEW_PROFILE_ID, PREVIEW_STATE } from "./layout";
+
+export default function AdminRankingHomePage() {
+  return <RankingScreen page="home" profileId={PREVIEW_PROFILE_ID} state={PREVIEW_STATE} />;
+}
