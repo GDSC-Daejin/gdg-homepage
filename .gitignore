@@ -51,3 +51,4 @@ _workspace/
 
 # lighthouse ad-hoc reports (keep perf/baseline.json)
 perf/lh-*
+.gstack/

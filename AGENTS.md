@@ -4,6 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+- 사용자가 영어로 입력하거나 음성으로 말해도 항상 한국어로 응답한다.
 - **알려진 상시 실패:** `tests/accessibility-primitives.test.ts`는 eslint deps/script를 단언하는데 eslint가 미설치라 클린 트리에서도 실패한다. 회귀 아님 — `package.json` 건드려 "고치지" 말 것.
 - 검증 전용 작업(diff·test·build·grep)을 위임받으면 나열된 명령만 실행하고 파일을 수정하지 않는다. 실패는 원문 그대로 보고.
 - UI 리디자인은 [docs/ai-redesign-workflow-general.md](docs/ai-redesign-workflow-general.md)를 따른다.
