@@ -69,6 +69,7 @@ export function DatePicker({
   const today = new Date();
 
   const [date, setDate] = useState<Ymd | null>(init.date);
+  const [emptySelected, setEmptySelected] = useState(false);
   const [time, setTime] = useState(init.time || (withTime ? "00:00" : ""));
   const [viewY, setViewY] = useState(init.date?.y ?? today.getFullYear());
   const [viewM, setViewM] = useState(init.date?.m ?? today.getMonth() + 1);
@@ -83,6 +84,7 @@ export function DatePicker({
     const onReset = () => {
       const fresh = parse(defaultValue);
       setDate(fresh.date);
+      setEmptySelected(false);
       setTime(fresh.time || (withTime ? "00:00" : ""));
     };
     form.addEventListener("reset", onReset);
@@ -117,6 +119,7 @@ export function DatePicker({
   function pick(d: number) {
     const nextDate = { y: viewY, m: viewM, d };
     setDate(nextDate);
+    setEmptySelected(false);
     onChange?.(serialize(nextDate, time, withTime));
     if (!withTime) setOpen(false);
   }
@@ -163,7 +166,7 @@ export function DatePicker({
           aria-describedby={error ? errorId : undefined}
           className={cn(
             "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-white dark:bg-gray-100 px-3 text-left text-sm focus:outline-none focus:ring-2 disabled:bg-gray-50 disabled:text-gray-400",
-            date ? "text-gray-900" : "text-gray-400",
+            date || emptySelected ? "text-gray-900" : "text-gray-400",
             error
               ? "border-danger focus:border-danger focus:ring-danger"
               : "border-gray-300 focus:border-primary focus:ring-primary",
@@ -171,7 +174,7 @@ export function DatePicker({
           )}
         >
           <span className="truncate">
-            {display(date, time, withTime) || "날짜 선택"}
+            {emptySelected ? emptyOption : display(date, time, withTime) || "날짜 선택"}
           </span>
           <svg
             className="h-4 w-4 shrink-0 text-gray-400"
@@ -208,7 +211,7 @@ export function DatePicker({
               </button>
             </div>
             {emptyOption && (
-              <button type="button" onClick={() => { setDate(null); onChange?.(""); setOpen(false); }} className="mb-2 w-full rounded border border-gray-200 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
+              <button type="button" onClick={() => { setDate(null); setEmptySelected(true); onChange?.(""); setOpen(false); }} className="mb-2 w-full rounded border border-gray-200 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
                 {emptyOption}
               </button>
             )}
