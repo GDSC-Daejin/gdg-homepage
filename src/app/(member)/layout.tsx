@@ -15,5 +15,11 @@ export default async function MemberLayout({
   if (!profile) redirect("/");
   assertApproved(profile);
 
-  return <MemberShell profile={profile}>{children}</MemberShell>;
+  return (
+    <MemberShell profile={profile}>
+      <div className="rounded-[20px] bg-gray-50 p-6 shadow-material sm:p-8">
+        {children}
+      </div>
+    </MemberShell>
+  );
 }

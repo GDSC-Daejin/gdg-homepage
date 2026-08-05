@@ -24,12 +24,15 @@ export default async function ScheduleLayout({
 }) {
   const profile = await requireProfile();
   const scheduleShell = (await cookies()).get("schedule-shell")?.value;
+  const memberShell = scheduleShell === "member" || !isStaff(profile);
   const content = (
     <div
       className="wds-surface"
       style={{
         minHeight: "100%",
+        borderRadius: memberShell ? 20 : 0,
         background: "var(--wds-bg-alt)",
+        boxShadow: memberShell ? "var(--shadow-material)" : undefined,
         fontFamily: "var(--wds-font-sans)",
         color: "var(--wds-label-normal)",
         WebkitFontSmoothing: "antialiased",
@@ -46,6 +49,6 @@ export default async function ScheduleLayout({
     </div>
   );
 
-  if (scheduleShell === "member" || !isStaff(profile)) return <MemberShell profile={profile}>{content}</MemberShell>;
+  if (memberShell) return <MemberShell profile={profile}>{content}</MemberShell>;
   return <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />} mainClassName="">{content}</ResponsiveShell>;
 }
