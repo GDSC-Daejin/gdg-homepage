@@ -9,6 +9,7 @@ export async function sendMeetingPollConfirmation({
   startIso,
   durationMin,
   isMojisoop = true,
+  isRegularSession = false,
   slackUserIds = [],
 }: {
   id: string;
@@ -16,6 +17,7 @@ export async function sendMeetingPollConfirmation({
   startIso: string;
   durationMin: number;
   isMojisoop?: boolean;
+  isRegularSession?: boolean;
   slackUserIds?: string[];
 }): Promise<string | undefined> {
   const botToken = process.env.SLACK_JARVIS_BOT_TOKEN;
@@ -29,6 +31,17 @@ export async function sendMeetingPollConfirmation({
     timeStyle: "short",
     timeZone: "Asia/Seoul",
   }).format(new Date(startIso));
+  if (isRegularSession) {
+    const channel = process.env.SLACK_NOTICE_CHANNEL_ID;
+    if (!channel) return "공지사항 채널이 설정되지 않아 확정 알림을 보내지 못했어요";
+    const posted = await postMessage({
+      channel,
+      botToken,
+      text: `📢 [정기세션] "${title}" 일정이 확정됐어요\n${when} · ${durationLabel(durationMin)}\n${siteUrl}/events`,
+    });
+    return posted.ok ? undefined : `정기세션 공지 알림은 실패했어요 (${posted.error})`;
+  }
+
   if (!isMojisoop) {
     const recipients = [...new Set(slackUserIds)];
     if (recipients.length === 0) return "Slack이 연결된 참여자가 없어 확정 DM을 보내지 못했어요";

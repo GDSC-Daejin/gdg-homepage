@@ -15,6 +15,7 @@ const { sendMeetingPollConfirmation } = await import("@/lib/meeting-poll-confirm
 afterEach(() => {
   vi.clearAllMocks();
   delete process.env.SLACK_ADMIN_CHANNEL_ID;
+  delete process.env.SLACK_NOTICE_CHANNEL_ID;
   delete process.env.SLACK_JARVIS_BOT_TOKEN;
   delete process.env.NEXT_PUBLIC_SITE_URL;
 });
@@ -94,5 +95,29 @@ describe("sendMeetingPollConfirmation", () => {
       text: expect.stringContaining('"디자이너 작당모의" 일정이 확정됐어요'),
     }));
     expect(addReaction).not.toHaveBeenCalled();
+  });
+
+  it("정기세션 일정은 공지사항 채널로 확정 알림을 보낸다", async () => {
+    configured();
+    process.env.SLACK_NOTICE_CHANNEL_ID = "C_NOTICE";
+    postMessage.mockResolvedValue({ ok: true, ts: "123.456" });
+
+    await expect(
+      sendMeetingPollConfirmation({
+        id: "poll-1",
+        title: "8월 정기세션",
+        startIso: "2026-08-04T10:30:00.000Z",
+        durationMin: 60,
+        isMojisoop: false,
+        isRegularSession: true,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({
+      channel: "C_NOTICE",
+      botToken: "xoxb-jarvis",
+      text: expect.stringContaining("[정기세션]"),
+    }));
+    expect(openDirectMessage).not.toHaveBeenCalled();
   });
 });

@@ -23,6 +23,7 @@ import {
   pollTimes,
   SLOT_UNITS,
   suggestPollTitle,
+  weekdayColor,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
 import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, setPollDateSelection, type PollDraftPerson } from "./poll-draft";
@@ -786,7 +787,7 @@ function MonthPicker({
               alignItems: "center",
               justifyContent: "center",
               font: "500 13px/1 var(--wds-font-sans)",
-              color: "var(--wds-label-assistive)",
+              color: w === "일" ? "var(--wds-accent-red)" : w === "토" ? "var(--wds-accent-blue)" : "var(--wds-label-assistive)",
             }}
           >
             {w}
@@ -826,7 +827,7 @@ function MonthPicker({
                 borderRadius: `${previousOn ? 0 : 10}px ${nextOn ? 0 : 10}px ${nextOn ? 0 : 10}px ${previousOn ? 0 : 10}px`,
                 cursor: "pointer",
                 background: on ? "var(--wds-primary)" : "transparent",
-                color: on ? "#fff" : "var(--wds-label-neutral)",
+                color: on ? "#fff" : weekdayColor(dateKey),
                 font: `${on ? 700 : 400} 17px/1 var(--wds-font-sans)`,
               }}
             >

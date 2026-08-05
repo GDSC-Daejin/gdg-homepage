@@ -378,9 +378,11 @@ describe("dateWithWeekday · weekdayColor", () => {
     expect(dateWithWeekday("2026-08-01")).toBe("8월 1일 (토)");
   });
 
-  it("토요일은 파랑, 일요일은 빨강, 나머지는 기본색", () => {
+  it("토요일은 파랑, 일요일·공휴일은 빨강, 나머지는 기본색", () => {
     expect(weekdayColor("2026-08-01")).toBe("var(--wds-accent-blue)");
     expect(weekdayColor("2026-08-02")).toBe("var(--wds-accent-red)");
+    expect(weekdayColor("2026-08-15")).toBe("var(--wds-accent-red)");
+    expect(weekdayColor("2026-08-17")).toBe("var(--wds-accent-red)");
     expect(weekdayColor("2026-08-03")).toBe("var(--wds-label-normal)");
   });
 });

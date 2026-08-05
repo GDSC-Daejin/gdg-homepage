@@ -121,5 +121,8 @@ describe("confirmMeetingPoll", () => {
       created_by: "admin-1",
     }));
     expect(eventLink.eq).toHaveBeenCalledWith("id", "poll-1");
+    expect(mocks.sendMeetingPollConfirmation).toHaveBeenCalledWith(expect.objectContaining({
+      isRegularSession: true,
+    }));
   });
 });

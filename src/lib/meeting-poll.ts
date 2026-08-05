@@ -1,5 +1,6 @@
 // 회의 시간 조율 격자·집계·추천 계산. 한국은 서머타임이 없어 KST를 고정 +09:00으로 다룬다.
 import { diffDays, nextDayKey } from "@/lib/calendar";
+import { isKoreanHoliday } from "@/lib/korean-holidays";
 
 const KST = "+09:00";
 
@@ -400,9 +401,10 @@ export function weekdayKo(dateKey: string): string {
   return WEEKDAYS[new Date(`${dateKey}T00:00:00Z`).getUTCDay()];
 }
 
-/** 토요일은 파랑, 일요일은 빨강. 원본 목업의 요일 색 규칙. */
+/** 토요일은 파랑, 일요일·대한민국 공휴일은 빨강. */
 export function weekdayColor(dateKey: string): string {
   const w = weekdayKo(dateKey);
+  if (isKoreanHoliday(dateKey)) return "var(--wds-accent-red)";
   if (w === "토") return "var(--wds-accent-blue)";
   if (w === "일") return "var(--wds-accent-red)";
   return "var(--wds-label-normal)";

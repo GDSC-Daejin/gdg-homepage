@@ -354,6 +354,7 @@ export async function confirmMeetingPoll(
         startIso,
         durationMin,
         isMojisoop: confirmed.is_mojisoop,
+        isRegularSession: confirmed.is_regular_session,
         slackUserIds,
       }),
   ]);
