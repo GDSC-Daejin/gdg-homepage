@@ -15,7 +15,7 @@ import {
 } from "@/components/wds/primitives";
 import { ScheduleGrid } from "@/components/wds/ScheduleGrid";
 import styles from "../schedule.module.css";
-import { monthGrid, shiftMonth } from "@/lib/calendar";
+import { monthGrid } from "@/lib/calendar";
 import {
   avatarInitial,
   AVATAR_COLORS,
@@ -25,7 +25,7 @@ import {
   suggestPollTitle,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
-import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, setPollDateSelection, togglePollDate, type PollDraftPerson } from "./poll-draft";
+import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, setPollDateSelection, type PollDraftPerson } from "./poll-draft";
 
 export interface MemberOption {
   id: string;
@@ -86,6 +86,7 @@ export function NewPollForm({
   const [dueAt, setDueAt] = useState<string | null>(edit?.poll.due_at ?? null);
   const [notifyBeforeDue, setNotifyBeforeDue] = useState(edit?.poll.notify_before_due ?? true);
   const [isMojisoop, setIsMojisoop] = useState(edit?.poll.is_mojisoop ?? true);
+  const [isRegularSession, setIsRegularSession] = useState(edit?.poll.is_regular_session ?? false);
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -111,14 +112,7 @@ export function NewPollForm({
   // 원본의 "6명 이상 응답하면" = 초대 7명의 80%. 같은 식으로 문턱을 잡는다.
   const recommendGate = Math.max(2, Math.ceil(people.length * 0.8));
 
-  const months = useMemo(() => {
-    const first = (edit?.poll.dates[0] ?? today).slice(0, 7);
-    return [first, shiftMonth(first, 1)];
-  }, [today]);
-
-  function toggleDate(dateKey: string) {
-    setDates((prev) => togglePollDate(prev, dateKey));
-  }
+  const month = (edit?.poll.dates[0] ?? today).slice(0, 7);
 
   function selectDraggedDate(dateKey: string, selected: boolean) {
     setDates((prev) => setPollDateSelection(prev, [dateKey], selected));
@@ -152,6 +146,7 @@ export function NewPollForm({
       dueAt: dueValue || null,
       notifyBeforeDue,
       isMojisoop,
+      isRegularSession,
       memberIds: people.filter((p) => p.userId).map((p) => p.userId as string),
     };
     const request = edit
@@ -242,22 +237,18 @@ export function NewPollForm({
                 </span>
               </div>
               <div className={styles.monthGrid}>
-                {months.map((month) => (
-                  <MonthPicker
-                    key={month}
-                    month={month}
-                    selected={dates}
-                    onToggle={toggleDate}
-                    dragMode={dragMode}
-                    onPointerDown={(dateKey, selected) => {
-                      setDragMode(selected);
-                      selectDraggedDate(dateKey, selected);
-                    }}
-                    onPointerEnter={(dateKey) => {
-                      if (dragMode !== null) selectDraggedDate(dateKey, dragMode);
-                    }}
-                  />
-                ))}
+                <MonthPicker
+                  month={month}
+                  selected={dates}
+                  dragMode={dragMode}
+                  onPointerDown={(dateKey, selected) => {
+                    setDragMode(selected);
+                    selectDraggedDate(dateKey, selected);
+                  }}
+                  onPointerEnter={(dateKey) => {
+                    if (dragMode !== null) selectDraggedDate(dateKey, dragMode);
+                  }}
+                />
               </div>
             </div>
 
@@ -360,6 +351,18 @@ export function NewPollForm({
               </span>
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <Chip
+                active={members.length > 0 && people.length === members.length}
+                onClick={() => setPeople(members.map((member) => ({
+                  key: member.id,
+                  participantId: null,
+                  name: member.name,
+                  userId: member.id,
+                  email: null,
+                })))}
+              >
+                전원
+              </Chip>
               {people.map((p) => (
                 <span
                   key={p.key}
@@ -623,7 +626,47 @@ export function NewPollForm({
                   끄면 응답 요청을 참여자 DM으로 보내요
                 </span>
               </div>
-              <Switch checked={isMojisoop} onChange={setIsMojisoop} />
+              <Switch
+                checked={isMojisoop}
+                onChange={(checked) => {
+                  setIsMojisoop(checked);
+                  if (checked) setIsRegularSession(false);
+                }}
+              />
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+              }}
+            >
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span
+                  style={{
+                    font: "600 14px/1.4 var(--wds-font-sans)",
+                    color: "var(--wds-label-normal)",
+                  }}
+                >
+                  정기세션 일정
+                </span>
+                <span
+                  style={{
+                    font: "400 12px/1.4 var(--wds-font-sans)",
+                    color: "var(--wds-label-alternative)",
+                  }}
+                >
+                  확정하면 정기세션 이벤트를 만들어요
+                </span>
+              </div>
+              <Switch
+                checked={isRegularSession}
+                onChange={(checked) => {
+                  setIsRegularSession(checked);
+                  if (checked) setIsMojisoop(false);
+                }}
+              />
             </div>
             <div
               style={{
@@ -695,18 +738,16 @@ export function NewPollForm({
 
 const DOW = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
-/** 원본의 두 달 달력. 화살표가 없는 시안이라 이번 달·다음 달만 그린다. */
+/** 날짜 후보를 고르는 한 달 달력. */
 function MonthPicker({
   month,
   selected,
-  onToggle,
   dragMode,
   onPointerDown,
   onPointerEnter,
 }: {
   month: string;
   selected: string[];
-  onToggle: (dateKey: string) => void;
   dragMode: boolean | null;
   onPointerDown: (dateKey: string, selected: boolean) => void;
   onPointerEnter: (dateKey: string) => void;
@@ -719,31 +760,32 @@ function MonthPicker({
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 8,
-        padding: 14,
-        borderRadius: 12,
+        width: "min(100%, 520px)",
+        gap: 12,
+        padding: 20,
+        borderRadius: 16,
         boxShadow: "inset 0 0 0 1px var(--wds-line-alternative)",
       }}
     >
       <span
         style={{
-          font: "600 14px/1.4 var(--wds-font-sans)",
+          font: "600 18px/1.4 var(--wds-font-sans)",
           color: "var(--wds-label-normal)",
           textAlign: "center",
         }}
       >
         {year}년 {mon}월
       </span>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", columnGap: 0, rowGap: 2 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", columnGap: 0, rowGap: 4 }}>
         {DOW.map((w) => (
           <span
             key={w}
             style={{
-              height: 22,
+              height: 30,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              font: "500 11px/1 var(--wds-font-sans)",
+              font: "500 13px/1 var(--wds-font-sans)",
               color: "var(--wds-label-assistive)",
             }}
           >
@@ -755,15 +797,20 @@ function MonthPicker({
           const on = selected.includes(dateKey);
           const previousOn = grid[index - 1]?.startsWith(month) && selected.includes(grid[index - 1]);
           const nextOn = grid[index + 1]?.startsWith(month) && selected.includes(grid[index + 1]);
-          if (!inMonth) return <span key={dateKey} style={{ height: 28 }} />;
+          if (!inMonth) return <span key={dateKey} style={{ height: 44 }} />;
           return (
             <button
               key={dateKey}
               type="button"
-              onClick={() => onToggle(dateKey)}
               onPointerDown={(event) => {
                 event.preventDefault();
                 onPointerDown(dateKey, !on);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onPointerDown(dateKey, !on);
+                }
               }}
               onPointerEnter={() => {
                 if (dragMode !== null) onPointerEnter(dateKey);
@@ -771,16 +818,16 @@ function MonthPicker({
               aria-pressed={on}
               aria-label={`${dateWithWeekday(dateKey)} ${on ? "선택 해제" : "선택"}`}
               style={{
-                height: 28,
+                height: 44,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 border: "none",
-                borderRadius: `${previousOn ? 0 : 8}px ${nextOn ? 0 : 8}px ${nextOn ? 0 : 8}px ${previousOn ? 0 : 8}px`,
+                borderRadius: `${previousOn ? 0 : 10}px ${nextOn ? 0 : 10}px ${nextOn ? 0 : 10}px ${previousOn ? 0 : 10}px`,
                 cursor: "pointer",
                 background: on ? "var(--wds-primary)" : "transparent",
                 color: on ? "#fff" : "var(--wds-label-neutral)",
-                font: `${on ? 700 : 400} 13px/1 var(--wds-font-sans)`,
+                font: `${on ? 700 : 400} 17px/1 var(--wds-font-sans)`,
               }}
             >
               {Number(dateKey.slice(8))}

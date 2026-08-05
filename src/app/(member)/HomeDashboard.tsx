@@ -292,12 +292,14 @@ export async function HomeDashboard({
               </h2>
             </div>
             {latestSurvey ? (
-              <Link href={`/surveys/${latestSurvey.id}`} className={styles.listItem}>
-                <div className={styles.listTitle}>{latestSurvey.title}</div>
-                <div className={styles.listSub}>
-                  {respondedIds.has(latestSurvey.id) ? "응답 완료" : "응답하기"}
-                </div>
-              </Link>
+              <div className={styles.cardBody}>
+                <Link href={`/surveys/${latestSurvey.id}`} className={styles.listItem}>
+                  <div className={styles.listTitle}>{latestSurvey.title}</div>
+                  <div className={styles.listSub}>
+                    {respondedIds.has(latestSurvey.id) ? "응답 완료" : "응답하기"}
+                  </div>
+                </Link>
+              </div>
             ) : (
               <p className={styles.empty}>열린 설문이 없어요.</p>
             )}

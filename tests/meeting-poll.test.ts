@@ -106,6 +106,7 @@ describe("prepareMeetingPollInput", () => {
         slotMin: 30,
         dueAt: null,
         notifyBeforeDue: true,
+        isRegularSession: false,
       }),
     ).toEqual({
       value: {
@@ -117,6 +118,7 @@ describe("prepareMeetingPollInput", () => {
         dueAt: null,
         notifyBeforeDue: true,
         isMojisoop: true,
+        isRegularSession: false,
       },
     });
   });

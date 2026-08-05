@@ -21,6 +21,7 @@ describe("confirmMeetingPoll", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.isDemoMode.mockResolvedValue(false);
+    mocks.requireAdmin.mockResolvedValue({ id: "admin-1" });
     mocks.createWeeklyPage.mockResolvedValue({ title: "8월 첫째 주", error: undefined });
     mocks.sendMeetingPollConfirmation.mockResolvedValue("슬랙 이모지 반응 실패");
 
@@ -80,5 +81,45 @@ describe("confirmMeetingPoll", () => {
       isMojisoop: false,
       slackUserIds: ["U_LUMI"],
     });
+  });
+
+  it("정기세션 수요조사는 확정 시 정기세션 이벤트를 만든다", async () => {
+    const updateQuery = { eq: vi.fn(), is: vi.fn(), select: vi.fn() };
+    updateQuery.eq.mockReturnValue(updateQuery);
+    updateQuery.is.mockReturnValue(updateQuery);
+    updateQuery.select.mockResolvedValue({
+      data: [{ id: "poll-1", title: "8월 정기세션", is_mojisoop: false, is_regular_session: true, event_id: null }],
+      error: null,
+    });
+    const eventInsert = { select: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { id: "event-1" }, error: null }) }) };
+    const insertEvent = vi.fn(() => eventInsert);
+    const eventLink = { eq: vi.fn().mockResolvedValue({ error: null }) };
+    const participantQuery = { select: vi.fn(), eq: vi.fn() };
+    participantQuery.select.mockReturnValue(participantQuery);
+    participantQuery.eq.mockResolvedValue({ data: [], error: null });
+    let meetingUpdates = 0;
+    mocks.createClient.mockResolvedValue({
+      from: vi.fn((table: string) => {
+        if (table === "meeting_polls") {
+          return { update: vi.fn(() => (++meetingUpdates === 1 ? updateQuery : eventLink)) };
+        }
+        if (table === "meeting_poll_participants") return participantQuery;
+        return { insert: insertEvent };
+      }),
+    });
+    mocks.sendMeetingPollConfirmation.mockResolvedValue(undefined);
+
+    const { confirmMeetingPoll } = await import("@/actions/meeting-poll");
+    await confirmMeetingPoll("poll-1", "2026-08-04T10:30:00.000Z", 60);
+
+    expect(eventInsert.select).toHaveBeenCalledWith("id");
+    expect(insertEvent).toHaveBeenCalledWith(expect.objectContaining({
+      type: "session",
+      title: "8월 정기세션",
+      starts_at: "2026-08-04T10:30:00.000Z",
+      ends_at: "2026-08-04T11:30:00.000Z",
+      created_by: "admin-1",
+    }));
+    expect(eventLink.eq).toHaveBeenCalledWith("id", "poll-1");
   });
 });

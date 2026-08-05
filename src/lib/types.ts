@@ -393,6 +393,8 @@ export interface MeetingPoll {
   invite_token: string;
   due_notified_at: string | null;
   is_mojisoop: boolean;
+  is_regular_session: boolean;
+  event_id: string | null;
   created_at: string;
 }
 

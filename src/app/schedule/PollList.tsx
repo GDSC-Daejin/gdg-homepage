@@ -74,6 +74,11 @@ export function PollList({
                     모지숲
                   </ContentBadge>
                 )}
+                {poll.is_regular_session && (
+                  <ContentBadge variant="solid" color="primary" size="small">
+                    정기세션
+                  </ContentBadge>
+                )}
                 {poll.confirmed_at ? (
                   <ContentBadge variant="solid" color="primary" size="small">
                     확정됨

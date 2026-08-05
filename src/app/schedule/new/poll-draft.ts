@@ -15,11 +15,6 @@ export function defaultPollDates(today: string): string[] {
   return dates;
 }
 
-export function togglePollDate(dates: string[], dateKey: string): string[] {
-  if (dates.includes(dateKey)) return dates.filter((date) => date !== dateKey);
-  return dates.length >= MAX_POLL_DAYS ? dates : [...dates, dateKey];
-}
-
 export function setPollDateSelection(dates: string[], dateKeys: string[], selected: boolean): string[] {
   const next = new Set(dates);
   for (const dateKey of dateKeys) {

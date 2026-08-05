@@ -336,8 +336,8 @@ const BLOCK_0802 = slots("2026-08-02", ["21:00", "21:30", "22:00"]);
 const BLOCK_0804 = slots("2026-08-04", ["19:00", "19:30", "20:00"]);
 
 export const DEMO_MEETING_POLLS: MeetingPoll[] = [
-  { id: "demo-mp1", title: "8월 정기 회의", dates: ["2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05"], start_hour: 18, end_hour: 24, slot_min: 30, created_by: "demo-m1", confirmed_at: null, duration_min: null, due_at: null, notify_before_due: true, invite_token: "demo-token-1", due_notified_at: null, is_mojisoop: true, created_at: "2026-07-28T00:00:00.000Z" },
-  { id: "demo-mp2", title: "7월 회고 회의", dates: ["2026-07-20", "2026-07-21", "2026-07-22"], start_hour: 19, end_hour: 23, slot_min: 60, created_by: "demo-m2", confirmed_at: "2026-07-21T11:00:00.000Z", duration_min: 90, due_at: null, notify_before_due: true, invite_token: "demo-token-2", due_notified_at: null, is_mojisoop: true, created_at: "2026-07-14T00:00:00.000Z" },
+  { id: "demo-mp1", title: "8월 정기 회의", dates: ["2026-08-01", "2026-08-02", "2026-08-03", "2026-08-04", "2026-08-05"], start_hour: 18, end_hour: 24, slot_min: 30, created_by: "demo-m1", confirmed_at: null, duration_min: null, due_at: null, notify_before_due: true, invite_token: "demo-token-1", due_notified_at: null, is_mojisoop: true, is_regular_session: false, event_id: null, created_at: "2026-07-28T00:00:00.000Z" },
+  { id: "demo-mp2", title: "7월 회고 회의", dates: ["2026-07-20", "2026-07-21", "2026-07-22"], start_hour: 19, end_hour: 23, slot_min: 60, created_by: "demo-m2", confirmed_at: "2026-07-21T11:00:00.000Z", duration_min: 90, due_at: null, notify_before_due: true, invite_token: "demo-token-2", due_notified_at: null, is_mojisoop: true, is_regular_session: false, event_id: null, created_at: "2026-07-14T00:00:00.000Z" },
 ];
 
 export const DEMO_MEETING_POLL_PARTICIPANTS: MeetingPollParticipant[] = [

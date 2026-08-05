@@ -62,9 +62,8 @@
 }
 
 .monthGrid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  display: flex;
+  justify-content: center;
 }
 
 .rangePresets {
@@ -201,7 +200,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .monthGrid,
   .timeRangeFields {
     grid-template-columns: minmax(0, 1fr);
   }

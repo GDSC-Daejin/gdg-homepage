@@ -5,6 +5,7 @@ import { requireAdmin, requireProfile } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { toKoreanError } from "@/lib/errors";
+import { dayKeyKst, timeKeyKst } from "@/lib/format";
 import { sendMeetingPollConfirmation } from "@/lib/meeting-poll-confirmation";
 import { nudgeAdminChannel } from "@/lib/meeting-poll-nudge";
 import {
@@ -13,6 +14,7 @@ import {
   pollSlotSet,
   prepareMeetingPollInput,
   remapAvailabilitySlots,
+  slotEndIso,
   type MeetingPollInput,
 } from "@/lib/meeting-poll";
 import { createWeeklyPage } from "@/lib/notion";
@@ -69,6 +71,7 @@ export async function createMeetingPoll(
       due_at: pollInput.dueAt,
       notify_before_due: pollInput.notifyBeforeDue,
       is_mojisoop: pollInput.isMojisoop,
+      is_regular_session: pollInput.isRegularSession,
       invite_token: UUID.test(input.inviteToken) ? input.inviteToken : undefined,
       created_by: profile.id,
     })
@@ -185,6 +188,7 @@ export async function updateMeetingPoll(
       due_at: pollInput.dueAt,
       notify_before_due: pollInput.notifyBeforeDue,
       is_mojisoop: pollInput.isMojisoop,
+      is_regular_session: pollInput.isRegularSession,
       due_notified_at: poll.due_at === pollInput.dueAt ? poll.due_notified_at : null,
     })
     .eq("id", pollId);
@@ -263,7 +267,7 @@ export async function confirmMeetingPoll(
   startIso: string,
   durationMin: number,
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const profile = await requireAdmin();
   if (await isDemoMode()) return {};
 
   if (Number.isNaN(Date.parse(startIso))) return { error: "시간을 다시 선택해주세요" };
@@ -281,7 +285,7 @@ export async function confirmMeetingPoll(
     })
     .eq("id", pollId)
     .is("confirmed_at", null)
-    .select("id, title, is_mojisoop");
+    .select("id, title, is_mojisoop, is_regular_session, event_id");
 
   if (error) return { error: toKoreanError(error) };
   if (!data?.length) return { error: "확정 권한이 없거나 이미 확정된 일정이에요" };
@@ -290,7 +294,13 @@ export async function confirmMeetingPoll(
   revalidatePath("/schedule");
   revalidatePath("/admin/events");
 
-  const confirmed = data[0] as { id: string; title: string; is_mojisoop: boolean };
+  const confirmed = data[0] as {
+    id: string;
+    title: string;
+    is_mojisoop: boolean;
+    is_regular_session: boolean;
+    event_id: string | null;
+  };
   const { data: participantRows, error: participantError } = confirmed.is_mojisoop
     ? { data: [], error: null }
     : await supabase
@@ -299,6 +309,39 @@ export async function confirmMeetingPoll(
       .eq("poll_id", confirmed.id);
   const slackUserIds = ((participantRows ?? []) as unknown as { profiles: { slack_user_id: string | null } | null }[])
     .flatMap((participant) => participant.profiles?.slack_user_id ?? []);
+
+  let eventWarning: string | undefined;
+  if (confirmed.is_regular_session && !confirmed.event_id) {
+    const endsAt = slotEndIso(startIso, durationMin);
+    const { data: event, error: eventError } = await supabase
+      .from("events")
+      .insert({
+        type: "session",
+        title: confirmed.title,
+        description: "",
+        starts_at: startIso,
+        ends_at: endsAt,
+        event_date: dayKeyKst(startIso),
+        start_time: timeKeyKst(startIso),
+        end_time: timeKeyKst(endsAt),
+        location: "",
+        address: "",
+        speaker: "",
+        capacity: null,
+        created_by: profile.id,
+      })
+      .select("id")
+      .single();
+    if (eventError || !event) {
+      eventWarning = "정기세션 이벤트를 만들지 못했어요";
+    } else {
+      const { error: linkError } = await supabase
+        .from("meeting_polls")
+        .update({ event_id: event.id })
+        .eq("id", confirmed.id);
+      eventWarning = linkError ? "정기세션 이벤트는 만들었지만 설문에 연결하지 못했어요" : undefined;
+    }
+  }
 
   // 확정은 이미 끝났다. 노션·슬랙이 실패해도 되돌리지 않고 경고만 올린다.
   const [weekly, slackWarning] = await Promise.all([
@@ -318,6 +361,7 @@ export async function confirmMeetingPoll(
     weekly?.error
       ? `${weekly.error} — 노션에 "${weekly.title}"을 직접 만들어주세요`
       : weekly ? `노션에 "${weekly.title}" 페이지를 만들었어요` : undefined,
+    eventWarning,
     slackWarning,
   ].filter(Boolean);
   return { warning: warnings.join(" · ") };
