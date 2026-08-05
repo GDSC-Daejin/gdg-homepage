@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getCommunity } from "@/lib/community";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { inquirySchema } from "@/lib/schemas";
+import { displayName } from "@/lib/format";
+import { sendInquiryNotification } from "@/lib/inquiry-notification";
 import type { ActionResult } from "@/lib/types";
 
 export async function submitInquiry(formData: FormData): Promise<ActionResult> {
@@ -26,6 +28,16 @@ export async function submitInquiry(formData: FormData): Promise<ActionResult> {
     body: parsed.data.body,
   });
   if (result.error) return result;
+
+  // 알림 실패로 문의 등록까지 실패시키지 않는다 — 운영진 채널로만 로그를 남긴다.
+  const notified = await sendInquiryNotification({
+    category: parsed.data.category,
+    title: parsed.data.title,
+    body: parsed.data.body,
+    author: displayName(profile.name, profile.nickname),
+    createdAt: new Date().toISOString(),
+  });
+  if (notified.error) console.warn("[submitInquiry] 슬랙 알림 실패 —", notified.error);
 
   revalidatePath("/inquiries");
   return {};
