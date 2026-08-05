@@ -53,14 +53,6 @@ function dDay(event: Event) {
   return days === 0 ? "D-DAY" : `D-${days}`;
 }
 
-function ChevronRight() {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16" className={styles.chev}>
-      <path d="m9 6 6 6-6 6" />
-    </svg>
-  );
-}
-
 function PinIcon() {
   return (
     <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="16" height="16">
@@ -137,7 +129,7 @@ export async function HomeDashboard({
   }
 
   const respondedIds = new Set((myResponses ?? []).map((response) => response.survey_id));
-  const unanswered = (openSurveys ?? []).filter((survey) => !respondedIds.has(survey.id));
+  const latestSurvey = (openSurveys ?? [])[0];
 
   const logs = (pointLogs ?? []) as { amount: number; created_at: string }[];
   const monthPoints = sumPointsInMonth(logs, monthKst(new Date().toISOString()));
@@ -182,16 +174,6 @@ export async function HomeDashboard({
           </p>
         </div>
       </header>
-
-      {unanswered.length > 0 && (
-        <Link href="/surveys" className={styles.banner}>
-          <span className={styles.bannerTag}>설문</span>
-          <span className={styles.bannerText}>
-            응답을 기다리는 설문 {unanswered.length}개 — {unanswered[0].title}
-          </span>
-          <ChevronRight />
-        </Link>
-      )}
 
       {hero ? (
         <Link href={`/events/${hero.id}`} className={styles.hero}>
@@ -295,6 +277,25 @@ export async function HomeDashboard({
                   </Link>
                 ))}
               </div>
+            )}
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
+              <h2 className={styles.cardTitle}>
+                <span className={`${styles.accent} ${styles.accentMuted}`} />
+                설문
+              </h2>
+            </div>
+            {latestSurvey ? (
+              <Link href={`/surveys/${latestSurvey.id}`} className={styles.listItem}>
+                <div className={styles.listTitle}>{latestSurvey.title}</div>
+                <div className={styles.listSub}>
+                  {respondedIds.has(latestSurvey.id) ? "응답 완료" : "응답하기"}
+                </div>
+              </Link>
+            ) : (
+              <p className={styles.empty}>열린 설문이 없어요.</p>
             )}
           </section>
         </div>

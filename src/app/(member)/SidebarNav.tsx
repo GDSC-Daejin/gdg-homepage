@@ -60,7 +60,6 @@ const baseGroups: NavGroup[] = [
     items: [
       { href: "/events", label: "이벤트", icon: "events" },
       { href: "/schedule", label: "스케줄", icon: "meetingPoll" },
-      { href: "/surveys", label: "설문", icon: "surveys" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
     ],
   },
