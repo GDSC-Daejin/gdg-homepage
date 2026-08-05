@@ -4,7 +4,9 @@ import { DEMO_EVENTS, DEMO_EVENT_CONFIRMED_COUNTS } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { EventCards } from "@/components/EventCards";
+import { EventStatusToggle } from "@/components/EventStatusToggle";
 import { MonthFilter } from "@/components/MonthFilter";
+import { isEventPast } from "@/lib/event-status";
 import { formatMonthLabel, monthKst } from "@/lib/format";
 import type { Event } from "@/lib/types";
 
@@ -13,9 +15,9 @@ export const dynamic = "force-dynamic";
 export default async function MemberEventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>;
+  searchParams: Promise<{ month?: string; status?: string }>;
 }) {
-  const { month } = await searchParams;
+  const { month, status } = await searchParams;
   const demo = await isDemoMode();
 
   let all: Event[] = DEMO_EVENTS;
@@ -31,7 +33,10 @@ export default async function MemberEventsPage({
   }
 
   const months = Array.from(new Set(all.map((event) => monthKst(event.starts_at))));
-  const list = month ? all.filter((event) => monthKst(event.starts_at) === month) : all;
+  const isPastView = status === "past";
+  const list = (month ? all.filter((event) => monthKst(event.starts_at) === month) : all).filter((event) =>
+    isPastView ? isEventPast(event) : !isEventPast(event),
+  );
   const monthOptions = [
     { value: "", label: "전체" },
     ...months.map((value) => ({ value, label: formatMonthLabel(value) })),
@@ -52,12 +57,17 @@ export default async function MemberEventsPage({
       <PageHeader
         title="이벤트"
         description="정기세션·스터디·모각코를 확인해요"
-        action={<MonthFilter options={monthOptions} value={month ?? ""} basePath="/events" />}
+        action={
+          <div className="flex items-center gap-2">
+            <EventStatusToggle basePath="/events" past={isPastView} month={month} />
+            <MonthFilter options={monthOptions} value={month ?? ""} basePath="/events" query={isPastView ? { status: "past" } : undefined} />
+          </div>
+        }
       />
       {list.length === 0 ? (
         <EmptyState
-          title="등록된 이벤트가 없어요"
-          description="새 이벤트가 등록되면 여기에서 확인할 수 있어요."
+          title={isPastView ? "지난 일정이 없어요" : "예정된 이벤트가 없어요"}
+          description={isPastView ? "종료된 이벤트가 여기에서 보여요." : "새 이벤트가 등록되면 여기에서 확인할 수 있어요."}
         />
       ) : (
         <EventCards events={list} counts={counts} hrefBase="/events" />
