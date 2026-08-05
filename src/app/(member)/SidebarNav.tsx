@@ -60,8 +60,6 @@ const baseGroups: NavGroup[] = [
     items: [
       { href: "/events", label: "이벤트", icon: "events" },
       { href: "/schedule", label: "스케줄", icon: "meetingPoll" },
-      { href: "/notices", label: "공지", icon: "notices" },
-      { href: "/board", label: "커뮤니티", icon: "board", matchPrefixes: ["/board", "/qna", "/meetings"] },
       { href: "/surveys", label: "설문", icon: "surveys" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
     ],
@@ -69,7 +67,6 @@ const baseGroups: NavGroup[] = [
   {
     title: "자료",
     items: [
-      { href: "/materials", label: "자료실", icon: "materials" },
       { href: "/pokedex", label: "포켓몬 도감", icon: "pokedex" },
     ],
   },
