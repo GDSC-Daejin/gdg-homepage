@@ -8,6 +8,7 @@ import {
   EVENT_TYPE_TEXT as TYPE_TEXT,
   EVENT_TYPE_TONES as TYPE_TONES,
 } from "@/lib/event-type";
+import { isEventPast } from "@/lib/event-status";
 import type { Event } from "@/lib/types";
 
 function CalendarIcon() {
@@ -52,6 +53,7 @@ export function EventCards({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {events.map((event) => {
+        const past = isEventPast(event);
         const confirmed = counts[event.id] ?? 0;
         const capacity = event.capacity;
         const remaining = capacity ? capacity - confirmed : null;
@@ -73,12 +75,16 @@ export function EventCards({
                 </Badge>
                 <span
                   className={
-                    closingSoon
+                    past
+                      ? "text-sm font-semibold text-gray-400"
+                      : closingSoon
                       ? `text-sm font-semibold ${TYPE_TEXT[event.type]}`
                       : "text-sm text-gray-400"
                   }
                 >
-                  {capacity
+                  {past
+                    ? "종료됨"
+                    : capacity
                     ? closingSoon
                       ? `마감임박 · 잔여 ${remaining}석`
                       : `잔여 ${remaining}석`

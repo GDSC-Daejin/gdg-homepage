@@ -9,6 +9,7 @@ import { MonthFilter } from "@/components/MonthFilter";
 import { EventCards } from "@/components/EventCards";
 import { cn } from "@/lib/cn";
 import { kstDayStartIso, monthGrid, nextDayKey } from "@/lib/calendar";
+import { isEventPast } from "@/lib/event-status";
 import { dayKeyKst, formatMonthLabel, monthKst } from "@/lib/format";
 import type { Event, Place } from "@/lib/types";
 import {
@@ -22,9 +23,9 @@ export const dynamic = "force-dynamic";
 export default async function AdminEventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string; view?: string }>;
+  searchParams: Promise<{ month?: string; view?: string; status?: string }>;
 }) {
-  const { month, view } = await searchParams;
+  const { month, view, status } = await searchParams;
   const demo = await isDemoMode();
   const isCalendar = view === "calendar";
   const today = dayKeyKst(new Date().toISOString());
@@ -129,7 +130,10 @@ export default async function AdminEventsPage({
   }
 
   const months = Array.from(new Set(all.map((e) => monthKst(e.starts_at))));
-  const list = month ? all.filter((e) => monthKst(e.starts_at) === month) : all;
+  const isPastView = status === "past";
+  const list = (month ? all.filter((e) => monthKst(e.starts_at) === month) : all).filter((e) =>
+    isPastView ? isEventPast(e) : !isEventPast(e),
+  );
 
   const monthOptions = [
     { value: "", label: "전체" },
@@ -154,6 +158,7 @@ export default async function AdminEventsPage({
         action={
           <div className="flex items-center gap-2">
             <ViewToggle isCalendar={false} month={month || today.slice(0, 7)} />
+            <EventStatusToggle past={isPastView} month={month} />
             <MonthFilter
               options={monthOptions}
               value={month ?? ""}
@@ -170,8 +175,8 @@ export default async function AdminEventsPage({
       />
       {list.length === 0 ? (
         <EmptyState
-          title="등록된 이벤트가 없어요"
-          description="첫 정기세션·스터디·모각코를 만들어 신청을 받아보세요."
+          title={isPastView ? "지난 일정이 없어요" : "예정된 이벤트가 없어요"}
+          description={isPastView ? "종료된 이벤트가 여기에서 보여요." : "첫 정기세션·스터디·모각코를 만들어 신청을 받아보세요."}
           action={
             <Link href="/admin/events/new">
               <Button type="button" variant="primary">
@@ -183,6 +188,28 @@ export default async function AdminEventsPage({
       ) : (
         <EventCards events={list} counts={counts} hrefBase="/admin/events" />
       )}
+    </div>
+  );
+}
+
+function EventStatusToggle({ past, month }: { past: boolean; month?: string }) {
+  const href = (status?: "past") => {
+    const params = new URLSearchParams();
+    if (month) params.set("month", month);
+    if (status) params.set("status", status);
+    const query = params.toString();
+    return `/admin/events${query ? `?${query}` : ""}`;
+  };
+  const base = "rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors duration-100";
+
+  return (
+    <div className="flex items-center gap-0.5 rounded-lg border border-gray-300 p-0.5" role="group" aria-label="일정 상태">
+      <Link href={href()} aria-current={past ? undefined : "page"} className={cn(base, past ? "text-gray-600 hover:bg-gray-100" : "bg-primary-soft text-primary")}>
+        예정/진행
+      </Link>
+      <Link href={href("past")} aria-current={past ? "page" : undefined} className={cn(base, past ? "bg-primary-soft text-primary" : "text-gray-600 hover:bg-gray-100")}>
+        지난 일정
+      </Link>
     </div>
   );
 }
