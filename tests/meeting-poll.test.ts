@@ -13,6 +13,7 @@ import {
   heatStep,
   MAX_POLL_DAYS,
   MIN_BLOCK_MIN,
+  REGULAR_SESSION_MIN_BLOCK_MIN,
   normalizeSlots,
   prepareMeetingPollInput,
   pollSlotSet,
@@ -323,6 +324,12 @@ describe("recommendBlocks", () => {
     const [block] = recommendBlocks(DATES, hourTimes, hourViews, 60);
     expect(block.durationMin).toBe(60);
     expect(block.to - block.from + 1).toBe(1);
+  });
+
+  it("정기세션은 최소 3시간 연속 가능한 구간만 추천한다", () => {
+    const [block] = recommendBlocks(DATES, TIMES, views, 30, 3, REGULAR_SESSION_MIN_BLOCK_MIN);
+    expect(block.durationMin).toBe(REGULAR_SESSION_MIN_BLOCK_MIN);
+    expect(block.to - block.from + 1).toBe(6);
   });
 
   it("겹치는 구간은 하나만 남는다", () => {

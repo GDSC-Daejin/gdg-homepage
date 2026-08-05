@@ -26,6 +26,7 @@ import {
   heatStep,
   MIN_BLOCK_MIN,
   pollTimes,
+  REGULAR_SESSION_MIN_BLOCK_MIN,
   recommendBlocks,
   shortDate,
   slotIso,
@@ -45,6 +46,7 @@ import {
   endOf,
   kstDayKey,
   kstTime,
+  nearestDuration,
   pastDue,
 } from "./poll-detail-time";
 import styles from "../schedule.module.css";
@@ -111,12 +113,15 @@ export function PollDetail({
 
   // 80%(초대 7명이면 6명)는 너무 늦게 켜진다 — 3명만 모이면 겹치는 구간이 보인다.
   const recommendGate = Math.min(3, liveViews.length);
+  const recommendationMin = poll.is_regular_session
+    ? REGULAR_SESSION_MIN_BLOCK_MIN
+    : MIN_BLOCK_MIN;
   const recommendations = useMemo(
     () =>
       responded.length >= recommendGate
-        ? recommendBlocks(dates, times, liveViews, poll.slot_min)
+        ? recommendBlocks(dates, times, liveViews, poll.slot_min, 3, recommendationMin)
         : [],
-    [responded.length, recommendGate, dates, times, liveViews, poll.slot_min],
+    [responded.length, recommendGate, dates, times, liveViews, poll.slot_min, recommendationMin],
   );
   const visibleRecommendations = poll.confirmed_at
     ? backupRecommendations(recommendations, poll.confirmed_at)
@@ -464,7 +469,7 @@ export function PollDetail({
               whiteSpace: "nowrap",
             }}
           >
-            최소 {durationLabel(Math.max(MIN_BLOCK_MIN, poll.slot_min))} 연속 가능한 구간만
+            최소 {durationLabel(Math.max(recommendationMin, poll.slot_min))} 연속 가능한 구간만
           </span>
         </div>
 
@@ -583,6 +588,20 @@ export function PollDetail({
                       size="medium"
                       fullWidth
                       disabled={!canManage || locked || busy}
+                      onClick={() =>
+                        setConfirming({
+                          startIso: r.startIso,
+                          durationMin: nearestDuration(r.durationMin),
+                        })
+                      }
+                    >
+                      일정 확정하기
+                    </Button>}
+                    <Button
+                      variant="text"
+                      color="assistive"
+                      size="medium"
+                      disabled={!canManage || locked || busy}
                       onClick={() => {
                         const options = adjustmentOptions(r, times, dates);
                         setConfirming({
@@ -592,15 +611,7 @@ export function PollDetail({
                         });
                       }}
                     >
-                      시간 조정하기
-                    </Button>}
-                    <Button
-                      variant="text"
-                      color="assistive"
-                      size="medium"
-                      onClick={() => setSelected(r.startIso)}
-                    >
-                      보기
+                      시간 조정
                     </Button>
                   </div>
                 </div>

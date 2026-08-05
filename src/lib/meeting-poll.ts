@@ -69,6 +69,7 @@ export const DURATION_OPTIONS = [30, 60, 90, 120] as const;
 
 /** 추천 구간의 최소 길이(분). 1시간 30분은 겹치는 구간이 잘 안 나와서 1시간으로 완화했다. */
 export const MIN_BLOCK_MIN = 60;
+export const REGULAR_SESSION_MIN_BLOCK_MIN = 180;
 
 /** 원본 디자인의 히트맵 7단계. 0명 → 전원 순. */
 export const HEAT_STEPS = [
@@ -304,7 +305,7 @@ export function backupRecommendations(
 
 /**
  * 가장 많이 겹치는 연속 구간 top N.
- * 구간 길이는 MIN_BLOCK_MIN을 채우는 최소 칸 수로 고정하고(30분 단위면 2칸),
+ * 구간 길이는 minBlockMin을 채우는 최소 칸 수로 고정하고(30분 단위면 2칸),
  * "구간의 모든 칸이 가능한 사람" 수로 줄을 세운다. 겹치는 구간은 하나만 남긴다.
  */
 export function recommendBlocks(
@@ -313,11 +314,12 @@ export function recommendBlocks(
   views: ParticipantView[],
   slotMin: number,
   topCount = 3,
+  minBlockMin = MIN_BLOCK_MIN,
 ): Recommendation[] {
   const responded = views.filter((v) => v.responded);
   if (responded.length === 0) return [];
 
-  const span = Math.max(1, Math.ceil(MIN_BLOCK_MIN / slotMin));
+  const span = Math.max(1, Math.ceil(minBlockMin / slotMin));
   if (times.length < span) return [];
 
   const candidates: { dateIndex: number; from: number; to: number; available: ParticipantView[] }[] = [];
