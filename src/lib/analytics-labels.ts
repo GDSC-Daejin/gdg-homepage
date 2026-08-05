@@ -60,6 +60,7 @@ const EVENT_LABELS: Record<string, string> = {
 
 export function labelPage(path: string): string {
   const clean = path.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+  if (clean === "/schedule" || clean.startsWith("/schedule/")) return "스케줄";
   if (PAGE_LABELS[clean]) return PAGE_LABELS[clean];
   for (const [pattern, label] of DYNAMIC_PAGE_LABELS) {
     if (pattern.test(clean)) return label;

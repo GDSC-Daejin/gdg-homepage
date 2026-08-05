@@ -6,6 +6,11 @@ describe("labelPage", () => {
   it("도감 경로를 포켓몬도감으로 표시한다", () => {
     expect(labelPage("/pokedex")).toBe("포켓몬도감");
   });
+
+  it("스케줄 하위 경로를 하나의 스케줄 항목으로 묶는다", () => {
+    expect(labelPage("/schedule")).toBe("스케줄");
+    expect(labelPage("/schedule/poll-1")).toBe("스케줄");
+  });
 });
 
 describe("trackEvent", () => {
