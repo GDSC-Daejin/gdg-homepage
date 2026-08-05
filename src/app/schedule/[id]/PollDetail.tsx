@@ -240,6 +240,11 @@ export function PollDetail({
               {poll.start_hour}시 ~ {poll.end_hour}시
             </MetaChip>
             <MetaChip label="칸">{poll.slot_min}분</MetaChip>
+            {poll.due_at && (
+              <MetaChip label="응답 마감">
+                {dateWithWeekday(kstDayKey(poll.due_at))} {kstTime(poll.due_at)}
+              </MetaChip>
+            )}
             <MetaChip label="만든 사람">{ownerName}</MetaChip>
           </div>
         </div>

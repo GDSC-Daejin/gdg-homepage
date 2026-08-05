@@ -1,4 +1,5 @@
 import { dateWithWeekday, durationLabel } from "@/lib/meeting-poll";
+import { dayKeyKst } from "@/lib/format";
 import { addReaction, openDirectMessage, postMessage } from "@/lib/slack/api";
 
 const CONFIRMATION_EMOJI = "cb3dc3d2-fd74-4a3b-a9e1-f7ad58497090";
@@ -9,6 +10,7 @@ export async function sendMeetingPollCreated({
   dates,
   startHour,
   endHour,
+  dueAt,
   isMojisoop,
   isRegularSession,
 }: {
@@ -17,6 +19,7 @@ export async function sendMeetingPollCreated({
   dates: string[];
   startHour: number;
   endHour: number;
+  dueAt: string | null;
   isMojisoop: boolean;
   isRegularSession: boolean;
 }): Promise<string | undefined> {
@@ -30,10 +33,11 @@ export async function sendMeetingPollCreated({
   const period = dates.length
     ? `${dateWithWeekday(dates[0])} ~ ${dateWithWeekday(dates[dates.length - 1])}`
     : "후보일 미정";
+  const deadline = dueAt ? `\n응답 마감: ${dateWithWeekday(dayKeyKst(dueAt))} 23:55` : "";
   const posted = await postMessage({
     channel,
     botToken,
-    text: `📢 [${isRegularSession ? "정기세션" : "모지숲"}] "${title}" 수요조사가 시작됐어요\n${period} · ${startHour}시~${endHour}시\n${siteUrl}/schedule/${id}`,
+    text: `📢 [${isRegularSession ? "정기세션" : "모지숲"}] "${title}" 수요조사가 시작됐어요\n${period} · ${startHour}시~${endHour}시${deadline}\n${siteUrl}/schedule/${id}`,
   });
   return posted.ok ? undefined : `수요조사 생성 알림은 실패했어요 (${posted.error})`;
 }

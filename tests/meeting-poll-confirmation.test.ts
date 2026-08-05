@@ -134,6 +134,7 @@ describe("sendMeetingPollCreated", () => {
       dates: ["2026-08-17", "2026-08-18"],
       startHour: 18,
       endHour: 21,
+      dueAt: "2026-08-21T14:59:59.000Z",
       isMojisoop: false,
       isRegularSession: true,
     })).resolves.toBeUndefined();
@@ -143,5 +144,6 @@ describe("sendMeetingPollCreated", () => {
       botToken: "xoxb-jarvis",
       text: expect.stringContaining("수요조사가 시작됐어요"),
     }));
+    expect(postMessage.mock.calls[0][0].text).toContain("응답 마감: 8월 21일 (금) 23:55");
   });
 });

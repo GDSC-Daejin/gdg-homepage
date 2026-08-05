@@ -38,8 +38,7 @@ export default async function ScheduleLayout({
         WebkitFontSmoothing: "antialiased",
       }}
     >
-      {/* 넓은 화면에서 끝까지 늘어나면 카드가 읽기 어렵다 — 본문을 가운데로 모은다. */}
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
+      <div>
         <div className={styles.layoutBar}>
           <ScheduleNav />
           <NewPollButton canCreate={isStaff(profile)} />
@@ -50,5 +49,11 @@ export default async function ScheduleLayout({
   );
 
   if (memberShell) return <MemberShell profile={profile}>{content}</MemberShell>;
-  return <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />} mainClassName="">{content}</ResponsiveShell>;
+  return (
+    <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />}>
+      <div className="mx-auto w-full max-w-[96rem] overflow-hidden rounded-[20px] bg-gray-50 shadow-material">
+        {content}
+      </div>
+    </ResponsiveShell>
+  );
 }

@@ -108,6 +108,7 @@ export async function createMeetingPoll(
         dates: pollInput.dates,
         startHour: pollInput.startHour,
         endHour: pollInput.endHour,
+        dueAt: pollInput.dueAt,
         isMojisoop: pollInput.isMojisoop ?? true,
         isRegularSession: pollInput.isRegularSession ?? false,
       })
