@@ -3,7 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import { MonthFilter } from "@/components/MonthFilter";
 import {
   dayKeyKst,
-  displayName,
   formatKstTime,
   formatMonthLabel,
   formatRelativeKst,
@@ -80,14 +79,6 @@ function PeopleIcon() {
   );
 }
 
-interface PostRow {
-  id: string;
-  title: string;
-  board: "free" | "qna";
-  created_at: string;
-  member_public: { name: string; nickname: string | null } | null;
-}
-
 export async function HomeDashboard({
   month,
   name,
@@ -107,7 +98,6 @@ export async function HomeDashboard({
     { data: pointLogs },
     { data: groupMembers },
     { data: events },
-    { data: postRows },
   ] = await Promise.all([
     supabase
       .from("notices")
@@ -124,11 +114,6 @@ export async function HomeDashboard({
     supabase.from("point_logs").select("amount, created_at").eq("user_id", profileId),
     supabase.from("group_members").select("group_id").eq("user_id", profileId),
     supabase.from("events").select("*").order("starts_at", { ascending: false }),
-    supabase
-      .from("posts")
-      .select("id, title, board, created_at, member_public(name, nickname)")
-      .order("created_at", { ascending: false })
-      .limit(3),
   ]);
 
   const list = (events ?? []) as Event[];
@@ -179,7 +164,6 @@ export async function HomeDashboard({
   ];
 
   const notices = (noticeRows ?? []) as Pick<Notice, "id" | "title" | "published_at">[];
-  const posts = (postRows as unknown as PostRow[] | null) ?? [];
 
   const hero = upcoming[0];
   const heroConfirmed = hero ? (counts[hero.id] ?? 0) : 0;
@@ -360,39 +344,6 @@ export async function HomeDashboard({
                     {notice.published_at && (
                       <div className={styles.listSub}>{formatRelativeKst(notice.published_at)}</div>
                     )}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className={styles.card}>
-            <div className={styles.cardHead}>
-              <h2 className={styles.cardTitle}>
-                <span className={`${styles.accent} ${styles.accentMuted}`} />
-                커뮤니티
-              </h2>
-              <Link href="/board" className={styles.cardMeta}>
-                전체 보기
-              </Link>
-            </div>
-            {posts.length === 0 ? (
-              <p className={styles.empty}>아직 올라온 글이 없어요.</p>
-            ) : (
-              <div className={styles.cardBody}>
-                {posts.map((post) => (
-                  <Link
-                    key={post.id}
-                    href={`${post.board === "qna" ? "/qna" : "/board"}/${post.id}`}
-                    className={styles.listItem}
-                  >
-                    <div className={styles.listTitle}>{post.title}</div>
-                    <div className={styles.listSub}>
-                      {post.member_public
-                        ? displayName(post.member_public.name, post.member_public.nickname)
-                        : "탈퇴한 회원"}{" "}
-                      · {formatRelativeKst(post.created_at)}
-                    </div>
                   </Link>
                 ))}
               </div>
