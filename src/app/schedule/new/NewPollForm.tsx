@@ -31,6 +31,7 @@ import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, setPoll
 export interface MemberOption {
   id: string;
   name: string;
+  avatarPath: string | null;
 }
 
 type Picked = PollDraftPerson;
@@ -79,6 +80,7 @@ export function NewPollForm({
           name: p.name,
           userId: p.user_id,
           email: p.email,
+          avatarPath: members.find((member) => member.id === p.user_id)?.avatarPath ?? null,
         }))
       : [],
   );
@@ -360,6 +362,7 @@ export function NewPollForm({
                   name: member.name,
                   userId: member.id,
                   email: null,
+                  avatarPath: member.avatarPath,
                 })))}
               >
                 전원
@@ -382,6 +385,7 @@ export function NewPollForm({
                     initial={avatarInitial(p.name)}
                     color={AVATAR_COLORS[people.indexOf(p) % AVATAR_COLORS.length]}
                     size={26}
+                    avatarPath={p.avatarPath}
                   />
                   <span
                     style={{

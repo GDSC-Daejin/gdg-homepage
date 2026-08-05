@@ -7,6 +7,7 @@ export interface PollDraftPerson {
   name: string;
   userId: string | null;
   email: string | null;
+  avatarPath: string | null;
 }
 
 export function defaultPollDates(today: string): string[] {
@@ -28,13 +29,13 @@ export function setPollDateSelection(dates: string[], dateKeys: string[], select
 export function addPollDraftPerson(
   people: PollDraftPerson[],
   value: string,
-  staff: { id: string; name: string }[],
+  staff: { id: string; name: string; avatarPath: string | null }[],
 ): PollDraftPerson[] {
   const name = value.trim();
   if (!name) return people;
   const member = staff.find((person) => person.name === name && !people.some((picked) => picked.userId === person.id));
   return member
-    ? [...people, { key: member.id, participantId: null, name: member.name, userId: member.id, email: null }]
+    ? [...people, { key: member.id, participantId: null, name: member.name, userId: member.id, email: null, avatarPath: member.avatarPath }]
     : people;
 }
 

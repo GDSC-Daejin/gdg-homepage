@@ -5,14 +5,14 @@ import { openDirectMessage, postMessage } from "@/lib/slack/api";
  * 아직 응답 안 한 사람에게 Slack 응답 요청을 보낸다.
  *
  * 어드민의 "알림 보내기" 버튼과 마감 전날 크론이 함께 쓴다 — 두 경로가 같은 함수를 지나야
- * 모지숲 일정은 운영진 채널 멘션, 그 외 일정과 정기세션은 참여자 DM으로 보낸다.
+ * 일정 유형과 관계없이 미응답 참여자에게 개인 DM으로 보낸다.
  *
  * 실패하면 사람이 읽을 문장, 성공하거나 보낼 사람이 없으면 undefined.
  * 인앱 알림은 이미 나간 뒤라 여기서 예외를 던지지 않는다.
  */
-export async function nudgeAdminChannel(
+export async function nudgeParticipants(
   client: SupabaseClient,
-  poll: { id: string; title: string; is_mojisoop: boolean; is_regular_session?: boolean },
+  poll: { id: string; title: string },
   note?: string,
 ): Promise<string | undefined> {
   const { data } = await client
@@ -32,36 +32,20 @@ export async function nudgeAdminChannel(
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
   if (!botToken) return "앱 알림은 보냈어요. Jarvis 설정이 없어 슬랙 알림은 못 보냈어요";
 
-  if (!poll.is_mojisoop || poll.is_regular_session) {
-    const results = await Promise.all(
-      pending.map(async (participant) => {
-        const user = participant.profiles?.slack_user_id;
-        if (!user) return participant.name;
-        const dm = await openDirectMessage({ user, botToken });
-        if (!dm.ok) return participant.name;
-        const result = await postMessage({
-          channel: dm.channel,
-          botToken,
-          text: `[스케줄] "${poll.title}" 응답을 부탁드려요.\n${siteUrl}/schedule/${poll.id}`,
-        });
-        return result.ok ? null : participant.name;
-      }),
-    );
-    const failed = results.filter(Boolean);
-    return failed.length ? `앱 알림은 보냈어요. DM을 못 보낸 참여자: ${failed.join(", ")}` : undefined;
-  }
-
-  const channel = process.env.SLACK_ADMIN_CHANNEL_ID;
-  if (!channel) return "앱 알림은 보냈어요. 슬랙 설정이 없어 채널 멘션은 못 보냈어요";
-  const mentions = pending
-    .map((p) => (p.profiles?.slack_user_id ? `<@${p.profiles.slack_user_id}>` : p.name))
-    .join(" ");
-  const head = `[스케줄] "${poll.title}" 아직 응답 안 한 ${pending.length}명${note ? ` · ${note}` : ""}`;
-  const result = await postMessage({
-    channel,
-    botToken,
-    text: `${head}\n${mentions}\n${siteUrl}/schedule/${poll.id}`,
-  });
-
-  return result.ok ? undefined : `앱 알림은 보냈어요. 슬랙 멘션은 실패했어요 (${result.error})`;
+  const results = await Promise.all(
+    pending.map(async (participant) => {
+      const user = participant.profiles?.slack_user_id;
+      if (!user) return participant.name;
+      const dm = await openDirectMessage({ user, botToken });
+      if (!dm.ok) return participant.name;
+      const result = await postMessage({
+        channel: dm.channel,
+        botToken,
+        text: `[스케줄] "${poll.title}" 응답을 부탁드려요.${note ? ` ${note}` : ""}\n${siteUrl}/schedule/${poll.id}`,
+      });
+      return result.ok ? null : participant.name;
+    }),
+  );
+  const failed = results.filter(Boolean);
+  return failed.length ? `앱 알림은 보냈어요. DM을 못 보낸 참여자: ${failed.join(", ")}` : undefined;
 }

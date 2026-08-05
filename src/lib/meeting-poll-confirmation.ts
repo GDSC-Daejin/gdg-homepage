@@ -3,22 +3,28 @@ import { addReaction, openDirectMessage, postMessage } from "@/lib/slack/api";
 
 const CONFIRMATION_EMOJI = "cb3dc3d2-fd74-4a3b-a9e1-f7ad58497090";
 
-export async function sendRegularSessionPollCreated({
+export async function sendMeetingPollCreated({
   id,
   title,
   dates,
   startHour,
   endHour,
+  isMojisoop,
+  isRegularSession,
 }: {
   id: string;
   title: string;
   dates: string[];
   startHour: number;
   endHour: number;
+  isMojisoop: boolean;
+  isRegularSession: boolean;
 }): Promise<string | undefined> {
   const botToken = process.env.SLACK_JARVIS_BOT_TOKEN;
-  const channel = process.env.SLACK_NOTICE_CHANNEL_ID;
-  if (!botToken || !channel) return "공지사항 채널이 설정되지 않아 생성 알림을 보내지 못했어요";
+  const channel = isRegularSession
+    ? process.env.SLACK_NOTICE_CHANNEL_ID
+    : isMojisoop ? process.env.SLACK_ADMIN_CHANNEL_ID : undefined;
+  if (!botToken || !channel) return "생성 알림 채널이 설정되지 않아 알림을 보내지 못했어요";
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
   const period = dates.length
@@ -27,9 +33,9 @@ export async function sendRegularSessionPollCreated({
   const posted = await postMessage({
     channel,
     botToken,
-    text: `📢 [정기세션] "${title}" 수요조사가 시작됐어요\n${period} · ${startHour}시~${endHour}시\n${siteUrl}/schedule/${id}`,
+    text: `📢 [${isRegularSession ? "정기세션" : "모지숲"}] "${title}" 수요조사가 시작됐어요\n${period} · ${startHour}시~${endHour}시\n${siteUrl}/schedule/${id}`,
   });
-  return posted.ok ? undefined : `정기세션 생성 알림은 실패했어요 (${posted.error})`;
+  return posted.ok ? undefined : `수요조사 생성 알림은 실패했어요 (${posted.error})`;
 }
 
 export async function sendMeetingPollConfirmation({

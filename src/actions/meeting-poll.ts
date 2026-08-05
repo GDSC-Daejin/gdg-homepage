@@ -6,8 +6,8 @@ import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { toKoreanError } from "@/lib/errors";
 import { dayKeyKst, timeKeyKst } from "@/lib/format";
-import { sendMeetingPollConfirmation, sendRegularSessionPollCreated } from "@/lib/meeting-poll-confirmation";
-import { nudgeAdminChannel } from "@/lib/meeting-poll-nudge";
+import { sendMeetingPollConfirmation, sendMeetingPollCreated } from "@/lib/meeting-poll-confirmation";
+import { nudgeParticipants } from "@/lib/meeting-poll-nudge";
 import {
   DURATION_OPTIONS,
   normalizeSlots,
@@ -101,13 +101,15 @@ export async function createMeetingPoll(
   if (participantError) return { error: toKoreanError(participantError) };
 
   revalidatePath("/schedule");
-  const warning = pollInput.isRegularSession
-    ? await sendRegularSessionPollCreated({
+  const warning = pollInput.isRegularSession || pollInput.isMojisoop
+    ? await sendMeetingPollCreated({
         id: pollId,
         title: pollInput.title,
         dates: pollInput.dates,
         startHour: pollInput.startHour,
         endHour: pollInput.endHour,
+        isMojisoop: pollInput.isMojisoop ?? true,
+        isRegularSession: pollInput.isRegularSession ?? false,
       })
     : undefined;
   return warning ? { id: pollId, warning } : { id: pollId };
@@ -437,14 +439,12 @@ export async function nudgeMeetingPoll(
 
   const { data: pollRow } = await supabase
     .from("meeting_polls")
-    .select("title, is_mojisoop, is_regular_session")
+    .select("title")
     .eq("id", pollId)
     .single();
-  const slackError = await nudgeAdminChannel(supabase, {
+  const slackError = await nudgeParticipants(supabase, {
     id: pollId,
     title: (pollRow as { title: string } | null)?.title ?? "일정",
-    is_mojisoop: (pollRow as { is_mojisoop: boolean } | null)?.is_mojisoop ?? true,
-    is_regular_session: (pollRow as { is_regular_session: boolean } | null)?.is_regular_session ?? false,
   });
   return slackError ? { sent, error: slackError } : { sent };
 }

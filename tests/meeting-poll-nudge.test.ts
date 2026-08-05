@@ -8,7 +8,7 @@ vi.mock("@/lib/slack/api", () => ({
   postMessage: (...args: unknown[]) => postMessage(...args),
 }));
 
-const { nudgeAdminChannel } = await import("@/lib/meeting-poll-nudge");
+const { nudgeParticipants } = await import("@/lib/meeting-poll-nudge");
 
 function pendingClient() {
   const query = {
@@ -30,16 +30,16 @@ afterEach(() => {
   delete process.env.NEXT_PUBLIC_SITE_URL;
 });
 
-describe("nudgeAdminChannel", () => {
+describe("nudgeParticipants", () => {
   it("모지숲이 아닌 일정은 미응답 참여자에게 Jarvis DM을 보낸다", async () => {
     process.env.SLACK_JARVIS_BOT_TOKEN = "xoxb-jarvis";
     process.env.NEXT_PUBLIC_SITE_URL = "https://gdg.example.com";
     openDirectMessage.mockResolvedValue({ ok: true, channel: "D_LUMI" });
     postMessage.mockResolvedValue({ ok: true, ts: "1" });
 
-    await nudgeAdminChannel(
+    await nudgeParticipants(
       pendingClient(),
-      { id: "poll-1", title: "디자이너 작당모의", is_mojisoop: false } as never,
+      { id: "poll-1", title: "디자이너 작당모의" },
     );
 
     expect(openDirectMessage).toHaveBeenCalledWith({ user: "U_LUMI", botToken: "xoxb-jarvis" });
@@ -55,9 +55,9 @@ describe("nudgeAdminChannel", () => {
     openDirectMessage.mockResolvedValue({ ok: true, channel: "D_LUMI" });
     postMessage.mockResolvedValue({ ok: true, ts: "1" });
 
-    await nudgeAdminChannel(
+    await nudgeParticipants(
       pendingClient(),
-      { id: "poll-1", title: "정기세션", is_mojisoop: true, is_regular_session: true },
+      { id: "poll-1", title: "정기세션" },
     );
 
     expect(openDirectMessage).toHaveBeenCalledWith({ user: "U_LUMI", botToken: "xoxb-jarvis" });

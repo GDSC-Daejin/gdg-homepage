@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
   isDemoMode: vi.fn(),
   requireAdmin: vi.fn(),
   sendMeetingPollConfirmation: vi.fn(),
-  sendRegularSessionPollCreated: vi.fn(),
+  sendMeetingPollCreated: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -16,7 +16,7 @@ vi.mock("@/lib/notion", () => ({ createWeeklyPage: mocks.createWeeklyPage }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/lib/meeting-poll-confirmation", () => ({
   sendMeetingPollConfirmation: mocks.sendMeetingPollConfirmation,
-  sendRegularSessionPollCreated: mocks.sendRegularSessionPollCreated,
+  sendMeetingPollCreated: mocks.sendMeetingPollCreated,
 }));
 
 describe("confirmMeetingPoll", () => {

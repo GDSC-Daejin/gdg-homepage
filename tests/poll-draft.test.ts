@@ -21,6 +21,11 @@ describe("setPollDateSelection", () => {
 
 describe("addPollDraftPerson", () => {
   it("활성 회원 목록에 없는 이름은 참여자로 추가하지 않는다", () => {
-    expect(addPollDraftPerson([], "외부인", [{ id: "member-1", name: "회원" }])).toEqual([]);
+    expect(addPollDraftPerson([], "외부인", [{ id: "member-1", name: "회원", avatarPath: null }])).toEqual([]);
+  });
+
+  it("회원의 프로필 이미지를 참여자 초대에 함께 담는다", () => {
+    expect(addPollDraftPerson([], "회원", [{ id: "member-1", name: "회원", avatarPath: "avatars/member-1.png" }]))
+      .toEqual([expect.objectContaining({ avatarPath: "avatars/member-1.png" })]);
   });
 });

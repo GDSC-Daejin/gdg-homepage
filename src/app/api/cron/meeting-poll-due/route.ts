@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { hasValidCronAuthorization } from "@/lib/cron";
-import { nudgeAdminChannel } from "@/lib/meeting-poll-nudge";
+import { nudgeParticipants } from "@/lib/meeting-poll-nudge";
 
 /**
  * 마감 전날 알림. "마감 전날 알림 보내기"가 켜진 조율 중 마감이 24시간 안으로 들어온 것에서
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
       sent += rows.length;
     }
     // 버튼과 같은 Slack 알림을 보낸다. 실패해도 다음 폴은 계속 돈다.
-    const slackError = await nudgeAdminChannel(supabase, poll, "오늘 마감이에요");
+    const slackError = await nudgeParticipants(supabase, poll, "오늘 마감이에요");
     if (slackError) slackErrors.push(`${poll.title}: ${slackError}`);
 
     // 보낼 사람이 없어도 표시해 둔다 — 매 시간 같은 폴을 다시 훑지 않게.

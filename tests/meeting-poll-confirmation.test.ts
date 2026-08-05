@@ -10,7 +10,7 @@ vi.mock("@/lib/slack/api", () => ({
   openDirectMessage: (...args: unknown[]) => openDirectMessage(...args),
 }));
 
-const { sendMeetingPollConfirmation, sendRegularSessionPollCreated } = await import("@/lib/meeting-poll-confirmation");
+const { sendMeetingPollConfirmation, sendMeetingPollCreated } = await import("@/lib/meeting-poll-confirmation");
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -122,18 +122,20 @@ describe("sendMeetingPollConfirmation", () => {
   });
 });
 
-describe("sendRegularSessionPollCreated", () => {
+describe("sendMeetingPollCreated", () => {
   it("정기세션 수요조사 생성 알림을 공지사항 채널로 보낸다", async () => {
     configured();
     process.env.SLACK_NOTICE_CHANNEL_ID = "C_NOTICE";
     postMessage.mockResolvedValue({ ok: true, ts: "123.456" });
 
-    await expect(sendRegularSessionPollCreated({
+    await expect(sendMeetingPollCreated({
       id: "poll-1",
       title: "8월 정기세션",
       dates: ["2026-08-17", "2026-08-18"],
       startHour: 18,
       endHour: 21,
+      isMojisoop: false,
+      isRegularSession: true,
     })).resolves.toBeUndefined();
 
     expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({

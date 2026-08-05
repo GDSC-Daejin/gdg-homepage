@@ -3,11 +3,11 @@ import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => ({
   createClient: vi.fn(),
-  nudgeAdminChannel: vi.fn(),
+  nudgeParticipants: vi.fn(),
 }));
 
 vi.mock("@supabase/supabase-js", () => ({ createClient: mocks.createClient }));
-vi.mock("@/lib/meeting-poll-nudge", () => ({ nudgeAdminChannel: mocks.nudgeAdminChannel }));
+vi.mock("@/lib/meeting-poll-nudge", () => ({ nudgeParticipants: mocks.nudgeParticipants }));
 
 describe("회의 조율 마감 알림 크론", () => {
   beforeEach(() => {
@@ -69,6 +69,6 @@ describe("회의 조율 마감 알림 크론", () => {
     expect(response.status).toBe(500);
     expect(await response.json()).toMatchObject({ error: "database unavailable", sent: 0 });
     expect(pollQuery.update).not.toHaveBeenCalled();
-    expect(mocks.nudgeAdminChannel).not.toHaveBeenCalled();
+    expect(mocks.nudgeParticipants).not.toHaveBeenCalled();
   });
 });

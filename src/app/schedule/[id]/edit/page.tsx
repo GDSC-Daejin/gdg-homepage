@@ -28,7 +28,7 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
       supabase.from("meeting_poll_participants").select("id, user_id, name, email").eq("poll_id", id),
       supabase
         .from("profiles")
-        .select("id, name, nickname")
+        .select("id, name, nickname, avatar_path")
         .in("role", ["organizer", "team_member", "member"])
         .eq("status", "active")
         .not("approved_at", "is", null)
@@ -36,9 +36,10 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
     ]);
     poll = pollRow as MeetingPoll | null ?? undefined;
     participants = (participantRows ?? []) as EditableParticipant[];
-    members = ((staffRows ?? []) as { id: string; name: string; nickname: string }[]).map((item) => ({
+    members = ((staffRows ?? []) as { id: string; name: string; nickname: string; avatar_path: string | null }[]).map((item) => ({
       id: item.id,
       name: displayName(item.name, item.nickname),
+      avatarPath: item.avatar_path,
     }));
   }
 
