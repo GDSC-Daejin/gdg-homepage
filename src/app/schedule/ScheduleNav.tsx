@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Button } from "@/components/wds/Button";
 
 /** 원본 헤더의 내 일정 / 지난 일정 · 새 일정 만들기. 활성 항목만 진하다. */
-export function ScheduleNav() {
+export function ScheduleNav({ variant = "default" }: { variant?: "default" | "header" }) {
   const pathname = usePathname();
   const isPast = pathname.startsWith("/schedule/past");
   const isMine = pathname === "/schedule" || (!isPast && !pathname.startsWith("/schedule/new"));
@@ -16,8 +16,10 @@ export function ScheduleNav() {
         href="/schedule"
         style={{
           font: `${isMine ? 600 : 400} 15px/1 var(--wds-font-sans)`,
-          color: isMine ? "var(--wds-label-normal)" : "var(--wds-label-alternative)",
+          color: isMine && variant === "header" ? "var(--wds-primary)" : isMine ? "var(--wds-label-normal)" : "var(--wds-label-alternative)",
           textDecoration: "none",
+          paddingBottom: variant === "header" ? 14 : undefined,
+          borderBottom: isMine && variant === "header" ? "2px solid var(--wds-primary)" : undefined,
         }}
       >
         내 일정
@@ -26,13 +28,33 @@ export function ScheduleNav() {
         href="/schedule/past"
         style={{
           font: `${isPast ? 600 : 400} 15px/1 var(--wds-font-sans)`,
-          color: isPast ? "var(--wds-label-normal)" : "var(--wds-label-alternative)",
+          color: isPast && variant === "header" ? "var(--wds-primary)" : isPast ? "var(--wds-label-normal)" : "var(--wds-label-alternative)",
           textDecoration: "none",
+          paddingBottom: variant === "header" ? 14 : undefined,
+          borderBottom: isPast && variant === "header" ? "2px solid var(--wds-primary)" : undefined,
         }}
       >
         지난 일정
       </Link>
     </nav>
+  );
+}
+
+export function ScheduleLayoutBar({
+  canCreate,
+  className,
+}: {
+  canCreate: boolean;
+  className: string;
+}) {
+  const pathname = usePathname();
+  if (/^\/schedule\/[^/]+$/.test(pathname)) return null;
+
+  return (
+    <div className={className}>
+      <ScheduleNav />
+      <NewPollButton canCreate={canCreate} />
+    </div>
   );
 }
 

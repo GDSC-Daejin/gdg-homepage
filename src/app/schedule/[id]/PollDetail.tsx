@@ -40,6 +40,7 @@ import type { MeetingPoll } from "@/lib/types";
 import { ConfirmDialog, NudgeDialog } from "./PollDetailDialogs";
 import { availabilityViews, draftAvailability, type AvailabilityDrag } from "@/lib/meeting-poll-availability";
 import { MetaChip, PeopleTooltip, PersonRow } from "./PollDetailPeople";
+import { ScheduleNav } from "../ScheduleNav";
 import {
   addMinutes,
   adjustmentOptions,
@@ -209,7 +210,10 @@ export function PollDetail({
     <div className={styles.detailPage}>
       {/* ── 제목 줄 ── */}
       <div className={styles.detailHeader}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className={styles.detailNav}>
+          <ScheduleNav variant="header" />
+        </div>
+        <div style={{ display: "contents" }}>
           <div className={styles.detailTitleRow}>
             <h1
               style={{
@@ -235,27 +239,26 @@ export function PollDetail({
               </ContentBadge>
             )}
           </div>
-          {/* 한 줄로 이어 붙이면 어디까지가 날짜고 어디부터가 시간인지 눈으로 끊기지 않는다. */}
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, marginTop: 2 }}>
-            <MetaChip label="날짜">
+          <div className={styles.metaGrid}>
+            <MetaChip label="날짜" icon={<TinyIcon d="M7 3v4M17 3v4M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1" />}>
               {shortDate(dates[0])}({weekdayKo(dates[0])}) ~ {shortDate(dates[dates.length - 1])}(
               {weekdayKo(dates[dates.length - 1])}) · {dates.length}일
             </MetaChip>
-            <MetaChip label="시간">
+            <MetaChip label="시간" icon={<TinyIcon d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />}>
               {poll.start_hour}시 ~ {poll.end_hour}시
             </MetaChip>
-            <MetaChip label="칸">{poll.slot_min}분</MetaChip>
+            <MetaChip label="칸" icon={<TinyIcon d="M7 3h10M7 21h10M8 3v4a4 4 0 0 0 8 0V3M8 21v-4a4 4 0 0 1 8 0v4" />}>{poll.slot_min}분</MetaChip>
             {poll.due_at && (
-              <MetaChip label="응답 마감">
+              <MetaChip label="응답 마감" icon={<TinyIcon d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />} emphasis>
                 {dateWithWeekday(kstDayKey(poll.due_at))} {kstTime(poll.due_at)}
               </MetaChip>
             )}
-            <MetaChip label="만든 사람">{ownerName}</MetaChip>
+            <MetaChip label="만든 사람" icon={<TinyIcon d="M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />} horizontal className={styles.metaOwner}>{ownerName}</MetaChip>
           </div>
         </div>
         <div className={styles.detailActions}>
           {canManage && <Button
-            variant="solid"
+            variant="outlined"
             color="assistive"
             size="medium"
             leadingIcon={<TinyIcon d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />}
@@ -267,7 +270,7 @@ export function PollDetail({
             초대 링크 복사
           </Button>}
           <Button
-            variant="text"
+            variant="outlined"
             color="assistive"
             size="medium"
             leadingIcon={<TinyIcon d="M4 6h16M4 12h16M4 18h16" />}
@@ -277,7 +280,6 @@ export function PollDetail({
           </Button>
           {canManage && (
             <>
-              <span style={{ width: 1, height: 18, background: "var(--wds-line-alternative)", margin: "0 2px" }} />
               {!poll.confirmed_at && (
                 <Button
                   variant="outlined"
@@ -890,24 +892,27 @@ export function PollDetail({
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 12,
-              padding: "16px 18px",
-              background: "var(--wds-bg-alt)",
-              borderRadius: 12,
+              overflow: "hidden",
+              background: "var(--wds-bg-elevated)",
+              borderRadius: 16,
+              boxShadow: "var(--wds-shadow-card)",
               marginTop: 2,
-              boxSizing: "border-box",
-              height: 200,
-              overflowY: "auto",
-              scrollbarGutter: "stable",
             }}
           >
             {selected ? (
               <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                  <span style={{ font: "700 15px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
-                    {dateWithWeekday(kstDayKey(selected))} {timeAmPm(kstTime(selected))} ·{" "}
-                    {responded.length}명 중 {selectedNames.length}명 가능
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "20px 22px" }}>
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                    <span style={{ display: "inline-flex", color: "var(--wds-primary)" }}>
+                      <TinyIcon d="M7 3v4M17 3v4M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1" />
+                    </span>
+                    <span style={{ font: "700 20px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
+                      {dateWithWeekday(kstDayKey(selected))} {timeAmPm(kstTime(selected))}
+                    </span>
+                    <span style={{ padding: "7px 12px", borderRadius: 999, background: "rgba(0,191,64,0.10)", font: "700 15px/1 var(--wds-font-sans)", color: "var(--wds-status-positive)" }}>
+                      {responded.length}명 중 {selectedNames.length}명 가능
+                    </span>
+                  </div>
                   {selectedBlock && (
                     <span
                       style={{
@@ -919,12 +924,13 @@ export function PollDetail({
                     </span>
                   )}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <PersonRow label="가능" labelColor="var(--wds-status-positive)" people={selectedNames} />
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <PersonRow label="가능" labelColor="var(--wds-status-positive)" people={selectedNames} count={selectedNames.length} />
                   <PersonRow
                     label="안 됨"
                     labelColor="var(--wds-status-negative)"
                     people={selectedMissing}
+                    count={selectedMissing.length}
                     strike
                   />
                   {pending.length > 0 && (
@@ -932,13 +938,14 @@ export function PollDetail({
                       label="미응답"
                       labelColor="var(--wds-label-alternative)"
                       people={pending}
+                      count={pending.length}
                       pending
                     />
                   )}
                 </div>
               </>
             ) : (
-              <span style={{ font: "400 14px/1.5 var(--wds-font-sans)", color: "var(--wds-label-alternative)" }}>
+              <span style={{ padding: "20px 22px", font: "400 14px/1.5 var(--wds-font-sans)", color: "var(--wds-label-alternative)" }}>
                 칸에 마우스를 올리거나 탭하면 그 시간에 가능한 사람이 보여요
               </span>
             )}

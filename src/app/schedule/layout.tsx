@@ -6,7 +6,7 @@ import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { AdminSidebar } from "@/app/admin/AdminSidebar";
 import { MemberShell } from "@/app/(member)/MemberShell";
 import { isStaff } from "@/lib/types";
-import { NewPollButton, ScheduleNav } from "./ScheduleNav";
+import { ScheduleLayoutBar } from "./ScheduleNav";
 import styles from "./schedule.module.css";
 
 export const dynamic = "force-dynamic";
@@ -39,16 +39,15 @@ export default async function ScheduleLayout({
       }}
     >
       <div>
-        <div className={styles.layoutBar}>
-          <ScheduleNav />
-          <NewPollButton canCreate={isStaff(profile)} />
-        </div>
+        <ScheduleLayoutBar className={styles.layoutBar} canCreate={isStaff(profile)} />
         {children}
       </div>
     </div>
   );
 
-  if (memberShell) return <MemberShell profile={profile}>{content}</MemberShell>;
+  if (memberShell) {
+    return <MemberShell profile={profile} contentClassName="max-w-[1536px]">{content}</MemberShell>;
+  }
   return (
     <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />}>
       <div className="mx-auto w-full max-w-[96rem] overflow-hidden rounded-[20px] bg-gray-50 shadow-material">
