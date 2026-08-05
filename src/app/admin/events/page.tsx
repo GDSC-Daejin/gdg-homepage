@@ -126,13 +126,14 @@ export default async function AdminEventsPage({
     const { data: events } = await supabase
       .from("events")
       .select("*")
-      .order("starts_at", { ascending: false });
+      .order("event_date", { ascending: false, nullsFirst: false });
     all = (events ?? []) as Event[];
   }
 
-  const months = Array.from(new Set(all.map((e) => monthKst(e.starts_at))));
+  const eventMonth = (event: Event) => event.event_date?.slice(0, 7) ?? (event.starts_at ? monthKst(event.starts_at) : "");
+  const months = Array.from(new Set(all.map(eventMonth).filter(Boolean)));
   const isPastView = status === "past";
-  const list = (month ? all.filter((e) => monthKst(e.starts_at) === month) : all).filter((e) =>
+  const list = (month ? all.filter((e) => eventMonth(e) === month) : all).filter((e) =>
     isPastView ? isEventPast(e) : !isEventPast(e),
   );
 

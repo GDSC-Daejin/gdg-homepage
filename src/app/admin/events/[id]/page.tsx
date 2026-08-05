@@ -7,6 +7,7 @@ import { Card } from "@/components/Card";
 import { AttendanceStatusCard } from "@/components/AttendanceStatusCard";
 import { RegistrantsTable } from "@/components/RegistrantsTable";
 import { formatKst } from "@/lib/format";
+import { formatEventSchedule } from "@/lib/event-schedule";
 import type { Event, EventType, Place } from "@/lib/types";
 import { EventForm } from "../EventForm";
 import { DeleteEventButton } from "../DeleteEventButton";
@@ -69,7 +70,7 @@ export default async function AdminEventDetailPage({
             <h1 className="text-xl font-bold text-gray-900">이벤트 수정</h1>
           </div>
           <p className="mt-1 truncate text-sm text-gray-500">
-            {e.title} · {formatKst(e.starts_at)}
+            {e.title} · {formatEventSchedule(e)}
           </p>
         </div>
         <div className="shrink-0">

@@ -28,13 +28,14 @@ export default async function MemberEventsPage({
     const { data: events } = await supabase
       .from("events")
       .select("*")
-      .order("starts_at", { ascending: false });
+      .order("event_date", { ascending: false, nullsFirst: false });
     all = (events ?? []) as Event[];
   }
 
-  const months = Array.from(new Set(all.map((event) => monthKst(event.starts_at))));
+  const eventMonth = (event: Event) => event.event_date?.slice(0, 7) ?? (event.starts_at ? monthKst(event.starts_at) : "");
+  const months = Array.from(new Set(all.map(eventMonth).filter(Boolean)));
   const isPastView = status === "past";
-  const list = (month ? all.filter((event) => monthKst(event.starts_at) === month) : all).filter((event) =>
+  const list = (month ? all.filter((event) => eventMonth(event) === month) : all).filter((event) =>
     isPastView ? isEventPast(event) : !isEventPast(event),
   );
   const monthOptions = [

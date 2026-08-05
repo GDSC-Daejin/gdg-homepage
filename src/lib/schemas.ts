@@ -22,14 +22,17 @@ export const eventSchema = z
     type: z.enum(["session", "study", "mogakco", "party"]),
     title: z.string().min(1, "제목을 입력해주세요"),
     description: z.string(),
-    starts_at: z.string().min(1, "일시를 입력해주세요"),
+    event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+    start_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+    end_time: z.string().regex(/^\d{2}:\d{2}$/).nullable().optional(),
+    starts_at: z.string().nullable().optional(),
     ends_at: z.string().nullable().optional(),
     place_id: z.string().uuid().nullable(),
     speaker: z.string(),
     capacity: z.coerce.number().int().positive().nullable(),
   })
   .refine(
-    (v) => !v.ends_at || new Date(v.ends_at) > new Date(v.starts_at),
+    (v) => !v.ends_at || !v.starts_at || new Date(v.ends_at) > new Date(v.starts_at),
     { message: "종료 일시는 시작 일시보다 뒤여야 해요", path: ["ends_at"] },
   );
 

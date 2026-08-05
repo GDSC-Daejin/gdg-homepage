@@ -7,7 +7,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { RegistrationPanel } from "@/components/RegistrationPanel";
-import { displayName, formatKst, formatKstRange } from "@/lib/format";
+import { displayName, formatKst } from "@/lib/format";
+import { formatEventSchedule } from "@/lib/event-schedule";
 import { EventLocation } from "@/components/EventLocation";
 import { NaverMap } from "@/components/NaverMap";
 import type { BoardType, Event, EventType, RegistrationStatus } from "@/lib/types";
@@ -93,7 +94,7 @@ export default async function MemberEventDetailPage({
           <div className="p-5">
             <p className="text-sm font-semibold text-gray-900">일시</p>
             <p className="mt-2 text-sm text-gray-700">
-              {formatKstRange(e.starts_at, e.ends_at)}
+              {formatEventSchedule(e)}
             </p>
           </div>
           {(e.location || e.address) && (

@@ -17,6 +17,7 @@ interface DatePickerProps {
   max?: string;
   onChange?: (value: string) => void;
   className?: string;
+  emptyOption?: string;
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -60,6 +61,7 @@ export function DatePicker({
   max,
   onChange,
   className,
+  emptyOption,
 }: DatePickerProps) {
   const fieldId = useId();
   const errorId = useId();
@@ -205,6 +207,11 @@ export function DatePicker({
                 ›
               </button>
             </div>
+            {emptyOption && (
+              <button type="button" onClick={() => { setDate(null); onChange?.(""); setOpen(false); }} className="mb-2 w-full rounded border border-gray-200 py-1.5 text-xs text-gray-600 hover:bg-gray-50">
+                {emptyOption}
+              </button>
+            )}
             <div ref={calendarRef} role="grid" tabIndex={-1} className="grid grid-cols-7 gap-y-1 text-center text-xs">
               {WEEKDAYS.map((w) => (
                 <span key={w} className="py-1 text-gray-400">

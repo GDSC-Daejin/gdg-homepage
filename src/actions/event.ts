@@ -10,12 +10,19 @@ import { isDemoMode } from "@/lib/demo";
 import type { ActionResult } from "@/lib/types";
 
 function parseEventForm(formData: FormData) {
+  const eventDate = String(formData.get("event_date") ?? "") || null;
+  const startTime = String(formData.get("start_time") ?? "") || null;
+  const endTime = String(formData.get("end_time") ?? "") || null;
+  const iso = (time: string | null) => eventDate && time ? new Date(`${eventDate}T${time}+09:00`).toISOString() : null;
   return eventSchema.safeParse({
     type: formData.get("type"),
     title: formData.get("title"),
     description: formData.get("description"),
-    starts_at: formData.get("starts_at"),
-    ends_at: formData.get("ends_at") || null,
+    event_date: eventDate,
+    start_time: startTime,
+    end_time: endTime,
+    starts_at: iso(startTime),
+    ends_at: iso(endTime),
     place_id: formData.get("place_id") || null,
     speaker: formData.get("speaker"),
     capacity: formData.get("capacity") || null,

@@ -9,6 +9,7 @@ import {
   monthKst,
 } from "@/lib/format";
 import { sumPointsInMonth } from "@/lib/points";
+import { formatEventSchedule } from "@/lib/event-schedule";
 import type { Event, EventType, Group, Notice } from "@/lib/types";
 import styles from "./home.module.css";
 
@@ -24,18 +25,20 @@ const GROUP_STATUS_LABELS = { recruiting: "모집중", active: "진행중", arch
 
 // 종료 시각이 없으면 시작 시각을 종료로 본다
 function eventEnd(event: Event) {
+  if (!event.event_date || !event.starts_at) return Number.POSITIVE_INFINITY;
   return new Date(event.ends_at ?? event.starts_at).getTime();
 }
 
 /** "8월 12일 화요일 오후 7:00" — 히어로용 긴 표기 */
-function heroWhen(iso: string) {
+function heroWhen(event: Event) {
+  if (!event.event_date || !event.starts_at) return formatEventSchedule(event);
   const date = new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
     month: "long",
     day: "numeric",
     weekday: "long",
-  }).format(new Date(iso));
-  return `${date} ${formatKstTime(iso)}`;
+  }).format(new Date(event.starts_at));
+  return `${date} ${formatKstTime(event.starts_at)}`;
 }
 
 /** "7/23" — 지난 이벤트 줄용 짧은 표기 */
@@ -46,6 +49,7 @@ function shortDate(iso: string) {
 
 /** 시작까지 남은 일수 라벨. 이미 시작했으면 "진행 중". */
 function dDay(event: Event) {
+  if (!event.event_date || !event.starts_at) return "일시 미정";
   const now = Date.now();
   const start = new Date(event.starts_at).getTime();
   if (start <= now) return now < eventEnd(event) ? "진행 중" : null;
@@ -137,7 +141,7 @@ export async function HomeDashboard({
 
   const now = Date.now();
   const upcoming = list.filter((e) => eventEnd(e) >= now).reverse();
-  const allPast = list.filter((e) => eventEnd(e) < now);
+  const allPast = list.filter((e) => e.event_date && eventEnd(e) < now);
 
   const pastMonths = Array.from(new Set(allPast.map((e) => monthKst(e.starts_at))));
   const threeMonthsAgo = new Date();
@@ -182,7 +186,7 @@ export async function HomeDashboard({
               <span className={styles.tagSolid}>{TYPE_LABELS[hero.type]}</span>
               {heroBadge && <span className={styles.tagOutline}>{heroBadge}</span>}
             </div>
-            <div className={styles.heroWhen}>{heroWhen(hero.starts_at)}</div>
+            <div className={styles.heroWhen}>{heroWhen(hero)}</div>
             <h2 className={styles.heroTitle}>{hero.title}</h2>
             <div className={styles.heroMeta}>
               {hero.location && (

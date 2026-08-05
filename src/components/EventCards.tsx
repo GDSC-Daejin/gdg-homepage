@@ -9,6 +9,7 @@ import {
   EVENT_TYPE_TONES as TYPE_TONES,
 } from "@/lib/event-type";
 import { isEventPast } from "@/lib/event-status";
+import { formatEventSchedule } from "@/lib/event-schedule";
 import type { Event } from "@/lib/types";
 
 function CalendarIcon() {
@@ -99,7 +100,7 @@ export function EventCards({
               <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm text-gray-500">
                 <span className="inline-flex items-center gap-1">
                   <CalendarIcon />
-                  {formatKst(event.starts_at)}
+                  {formatEventSchedule(event)}
                 </span>
                 {event.location ? (
                   <span className="inline-flex items-center gap-1">

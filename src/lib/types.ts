@@ -111,6 +111,9 @@ export interface Event {
   description: string;
   starts_at: string;
   ends_at: string | null;
+  event_date?: string | null;
+  start_time?: string | null;
+  end_time?: string | null;
   location: string;
   address: string;
   speaker: string;
