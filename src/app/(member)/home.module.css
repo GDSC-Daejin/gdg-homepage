@@ -10,8 +10,10 @@
   gap: 16px;
   padding: 24px;
   border-radius: 20px;
-  background: var(--wds-bg);
-  box-shadow: var(--wds-shadow-card);
+  /* 본문 패널은 페이지 배경과 같은 톤으로 두고 그림자로만 띄운다.
+     안쪽 카드가 흰색으로 올라오면서 위계가 생긴다. */
+  background: var(--wds-bg-alt);
+  box-shadow: var(--shadow-material);
   font-family: var(--wds-font-sans);
   color: var(--wds-label-normal);
   -webkit-font-smoothing: antialiased;
@@ -20,9 +22,9 @@
 /* WDS 원본에는 다크 값이 없다. 회원 화면의 테마 토글이 홈에서도 살아 있도록
    .dark 아래에서만 토큰을 뒤집는다(원본 wds.css는 건드리지 않는다). */
 :global(.dark) .home {
-  --wds-bg: #1b1c1e;
-  --wds-bg-alt: #232427;
-  --wds-bg-elevated: #232427;
+  --wds-bg: #212327; /* 카드 */
+  --wds-bg-alt: #16171b; /* 본문 패널 — body 배경과 같은 값 */
+  --wds-bg-elevated: #212327;
   --wds-label-normal: rgb(246, 247, 249);
   --wds-label-neutral: rgba(246, 247, 249, 0.88);
   --wds-label-alternative: rgba(246, 247, 249, 0.6);
@@ -69,21 +71,21 @@
   gap: 10px;
   padding: 12px 16px;
   border-radius: 12px;
-  background: var(--wds-fill-normal);
+  border: 1px solid var(--wds-line-neutral);
+  background: var(--wds-bg);
   text-decoration: none;
   color: var(--wds-label-normal);
 }
 
 .banner:hover {
-  background: var(--wds-fill-strong);
+  box-shadow: var(--wds-shadow-emphasize);
 }
 
 .bannerTag {
   flex: none;
   padding: 3px 8px;
   border-radius: 6px;
-  background: var(--wds-bg);
-  box-shadow: var(--wds-shadow-card);
+  background: var(--wds-fill-normal);
   font-size: 11.5px;
   font-weight: 700;
   color: var(--wds-label-neutral);
@@ -227,9 +229,11 @@
 }
 
 .heroEmpty {
+  margin: 0;
   padding: 40px 28px;
   border-radius: 20px;
-  background: var(--wds-bg-alt);
+  border: 1px solid var(--wds-line-neutral);
+  background: var(--wds-bg);
   text-align: center;
   color: var(--wds-label-alternative);
   font-size: 14px;
@@ -256,6 +260,7 @@
 .card {
   border-radius: 16px;
   border: 1px solid var(--wds-line-neutral);
+  background: var(--wds-bg);
   overflow: hidden;
 }
 
@@ -268,7 +273,7 @@
 }
 
 .cardHeadFilled {
-  background: var(--wds-bg-alt);
+  background: var(--wds-fill-normal);
 }
 
 .cardTitle {
