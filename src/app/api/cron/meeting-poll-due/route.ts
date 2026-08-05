@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
   const dayLater = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const { data: polls, error } = await supabase
     .from("meeting_polls")
-    .select("id, title, is_mojisoop")
+    .select("id, title, is_mojisoop, is_regular_session")
     .eq("notify_before_due", true)
     .is("confirmed_at", null)
     .is("due_notified_at", null)
@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
 
   let sent = 0;
   const slackErrors: string[] = [];
-  for (const poll of (polls ?? []) as { id: string; title: string; is_mojisoop: boolean }[]) {
+  for (const poll of (polls ?? []) as { id: string; title: string; is_mojisoop: boolean; is_regular_session: boolean }[]) {
     const { data: pending, error: pendingError } = await supabase
       .from("meeting_poll_participants")
       .select("user_id")
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       }
       sent += rows.length;
     }
-    // 운영진 채널 멘션은 버튼과 같은 함수를 지난다. 실패해도 다음 폴은 계속 돈다.
+    // 버튼과 같은 Slack 알림을 보낸다. 실패해도 다음 폴은 계속 돈다.
     const slackError = await nudgeAdminChannel(supabase, poll, "오늘 마감이에요");
     if (slackError) slackErrors.push(`${poll.title}: ${slackError}`);
 

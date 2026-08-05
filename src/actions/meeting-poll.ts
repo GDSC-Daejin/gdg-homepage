@@ -6,7 +6,7 @@ import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { toKoreanError } from "@/lib/errors";
 import { dayKeyKst, timeKeyKst } from "@/lib/format";
-import { sendMeetingPollConfirmation } from "@/lib/meeting-poll-confirmation";
+import { sendMeetingPollConfirmation, sendRegularSessionPollCreated } from "@/lib/meeting-poll-confirmation";
 import { nudgeAdminChannel } from "@/lib/meeting-poll-nudge";
 import {
   DURATION_OPTIONS,
@@ -101,7 +101,16 @@ export async function createMeetingPoll(
   if (participantError) return { error: toKoreanError(participantError) };
 
   revalidatePath("/schedule");
-  return { id: pollId };
+  const warning = pollInput.isRegularSession
+    ? await sendRegularSessionPollCreated({
+        id: pollId,
+        title: pollInput.title,
+        dates: pollInput.dates,
+        startHour: pollInput.startHour,
+        endHour: pollInput.endHour,
+      })
+    : undefined;
+  return warning ? { id: pollId, warning } : { id: pollId };
 }
 
 /** 확정 전 조율의 후보·명단을 바꾸고, 새 후보를 완전히 덮는 기존 응답만 보존한다. */
@@ -411,7 +420,7 @@ export async function deleteMeetingPoll(pollId: string): Promise<ActionResult> {
 /**
  * 아직 응답 안 한 사람 재촉하기. 두 갈래로 나간다.
  * - 인앱 알림: 회원으로 초대된 사람만(이름만 초대된 사람은 받을 곳이 없다)
- * - 운영진 슬랙 채널 멘션: 슬랙이 연결된 사람은 <@id>, 아니면 이름 그대로 — 아무도 빠뜨리지 않는다
+ * - 슬랙: 모지숲은 운영진 채널 멘션, 정기세션·일반 일정은 미응답자 DM
  */
 export async function nudgeMeetingPoll(
   pollId: string,
@@ -428,13 +437,14 @@ export async function nudgeMeetingPoll(
 
   const { data: pollRow } = await supabase
     .from("meeting_polls")
-    .select("title, is_mojisoop")
+    .select("title, is_mojisoop, is_regular_session")
     .eq("id", pollId)
     .single();
   const slackError = await nudgeAdminChannel(supabase, {
     id: pollId,
     title: (pollRow as { title: string } | null)?.title ?? "일정",
     is_mojisoop: (pollRow as { is_mojisoop: boolean } | null)?.is_mojisoop ?? true,
+    is_regular_session: (pollRow as { is_regular_session: boolean } | null)?.is_regular_session ?? false,
   });
   return slackError ? { sent, error: slackError } : { sent };
 }

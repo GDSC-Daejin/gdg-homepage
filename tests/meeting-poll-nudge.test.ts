@@ -49,4 +49,17 @@ describe("nudgeAdminChannel", () => {
       text: '[스케줄] "디자이너 작당모의" 응답을 부탁드려요.\nhttps://gdg.example.com/schedule/poll-1',
     });
   });
+
+  it("정기세션은 모지숲 설정과 무관하게 미응답 참여자에게 DM을 보낸다", async () => {
+    process.env.SLACK_JARVIS_BOT_TOKEN = "xoxb-jarvis";
+    openDirectMessage.mockResolvedValue({ ok: true, channel: "D_LUMI" });
+    postMessage.mockResolvedValue({ ok: true, ts: "1" });
+
+    await nudgeAdminChannel(
+      pendingClient(),
+      { id: "poll-1", title: "정기세션", is_mojisoop: true, is_regular_session: true },
+    );
+
+    expect(openDirectMessage).toHaveBeenCalledWith({ user: "U_LUMI", botToken: "xoxb-jarvis" });
+  });
 });
