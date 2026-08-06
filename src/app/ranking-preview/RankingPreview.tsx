@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { activateRankingDefense, rerollRankingOpponents, saveRankingPreset, startRankingBattle } from "@/actions/pokedex-ranking";
+import { Modal } from "@/components/Modal";
+import { RankingBattleAnimation } from "@/app/(member)/pokedex/RankingBattleAnimation";
 import { Button } from "@/components/wds/Button";
 import { ContentBadge, SegmentedControl } from "@/components/wds/primitives";
-import type { RankingBattleSummary, RankingLeagueState } from "@/lib/pokedex/ranking-league";
+import type { RankingBattleDetail, RankingBattleSummary, RankingLeagueState, RankingPokemon } from "@/lib/pokedex/ranking-league";
 import {
   RANKING_ATTACKS_PER_DAY,
   RANKING_START_RATING,
@@ -19,7 +23,6 @@ import {
 } from "@/lib/pokedex/ranking-stats";
 import { Glyph, type GlyphName, Pips, PokemonImage, ScoreChart, Sprite, TONE, medalStyle } from "./parts";
 import {
-  ME_LABEL,
   OWNED_POKEMON,
   PREVIEW_EXTRA,
   PREVIEW_PROFILE_ID,
@@ -29,9 +32,7 @@ import {
   TODAY,
   UNADOPTED,
   displayName,
-  pokemonOf,
   seasonRange,
-  sumPower,
 } from "./preview-data";
 
 type TabKey = "home" | "attack" | "deck" | "log";
@@ -54,6 +55,36 @@ function togglePresetMember(throwIds: string[], throwId: string) {
   return throwIds.length === 3 ? throwIds : [...throwIds, throwId];
 }
 
+function createPreviewBattle(opponent: RankingLeagueState["opponents"][number], attackerTeam: RankingPokemon[], won: boolean, id: string): RankingBattleDetail {
+  const attacker = attackerTeam[0];
+  const defender = opponent.lead;
+  const attackerHealth = 1_000 + attacker.combatPower;
+  const defenderHealth = 1_000 + defender.combatPower;
+  const damage = Math.ceil(defenderHealth / 2);
+
+  return {
+    id,
+    attackerId: PREVIEW_PROFILE_ID,
+    defenderId: opponent.allocationId,
+    firstTurnUserId: won ? PREVIEW_PROFILE_ID : opponent.allocationId,
+    attackerTeam,
+    defenderTeam: [defender],
+    battleLog: won
+      ? [
+          { actor: "attacker", attackerIndex: 0, defenderIndex: 0, attackerDamage: damage, defenderDamage: 0, attackerHealth, defenderHealth: defenderHealth - damage, attackerTypeMultiplier: 1, defenderTypeMultiplier: 1, attackerMonoMultiplier: 1, defenderMonoMultiplier: 1 },
+          { actor: "defender", attackerIndex: 0, defenderIndex: 0, attackerDamage: 0, defenderDamage: Math.ceil(attackerHealth / 3), attackerHealth: attackerHealth - Math.ceil(attackerHealth / 3), defenderHealth: defenderHealth - damage, attackerTypeMultiplier: 1, defenderTypeMultiplier: 1, attackerMonoMultiplier: 1, defenderMonoMultiplier: 1 },
+          { actor: "attacker", attackerIndex: 0, defenderIndex: 0, attackerDamage: defenderHealth - damage, defenderDamage: 0, attackerHealth: attackerHealth - Math.ceil(attackerHealth / 3), defenderHealth: 0, attackerTypeMultiplier: 1, defenderTypeMultiplier: 1, attackerMonoMultiplier: 1, defenderMonoMultiplier: 1 },
+        ]
+      : [
+          { actor: "defender", attackerIndex: 0, defenderIndex: 0, attackerDamage: 0, defenderDamage: attackerHealth, attackerHealth: 0, defenderHealth, attackerTypeMultiplier: 1, defenderTypeMultiplier: 1, attackerMonoMultiplier: 1, defenderMonoMultiplier: 1 },
+        ],
+    winnerId: won ? PREVIEW_PROFILE_ID : opponent.allocationId,
+    attackerDelta: won ? 30 : -30,
+    defenderDelta: won ? -10 : 10,
+    createdAt: new Date(TODAY).toISOString(),
+  };
+}
+
 /** 다음 상대 갱신(매일 06:00 KST)까지 남은 시간. 서버 렌더와 어긋나지 않게 마운트 후에 채운다. */
 function useNextRefresh() {
   const [text, setText] = useState("--:--:--");
@@ -66,42 +97,67 @@ function useNextRefresh() {
   return text;
 }
 
-export function RankingPreview() {
+export function RankingPreview({
+  state,
+  profile,
+}: {
+  state?: RankingLeagueState | null;
+  profile?: { id: string; name: string; nickname: string | null };
+}) {
+  const data = state ?? PREVIEW_STATE;
+  const isPreview = !state;
+  const profileId = profile?.id ?? PREVIEW_PROFILE_ID;
+  const memberLabel = profile ? displayName(profile.name, profile.nickname) : "나 (아리)";
+  const ownedPokemon = isPreview ? OWNED_POKEMON : data.ownedPokemon;
+  const findPokemon = (throwId: string) => ownedPokemon.find((pokemon) => pokemon.throwId === throwId);
+  const teamPower = (throwIds: string[]) => throwIds.reduce((total, throwId) => total + (findPokemon(throwId)?.combatPower ?? 0), 0);
   const [tab, setTab] = useState<TabKey>("home");
   const [presets, setPresets] = useState<Record<string, string[]>>(() =>
-    Object.fromEntries(PREVIEW_STATE.presets.map((preset) => [presetKey(preset.kind, preset.slot), preset.members.map((member) => member.throwId)])),
+    Object.fromEntries(data.presets.map((preset) => [presetKey(preset.kind, preset.slot), preset.members.map((member) => member.throwId)])),
   );
-  const [slots, setSlots] = useState<Record<DeckKind, number>>({ defense: 1, attack: 1 });
+  const [slots, setSlots] = useState<Record<DeckKind, number>>({ defense: data.entry?.activeDefenseSlot ?? 1, attack: data.entry?.activeAttackSlot ?? 1 });
   const [editing, setEditing] = useState<DeckKind>("defense");
-  const [activeDefenseSlot, setActiveDefenseSlot] = useState<number | null>(PREVIEW_STATE.entry?.activeDefenseSlot ?? null);
+  const [activeDefenseSlot, setActiveDefenseSlot] = useState<number | null>(data.entry?.activeDefenseSlot ?? null);
   const [saved, setSaved] = useState<string>();
-  const [attacksUsed, setAttacksUsed] = useState(PREVIEW_STATE.entry?.attacksToday ?? 0);
+  const [attacksUsed, setAttacksUsed] = useState(data.entry?.attacksToday ?? 0);
   const [rerolled, setRerolled] = useState(false);
-  const [opponents, setOpponents] = useState<RankingLeagueState["opponents"]>(PREVIEW_STATE.opponents);
-  const [log, setLog] = useState<RankingBattleSummary[]>(PREVIEW_STATE.battles);
+  const [opponents, setOpponents] = useState<RankingLeagueState["opponents"]>(data.opponents);
+  const [log, setLog] = useState<RankingBattleSummary[]>(data.battles);
   const [logFilter, setLogFilter] = useState("all");
   const [moreHome, setMoreHome] = useState(false);
   const [moreLog, setMoreLog] = useState(false);
+  const [battle, setBattle] = useState<RankingBattleDetail>();
+  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  const pickerRef = useRef<HTMLDivElement>(null);
   /** 이 화면에서 새로 치른 전투만 누적한다 — 시작값은 PREVIEW_STATE.entry가 갖고 있다. */
   const [session, setSession] = useState({ delta: 0, wins: 0, matches: 0 });
 
   const refreshIn = useNextRefresh();
-  const season = useMemo(() => seasonProgress(PREVIEW_STATE.season, TODAY), []);
-  const rating = (PREVIEW_STATE.entry?.rating ?? RANKING_START_RATING) + session.delta;
+  const season = useMemo(() => seasonProgress(data.season, isPreview ? TODAY : Date.now()), [data.season, isPreview]);
+  if (!isPreview && !data.entry) {
+    return (
+      <div className="rp">
+        <header className="rp-topbar"><div className="rp-inner"><span className="rp-brand">도감 랭킹전</span></div></header>
+        <main className="rp-inner rp-page"><div className="rp-card"><span className="rp-cardtitle">{memberLabel}님의 랭킹전 준비</span><p className="rp-cardsub">서로 다른 포켓몬 6종을 모으면 덱을 설정할 수 있어요.</p></div></main>
+      </div>
+    );
+  }
+  const rating = (data.entry?.rating ?? RANKING_START_RATING) + session.delta;
   const attacksLeft = RANKING_ATTACKS_PER_DAY - attacksUsed;
-  const wins = (PREVIEW_STATE.entry?.wins ?? 0) + session.wins;
-  const matches = (PREVIEW_STATE.entry?.matches ?? 0) + session.matches;
-  const myRank = PREVIEW_STATE.entry?.rank ?? null;
-  const record = rankingRecord(log, PREVIEW_PROFILE_ID);
-  const defense = recentDefense(log, PREVIEW_PROFILE_ID, TODAY);
-  const reward = rewardProgress({ ...PREVIEW_STATE.entry!, matches, wins });
-  const podiumGap = gapToPodium(PREVIEW_STATE.leaderboard, rating, myRank);
+  const wins = (data.entry?.wins ?? 0) + session.wins;
+  const matches = (data.entry?.matches ?? 0) + session.matches;
+  const myRank = data.entry?.rank ?? null;
+  const record = rankingRecord(log, profileId);
+  const defense = recentDefense(log, profileId, isPreview ? TODAY : Date.now());
+  const reward = rewardProgress({ ...data.entry!, matches, wins });
+  const podiumGap = gapToPodium(data.leaderboard, rating, myRank);
   const earned = rating - RANKING_START_RATING;
 
   const attackDeck = presets[presetKey("attack", slots.attack)] ?? [];
   const defenseDeck = presets[presetKey("defense", slots.defense)] ?? [];
   const editingDeck = editing === "attack" ? attackDeck : defenseDeck;
-  const ace = pokemonOf(attackDeck[0]) ?? OWNED_POKEMON[0];
+  const ace = findPokemon(attackDeck[0]) ?? ownedPokemon[0];
 
   function setDeck(kind: DeckKind, next: string[]) {
     setPresets((current) => ({ ...current, [presetKey(kind, slots[kind])]: next }));
@@ -112,13 +168,24 @@ export function RankingPreview() {
     const opponent = opponents.find((item) => item.allocationId === allocationId);
     const read = PREVIEW_EXTRA.opponentReads.find((item) => item.allocationId === allocationId);
     if (!opponent || attacksLeft <= 0) return;
+    if (!isPreview) {
+      startTransition(async () => {
+        const result = await startRankingBattle(allocationId, slots.attack);
+        if (result.error) setSaved(result.error);
+        if (result.battle) setBattle(result.battle);
+        router.refresh();
+      });
+      return;
+    }
     const win = read?.verdict !== "불리";
     const delta = win ? 30 : -30;
+    const battle = createPreviewBattle(opponent, attackDeck.map(findPokemon).filter((pokemon): pokemon is RankingPokemon => Boolean(pokemon)), win, `preview-battle-${attacksUsed + 1}`);
     setAttacksUsed((count) => count + 1);
+    setBattle(battle);
     setSession((current) => ({ delta: current.delta + delta, wins: current.wins + (win ? 1 : 0), matches: current.matches + 1 }));
     setLog((current) => [
       {
-        id: `session-${current.length}`,
+        id: battle.id,
         role: "attacker",
         opponentName: opponent.name,
         opponentNickname: opponent.nickname,
@@ -129,6 +196,41 @@ export function RankingPreview() {
       },
       ...current,
     ]);
+  }
+
+  function openDeckPicker(kind: DeckKind) {
+    setEditing(kind);
+    requestAnimationFrame(() => pickerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+
+  function saveDeck() {
+    if (editingDeck.length !== 3) return;
+    if (isPreview) {
+      if (editing === "defense") setActiveDefenseSlot(slots.defense);
+      setSaved(editing === "defense" ? `방어 덱 ${slots.defense}번 활성화 · 내일 ${RULES.refreshAt}부터` : `공격 덱 ${slots.attack}번 저장 완료`);
+      return;
+    }
+    startTransition(async () => {
+      const result = await saveRankingPreset(editing, slots[editing], editingDeck);
+      if (result.error) { setSaved(result.error); return; }
+      if (editing === "defense") {
+        const activation = await activateRankingDefense(slots.defense);
+        if (activation.error) { setSaved(activation.error); return; }
+        setActiveDefenseSlot(slots.defense);
+      }
+      setSaved(editing === "defense" ? `방어 덱 ${slots.defense}번 활성화 · 내일 ${RULES.refreshAt}부터` : `공격 덱 ${slots.attack}번 저장 완료`);
+      router.refresh();
+    });
+  }
+
+  function reroll() {
+    if (isPreview) { setRerolled(true); setOpponents(REROLLED_OPPONENTS); return; }
+    startTransition(async () => {
+      const result = await rerollRankingOpponents();
+      if (result.error) setSaved(result.error);
+      else setRerolled(true);
+      router.refresh();
+    });
   }
 
   const filteredLog = log.filter((item) => logFilter === "all" || item.role === logFilter);
@@ -165,7 +267,7 @@ export function RankingPreview() {
               <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 28 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                   <span className="rp-tierchip">시즌 D-{season.daysLeft}</span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: dark(0.75) }}>{ME_LABEL}</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: dark(0.75) }}>{memberLabel}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: dark(0.5) }}>내 점수</span>
@@ -193,7 +295,7 @@ export function RankingPreview() {
                 <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.16em", color: dark(0.4) }}>MY PARTY</span>
                 <div className="rp-partyrow">
                   {attackDeck.map((throwId) => {
-                    const pokemon = pokemonOf(throwId);
+                    const pokemon = findPokemon(throwId);
                     if (!pokemon) return null;
                     return (
                       <div key={throwId} className="rp-partyslot">
@@ -209,7 +311,7 @@ export function RankingPreview() {
                   })}
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 2, flexWrap: "wrap", justifyContent: "center" }}>
-                  <span style={{ fontSize: 12, color: dark(0.5) }}>공격 덱 · 합산 전투력 {sumPower(attackDeck).toLocaleString()}</span>
+                  <span style={{ fontSize: 12, color: dark(0.5) }}>공격 덱 · 합산 전투력 {teamPower(attackDeck).toLocaleString()}</span>
                   <span style={{ fontSize: 12, color: dark(0.3) }}>|</span>
                   <span style={{ fontSize: 12, color: dark(0.5) }}>공격 {record.attack.wins}승 {record.attack.losses}패</span>
                 </div>
@@ -241,7 +343,7 @@ export function RankingPreview() {
               <div className="rp-card rp-card--warn rp-actioncard">
                 <div style={{ display: "flex", gap: 4, flex: "none" }}>
                   {[0, 1, 2].map((index) => {
-                    const pokemon = pokemonOf(defenseDeck[index]);
+                    const pokemon = findPokemon(defenseDeck[index]);
                     return pokemon
                       ? <PokemonImage key={index} src={pokemon.imagePath} size={52} alt={pokemon.name} style={{ borderRadius: 12, background: "var(--wds-primary-bg)" }} />
                       : <span key={index} style={{ width: 52, height: 52, borderRadius: 12, border: "1px dashed rgba(112,115,124,.30)", background: "var(--wds-fill-alternative)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, color: "var(--wds-label-assistive)" }}>+</span>;
@@ -285,7 +387,7 @@ export function RankingPreview() {
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   <span className="rp-cardtitle">시즌 진행</span>
-                  <span className="rp-cardsub">{seasonRange(PREVIEW_STATE.season)} · {season.daysLeft}일 남음</span>
+                  <span className="rp-cardsub">{seasonRange(data.season)} · {season.daysLeft}일 남음</span>
                 </div>
                 <ContentBadge size="small" color="primary">{season.percent}% 진행</ContentBadge>
               </div>
@@ -319,10 +421,10 @@ export function RankingPreview() {
                   <Button size="xsmall" variant="text" color="assistive" onClick={() => setTab("log")}>전체 보기</Button>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {PREVIEW_STATE.leaderboard.map((member, index) => (
+                  {data.leaderboard.map((member, index) => (
                     <div key={member.rank} className="rp-rankrow">
                       <span style={medalStyle(member.rank)}>{member.rank}</span>
-                      <Sprite no={[6, 26, 38][index]} size={46} alt="" />
+                      {isPreview ? <Sprite no={[6, 26, 38][index]} size={46} alt="" /> : <span aria-hidden style={{ width: 46, height: 46, borderRadius: 999, background: "var(--wds-fill-alternative)", display: "grid", placeItems: "center", fontWeight: 800, color: "var(--wds-label-alternative)" }}>{member.rank}</span>}
                       <span className="rp-truncate" style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: "-0.015em" }}>{displayName(member.name, member.nickname)}</span>
                       <span className="rp-num" style={{ fontSize: 15, fontWeight: 800 }}>{member.rating.toLocaleString()}</span>
                     </div>
@@ -330,7 +432,7 @@ export function RankingPreview() {
                   <div className="rp-rankrow rp-rankrow--me">
                     <span style={{ fontSize: 12, fontWeight: 800, textAlign: "center" }}>{myRank}</span>
                     <PokemonImage src={ace.imagePath} size={46} alt={ace.name} />
-                    <span className="rp-truncate" style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: "-0.015em" }}>{ME_LABEL}</span>
+                    <span className="rp-truncate" style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: "-0.015em" }}>{memberLabel}</span>
                     <span className="rp-num" style={{ fontSize: 15, fontWeight: 800 }}>{rating.toLocaleString()}</span>
                   </div>
                 </div>
@@ -342,7 +444,7 @@ export function RankingPreview() {
                   <Button size="xsmall" variant="text" color="assistive" onClick={() => setTab("log")}>전체 보기</Button>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {PREVIEW_EXTRA.feed.map((item) => (
+                  {isPreview ? PREVIEW_EXTRA.feed.map((item) => (
                     <div key={`${item.who}-${item.time}`} className="rp-feedrow">
                       <span style={{ width: 40, height: 40, borderRadius: 11, background: "var(--wds-fill-alternative)", display: "flex", alignItems: "center", justifyContent: "center", flex: "none" }}>
                         <Sprite no={item.no} size={34} alt="" />
@@ -356,7 +458,7 @@ export function RankingPreview() {
                       <span style={{ fontSize: 11.5, fontWeight: 700, whiteSpace: "nowrap", color: item.win ? TONE.pos.fg : TONE.neg.fg }}>{item.note}</span>
                       <span style={{ fontSize: 11, color: "var(--wds-label-assistive)", whiteSpace: "nowrap" }}>{item.time}</span>
                     </div>
-                  ))}
+                  )) : <p style={{ padding: "12px 0", fontSize: 13, color: "var(--wds-label-alternative)" }}>아직 랭킹전 소식이 없어요.</p>}
                 </div>
               </div>
             </div>
@@ -395,8 +497,8 @@ export function RankingPreview() {
                 variant="outlined"
                 color="assistive"
                 size="small"
-                disabled={rerolled || attacksUsed > 0}
-                onClick={() => { setRerolled(true); setOpponents(REROLLED_OPPONENTS); }}
+                disabled={pending || rerolled || attacksUsed > 0}
+                onClick={reroll}
               >
                 상대 리롤 ({rerolled ? 0 : 1}/1)
               </Button>
@@ -407,13 +509,13 @@ export function RankingPreview() {
             <div style={{ display: "flex", flexDirection: "column", gap: 3, flex: "none" }}>
               <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: "-0.02em", whiteSpace: "nowrap" }}>내 공격 덱 {slots.attack}번</span>
               <span className="rp-num" style={{ fontSize: 11.5, color: "var(--wds-label-alternative)", whiteSpace: "nowrap" }}>
-                합산 전투력 {sumPower(attackDeck).toLocaleString()} · 공격 {record.attack.wins}승 {record.attack.losses}패
+                합산 전투력 {teamPower(attackDeck).toLocaleString()} · 공격 {record.attack.wins}승 {record.attack.losses}패
               </span>
             </div>
             <div style={{ width: 1, height: 44, background: "var(--wds-line-alternative)" }} className="rp-desktoponly" />
             <div style={{ display: "flex", gap: 10, flex: 1, flexWrap: "wrap" }}>
               {attackDeck.map((throwId, index) => {
-                const pokemon = pokemonOf(throwId);
+                const pokemon = findPokemon(throwId);
                 if (!pokemon) return null;
                 return (
                   <div key={throwId} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 16px 8px 10px", borderRadius: 12, background: "var(--wds-primary-bg)" }}>
@@ -432,18 +534,18 @@ export function RankingPreview() {
 
           <div className="rp-grid3">
             {opponents.map((opponent, index) => {
-              const read = PREVIEW_EXTRA.opponentReads[index];
-              const tone = TONE[read.tone];
+              const read = isPreview ? PREVIEW_EXTRA.opponentReads[index] : undefined;
+              const tone = read ? TONE[read.tone] : TONE.neu;
               return (
                 <div key={opponent.allocationId} className="rp-oppcard">
-                  <div className="rp-oppstrip" style={{ color: tone.fg, background: tone.bg }}>{read.verdictLong}</div>
+                  <div className="rp-oppstrip" style={{ color: tone.fg, background: tone.bg }}>{read?.verdictLong ?? "상대 방어 덱"}</div>
                   <div className="rp-oppbody">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
                         <span className="rp-truncate" style={{ fontSize: 16.5, fontWeight: 700, letterSpacing: "-0.025em" }}>{displayName(opponent.name, opponent.nickname)}</span>
-                        <span style={{ fontSize: 11.5, color: "var(--wds-label-alternative)" }}>방어 승률 {read.defenseWinRate}%</span>
+                        <span style={{ fontSize: 11.5, color: "var(--wds-label-alternative)" }}>{read ? `방어 승률 ${read.defenseWinRate}%` : "선봉과 전투력만 공개돼요"}</span>
                       </div>
-                      <ContentBadge size="xsmall" variant="outlined" color={read.tone === "pos" ? "green" : read.tone === "neg" ? "red" : "neutral"}>{read.verdict}</ContentBadge>
+                      {read && <ContentBadge size="xsmall" variant="outlined" color={read.tone === "pos" ? "green" : read.tone === "neg" ? "red" : "neutral"}>{read.verdict}</ContentBadge>}
                     </div>
 
                     <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -469,12 +571,12 @@ export function RankingPreview() {
                           {opponent.powerFloor.toLocaleString()}~{(opponent.powerFloor + 999).toLocaleString()}
                         </span>
                       </div>
-                      <div className="rp-bar"><span style={{ width: `${read.power}%`, background: tone.dot }} /></div>
+                      <div className="rp-bar"><span style={{ width: `${read?.power ?? Math.min(100, opponent.powerFloor / 30)}%`, background: tone.dot }} /></div>
                     </div>
 
-                    <div style={{ padding: "9px 11px", borderRadius: 10, background: tone.bg, color: tone.fg, fontSize: 11.5, fontWeight: 600, lineHeight: 1.45 }}>{read.hint}</div>
+                    {read && <div style={{ padding: "9px 11px", borderRadius: 10, background: tone.bg, color: tone.fg, fontSize: 11.5, fontWeight: 600, lineHeight: 1.45 }}>{read.hint}</div>}
 
-                    <Button size="large" fullWidth disabled={attacksLeft === 0 || attackDeck.length !== 3} onClick={() => attack(opponent.allocationId)} style={{ marginTop: "auto" }}>
+                    <Button size="large" fullWidth disabled={pending || attacksLeft === 0 || attackDeck.length !== 3} onClick={() => attack(opponent.allocationId)} style={{ marginTop: "auto" }}>
                       {attacksLeft === 0 ? "공격 소진" : attackDeck.length !== 3 ? "공격 덱 3마리 필요" : "공격하기"}
                     </Button>
                   </div>
@@ -506,14 +608,7 @@ export function RankingPreview() {
               <Button
                 size="small"
                 disabled={editingDeck.length !== 3}
-                onClick={() => {
-                  if (editing === "defense") {
-                    setActiveDefenseSlot(slots.defense);
-                    setSaved(`방어 덱 ${slots.defense}번 활성화 · 내일 ${RULES.refreshAt}부터`);
-                  } else {
-                    setSaved(`공격 덱 ${slots.attack}번 저장 완료`);
-                  }
-                }}
+                onClick={saveDeck}
               >
                 {editing === "defense" ? "방어 덱으로 활성화" : "공격 덱 저장"}
               </Button>
@@ -529,9 +624,11 @@ export function RankingPreview() {
                 <div
                   key={kind}
                   className="rp-card"
+                  onClick={() => setEditing(kind)}
                   style={{
                     padding: 20,
                     gap: 16,
+                    cursor: active ? undefined : "pointer",
                     borderColor: active ? "rgba(0,102,255,.35)" : undefined,
                     boxShadow: active ? "0 1px 4px rgba(0,102,255,.10)" : undefined,
                   }}
@@ -542,7 +639,6 @@ export function RankingPreview() {
                       {kind === "defense"
                         ? <ContentBadge size="xsmall" color={isActiveDefense ? "green" : "orange"}>{isActiveDefense ? "활성" : "미활성"}</ContentBadge>
                         : <ContentBadge size="xsmall" color="green">사용 중</ContentBadge>}
-                      {!active && <Button size="xsmall" variant="text" color="assistive" onClick={() => setEditing(kind)}>이 덱 편집</Button>}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ fontSize: 11.5, color: "var(--wds-label-alternative)" }}>프리셋</span>
@@ -562,8 +658,8 @@ export function RankingPreview() {
                   </div>
                   <div className="rp-slots">
                     {[0, 1, 2].map((index) => {
-                      const pokemon = pokemonOf(deck[index]);
-                      if (!pokemon) return <div key={index} className="rp-slot rp-slot--empty"><span style={{ fontSize: 18 }}>+</span></div>;
+                      const pokemon = findPokemon(deck[index]);
+                      if (!pokemon) return <button key={index} type="button" className="rp-slot rp-slot--empty" aria-label={`${DECK_LABEL[kind]}에 포켓몬 추가`} onClick={() => openDeckPicker(kind)}><span style={{ fontSize: 18 }}>+</span></button>;
                       return (
                         <button key={pokemon.throwId} type="button" className="rp-slot" onClick={() => setDeck(kind, deck.filter((id) => id !== pokemon.throwId))}>
                           <span className="rp-order">{index + 1}</span>
@@ -575,7 +671,7 @@ export function RankingPreview() {
                     })}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 2, gap: 8 }}>
-                    <span className="rp-num" style={{ fontSize: 12, color: "var(--wds-label-alternative)" }}>합산 {sumPower(deck).toLocaleString()}</span>
+                    <span className="rp-num" style={{ fontSize: 12, color: "var(--wds-label-alternative)" }}>합산 {teamPower(deck).toLocaleString()}</span>
                     <span style={{ fontSize: 12, fontWeight: 700, color: "var(--wds-label-neutral)" }}>
                       {kind === "defense"
                         ? `방어 ${record.defense.wins}승 ${record.defense.losses}패`
@@ -590,10 +686,10 @@ export function RankingPreview() {
           <div className="rp-rule" />
 
           <div className="rp-split rp-split--deck">
-            <div className="rp-card">
+            <div ref={pickerRef} className="rp-card">
               <div className="rp-cardhead">
                 <div>
-                  <span className="rp-cardtitle">보유 포켓몬 {OWNED_POKEMON.length}</span>
+                  <span className="rp-cardtitle">보유 포켓몬 {ownedPokemon.length}</span>
                   <p className="rp-cardsub">누르면 {DECK_LABEL[editing]}에 넣어요 — 3마리까지</p>
                 </div>
                 <div className="rp-decktabs">
@@ -606,7 +702,7 @@ export function RankingPreview() {
                 </div>
               </div>
               <div className="rp-grid6">
-                {OWNED_POKEMON.map((pokemon) => {
+                {ownedPokemon.map((pokemon) => {
                   const order = editingDeck.indexOf(pokemon.throwId);
                   return (
                     <button
@@ -627,7 +723,7 @@ export function RankingPreview() {
               <span style={{ fontSize: 11.5, color: "var(--wds-label-alternative)", lineHeight: 1.5 }}>{RULES.presetRule}</span>
             </div>
 
-            <div className="rp-card">
+            {isPreview && <div className="rp-card">
               <div>
                 <span className="rp-cardtitle">추천 조합</span>
                 <p className="rp-cardsub">최근 상대들의 타입을 보고 골랐어요</p>
@@ -637,21 +733,21 @@ export function RankingPreview() {
                   <div key={recommendation.title} style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, borderRadius: 12, border: "1px solid var(--wds-line-alternative)" }}>
                     <div style={{ display: "flex", gap: 2, flex: "none" }}>
                       {recommendation.members.map((throwId) => {
-                        const pokemon = pokemonOf(throwId);
+                        const pokemon = findPokemon(throwId);
                         return pokemon ? <PokemonImage key={throwId} src={pokemon.imagePath} size={36} alt={pokemon.name} /> : null;
                       })}
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "-0.01em" }}>{recommendation.title}</span>
                       <span className="rp-num" style={{ fontSize: 11.5, color: "var(--wds-label-alternative)" }}>
-                        합산 {sumPower(recommendation.members).toLocaleString()} · {recommendation.note}
+                        합산 {teamPower(recommendation.members).toLocaleString()} · {recommendation.note}
                       </span>
                     </div>
                     <Button size="xsmall" variant="outlined" color="assistive" onClick={() => setDeck(editing, recommendation.members)}>적용</Button>
                   </div>
                 ))}
               </div>
-            </div>
+            </div>}
           </div>
         </main>
       )}
@@ -726,7 +822,7 @@ export function RankingPreview() {
             {filteredLog.length === 0
               ? <p style={{ padding: "16px 0", fontSize: 13, color: "var(--wds-label-alternative)" }}>해당하는 기록이 없어요.</p>
               : filteredLog.map((item) => {
-                const win = item.winnerId === PREVIEW_PROFILE_ID;
+                const win = item.winnerId === profileId;
                 const attack = item.role === "attacker";
                 return (
                   <div key={item.id} className="rp-logrow">
@@ -759,7 +855,7 @@ export function RankingPreview() {
 
           <div className="rp-rule rp-desktoponly" />
 
-          <div className="rp-section rp-desktoponly">
+          {isPreview && <div className="rp-section rp-desktoponly">
             <div className="rp-sectionhead">
               <h2 className="rp-sectiontitle">기록에서 보이는 것</h2>
               <span className="rp-sectionnote">다음 덱을 짤 때 참고해요</span>
@@ -797,18 +893,18 @@ export function RankingPreview() {
                 </div>
               </div>
             </div>
-          </div>
+          </div>}
 
           <div className="rp-onlymobile">
-            {moreLog && (
+            {isPreview && moreLog && (
               <div className="rp-card">
                 <span className="rp-cardtitle">내 포켓몬별 승률</span>
                 <WinRateList compact />
               </div>
             )}
-            <Button size="medium" variant="text" color="assistive" fullWidth onClick={() => setMoreLog((value) => !value)}>
+            {isPreview && <Button size="medium" variant="text" color="assistive" fullWidth onClick={() => setMoreLog((value) => !value)}>
               {moreLog ? "접기" : "포켓몬별 승률 더보기"}
-            </Button>
+            </Button>}
           </div>
         </main>
       )}
@@ -822,14 +918,20 @@ export function RankingPreview() {
         ))}
       </nav>
 
-      <footer className="rp-inner" style={{ paddingBottom: 32, display: "flex", flexDirection: "column", gap: 6 }}>
+      {isPreview && <footer className="rp-inner" style={{ paddingBottom: 32, display: "flex", flexDirection: "column", gap: 6 }}>
         <p style={{ margin: 0, fontSize: 11.5, color: "var(--wds-label-assistive)", lineHeight: 1.6 }}>
           도감 랭킹전 리디자인 시안 · 실제 데이터가 아닌 미리보기 화면이에요.
         </p>
         <p style={{ margin: 0, fontSize: 11.5, color: "var(--wds-label-assistive)", lineHeight: 1.6 }}>
           <b style={{ fontWeight: 700 }}>미채택</b> — {UNADOPTED.join(" · ")}
         </p>
-      </footer>
+      </footer>}
+      {battle && (
+        <Modal open onClose={() => setBattle(undefined)} ariaLabel="랭킹전 전투 기록" className="max-w-[96rem] p-8">
+          <RankingBattleAnimation battle={battle} profileId={profileId} />
+          <button type="button" className="rk-btn rk-btn--outline rk-btn--block" style={{ marginTop: 32 }} onClick={() => setBattle(undefined)}>닫기</button>
+        </Modal>
+      )}
     </div>
   );
 }

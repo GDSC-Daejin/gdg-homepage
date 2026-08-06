@@ -22,28 +22,21 @@ function query(data: unknown) {
 beforeEach(() => {
   mocks.createClient.mockResolvedValue({ from: () => query([]), rpc: () => Promise.resolve({ data: [] }) });
   mocks.isDemoMode.mockResolvedValue(false);
-  mocks.requireProfile.mockResolvedValue({ id: "member" });
+  mocks.requireProfile.mockResolvedValue({ id: "member", name: "테스터", nickname: "tester" });
 });
 
 describe("도감 랭킹전 탭", () => {
-  it("오픈 전에는 포켓몬 그림과 랭킹전 준비 규칙을 안내한다", () => {
-    const page = renderToStaticMarkup(createElement(RankingLeagueTab, { profileId: "member", state: null }));
+  it("랭킹 데이터가 없으면 프리오픈 안내를 보여준다", () => {
+    const page = renderToStaticMarkup(createElement(RankingLeagueTab, { profile: { id: "member", name: "테스터", nickname: "tester" }, state: null }));
     const text = page.replace(/<br\/?>(?=.)/g, " ").replace(/<[^>]+>/g, "");
 
-    expect(text).toContain("추후 오픈 예정");
-    expect(text).toContain("서로 다른 포켓몬 6종을 모아요");
-    expect(text).toContain("공격 팀과 방어 팀을 만들어요");
-    expect(text).toContain("하루에 최대 3번 공격할 수 있어요");
-    expect(text).toContain("점수는 이렇게 바뀌어요");
-    expect(page).toContain('alt="피카츄"');
-    expect(page).toContain("!bg-primary");
-    expect(page).not.toContain("참전하기");
+    expect(text).toContain("랭킹전 데이터를 불러오지 못했어요.");
   });
 
-  it("오픈 전 랭킹 탭은 Supabase 조회를 시작하지 않는다", async () => {
+  it("프리오픈에도 랭킹전 데이터를 조회한다", async () => {
     await PokedexPage({ searchParams: Promise.resolve({ tab: "ranking" }) });
 
-    expect(mocks.createClient).not.toHaveBeenCalled();
+    expect(mocks.createClient).toHaveBeenCalled();
   });
 
   it("확률표에서 포켓몬 이름을 검색한다", async () => {
@@ -66,11 +59,4 @@ describe("도감 랭킹전 탭", () => {
     expect(renderToStaticMarkup(page)).toContain("검색한 포켓몬이 없어요.");
   });
 
-  it("랭킹전 안내 카드는 태블릿에서 한 열로 표시한다", () => {
-    const page = renderToStaticMarkup(createElement(RankingLeagueTab, { profileId: "member", state: null }));
-
-    expect(page).toContain("lg:grid-cols-2");
-    expect(page).not.toContain("<br/>");
-    expect(page).toContain("포켓몬을 모으는 동안 규칙을 미리 익혀두세요.</span><span class=\"block\">준비가 되면 나만의 팀으로 바로 도전할 수 있어요.");
-  });
 });

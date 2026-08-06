@@ -703,7 +703,8 @@
 
 /* ── 모바일 ─────────────────────────────────────────────── */
 
-@media (max-width: 1023px) {
+/* 멤버 셸의 사이드바를 빼면 1,024px 태블릿에서도 본문 폭이 좁다. */
+@media (max-width: 1279px) {
   .rp {
     padding-bottom: calc(72px + env(safe-area-inset-bottom));
   }
@@ -920,6 +921,86 @@
   .rp-bottomnav button[aria-current="page"] {
     color: var(--wds-primary);
     font-weight: 700;
+  }
+}
+
+@media (max-width: 599px) {
+  .rp-inner {
+    padding: 0 12px;
+  }
+
+  .rp-topbar > .rp-inner {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .rp-mutedark {
+    display: none;
+  }
+
+  .rp-page {
+    gap: 16px;
+  }
+
+  .rp-card,
+  .rp-actioncard,
+  .rp-deckbar {
+    padding: 14px;
+  }
+
+  .rp-heroscore {
+    font-size: 40px;
+  }
+
+  .rp-partyrow {
+    width: 100%;
+    justify-content: space-between;
+    gap: 4px;
+  }
+
+  .rp-stage {
+    width: 68px;
+    height: 68px;
+  }
+
+  .rp-nameplate {
+    width: 100%;
+    min-width: 0;
+    padding: 6px 4px;
+  }
+
+  .rp-nameplate > span:first-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .rp-slots {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rp-slot {
+    min-width: 0;
+    padding: 12px 4px 10px;
+  }
+
+  .rp-slot--empty {
+    min-height: 92px;
+  }
+
+  .rp-grid6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rp-pick {
+    min-width: 0;
+    padding: 12px 4px 10px;
+  }
+
+  .rp-rankrow {
+    padding: 8px;
+    gap: 8px;
   }
 }
 

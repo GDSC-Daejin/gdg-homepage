@@ -8,6 +8,7 @@ import type { RankingLeagueState } from "./ranking-league";
  * (설계 "도감 랭킹전 사전 안내" — 오픈 방법).
  */
 export const RANKING_LEAGUE_OPEN = false;
+export const RANKING_LEAGUE_PREOPEN = true;
 
 /**
  * 랭킹전 상태. 레이아웃(상단바)과 각 페이지가 같이 쓰므로 `cache`로 묶어

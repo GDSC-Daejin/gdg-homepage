@@ -9,10 +9,13 @@ import { EmptyState } from "@/components/EmptyState";
 import { Input } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { PokedexBattleTab } from "./PokedexBattleTab";
+import { RankingPreview } from "@/app/ranking-preview/RankingPreview";
+import "../../wds.css";
+import "../../ranking-preview/ranking-preview.css";
 import type { DuelMember, DuelTurn, OwnedBattlePokemon, PokemonDuel } from "@/lib/pokedex/duel";
 import type { BattleType } from "@/lib/pokedex/battle-effects";
 import type { RankingLeagueState } from "@/lib/pokedex/ranking-league";
-import { RANKING_LEAGUE_OPEN } from "@/lib/pokedex/ranking-open";
+import { RANKING_LEAGUE_OPEN, RANKING_LEAGUE_PREOPEN } from "@/lib/pokedex/ranking-open";
 
 type Pokemon = { id: string; pokedex_no: number; name_ko: string; image_path: string; rarity: Rarity; spawn_weight: number; catch_rate: number };
 type Rarity = "common" | "uncommon" | "rare" | "very_rare" | "legendary";
@@ -54,8 +57,11 @@ export function RankingLeagueComingSoon() {
   </section>;
 }
 
-export function RankingLeagueTab({ profileId, state }: { profileId: string; state: RankingLeagueState | null }) {
-  return !RANKING_LEAGUE_OPEN ? <RankingLeagueComingSoon /> : state ? <PokedexBattleTab kind="ranking" profileId={profileId} state={state} /> : <EmptyState title="랭킹전을 준비하고 있어요" description="데모에서는 랭킹전을 이용할 수 없어요." />;
+export function RankingLeagueTab({ profile, state }: { profile: { id: string; name: string; nickname: string | null }; state: RankingLeagueState | null }) {
+  if (RANKING_LEAGUE_PREOPEN && !RANKING_LEAGUE_OPEN) return state ? <RankingPreview state={state} profile={profile} /> : <EmptyState title="랭킹전을 준비하고 있어요" description="랭킹전 데이터를 불러오지 못했어요." />;
+  if (!RANKING_LEAGUE_OPEN) return <RankingLeagueComingSoon />;
+  if (!state) return <EmptyState title="랭킹전을 준비하고 있어요" description="데모에서는 랭킹전을 이용할 수 없어요." />;
+  return <PokedexBattleTab kind="ranking" profileId={profile.id} state={state} />;
 }
 
 export default async function PokedexPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[]; q?: string | string[] }> }) {
@@ -73,7 +79,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
   let rankingState: RankingLeagueState | null = null;
   const shouldLoadCollectionData = tab === "collection" || tab === "probabilities";
   const shouldLoadDuelData = tab === "duels";
-  const shouldLoadRankingData = tab === "ranking" && RANKING_LEAGUE_OPEN;
+  const shouldLoadRankingData = tab === "ranking" && (RANKING_LEAGUE_OPEN || RANKING_LEAGUE_PREOPEN);
 
   if ((shouldLoadCollectionData || shouldLoadDuelData || shouldLoadRankingData) && !(await isDemoMode())) {
     const supabase = await createClient();
@@ -119,7 +125,6 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
       <nav aria-label="포켓몬 도감" className="mb-6 flex gap-1 border-b border-gray-200">
         <Link href="/pokedex" aria-current={tab === "collection" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "collection" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>내 도감</Link>
         <Link href="/pokedex?tab=probabilities" aria-current={tab === "probabilities" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "probabilities" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>확률표</Link>
-        <Link href="/pokedex?tab=duels" aria-current={tab === "duels" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "duels" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>결투</Link>
         <Link href="/pokedex?tab=ranking" aria-current={tab === "ranking" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "ranking" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>랭킹전</Link>
       </nav>
       {tab === "collection" ? <>
@@ -137,7 +142,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
           const count = countByPokemon.get(entry.id) ?? 0;
           return <Link key={entry.id} href={`/pokedex/${entry.pokedex_no}`} className="rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"><Card className={`p-4 text-center transition-transform hover:-translate-y-0.5 ${count ? "" : "grayscale opacity-45"}`}><img src={entry.image_path} alt={count ? entry.name_ko : "미획득 포켓몬"} loading="lazy" decoding="async" className={`mx-auto h-20 w-20 object-contain ${count ? "" : "brightness-0"}`} /><p className="mt-2 text-sm font-semibold text-gray-900">{count ? entry.name_ko : "???"}</p><p className="mt-1 text-xs text-gray-500">{count ? `${count}마리 보유` : `No. ${entry.pokedex_no}`}</p></Card></Link>;
         })}</div>}
-      </> : tab === "duels" ? <PokedexBattleTab kind="duel" profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : tab === "ranking" ? <RankingLeagueTab profileId={profile.id} state={rankingState} /> : <>
+      </> : tab === "duels" ? <PokedexBattleTab kind="duel" profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : tab === "ranking" ? <RankingLeagueTab profile={{ id: profile.id, name: profile.name, nickname: profile.nickname }} state={rankingState} /> : <>
         <form action="/pokedex" className="mb-4 flex gap-2">
           <input type="hidden" name="tab" value="probabilities" />
           <div className="flex-1"><Input id="pokemon-search" name="q" type="search" defaultValue={query} aria-label="포켓몬 이름 검색" placeholder="포켓몬 이름 검색" /></div>
