@@ -123,7 +123,7 @@ describe("도감 포켓몬 결투", () => {
     expect(files.every((file) => file.length > 100)).toBe(true);
   });
 
-  it("도감에서 결투 탭과 결과 애니메이션을 제공한다", async () => {
+  it("결투 화면과 결과 애니메이션을 제공한다 (탭 링크는 감춰져 있다)", async () => {
     const [page, panel, admin, modal] = await Promise.all([
       readFile("src/app/(member)/pokedex/page.tsx", "utf8"),
       readFile("src/app/(member)/pokedex/DuelPanel.tsx", "utf8"),
@@ -131,7 +131,9 @@ describe("도감 포켓몬 결투", () => {
       readFile("src/components/Modal.tsx", "utf8"),
     ]);
 
-    expect(page).toContain("결투");
+    // 랭킹전 프리오픈 동안 결투 탭 링크는 의도적으로 감췄다 — 경로는 살아 있어 URL로 닿는다.
+    expect(page).not.toContain("/pokedex?tab=duels");
+    expect(page).toContain('=== "duels"');
     expect(page).toContain("PokedexBattleTab");
     expect(panel).toContain("result && <Modal");
     expect(panel).toContain("if (response.duel) setResult(response.duel)");
