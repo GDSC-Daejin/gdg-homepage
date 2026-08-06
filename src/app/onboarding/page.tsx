@@ -11,12 +11,14 @@ export default async function OnboardingPage() {
   if (profile.student_no !== "") redirect("/");
 
   return (
-    <div className="mx-auto w-full max-w-md">
-      <PageHeader
-        title="프로필 등록"
-        description="동아리 활동을 위해 기본 정보를 입력해주세요"
-      />
-      <OnboardingForm defaultName={profile.name} />
-    </div>
+    <main className="flex w-full flex-1 justify-center px-4 py-8 lg:items-center lg:py-12">
+      <div className="w-full max-w-md">
+        <PageHeader
+          title="프로필 등록"
+          description="동아리 활동을 위해 기본 정보를 입력해주세요"
+        />
+        <OnboardingForm defaultName={profile.name} />
+      </div>
+    </main>
   );
 }

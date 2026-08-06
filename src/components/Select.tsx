@@ -250,7 +250,7 @@ export function Select({
     <div className="flex flex-col gap-1">
       {label && (
         <label id={labelId} htmlFor={selectId} className="text-sm font-medium text-gray-700">
-          {label}
+          {label} {required && <span aria-hidden="true" className="text-danger">*</span>}
         </label>
       )}
       <div ref={ref} className="relative">

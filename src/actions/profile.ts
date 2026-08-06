@@ -28,6 +28,9 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
   }
+  if (profile.student_no === "" && (!parsed.data.academic_status || !parsed.data.interests.length)) {
+    return { error: "모든 필수 항목을 입력해주세요" };
+  }
 
   const supabase = await createClient();
   const { featured_pokemon_id, ...profileData } = parsed.data;

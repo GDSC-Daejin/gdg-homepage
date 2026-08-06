@@ -24,4 +24,10 @@ describe("로그인 진입점", () => {
     expect(landing).toContain("<GoogleLoginButton");
     expect(sources.join("\n")).not.toContain("/login");
   });
+
+  it("Google 로그인 시 계정을 선택하도록 요청한다", async () => {
+    const button = await readFile("src/app/landing-preview/GoogleLoginButton.tsx", "utf8");
+
+    expect(button).toContain('prompt: "select_account"');
+  });
 });

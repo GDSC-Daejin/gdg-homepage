@@ -1,5 +1,4 @@
-import { redirect } from "next/navigation";
-import { getProfile, assertApproved } from "@/lib/auth";
+import { requireProfile } from "@/lib/auth";
 import { MemberShell } from "./MemberShell";
 
 export const dynamic = "force-dynamic";
@@ -11,9 +10,7 @@ export default async function MemberLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const profile = await getProfile();
-  if (!profile) redirect("/");
-  assertApproved(profile);
+  const profile = await requireProfile();
 
   return (
     <MemberShell profile={profile}>
