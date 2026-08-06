@@ -41,7 +41,7 @@ export async function nudgeParticipants(
       const result = await postMessage({
         channel: dm.channel,
         botToken,
-        text: `[스케줄] "${poll.title}" 응답을 부탁드려요.${note ? ` ${note}` : ""}\n${siteUrl}/schedule/${poll.id}`,
+        text: `[스케줄] "${poll.title}" 응답을 부탁드려요.${note ? ` ${note}` : ""}\n<${siteUrl}/schedule/${poll.id}|일정 조사에 응답하기>`,
       });
       return result.ok ? null : participant.name;
     }),

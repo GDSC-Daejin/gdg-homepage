@@ -123,6 +123,29 @@ describe("sendMeetingPollConfirmation", () => {
 });
 
 describe("sendMeetingPollCreated", () => {
+  it("모지숲 수요조사 생성 알림에 채널 전체 멘션을 붙인다", async () => {
+    configured();
+    postMessage.mockResolvedValue({ ok: true, ts: "123.456" });
+
+    await expect(sendMeetingPollCreated({
+      id: "poll-1",
+      title: "8월 모지숲 회의",
+      dates: ["2026-08-17"],
+      startHour: 18,
+      endHour: 21,
+      dueAt: null,
+      isMojisoop: true,
+      isRegularSession: false,
+    })).resolves.toBeUndefined();
+
+    expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({
+      channel: "C_ADMIN",
+      text: expect.stringContaining("<!channel>"),
+    }));
+    expect(postMessage.mock.calls[0][0].text).toContain("📅 기간: 8월 17일 (월) ~ 8월 17일 (월) · 18시~21시");
+    expect(postMessage.mock.calls[0][0].text).toContain("<https://gdg-homepage.vercel.app/schedule/poll-1|홈페이지>");
+  });
+
   it("정기세션 수요조사 생성 알림을 공지사항 채널로 보낸다", async () => {
     configured();
     process.env.SLACK_NOTICE_CHANNEL_ID = "C_NOTICE";
@@ -144,6 +167,6 @@ describe("sendMeetingPollCreated", () => {
       botToken: "xoxb-jarvis",
       text: expect.stringContaining("수요조사가 시작됐어요"),
     }));
-    expect(postMessage.mock.calls[0][0].text).toContain("응답 마감: 8월 21일 (금) 23:55");
+    expect(postMessage.mock.calls[0][0].text).toContain("☠️ 응답 마감: 8월 21일 (금) 23:55");
   });
 });

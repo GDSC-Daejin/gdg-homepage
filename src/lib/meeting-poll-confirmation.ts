@@ -33,11 +33,11 @@ export async function sendMeetingPollCreated({
   const period = dates.length
     ? `${dateWithWeekday(dates[0])} ~ ${dateWithWeekday(dates[dates.length - 1])}`
     : "후보일 미정";
-  const deadline = dueAt ? `\n응답 마감: ${dateWithWeekday(dayKeyKst(dueAt))} 23:55` : "";
+  const deadline = dueAt ? `\n☠️ 응답 마감: ${dateWithWeekday(dayKeyKst(dueAt))} 23:55` : "";
   const posted = await postMessage({
     channel,
     botToken,
-    text: `📢 [${isRegularSession ? "정기세션" : "모지숲"}] "${title}" 수요조사가 시작됐어요\n${period} · ${startHour}시~${endHour}시${deadline}\n${siteUrl}/schedule/${id}`,
+    text: `${isMojisoop ? "<!channel> " : ""}📢 [${isRegularSession ? "정기세션" : "모지숲"}] "${title}" 수요조사가 시작됐어요\n📅 기간: ${period} · ${startHour}시~${endHour}시${deadline}\n<${siteUrl}/schedule/${id}|홈페이지>`,
   });
   return posted.ok ? undefined : `수요조사 생성 알림은 실패했어요 (${posted.error})`;
 }

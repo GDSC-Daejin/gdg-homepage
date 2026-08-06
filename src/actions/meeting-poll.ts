@@ -56,9 +56,10 @@ export async function createMeetingPoll(
     .select("id, name, nickname, email")
     .in("id", memberIds)
     .in("role", ["organizer", "team_member", "member"])
-    .eq("status", "active");
+    .eq("status", "active")
+    .not("approved_at", "is", null);
   if (memberError) return { error: toKoreanError(memberError) };
-  if ((members ?? []).length !== memberIds.length) return { error: "활성 회원만 참여자로 추가할 수 있어요" };
+  if ((members ?? []).length !== memberIds.length) return { error: "승인된 활성 회원만 참여자로 추가할 수 있어요" };
 
   const { data: poll, error } = await supabase
     .from("meeting_polls")
@@ -168,7 +169,8 @@ export async function updateMeetingPoll(
       .select("id, name, nickname, email")
       .in("id", newMemberIds)
       .in("role", ["organizer", "team_member", "member"])
-      .eq("status", "active");
+      .eq("status", "active")
+      .not("approved_at", "is", null);
     if (error) return { error: toKoreanError(error) };
     if ((members ?? []).length !== newMemberIds.length) {
       return { error: "참여자를 다시 선택해주세요" };

@@ -40,7 +40,6 @@ import type { MeetingPoll } from "@/lib/types";
 import { ConfirmDialog, NudgeDialog } from "./PollDetailDialogs";
 import { availabilityViews, draftAvailability, type AvailabilityDrag } from "@/lib/meeting-poll-availability";
 import { MetaChip, PeopleTooltip, PersonRow } from "./PollDetailPeople";
-import { ScheduleNav } from "../ScheduleNav";
 import {
   addMinutes,
   adjustmentOptions,
@@ -62,6 +61,7 @@ interface PollDetailProps {
   /** 로그인한 사람의 참여자 id. 참여자가 아니면 null */
   myParticipantId: string | null;
   canManage: boolean;
+  canNudge: boolean;
   ownerName: string;
   inviteUrl: string;
 }
@@ -71,6 +71,7 @@ export function PollDetail({
   participants,
   myParticipantId,
   canManage,
+  canNudge,
   ownerName,
   inviteUrl,
 }: PollDetailProps) {
@@ -222,9 +223,6 @@ export function PollDetail({
     <div className={styles.detailPage}>
       {/* ── 제목 줄 ── */}
       <div className={styles.detailHeader}>
-        <div className={styles.detailNav}>
-          <ScheduleNav variant="header" />
-        </div>
         <div style={{ display: "contents" }}>
           <div className={styles.detailTitleRow}>
             <h1
@@ -259,13 +257,12 @@ export function PollDetail({
             <MetaChip label="시간" icon={<TinyIcon d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />}>
               {poll.start_hour}시 ~ {poll.end_hour}시
             </MetaChip>
-            <MetaChip label="칸" icon={<TinyIcon d="M7 3h10M7 21h10M8 3v4a4 4 0 0 0 8 0V3M8 21v-4a4 4 0 0 1 8 0v4" />}>{poll.slot_min}분</MetaChip>
             {poll.due_at && (
               <MetaChip label="응답 마감" icon={<TinyIcon d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />} emphasis>
                 {dateWithWeekday(kstDayKey(poll.due_at))} {kstTime(poll.due_at)}
               </MetaChip>
             )}
-            <MetaChip label="만든 사람" icon={<TinyIcon d="M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />} horizontal className={styles.metaOwner}>{ownerName}</MetaChip>
+            <MetaChip label="만든 사람" icon={<TinyIcon d="M20 21a8 8 0 0 0-16 0M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />} className={styles.metaOwner}>{ownerName}</MetaChip>
           </div>
         </div>
         <div className={styles.detailActions}>
@@ -285,10 +282,9 @@ export function PollDetail({
             variant="outlined"
             color="assistive"
             size="medium"
-            leadingIcon={<TinyIcon d="M4 6h16M4 12h16M4 18h16" />}
-            onClick={() => router.push("/schedule")}
+            onClick={() => router.back()}
           >
-            목록
+            돌아가기
           </Button>
           {canManage && (
             <>
@@ -397,7 +393,7 @@ export function PollDetail({
             </>
           )}
         </div>
-        {canManage && pending.length > 0 && !locked && (
+        {canNudge && pending.length > 0 && !locked && (
           <Button
             variant="outlined"
             color="primary"
@@ -406,7 +402,7 @@ export function PollDetail({
             disabled={busy}
             onClick={() => setNudging(true)}
           >
-            {pending.length}명에게 알림 보내기
+            {pending.length}명에게 슬랙 알림 보내기
           </Button>
         )}
       </div>
@@ -731,7 +727,8 @@ export function PollDetail({
                   color: "var(--wds-label-alternative)",
                 }}
               >
-                진할수록 많이 겹쳐요. 번호는 위 추천 카드와 같은 구간이에요
+                진할수록 많이 겹쳐요
+                {recommendations.length > 0 && ". 테두리 친 “N순위”는 위 추천 카드와 같은 시간이에요"}
               </p>
             </div>
             <Button
@@ -816,10 +813,14 @@ export function PollDetail({
                 let boxShadow: string | undefined;
                 let zIndex = 1;
                 if (block) {
-                  boxShadow =
-                    block.rank === 1
-                      ? "inset 0 0 0 1.5px rgba(0,84,209,0.95)"
-                      : "inset 0 0 0 1.5px rgba(0,102,255,0.40)";
+                  // 칸마다 사방을 두르면 한 구간이 여러 조각으로 보인다 —
+                  // 위아래는 구간의 처음·끝에만 그어 한 덩어리로 읽히게 한다.
+                  const line =
+                    block.rank === 1 ? "rgba(0,84,209,0.95)" : "rgba(0,102,255,0.40)";
+                  const edges = [`inset 1.5px 0 0 ${line}`, `inset -1.5px 0 0 ${line}`];
+                  if (cell.timeIndex === block.from) edges.push(`inset 0 1.5px 0 ${line}`);
+                  if (cell.timeIndex === block.to) edges.push(`inset 0 -1.5px 0 ${line}`);
+                  boxShadow = edges.join(", ");
                   zIndex = 2;
                 }
                 if (isSel) {
@@ -853,25 +854,27 @@ export function PollDetail({
                         />
                       )}
                       {block && cell.timeIndex === block.from && (
+                        // 숫자만 있으면 격자만 보는 사람은 뜻을 모른다 — 구간 안에 "N순위"로 적는다.
                         <span
                           style={{
                             position: "absolute",
-                            top: -8,
-                            left: -8,
-                            width: 18,
+                            top: 3,
+                            left: 3,
                             height: 18,
+                            padding: "0 7px",
                             borderRadius: 999,
                             background: "var(--wds-primary-heavy)",
                             color: "#fff",
                             font: "700 10px/1 var(--wds-font-sans)",
-                            display: "flex",
+                            whiteSpace: "nowrap",
+                            display: "inline-flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            boxShadow: "0 0 0 2px var(--wds-bg)",
+                            boxShadow: "0 0 0 1.5px var(--wds-bg)",
                             zIndex: 6,
                           }}
                         >
-                          {block.rank}
+                          {block.rank}순위
                         </span>
                       )}
                       {showCounts && count > 0 && (
@@ -977,7 +980,11 @@ export function PollDetail({
             setNudging(false);
             run(async () => {
               const result = await nudgeMeetingPoll(poll.id);
-              if (!result.error) show(`${result.sent ?? 0}명에게 알림을 보냈어요`);
+              if (!result.error) {
+                show(poll.is_regular_session
+                  ? `${pending.length}명에게 슬랙 DM 발송이 완료됐어요!`
+                  : `${result.sent ?? 0}명에게 알림을 보냈어요`);
+              }
               return result;
             });
           }}

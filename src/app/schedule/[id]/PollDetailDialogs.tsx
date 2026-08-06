@@ -63,7 +63,7 @@ export function NudgeDialog({
           {count}명에게 알림을 보낼까요?
         </span>
         <span style={{ font: "400 14px/1.5 var(--wds-font-sans)", color: "var(--wds-label-alternative)" }}>
-          아직 응답하지 않은 {count}명에게 운영진 슬랙 채널에서 멘션으로 알림이 발송돼요.
+          아직 응답하지 않은 {count}명에게 Slack 개인 DM으로 알림이 발송돼요.
         </span>
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 2 }}>

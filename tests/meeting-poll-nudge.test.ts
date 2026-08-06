@@ -46,7 +46,7 @@ describe("nudgeParticipants", () => {
     expect(postMessage).toHaveBeenCalledWith({
       channel: "D_LUMI",
       botToken: "xoxb-jarvis",
-      text: '[스케줄] "디자이너 작당모의" 응답을 부탁드려요.\nhttps://gdg.example.com/schedule/poll-1',
+      text: '[스케줄] "디자이너 작당모의" 응답을 부탁드려요.\n<https://gdg.example.com/schedule/poll-1|일정 조사에 응답하기>',
     });
   });
 

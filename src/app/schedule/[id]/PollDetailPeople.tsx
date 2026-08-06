@@ -25,7 +25,7 @@ export function MetaChip({
       style={{
         display: "inline-flex",
         flexDirection: horizontal ? "row" : "column",
-        alignItems: horizontal ? "center" : "flex-start",
+        alignItems: "center",
         justifyContent: "center",
         gap: horizontal ? 14 : 10,
         minHeight: horizontal ? 72 : 132,

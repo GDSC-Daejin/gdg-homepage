@@ -37,6 +37,7 @@ export default async function SchedulePollPage({
         // 둘러보기에서는 첫 참여자가 "나"다 — 격자를 칠해볼 수 있어야 화면을 다 보여준다.
         myParticipantId={demoParticipants[0]?.id ?? null}
         canManage
+        canNudge
         ownerName={owner ? displayName(owner.name, owner.nickname) : "알 수 없음"}
         inviteUrl={`${siteUrl}/j/${demoPoll.invite_token}`}
       />
@@ -69,6 +70,7 @@ export default async function SchedulePollPage({
 
   const me = participants.find((p) => p.user_id === profile.id) ?? null;
   const canManage = isStaff(profile) && (poll.created_by === profile.id || profile.role === "organizer");
+  const canNudge = canManage || (isStaff(profile) && poll.is_mojisoop);
   const inviteUrl = `${siteUrl}/j/${poll.invite_token}`;
 
   return (
@@ -77,6 +79,7 @@ export default async function SchedulePollPage({
       participants={participants}
       myParticipantId={me?.id ?? null}
       canManage={canManage}
+      canNudge={canNudge}
       ownerName={
         ownerProfile ? displayName(ownerProfile.name, ownerProfile.nickname) : "알 수 없음"
       }
