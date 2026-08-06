@@ -52,6 +52,10 @@ import {
 } from "./poll-detail-time";
 import styles from "../schedule.module.css";
 
+/** 선택한 칸 상세 카드의 헤더/한 줄 높이. 자리를 미리 잡아 선택할 때 화면이 뛰지 않게 한다. */
+const DETAIL_HEADER_H = 69;
+const DETAIL_ROW_H = 69;
+
 interface PollDetailProps {
   poll: MeetingPoll;
   participants: Participant[];
@@ -102,12 +106,20 @@ export function PollDetail({
   /** 드래그 중에는 커밋 전 미리보기를 그린다. 히트맵도 같은 값으로 즉시 반응한다. */
   const draft = useMemo(() => draftAvailability(mine, drag, dates, times), [drag, mine, dates, times]);
 
-  // 내 응답은 화면 상태가 진실이다. 나머지는 서버에서 받은 그대로.
-  const liveViews = useMemo(() => availabilityViews(views, myParticipantId, draft, false), [views, myParticipantId, draft]);
+  /**
+   * 내 응답은 화면 상태가 진실이다. 나머지는 서버에서 받은 그대로.
+   * 단 격자 위 카드(응답 현황·추천)는 커밋된 값으로만 그린다 — 드래그 중에 다시 계산하면
+   * 카드 높이가 바뀌면서 격자가 손 아래에서 밀리고, 그러면 칠하던 칸이 어긋난다.
+   */
+  const liveViews = useMemo(() => availabilityViews(views, myParticipantId, mine, false), [views, myParticipantId, mine]);
+  /** 히트맵만 드래그 미리보기를 따른다 — 칸 색은 즉시 바뀌어도 레이아웃은 그대로다. */
+  const heatViews = useMemo(() => availabilityViews(views, myParticipantId, draft, false), [views, myParticipantId, draft]);
 
   const responded = liveViews.filter((v) => v.responded);
   const pending = liveViews.filter((v) => !v.responded);
-  const available = useMemo(() => aggregate(liveViews), [liveViews]);
+  const available = useMemo(() => aggregate(heatViews), [heatViews]);
+  /** 히트맵 농도의 분모. 드래그로 내가 응답자가 되면 여기도 같이 늘어야 색이 튀지 않는다. */
+  const heatTotal = useMemo(() => heatViews.filter((v) => v.responded).length, [heatViews]);
   const percent = liveViews.length
     ? Math.round((responded.length / liveViews.length) * 100)
     : 0;
@@ -137,7 +149,7 @@ export function PollDetail({
     );
 
   // 다른 사람이 이만큼 모인 칸이면 여기에 칠하는 게 확정을 빠르게 한다.
-  const othersTotal = Math.max(0, responded.length - (me?.responded || draft.size > 0 ? 1 : 0));
+  const othersTotal = Math.max(0, responded.length - (me?.responded || mine.size > 0 ? 1 : 0));
   const hintThreshold = Math.max(2, othersTotal - 1);
 
   function startDrag(e: React.PointerEvent, cell: Cell) {
@@ -813,7 +825,7 @@ export function PollDetail({
                 if (isSel) {
                   // 진한 칸 위의 검정 테두리는 파랑을 갉아먹는다 — 숫자 색과 같은 기준으로 흰 테두리를 쓴다.
                   boxShadow =
-                    heatStep(count, responded.length) >= 4
+                    heatStep(count, heatTotal) >= 4
                       ? "inset 0 0 0 2px rgba(255,255,255,0.92)"
                       : "inset 0 0 0 2px var(--wds-label-normal)";
                   zIndex = 3;
@@ -821,7 +833,7 @@ export function PollDetail({
                 // 말풍선이 옆 칸에 가리지 않게 올린다.
                 if (isHovered && count > 0) zIndex = 20;
                 return {
-                  background: HEAT_STEPS[heatStep(count, responded.length)],
+                  background: HEAT_STEPS[heatStep(count, heatTotal)],
                   boxShadow,
                   zIndex,
                   content: (
@@ -872,7 +884,7 @@ export function PollDetail({
                             justifyContent: "center",
                             font: "600 10px/1 var(--wds-font-sans)",
                             color:
-                              heatStep(count, responded.length) >= 4
+                              heatStep(count, heatTotal) >= 4
                                 ? "#fff"
                                 : "var(--wds-label-alternative)",
                           }}
@@ -897,6 +909,9 @@ export function PollDetail({
               borderRadius: 16,
               boxShadow: "var(--wds-shadow-card)",
               marginTop: 2,
+              // 칸을 처음 고르는 순간 안내문 한 줄이 명단으로 부풀면 페이지가 통째로 뛴다.
+              // 채워진 뒤 높이(헤더 + 줄마다 69px)를 미리 잡아둔다.
+              minHeight: DETAIL_HEADER_H + DETAIL_ROW_H * (pending.length > 0 ? 3 : 2),
             }}
           >
             {selected ? (
