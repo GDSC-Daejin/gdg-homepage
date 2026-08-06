@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { geocodeAddress, geocodeWithReason } from "@/lib/geocode";
 import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
-import type { ActionResult } from "@/lib/types";
+import type { ActionResult, Place } from "@/lib/types";
 
 function readPlaceForm(formData: FormData) {
   return {
@@ -15,25 +15,33 @@ function readPlaceForm(formData: FormData) {
   };
 }
 
-export async function createPlace(formData: FormData): Promise<ActionResult> {
+/** 만들어진 장소를 함께 돌려준다 — 이벤트 폼에서 방금 추가한 장소를 바로 고르기 위해서다. */
+export async function createPlace(
+  formData: FormData,
+): Promise<ActionResult & { place?: Place }> {
   await requireAdmin();
-  if (await isDemoMode()) return {};
+  if (await isDemoMode()) return { error: "둘러보기 모드에서는 장소를 추가할 수 없어요" };
 
   const { name, address } = readPlaceForm(formData);
   if (!name) return { error: "장소명을 입력해주세요" };
 
   const coords = await geocodeAddress(address);
   const supabase = await createClient();
-  const { error } = await supabase.from("places").insert({
-    name,
-    address,
-    lat: coords?.lat ?? null,
-    lng: coords?.lng ?? null,
-  });
+  const { data, error } = await supabase
+    .from("places")
+    .insert({
+      name,
+      address,
+      lat: coords?.lat ?? null,
+      lng: coords?.lng ?? null,
+    })
+    .select("*")
+    .single();
 
   if (error) return { error: toKoreanError(error) };
   revalidatePath("/admin/places");
-  return {};
+  revalidatePath("/admin/events");
+  return { place: data as Place };
 }
 
 export async function updatePlace(

@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createEvent, updateEvent } from "@/actions/event";
+import { createPlace } from "@/actions/place";
 import { Input } from "@/components/Input";
 import { Textarea } from "@/components/Textarea";
 import { Select } from "@/components/Select";
@@ -57,6 +58,34 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
   const [error, setError] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  // 장소를 등록하러 이벤트 폼을 떠나지 않도록, 여기서 바로 추가하고 곧장 선택한다.
+  const [placeOptions, setPlaceOptions] = useState<Place[]>(places);
+  const [placeId, setPlaceId] = useState(event?.place_id ?? "");
+  const [addingPlace, setAddingPlace] = useState(false);
+  const [newPlaceName, setNewPlaceName] = useState("");
+  const [newPlaceAddress, setNewPlaceAddress] = useState("");
+  const [placeError, setPlaceError] = useState<string>();
+  const [placePending, startPlaceTransition] = useTransition();
+
+  function addPlace() {
+    setPlaceError(undefined);
+    startPlaceTransition(async () => {
+      const fd = new FormData();
+      fd.set("name", newPlaceName);
+      fd.set("address", newPlaceAddress);
+      const result = await createPlace(fd);
+      if (result.error || !result.place) {
+        setPlaceError(result.error ?? "장소를 추가하지 못했어요");
+        return;
+      }
+      setPlaceOptions((prev) => [...prev, result.place!]);
+      setPlaceId(result.place.id);
+      setNewPlaceName("");
+      setNewPlaceAddress("");
+      setAddingPlace(false);
+    });
+  }
 
   const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function flashSaved() {
@@ -179,10 +208,11 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
         <Select
           name="place_id"
           label="장소"
-          defaultValue={event?.place_id ?? ""}
+          value={placeId}
+          onChange={(e) => setPlaceId(e.target.value)}
         >
           <option value="">장소 없음</option>
-          {places.map((place) => (
+          {placeOptions.map((place) => (
             <option key={place.id} value={place.id}>
               {place.name}
             </option>
@@ -195,13 +225,62 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
           defaultValue={event?.speaker}
         />
       </div>
-      <p className="-mt-2 text-xs text-gray-400">
-        장소는{" "}
-        <a href="/admin/places" className="text-primary hover:underline">
-          장소 관리
-        </a>
-        에서 추가해요. 주소·지도는 선택한 장소에서 자동으로 채워져요.
-      </p>
+      {addingPlace ? (
+        <div className="-mt-2 flex flex-col gap-3 rounded-md border border-gray-200 bg-gray-50 p-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Input
+              label="장소명"
+              placeholder="예) GDG대전 스페이스"
+              value={newPlaceName}
+              onChange={(e) => setNewPlaceName(e.target.value)}
+            />
+            <Input
+              label="주소 (도로명)"
+              placeholder="예) 대전 유성구 대학로 99"
+              value={newPlaceAddress}
+              onChange={(e) => setNewPlaceAddress(e.target.value)}
+            />
+          </div>
+          {placeError && <p className="text-xs text-danger">{placeError}</p>}
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="primary"
+              onClick={addPlace}
+              disabled={placePending || !newPlaceName.trim()}
+            >
+              {placePending ? "추가 중…" : "장소 추가"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                setAddingPlace(false);
+                setPlaceError(undefined);
+              }}
+            >
+              취소
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <p className="-mt-2 text-xs text-gray-400">
+          목록에 없으면{" "}
+          <button
+            type="button"
+            onClick={() => setAddingPlace(true)}
+            className="font-medium text-primary hover:underline"
+          >
+            여기서 바로 추가
+          </button>
+          할 수 있어요. 지도·좌표는 주소에서 자동으로 채워져요.{" "}
+          <a href="/admin/places" className="text-primary hover:underline">
+            장소 관리
+          </a>
+        </p>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-soft px-3 py-2.5 text-sm text-danger">
