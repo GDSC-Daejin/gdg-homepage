@@ -29,6 +29,16 @@ function eventEnd(event: Event) {
   return new Date(event.ends_at ?? event.starts_at).getTime();
 }
 
+export function upcomingEvents(events: Event[], now = Date.now()) {
+  return events
+    .filter((event) => eventEnd(event) >= now)
+    .sort((a, b) => {
+      const aDate = a.event_date ?? (a.starts_at ? dayKeyKst(a.starts_at) : "9999-12-31");
+      const bDate = b.event_date ?? (b.starts_at ? dayKeyKst(b.starts_at) : "9999-12-31");
+      return aDate.localeCompare(bDate) || (a.starts_at ?? "").localeCompare(b.starts_at ?? "");
+    });
+}
+
 /** "8월 12일 화요일 오후 7:00" — 히어로용 긴 표기 */
 function heroWhen(event: Event) {
   if (!event.event_date || !event.starts_at) return formatEventSchedule(event);
@@ -140,7 +150,7 @@ export async function HomeDashboard({
   const totalPoints = logs.reduce((sum, log) => sum + log.amount, 0);
 
   const now = Date.now();
-  const upcoming = list.filter((e) => eventEnd(e) >= now).reverse();
+  const upcoming = upcomingEvents(list, now);
   const allPast = list.filter((e) => e.event_date && eventEnd(e) < now);
 
   const pastMonths = Array.from(new Set(allPast.map((e) => monthKst(e.starts_at))));
