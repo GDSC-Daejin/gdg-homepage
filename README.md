@@ -75,9 +75,9 @@ Phase 2 기능을 쓰려면 `supabase/migrations/0004_phase2.sql`을 추가로 �
 1. [api.slack.com/messaging/webhooks](https://api.slack.com/messaging/webhooks)에서 안내에 따라 워크스페이스에 인커밍 웹훅 앱을 추가합니다.
 2. 알림을 받을 채널을 선택하고 발급된 웹훅 URL을 `SLACK_WEBHOOK_URL` 환경 변수에 등록합니다.
 
-### 운영진 알림 설정 (출석 경고 — Jarvis)
+### 운영진 알림 설정 (출석 경고·문의 등록 — Jarvis)
 
-출석 경고는 이름과 출석률이 담긴 명단이라 웹훅 채널이 아니라 **운영진 전용 프라이빗 채널**로만, **Jarvis 봇 이름**으로 나갑니다. 꼬북봇(`SLACK_BOT_TOKEN`)과는 토큰이 분리돼 있습니다.
+출석 경고 명단과 새 문의는 회원 이름이 담긴 내용이라 웹훅 채널이 아니라 **운영진 전용 프라이빗 채널**로만, **Jarvis 봇 이름**으로 나갑니다. 꼬북봇(`SLACK_BOT_TOKEN`)과는 토큰이 분리돼 있습니다.
 
 1. Jarvis 슬랙 앱의 **Bot User OAuth Token**(`xoxb-`)을 `SLACK_JARVIS_BOT_TOKEN` 환경 변수에 등록합니다. `chat:write` 스코프가 필요합니다.
 2. 운영진 프라이빗 채널에서 `/invite @Jarvis`로 초대합니다. 프라이빗 채널은 봇이 멤버여야 글을 쓸 수 있습니다.
