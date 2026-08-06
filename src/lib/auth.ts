@@ -29,7 +29,8 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
 });
 
 export function assertApproved(profile: Profile): void {
-  if (!profile.approved_at && !isStaff(profile)) redirect("/pending");
+  // 승인 전 화면은 온보딩 하나로 합쳤다 — 제출 전이면 폼, 제출 후면 대기 안내를 같은 곳에서 본다.
+  if (!profile.approved_at && !isStaff(profile)) redirect("/onboarding");
 }
 
 export async function requireProfile(): Promise<Profile> {

@@ -27,9 +27,10 @@ export default async function AdminMembersPage({
 
   let members: Profile[] = DEMO_MEMBERS.filter((m) => !!m.approved_at);
   let totalMembers = members.length;
-  let pendingCount = DEMO_MEMBERS.filter((m) => !m.approved_at).length;
+  const demoPending = DEMO_MEMBERS.filter((m) => !m.approved_at && m.student_no !== "");
+  let pendingCount = demoPending.length;
 
-  if (demo && isPending) members = DEMO_MEMBERS.filter((m) => !m.approved_at);
+  if (demo && isPending) members = demoPending;
 
   if (!demo) {
     const supabase = await createClient();
@@ -48,7 +49,8 @@ export default async function AdminMembersPage({
     if (role) query = query.eq("role", role);
     if (status) query = query.eq("status", status);
     if (academicStatus) query = query.eq("academic_status", academicStatus);
-    if (isPending) query = query.is("approved_at", null);
+    // 로그인만 하고 온보딩을 안 끝낸 계정은 이름·학번이 비어 있어 승인할 정보가 없다.
+    if (isPending) query = query.is("approved_at", null).neq("student_no", "");
     else query = query.not("approved_at", "is", null);
 
     const [{ data }, { count }, { count: pendingTotal }] = await Promise.all([
@@ -60,7 +62,8 @@ export default async function AdminMembersPage({
       supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .is("approved_at", null),
+        .is("approved_at", null)
+        .neq("student_no", ""),
     ]);
     members = (data as Profile[]) ?? [];
     totalMembers = count ?? 0;
