@@ -26,6 +26,14 @@ describe("도감 포켓몬 결투", () => {
     expect(sql).toContain("grant execute on function public.pokedex_duel_accept");
   });
 
+  it("승인 대기 회원은 결투 상대에서 제외하고 직접 신청도 막는다", async () => {
+    const sql = await readFile("supabase/migrations/0094_pokedex_duel_approved_members.sql", "utf8");
+
+    expect(sql).toContain("create or replace function public.pokedex_duel_members");
+    expect(sql).toContain("approved_at is not null");
+    expect(sql).toContain("create or replace function public.pokedex_duel_create");
+  });
+
   it("공식 타입별 공격 연출을 사용한다", async () => {
     const migration = (await readdir("supabase/migrations")).find((file) => file === "0076_pokedex_duel_type_effects.sql");
     expect(migration).toBeDefined();

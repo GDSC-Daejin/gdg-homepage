@@ -29,6 +29,7 @@ export default async function AdminInterviewsPage() {
       .from("profiles")
       .select("id, name, nickname")
       .in("role", ["organizer", "team_member", "member"])
+      .not("approved_at", "is", null)
       .order("name"),
   ]);
 

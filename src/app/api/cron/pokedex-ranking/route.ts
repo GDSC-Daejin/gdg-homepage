@@ -22,7 +22,11 @@ export async function GET(request: NextRequest) {
 
   const [{ data: catches, error: catchesError }, { data: profiles, error: profilesError }, { data: config }] = await Promise.all([
     supabase.from("pokemon_throws").select("user_id, pokemon_id").eq("outcome", "caught"),
-    supabase.from("profiles").select("id, slack_user_id").not("slack_user_id", "is", null),
+    supabase
+      .from("profiles")
+      .select("id, slack_user_id")
+      .not("slack_user_id", "is", null)
+      .not("approved_at", "is", null),
     supabase.from("squirtle_config").select("channel_id").eq("id", 1).single(),
   ]);
   if (catchesError || profilesError || !config) return NextResponse.json({ error: "도감 랭킹을 조회하지 못했어요" }, { status: 500 });

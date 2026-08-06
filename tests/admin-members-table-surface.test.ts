@@ -18,6 +18,13 @@ describe("회원 관리 목록 표면", () => {
     expect(page).toContain(">재학여부</th>");
   });
 
+  it("전체 회원 목록에서는 승인 대기 회원을 제외한다", async () => {
+    const page = await readFile("src/app/admin/members/page.tsx", "utf8");
+
+    expect(page).toContain('let members: Profile[] = DEMO_MEMBERS.filter((m) => !!m.approved_at)');
+    expect(page).toContain('else query = query.not("approved_at", "is", null)');
+  });
+
   it("재학여부는 요청한 네 상태만 저장한다", async () => {
     const migration = await readFile(
       "supabase/migrations/0034_member_academic_status.sql",
@@ -34,7 +41,7 @@ describe("회원 관리 목록 표면", () => {
     const [migration, row, onboarding, profile] = await Promise.all([
       readFile("supabase/migrations/0034_member_academic_status.sql", "utf8"),
       readFile("src/app/admin/members/MemberRow.tsx", "utf8"),
-      readFile("src/app/(member)/onboarding/OnboardingForm.tsx", "utf8"),
+      readFile("src/app/onboarding/OnboardingForm.tsx", "utf8"),
       readFile("src/app/(member)/profile/ProfileForm.tsx", "utf8"),
     ]);
 

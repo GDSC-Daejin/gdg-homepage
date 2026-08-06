@@ -60,8 +60,14 @@ export default async function AdminPokedexPage({ searchParams }: { searchParams:
     appearances = (appearanceRows ?? []) as Appearance[];
     const userIds = [...new Set(catches.map((entry) => entry.user_id))];
     if (userIds.length) {
-      const { data } = await supabase.from("profiles").select("id, name, nickname, avatar_path").in("id", userIds);
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, name, nickname, avatar_path")
+        .in("id", userIds)
+        .not("approved_at", "is", null);
       profiles = (data ?? []) as Profile[];
+      const approvedIds = new Set(profiles.map((profile) => profile.id));
+      catches = catches.filter((entry) => approvedIds.has(entry.user_id));
     } else {
       profiles = [];
     }

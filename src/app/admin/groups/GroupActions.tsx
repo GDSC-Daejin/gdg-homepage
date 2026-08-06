@@ -68,7 +68,7 @@ export function AssignGroupMemberForm({
   }
 
   if (disabled) return <p className="text-sm text-gray-500">정원이 찼습니다. 정원을 늘린 후 배정하세요.</p>;
-  if (members.length === 0) return <p className="text-sm text-gray-500">배정 가능한 활성 회원이 없습니다.</p>;
+  if (members.length === 0) return <p className="text-sm text-gray-500">배정 가능한 승인 회원이 없습니다.</p>;
 
   return (
     <form action={assign} className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">

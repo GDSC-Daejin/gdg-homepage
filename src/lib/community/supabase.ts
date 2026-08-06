@@ -19,6 +19,7 @@ export function supabaseCommunity(client: SupabaseClient): Community {
         .select("*")
         .in("role", ["member", "organizer", "team_member"])
         .eq("status", "active")
+        .not("approved_at", "is", null)
         .order("name");
       return (data as Profile[]) ?? [];
     },

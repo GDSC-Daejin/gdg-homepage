@@ -101,11 +101,13 @@ export default async function AdminDashboardPage() {
     ] = await Promise.all([
       supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true }),
+        .select("*", { count: "exact", head: true })
+        .not("approved_at", "is", null),
       supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
-        .eq("status", "active"),
+        .eq("status", "active")
+        .not("approved_at", "is", null),
       supabase
         .from("events")
         .select("*", { count: "exact", head: true })
@@ -253,14 +255,14 @@ export default async function AdminDashboardPage() {
     const topUserIds = topUsers.map(([id]) => id);
     const { data: topProfilesData } =
       topUserIds.length > 0
-        ? await supabase.from("profiles").select("id, name, nickname").in("id", topUserIds)
+        ? await supabase.from("profiles").select("id, name, nickname").in("id", topUserIds).not("approved_at", "is", null)
         : { data: [] as { id: string; name: string; nickname: string }[] };
     const topProfileById = new Map(
       ((topProfilesData as { id: string; name: string; nickname: string }[] | null) ?? []).map(
         (p) => [p.id, p],
       ),
     );
-    rankingRows = topUsers.map(([id, total], i) => ({
+    rankingRows = topUsers.filter(([id]) => topProfileById.has(id)).map(([id, total], i) => ({
       rank: i + 1,
       id,
       name: topProfileById.get(id)?.name ?? "(탈퇴)",

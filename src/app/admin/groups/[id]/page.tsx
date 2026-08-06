@@ -27,21 +27,21 @@ export default async function AdminGroupDetailPage({
     const memberIds = DEMO_GROUP_MEMBERS
       .filter((member) => member.group_id === id)
       .map((member) => member.user_id);
-    roster = DEMO_MEMBERS.filter((member) => memberIds.includes(member.id));
+    roster = DEMO_MEMBERS.filter((member) => memberIds.includes(member.id) && member.approved_at);
     assignableMembers = DEMO_MEMBERS.filter(
-      (member) => member.status === "active" && !memberIds.includes(member.id),
+      (member) => member.status === "active" && member.approved_at && !memberIds.includes(member.id),
     );
   } else {
     const supabase = await createClient();
     const [{ data: groupData }, { data: members }, { data: profiles }] = await Promise.all([
       supabase.from("groups").select("*").eq("id", id).maybeSingle(),
       supabase.from("group_members").select("user_id, profiles(*)").eq("group_id", id),
-      supabase.from("profiles").select("*").eq("status", "active").order("name"),
+      supabase.from("profiles").select("*").eq("status", "active").not("approved_at", "is", null).order("name"),
     ]);
     group = (groupData as Group | null) ?? undefined;
     // profiles는 user_id FK를 타고 오는 1:1이라 배열이 아니라 객체다(RegistrantsTable과 같은 형태).
     roster = ((members ?? []) as unknown as { user_id: string; profiles: Profile | null }[])
-      .flatMap((member) => (member.profiles ? [member.profiles] : []));
+      .flatMap((member) => (member.profiles?.approved_at ? [member.profiles] : []));
     const rosterIds = new Set(roster.map((profile) => profile.id));
     assignableMembers = ((profiles as Profile[]) ?? []).filter(
       (profile) => !rosterIds.has(profile.id),

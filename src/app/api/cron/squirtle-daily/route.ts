@@ -11,7 +11,11 @@ export function pickMessageIndex(): number {
 }
 
 async function backfillSlackIds(supabase: SupabaseClient) {
-  const { data: unlinked } = await supabase.from("profiles").select("id").is("slack_user_id", null);
+  const { data: unlinked } = await supabase
+    .from("profiles")
+    .select("id")
+    .is("slack_user_id", null)
+    .not("approved_at", "is", null);
   if (!unlinked || unlinked.length === 0) return 0;
   const slackEmails = await listUserEmails();
   if (slackEmails.size === 0) return 0;

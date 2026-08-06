@@ -29,6 +29,7 @@ export default async function AdminSlackLinksPage() {
       .from("profiles")
       .select("id, name, email, slack_user_id")
       .in("role", ["member", "organizer", "team_member", "admin"])
+      .not("approved_at", "is", null)
       .order("name", { ascending: true }),
     listWorkspaceMembers(),
   ]);
