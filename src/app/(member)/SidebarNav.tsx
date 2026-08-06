@@ -60,13 +60,8 @@ const baseGroups: NavGroup[] = [
     items: [
       { href: "/events", label: "이벤트", icon: "events" },
       { href: "/schedule", label: "스케줄", icon: "meetingPoll" },
+      { href: "/pokedex", label: "포켓몬", icon: "pokedex" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
-    ],
-  },
-  {
-    title: "자료",
-    items: [
-      { href: "/pokedex", label: "포켓몬 도감", icon: "pokedex" },
     ],
   },
   {

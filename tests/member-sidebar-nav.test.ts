@@ -7,7 +7,7 @@ describe("회원 사이드바", () => {
     const baseGroups = nav.slice(nav.indexOf("const baseGroups"), nav.indexOf("export function"));
 
     expect((baseGroups.match(/href:/g) ?? [])).toHaveLength(6);
-    for (const label of ["홈", "이벤트", "스케줄", "문의", "포켓몬 도감", "프로필"]) {
+    for (const label of ["홈", "이벤트", "스케줄", "포켓몬", "문의", "프로필"]) {
       expect(baseGroups).toContain(`label: "${label}"`);
     }
     for (const label of ["공지", "커뮤니티", "자료실", "설문"]) {
