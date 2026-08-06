@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_EVENTS, DEMO_EVENT_CONFIRMED_COUNTS } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
+import { SectionTabs, EVENT_TABS } from "../SectionTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { Button } from "@/components/Button";
 import { EventStatusToggle } from "@/components/EventStatusToggle";
@@ -90,6 +91,7 @@ export default async function AdminEventsPage({
 
     return (
       <div>
+        <SectionTabs tabs={EVENT_TABS} label="이벤트" />
         <PageHeader
           title="이벤트"
           description="정기세션·스터디·모각코를 관리해요"
@@ -154,6 +156,7 @@ export default async function AdminEventsPage({
 
   return (
     <div>
+      <SectionTabs tabs={EVENT_TABS} label="이벤트" />
       <PageHeader
         title="이벤트"
         description="정기세션·스터디·모각코를 관리해요"

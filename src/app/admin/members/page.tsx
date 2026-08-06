@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
+import { SectionTabs, MEMBER_TABS } from "../SectionTabs";
 import { EmptyState } from "@/components/EmptyState";
 import type { Profile } from "@/lib/types";
 import { MemberFilters } from "./MemberFilters";
@@ -24,8 +25,8 @@ export default async function AdminMembersPage({
 
   const isPending = Boolean(pending);
 
-  let members: Profile[] = DEMO_MEMBERS;
-  let totalMembers = DEMO_MEMBERS.length;
+  let members: Profile[] = DEMO_MEMBERS.filter((m) => !!m.approved_at);
+  let totalMembers = members.length;
   let pendingCount = DEMO_MEMBERS.filter((m) => !m.approved_at).length;
 
   if (demo && isPending) members = DEMO_MEMBERS.filter((m) => !m.approved_at);
@@ -48,10 +49,14 @@ export default async function AdminMembersPage({
     if (status) query = query.eq("status", status);
     if (academicStatus) query = query.eq("academic_status", academicStatus);
     if (isPending) query = query.is("approved_at", null);
+    else query = query.not("approved_at", "is", null);
 
     const [{ data }, { count }, { count: pendingTotal }] = await Promise.all([
       query,
-      supabase.from("profiles").select("*", { count: "exact", head: true }),
+      supabase
+        .from("profiles")
+        .select("*", { count: "exact", head: true })
+        .not("approved_at", "is", null),
       supabase
         .from("profiles")
         .select("*", { count: "exact", head: true })
@@ -72,6 +77,7 @@ export default async function AdminMembersPage({
 
   return (
     <div>
+      <SectionTabs tabs={MEMBER_TABS} label="회원" />
       <PageHeader
         title="회원 관리"
         description={

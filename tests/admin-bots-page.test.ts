@@ -6,14 +6,16 @@ let action = "";
 let page = "";
 let manager = "";
 let nav = "";
+let tabs = "";
 
 beforeAll(async () => {
-  [sql, action, page, manager, nav] = await Promise.all([
+  [sql, action, page, manager, nav, tabs] = await Promise.all([
     readFile("supabase/migrations/0047_bots_admin_write.sql", "utf8"),
     readFile("src/actions/bot.ts", "utf8"),
     readFile("src/app/admin/bots/page.tsx", "utf8"),
     readFile("src/app/admin/bots/BotToggleList.tsx", "utf8"),
     readFile("src/app/admin/AdminSidebarNav.tsx", "utf8"),
+    readFile("src/app/admin/SectionTabs.tsx", "utf8"),
   ]);
 });
 
@@ -73,8 +75,13 @@ describe("어드민 화면", () => {
     expect(manager).toContain("이미 올라간 글의 리액션은 그대로 인정돼요");
   });
 
-  it("사이드바 관리 그룹에 진입점을 둔다", () => {
-    expect(nav).toContain('href: "/admin/bots"');
-    expect(nav).toContain('label: "봇"');
+  it("시스템 탭에 진입점을 둔다", () => {
+    expect(tabs).toContain('href: "/admin/bots"');
+    expect(tabs).toContain('label: "봇"');
+  });
+
+  it("사이드바 시스템 한 칸이 봇 화면을 활성으로 잡는다", () => {
+    expect(nav).toContain('label: "시스템"');
+    expect(nav).toContain('"/admin/bots"');
   });
 });

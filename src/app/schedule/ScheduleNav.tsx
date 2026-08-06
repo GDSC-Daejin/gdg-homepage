@@ -43,16 +43,20 @@ export function ScheduleNav({ variant = "default" }: { variant?: "default" | "he
 export function ScheduleLayoutBar({
   canCreate,
   className,
+  // 어드민 셸에서는 이벤트 탭 줄이 내 일정/지난 일정까지 함께 그려서 여기선 감춘다.
+  showNav = true,
 }: {
   canCreate: boolean;
   className: string;
+  showNav?: boolean;
 }) {
   const pathname = usePathname();
   if (/^\/schedule\/[^/]+$/.test(pathname)) return null;
+  if (!showNav && !canCreate) return null;
 
   return (
     <div className={className}>
-      <ScheduleNav />
+      {showNav ? <ScheduleNav /> : <span />}
       <NewPollButton canCreate={canCreate} />
     </div>
   );

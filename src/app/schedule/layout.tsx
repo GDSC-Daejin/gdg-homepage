@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { requireProfile } from "@/lib/auth";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { AdminSidebar } from "@/app/admin/AdminSidebar";
+import { SectionTabs, EVENT_TABS } from "@/app/admin/SectionTabs";
 import { MemberShell } from "@/app/(member)/MemberShell";
 import { isStaff } from "@/lib/types";
 import { ScheduleLayoutBar } from "./ScheduleNav";
@@ -39,7 +40,11 @@ export default async function ScheduleLayout({
       }}
     >
       <div>
-        <ScheduleLayoutBar className={styles.layoutBar} canCreate={isStaff(profile)} />
+        <ScheduleLayoutBar
+          className={styles.layoutBar}
+          canCreate={isStaff(profile)}
+          showNav={memberShell}
+        />
         {children}
       </div>
     </div>
@@ -51,6 +56,10 @@ export default async function ScheduleLayout({
   return (
     <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />}>
       <div className="mx-auto w-full max-w-[96rem] overflow-hidden rounded-[20px] bg-gray-50 shadow-material">
+        {/* 사이드바 `이벤트` 한 칸이 이벤트·조율을 함께 품는다 — 여기가 그 탭 줄이다. */}
+        <div className="px-6 pt-6 sm:px-8">
+          <SectionTabs tabs={EVENT_TABS} label="이벤트" />
+        </div>
         {content}
       </div>
     </ResponsiveShell>

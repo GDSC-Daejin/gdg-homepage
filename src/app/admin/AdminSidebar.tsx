@@ -6,8 +6,8 @@ import { Badge } from "@/components/Badge";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/app/(member)/ThemeToggle";
 import { AdminSidebarNav } from "./AdminSidebarNav";
-import { TourModeToggle } from "./TourModeToggle";
 import { isDemoMode } from "@/lib/demo";
+import { getRecruitingSettings, isRecruitingOpen, DEFAULT_SETTINGS } from "@/lib/recruiting";
 
 const roleLabel: Record<string, string> = {
   organizer: "오거나이저",
@@ -20,6 +20,10 @@ const roleLabel: Record<string, string> = {
 export async function AdminSidebar() {
   const profile = await requireAdmin();
   const demo = await isDemoMode();
+  // 모집이 닫혀 있으면 모집 그룹을 통째로 감춘다 — 켜고 끄는 스위치는 시스템 그룹에 남아 있다.
+  const recruitingOpen = isRecruitingOpen(
+    demo ? DEFAULT_SETTINGS : await getRecruitingSettings(),
+  );
 
   return (
     <>
@@ -30,7 +34,7 @@ export async function AdminSidebar() {
           <p className="text-xs text-gray-500">동아리 관리 시스템</p>
         </div>
       </Link>
-      <AdminSidebarNav />
+      <AdminSidebarNav recruitingOpen={recruitingOpen} />
       <div className="mt-auto flex flex-col gap-3 border-t border-gray-200 pt-6">
         <Link
           href="/"
@@ -38,7 +42,6 @@ export async function AdminSidebar() {
         >
           일반유저 화면으로 돌아가기
         </Link>
-        <TourModeToggle active={demo} />
         <ThemeToggle />
         <div className="flex items-center gap-2 rounded-md px-1 py-2">
           <Avatar

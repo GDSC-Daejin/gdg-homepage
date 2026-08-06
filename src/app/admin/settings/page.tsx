@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { getRecruitingSettings, DEFAULT_SETTINGS } from "@/lib/recruiting";
 import { PageHeader } from "@/components/PageHeader";
+import { SectionTabs, SYSTEM_TABS } from "../SectionTabs";
 import { Card } from "@/components/Card";
 import { isDemoMode } from "@/lib/demo";
 import { SettingsForm } from "./SettingsForm";
@@ -15,7 +16,8 @@ export default async function AdminSettingsPage() {
 
   return (
     <div>
-      <PageHeader title="설정" description="모집 시즌과 지원 파트를 관리해요" />
+      <SectionTabs tabs={SYSTEM_TABS} label="시스템" />
+      <PageHeader title="모집 설정" description="모집 시즌과 지원 파트를 관리해요" />
       <Card>
         <SettingsForm settings={settings} />
       </Card>

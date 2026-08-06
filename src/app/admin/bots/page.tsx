@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
 import { PageHeader } from "@/components/PageHeader";
+import { SectionTabs, SYSTEM_TABS } from "../SectionTabs";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { displayName } from "@/lib/format";
@@ -51,7 +52,7 @@ export default async function AdminBotsPage() {
       const totals = summarizeContributions((checkins ?? []) as { user_id: string; created_at: string }[]);
       const ids = totals.map((contributor) => contributor.user_id);
       const { data: profiles } = ids.length
-        ? await supabase.from("profiles").select("id, name, nickname").in("id", ids)
+        ? await supabase.from("profiles").select("id, name, nickname").in("id", ids).not("approved_at", "is", null)
         : { data: [] as { id: string; name: string; nickname: string }[] };
       const names = new Map(
         ((profiles ?? []) as { id: string; name: string; nickname: string }[]).map((profile) => [
@@ -59,16 +60,16 @@ export default async function AdminBotsPage() {
           displayName(profile.name, profile.nickname),
         ]),
       );
-      contributors = totals.map((contributor) => ({
-        id: contributor.user_id,
-        name: names.get(contributor.user_id) ?? "(탈퇴한 회원)",
-        count: contributor.count,
-      }));
+      contributors = totals.flatMap((contributor) => {
+        const name = names.get(contributor.user_id);
+        return name ? [{ id: contributor.user_id, name, count: contributor.count }] : [];
+      });
     }
   }
 
   return (
     <div>
+      <SectionTabs tabs={SYSTEM_TABS} label="시스템" />
       <PageHeader
         title="봇"
         description="슬랙봇을 하나씩 켜고 꺼요. 끄면 알림을 올리지 않아요"

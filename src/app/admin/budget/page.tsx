@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
+import { SectionTabs, SYSTEM_TABS } from "../SectionTabs";
 import { Card } from "@/components/Card";
 import { StatCard } from "@/components/StatCard";
 import { EmptyState } from "@/components/EmptyState";
@@ -43,6 +44,7 @@ export default async function AdminBudgetPage() {
 
   return (
     <div>
+      <SectionTabs tabs={SYSTEM_TABS} label="시스템" />
       <PageHeader
         title="예산/후원 관리"
         description="수입·지출 내역을 관리해요"

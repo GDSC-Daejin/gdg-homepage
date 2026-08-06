@@ -17,14 +17,15 @@ describe("멤버 스케줄 접근", () => {
   });
 
   it("사이드바에서 고른 모드를 스케줄 셸에 반영한다", async () => {
-    const [memberNav, adminNav, layout] = await Promise.all([
+    const [memberNav, adminTabs, layout] = await Promise.all([
       readFile("src/app/(member)/SidebarNav.tsx", "utf8"),
-      readFile("src/app/admin/AdminSidebarNav.tsx", "utf8"),
+      // 어드민에서 /schedule로 가는 길은 사이드바가 아니라 이벤트 탭 줄이다.
+      readFile("src/app/admin/SectionTabs.tsx", "utf8"),
       readFile("src/app/schedule/layout.tsx", "utf8"),
     ]);
 
     expect(memberNav).toContain("schedule-shell=member");
-    expect(adminNav).toContain("schedule-shell=admin");
+    expect(adminTabs).toContain("schedule-shell=admin");
     expect(layout).toContain('get("schedule-shell")');
   });
 

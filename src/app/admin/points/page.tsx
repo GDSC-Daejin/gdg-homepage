@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
+import { SectionTabs, MEMBER_TABS } from "../SectionTabs";
 import { EmptyState } from "@/components/EmptyState";
 import { GrantPointsForm } from "./GrantPointsForm";
 import { AwardBadgeForm } from "./AwardBadgeForm";
@@ -18,7 +19,7 @@ export default async function AdminPointsPage() {
   const demo = await isDemoMode();
 
   let memberList: Profile[] = DEMO_MEMBERS.filter(
-    (m) => m.role !== "applicant" && m.status === "active",
+    (m) => m.role !== "applicant" && m.status === "active" && m.approved_at,
   );
   let eventList: Event[] = DEMO_EVENTS;
   let badgeList: BadgeType[] = DEMO_BADGES;
@@ -40,6 +41,7 @@ export default async function AdminPointsPage() {
         .select("*")
         .in("role", ["member", "organizer", "team_member"])
         .eq("status", "active")
+        .not("approved_at", "is", null)
         .order("name", { ascending: true }),
       supabase
         .from("events")
@@ -71,6 +73,7 @@ export default async function AdminPointsPage() {
 
   return (
     <div className="flex flex-col gap-8">
+      <SectionTabs tabs={MEMBER_TABS} label="회원" />
       <PageHeader
         title="포인트/뱃지"
         description="회원에게 포인트와 뱃지를 부여해요"

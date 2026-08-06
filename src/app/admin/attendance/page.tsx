@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/PageHeader";
+import { SectionTabs, MEMBER_TABS } from "../SectionTabs";
 import { Avatar } from "@/components/Avatar";
 import { Badge } from "@/components/Badge";
 import { EmptyState } from "@/components/EmptyState";
@@ -35,6 +36,7 @@ export default async function AdminAttendancePage() {
         .select("*")
         .in("role", ["member", "organizer", "team_member"])
         .eq("status", "active")
+        .not("approved_at", "is", null)
         .order("name"),
       supabase.from("events").select("id").lt("starts_at", now),
     ]);
@@ -83,6 +85,7 @@ export default async function AdminAttendancePage() {
 
   return (
     <div className="flex flex-col gap-6">
+      <SectionTabs tabs={MEMBER_TABS} label="회원" />
       <PageHeader
         title="출석 관리"
         description="활동 회원의 이벤트 출석률을 확인해요"
