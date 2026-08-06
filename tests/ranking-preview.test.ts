@@ -25,4 +25,12 @@ describe("랭킹전 프리뷰", () => {
     expect(css).toContain("grid-template-columns: minmax(0, 1fr)");
     expect(css).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
   });
+
+  it("홈에서는 시즌 랭킹 3위까지만, 상세에서는 전체를 보여준다", async () => {
+    const preview = await readFile("src/app/ranking-preview/RankingPreview.tsx", "utf8");
+
+    expect(preview).toContain("data.leaderboard.slice(0, 3)");
+    expect(preview).toContain('setTab("ranking")');
+    expect(preview).toContain('{tab === "ranking" &&');
+  });
 });

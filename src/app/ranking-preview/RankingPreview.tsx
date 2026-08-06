@@ -35,7 +35,7 @@ import {
   seasonRange,
 } from "./preview-data";
 
-type TabKey = "home" | "attack" | "deck" | "log";
+type TabKey = "home" | "attack" | "deck" | "log" | "ranking";
 type DeckKind = "attack" | "defense";
 
 const TABS: { key: TabKey; label: string; short: string; icon: GlyphName }[] = [
@@ -418,10 +418,10 @@ export function RankingPreview({
               <div className="rp-card">
                 <div className="rp-cardhead">
                   <span className="rp-cardtitle">시즌 랭킹</span>
-                  <Button size="xsmall" variant="text" color="assistive" onClick={() => setTab("log")}>전체 보기</Button>
+                  <Button size="xsmall" variant="text" color="assistive" onClick={() => setTab("ranking")}>전체 보기</Button>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {data.leaderboard.map((member, index) => (
+                  {data.leaderboard.slice(0, 3).map((member, index) => (
                     <div key={member.rank} className="rp-rankrow">
                       <span style={medalStyle(member.rank)}>{member.rank}</span>
                       {isPreview ? <Sprite no={[6, 26, 38][index]} size={46} alt="" /> : <span aria-hidden style={{ width: 46, height: 46, borderRadius: 999, background: "var(--wds-fill-alternative)", display: "grid", placeItems: "center", fontWeight: 800, color: "var(--wds-label-alternative)" }}>{member.rank}</span>}
@@ -429,12 +429,6 @@ export function RankingPreview({
                       <span className="rp-num" style={{ fontSize: 15, fontWeight: 800 }}>{member.rating.toLocaleString()}</span>
                     </div>
                   ))}
-                  <div className="rp-rankrow rp-rankrow--me">
-                    <span style={{ fontSize: 12, fontWeight: 800, textAlign: "center" }}>{myRank}</span>
-                    <PokemonImage src={ace.imagePath} size={46} alt={ace.name} />
-                    <span className="rp-truncate" style={{ fontSize: 13.5, fontWeight: 800, letterSpacing: "-0.015em" }}>{memberLabel}</span>
-                    <span className="rp-num" style={{ fontSize: 15, fontWeight: 800 }}>{rating.toLocaleString()}</span>
-                  </div>
                 </div>
               </div>
 
@@ -905,6 +899,28 @@ export function RankingPreview({
             {isPreview && <Button size="medium" variant="text" color="assistive" fullWidth onClick={() => setMoreLog((value) => !value)}>
               {moreLog ? "접기" : "포켓몬별 승률 더보기"}
             </Button>}
+          </div>
+        </main>
+      )}
+
+      {tab === "ranking" && (
+        <main className="rp-inner rp-page">
+          <div className="rp-pagehead">
+            <div>
+              <h1 className="rp-title">시즌 랭킹</h1>
+              <p className="rp-lede">활성 회원 전체 · 동점자는 같은 순위예요</p>
+            </div>
+            <Button size="small" variant="outlined" color="assistive" onClick={() => setTab("home")}>홈으로 돌아가기</Button>
+          </div>
+          <div className="rp-card rp-card--flush">
+            {data.leaderboard.map((member, index) => (
+              <div key={member.userId} className={`rp-rankrow${member.userId === profileId ? " rp-rankrow--me" : ""}`}>
+                <span style={medalStyle(member.rank)}>{member.rank}</span>
+                {isPreview ? <Sprite no={[6, 26, 38][index % 3]} size={46} alt="" /> : <span aria-hidden style={{ width: 46, height: 46, borderRadius: 999, background: "var(--wds-fill-alternative)", display: "grid", placeItems: "center", fontWeight: 800, color: "var(--wds-label-alternative)" }}>{member.rank}</span>}
+                <span className="rp-truncate" style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: "-0.015em" }}>{displayName(member.name, member.nickname)}</span>
+                <span className="rp-num" style={{ fontSize: 15, fontWeight: 800 }}>{member.rating.toLocaleString()}</span>
+              </div>
+            ))}
           </div>
         </main>
       )}

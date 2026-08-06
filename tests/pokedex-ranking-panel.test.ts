@@ -38,6 +38,15 @@ describe("도감 랭킹전 화면", () => {
     expect(state).toContain("'opponentNickname'");
   });
 
+  it("시즌 랭킹에는 랭킹전에 참가하지 않은 활성 회원도 기본 점수로 포함한다", async () => {
+    const state = await latestFunction("pokedex_rank_state");
+
+    expect(state).toContain("left join pokemon_rank_entries e");
+    expect(state).toContain("coalesce(e.rating, 1000)");
+    expect(state).toContain("p.status = 'active' and p.approved_at is not null");
+    expect(state).not.toContain("limit 20");
+  });
+
   it("리더보드는 이름 대신 id로 나를 찾고, 상위 20명 밖이면 내 순위 행을 따로 붙인다", async () => {
     const panel = await readFile("src/app/(member)/pokedex/RankingLeaguePanel.tsx", "utf8").catch(() => "");
     expect(panel).toContain("member.userId === profileId");
