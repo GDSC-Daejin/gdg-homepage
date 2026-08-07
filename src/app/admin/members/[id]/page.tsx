@@ -9,6 +9,7 @@ import { MemberRoleStatusForm } from "./MemberRoleStatusForm";
 import { MemberProfileForm } from "./MemberProfileForm";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEMBERS, DEMO_MEMBER_ATTENDANCE } from "@/lib/demoData";
+import { normalizeMajor } from "@/lib/major";
 
 interface AttendanceRow {
   id: string;
@@ -82,7 +83,7 @@ export default async function AdminMemberDetailPage({
             )}
           </h1>
           <p className="text-sm text-gray-500">
-            {member.student_no || "-"} · {member.major || "-"}
+            {member.student_no || "-"} · {normalizeMajor(member.major) || "-"}
           </p>
         </div>
       </div>

@@ -8,6 +8,7 @@ import { Button } from "@/components/Button";
 import { Badge } from "@/components/Badge";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { cn } from "@/lib/cn";
+import { normalizeMajor } from "@/lib/major";
 import { POSITION_LABELS, type Profile } from "@/lib/types";
 
 const INTEREST_OPTIONS = ["Android", "Web", "iOS", "ML", "Cloud", "Design"];
@@ -46,7 +47,7 @@ export function ProfileForm({ profile, ownedPokemon }: ProfileFormProps) {
             )}
           </p>
           <p className="truncate text-sm text-gray-500">
-            {[profile.student_no, profile.major].filter(Boolean).join(" · ")}
+            {[profile.student_no, normalizeMajor(profile.major)].filter(Boolean).join(" · ")}
           </p>
         </div>
         {profile.position && (

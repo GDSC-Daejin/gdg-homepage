@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  closeMeetingPoll,
   confirmMeetingPoll,
   nudgeMeetingPoll,
   saveMyAvailability,
@@ -297,6 +298,20 @@ export function PollDetail({
                   onClick={() => router.push(`/schedule/${poll.id}/edit`)}
                 >
                   수정
+                </Button>
+              )}
+              {!locked && (
+                <Button
+                  variant="outlined"
+                  color="negative"
+                  size="medium"
+                  disabled={busy}
+                  onClick={() => {
+                    if (!confirm("응답을 종료할까요? 더 이상 응답을 바꿀 수 없어요.")) return;
+                    run(() => closeMeetingPoll(poll.id));
+                  }}
+                >
+                  응답 종료
                 </Button>
               )}
               <Button

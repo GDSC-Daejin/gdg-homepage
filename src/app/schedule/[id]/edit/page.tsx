@@ -4,7 +4,7 @@ import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEETING_POLL_PARTICIPANTS, DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { dayKeyKst, displayName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import type { MeetingPoll } from "@/lib/types";
+import { isOrganizer, type MeetingPoll } from "@/lib/types";
 import { NewPollForm, type EditableParticipant, type MemberOption } from "../../new/NewPollForm";
 
 export const dynamic = "force-dynamic";
@@ -44,7 +44,7 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
   }
 
   if (!poll) notFound();
-  if (poll.confirmed_at || (!demo && poll.created_by !== profile.id && profile.role !== "organizer")) {
+  if (poll.confirmed_at || (!demo && poll.created_by !== profile.id && !isOrganizer(profile))) {
     redirect(`/schedule/${id}`);
   }
 

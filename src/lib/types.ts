@@ -1,8 +1,15 @@
 export type Role = "organizer" | "team_member" | "member" | "applicant";
 export type Position = "frontend" | "backend" | "designer" | "beginner";
 export const ADMIN_ROLES: Role[] = ["organizer", "team_member"];
-export function isStaff(profile: Pick<Profile, "role"> | null | undefined): boolean {
-  return !!profile && ADMIN_ROLES.includes(profile.role);
+const DEVELOPER_EMAIL = "jieunsse@gmail.com";
+export function isDeveloper(profile: Pick<Profile, "email"> | null | undefined): boolean {
+  return profile?.email?.toLowerCase() === DEVELOPER_EMAIL;
+}
+export function isStaff(profile: Pick<Profile, "role" | "email"> | null | undefined): boolean {
+  return !!profile && (ADMIN_ROLES.includes(profile.role) || isDeveloper(profile));
+}
+export function isOrganizer(profile: Pick<Profile, "role" | "email"> | null | undefined): boolean {
+  return !!profile && (profile.role === "organizer" || isDeveloper(profile));
 }
 export const POSITION_LABELS: Record<Position, string> = {
   frontend: "프론트엔드",

@@ -11,6 +11,7 @@ import { ApproveButton } from "./ApproveButton";
 import { formatKstDate } from "@/lib/format";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEMBERS } from "@/lib/demoData";
+import { normalizeMajor } from "@/lib/major";
 
 export const dynamic = "force-dynamic";
 
@@ -173,7 +174,7 @@ export default async function AdminMembersPage({
                       </Link>
                     </td>
                     <td className="hidden px-4 py-3 text-gray-600 md:table-cell">{member.student_no || "-"}</td>
-                    <td className="hidden px-4 py-3 text-gray-600 xl:table-cell">{member.major || "-"}</td>
+                    <td className="hidden px-4 py-3 text-gray-600 xl:table-cell">{normalizeMajor(member.major) || "-"}</td>
                     <td className="hidden px-4 py-3 text-gray-600 lg:table-cell">{member.phone || "-"}</td>
                     <td className="px-4 py-3 text-gray-600">{formatKstDate(member.joined_at)}</td>
                     <td className="px-4 py-3">

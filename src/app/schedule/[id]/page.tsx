@@ -8,7 +8,7 @@ import {
 } from "@/lib/demoData";
 import { displayName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { isStaff, type MeetingPoll, type MeetingPollParticipant } from "@/lib/types";
+import { isOrganizer, isStaff, type MeetingPoll, type MeetingPollParticipant } from "@/lib/types";
 import { PollDetail } from "./PollDetail";
 
 export const dynamic = "force-dynamic";
@@ -69,7 +69,7 @@ export default async function SchedulePollPage({
   const ownerProfile = owner as { name: string; nickname: string } | null;
 
   const me = participants.find((p) => p.user_id === profile.id) ?? null;
-  const canManage = isStaff(profile) && (poll.created_by === profile.id || profile.role === "organizer");
+  const canManage = isStaff(profile) && (poll.created_by === profile.id || isOrganizer(profile));
   const canNudge = canManage || (isStaff(profile) && poll.is_mojisoop);
   const inviteUrl = `${siteUrl}/j/${poll.invite_token}`;
 

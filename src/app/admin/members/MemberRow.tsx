@@ -11,6 +11,7 @@ import { Button } from "@/components/Button";
 import { Input } from "@/components/Input";
 import { formatKstDate } from "@/lib/format";
 import { cn } from "@/lib/cn";
+import { normalizeMajor } from "@/lib/major";
 import {
   POSITION_LABELS,
   ACADEMIC_STATUS_LABELS,
@@ -134,7 +135,7 @@ export function MemberRow({
         <td className="hidden px-4 py-4 text-gray-700 md:table-cell">{member.nickname || "-"}</td>
         <td className="hidden px-4 py-4 text-gray-700 lg:table-cell">{member.email || "-"}</td>
         <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.student_no || "-"}</td>
-        <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.major || "-"}</td>
+        <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{normalizeMajor(member.major) || "-"}</td>
         <td className="hidden px-4 py-4 text-gray-700 2xl:table-cell">{member.phone || "-"}</td>
         <td className="px-4 py-4">
           <Badge tone={MEMBER_ROLE_TONES[role]}>{MEMBER_ROLE_LABELS[role]}</Badge>

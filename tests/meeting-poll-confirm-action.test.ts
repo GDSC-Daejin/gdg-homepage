@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
   sendMeetingPollConfirmation: vi.fn(),
   sendMeetingPollCreated: vi.fn(),
+  updatePoll: vi.fn(),
 }));
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -35,9 +36,8 @@ describe("confirmMeetingPoll", () => {
     query.eq.mockReturnValue(query);
     query.is.mockReturnValue(query);
     query.select.mockResolvedValue({ data: [{ id: "poll-1", title: "8월 정기 회의", is_mojisoop: true }], error: null });
-    mocks.createClient.mockResolvedValue({
-      from: vi.fn(() => ({ update: vi.fn(() => query) })),
-    });
+    mocks.updatePoll.mockReturnValue(query);
+    mocks.createClient.mockResolvedValue({ from: vi.fn(() => ({ update: mocks.updatePoll })) });
   });
 
   it("확정 뒤 자비스 알림 실패를 경고로 돌리고 확정은 유지한다", async () => {
@@ -126,5 +126,26 @@ describe("confirmMeetingPoll", () => {
     expect(mocks.sendMeetingPollConfirmation).toHaveBeenCalledWith(expect.objectContaining({
       isRegularSession: true,
     }));
+  });
+});
+
+describe("closeMeetingPoll", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.isDemoMode.mockResolvedValue(false);
+    mocks.requireAdmin.mockResolvedValue({ id: "admin-1" });
+    const query = { eq: vi.fn(), is: vi.fn(), select: vi.fn() };
+    query.eq.mockReturnValue(query);
+    query.is.mockReturnValue(query);
+    query.select.mockResolvedValue({ data: [{ id: "poll-1" }], error: null });
+    mocks.updatePoll.mockReturnValue(query);
+    mocks.createClient.mockResolvedValue({ from: vi.fn(() => ({ update: mocks.updatePoll })) });
+  });
+
+  it("확정하지 않고 현재 시각으로 응답을 마감한다", async () => {
+    const { closeMeetingPoll } = await import("@/actions/meeting-poll");
+
+    await expect(closeMeetingPoll("poll-1")).resolves.toEqual({});
+    expect(mocks.updatePoll).toHaveBeenCalledWith(expect.objectContaining({ due_at: expect.any(String) }));
   });
 });

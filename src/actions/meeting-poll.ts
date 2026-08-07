@@ -19,7 +19,7 @@ import {
 } from "@/lib/meeting-poll";
 import { createWeeklyPage } from "@/lib/notion";
 import { createClient } from "@/lib/supabase/server";
-import type { ActionResult, MeetingPoll } from "@/lib/types";
+import { isOrganizer, type ActionResult, type MeetingPoll } from "@/lib/types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -139,7 +139,7 @@ export async function updateMeetingPoll(
   if (participantError) return { error: toKoreanError(participantError) };
   const poll = pollRow as MeetingPoll;
   if (poll.confirmed_at) return { error: "확정된 일정은 수정할 수 없어요" };
-  if (poll.created_by !== profile.id && profile.role !== "organizer") {
+  if (poll.created_by !== profile.id && !isOrganizer(profile)) {
     return { error: "일정을 수정할 권한이 없어요" };
   }
 
@@ -400,6 +400,27 @@ export async function unconfirmMeetingPoll(pollId: string): Promise<ActionResult
   revalidatePath(`/schedule/${pollId}`);
   revalidatePath("/schedule");
   revalidatePath("/admin/events");
+  return {};
+}
+
+/** 일정 확정 없이 응답만 수동으로 마감한다. */
+export async function closeMeetingPoll(pollId: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("meeting_polls")
+    .update({ due_at: new Date().toISOString() })
+    .eq("id", pollId)
+    .is("confirmed_at", null)
+    .select("id");
+
+  if (error) return { error: toKoreanError(error) };
+  if (!data?.length) return { error: "확정됐거나 종료 권한이 없는 일정이에요" };
+
+  revalidatePath(`/schedule/${pollId}`);
+  revalidatePath("/schedule");
   return {};
 }
 
