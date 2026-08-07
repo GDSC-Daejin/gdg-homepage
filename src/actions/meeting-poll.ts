@@ -7,6 +7,7 @@ import { DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { toKoreanError } from "@/lib/errors";
 import { dayKeyKst, timeKeyKst } from "@/lib/format";
 import { sendMeetingPollConfirmation, sendMeetingPollCreated } from "@/lib/meeting-poll-confirmation";
+import { notifyAllResponded, notifyAllRespondedByToken } from "@/lib/meeting-poll-all-responded";
 import { nudgeParticipants } from "@/lib/meeting-poll-nudge";
 import {
   DURATION_OPTIONS,
@@ -272,6 +273,7 @@ export async function saveMyAvailability(
   if (error) return { error: toKoreanError(error) };
   if (!data?.length) return { error: "이 일정의 참여자가 아니에요" };
 
+  await notifyAllResponded(supabase, pollId);
   revalidatePath(`/schedule/${pollId}`);
   return {};
 }
@@ -486,6 +488,7 @@ export async function respondByToken(
     p_slots: [...new Set(normalizeSlots(slots))],
   });
   if (error) return { error: toKoreanError(error) };
+  await notifyAllRespondedByToken(supabase, token);
   revalidatePath(`/j/${token}`);
   return {};
 }
