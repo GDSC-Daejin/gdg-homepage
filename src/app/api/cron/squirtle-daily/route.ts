@@ -6,10 +6,7 @@ import { stageEmoji } from "@/lib/squirtle/emoji";
 import { DAILY_MESSAGES, dailyMessage, seasonEndMessage } from "@/lib/squirtle/messages";
 import { matchSlackUsers } from "@/lib/squirtle/backfill";
 import type { CloseResult, Stage } from "@/lib/squirtle/types";
-
-export function pickMessageIndex(): number {
-  return Math.floor(Math.random() * DAILY_MESSAGES.length);
-}
+import { pickMessageIndex } from "./helpers";
 
 async function backfillSlackIds(supabase: SupabaseClient) {
   const { data: unlinked } = await supabase

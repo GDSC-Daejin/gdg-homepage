@@ -33,9 +33,7 @@
   align-items: center;
   gap: 28px;
   padding: 18px clamp(20px, 5vw, 56px);
-  background: rgba(11, 12, 16, 0.78);
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  background: var(--nb-bg);
   border-bottom: 1px solid var(--nb-line);
 }
 .nb-brand {
@@ -175,19 +173,6 @@ button.nb-btn {
   height: 8px;
   border-radius: 50%;
   background: #34a853;
-  box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.5);
-  animation: nb-pulse 2.2s ease-out infinite;
-}
-@keyframes nb-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(52, 168, 83, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(52, 168, 83, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(52, 168, 83, 0);
-  }
 }
 .nb-display {
   font-size: clamp(56px, 11vw, 148px);

@@ -35,7 +35,7 @@ describe("도감봇 이벤트 경로", () => {
     expect(await response.json()).toEqual({ challenge: "challenge" });
   });
   it("도감봇이 자기 출현 글에 단 반응은 무시한다", async () => {
-    const { shouldProcess } = await import("@/app/api/slack/pokedex/events/route");
+    const { shouldProcess } = await import("@/app/api/slack/pokedex/events/helpers");
     expect(shouldProcess({ type: "reaction_added", user: "UBOT", item_user: "UBOT", reaction: "pokeball", item: { ts: "1" } })).toBe(false);
   });
 });
@@ -52,7 +52,7 @@ describe("도감봇 이벤트 중복 방지", () => {
         },
       })),
     };
-    const { claimSlackEvent } = await import("@/app/api/slack/pokedex/events/route");
+    const { claimSlackEvent } = await import("@/app/api/slack/pokedex/events/helpers");
 
     await expect(claimSlackEvent(supabase, "Ev123")).resolves.toBe(true);
     await expect(claimSlackEvent(supabase, "Ev123")).resolves.toBe(false);

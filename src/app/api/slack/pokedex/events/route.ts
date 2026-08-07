@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { rejectionMessage, remainingBallsMessage, resultMessage, shouldAnnounceCatch, throwMessage, type ThrowOutcome } from "@/lib/pokedex/messages";
 import { listWorkspaceMembers, postMessage } from "@/lib/slack/api";
 import { verifySlackSignature } from "@/lib/slack/verify";
+import { claimSlackEvent, shouldProcess, type EventStore } from "./helpers";
 
 type ReactionEvent = { type?: string; user?: string; item_user?: string; reaction?: string; item?: { ts?: string } };
 type PokedexResult = {
@@ -12,30 +13,12 @@ type PokedexResult = {
   pokemon_name?: string;
   remaining_balls?: number;
 };
-type EventStore = {
-  from: (table: string) => {
-    insert: (value: { event_id: string }) => PromiseLike<{ error: unknown }>;
-  };
-};
 
 function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
-export function shouldProcess(event: ReactionEvent) {
-  return event.type === "reaction_added"
-    && event.reaction === "pokeball"
-    && Boolean(event.user)
-    && Boolean(event.item?.ts)
-    && event.user !== event.item_user;
-}
-
-export async function claimSlackEvent(supabase: EventStore, eventId: string) {
-  const { error } = await supabase.from("pokedex_slack_events").insert({ event_id: eventId });
-  return !error;
 }
 
 async function handleReaction(event: ReactionEvent, eventId: string) {

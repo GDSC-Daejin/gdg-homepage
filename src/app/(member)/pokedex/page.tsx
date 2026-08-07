@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { Input } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
 import { PokedexBattleTab } from "./PokedexBattleTab";
-import { RankingPreview } from "@/app/ranking-preview/RankingPreview";
+import { RankingLeagueTab } from "./RankingLeagueTab";
 import "../../wds.css";
 import "../../ranking-preview/ranking-preview.css";
 import type { DuelMember, DuelTurn, OwnedBattlePokemon, PokemonDuel } from "@/lib/pokedex/duel";
@@ -40,7 +40,7 @@ const RARITY_INFO: Record<Rarity, { label: string; weight: number; catchRate: nu
   legendary: { label: "전설/환상", weight: 8, catchRate: 28, tone: "danger" },
 };
 
-export function RankingLeagueComingSoon() {
+function RankingLeagueComingSoon() {
   return <section>
     <Card className="relative overflow-hidden border-primary !bg-primary p-6 text-white sm:p-8">
       <div className="relative z-10 max-w-xl"><p className="inline-flex rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide">✨ 추후 오픈 예정</p><h2 className="mt-4 text-3xl font-bold leading-[1.15] tracking-[-0.03em] sm:text-4xl">도감 랭킹전</h2><p className="mt-3 text-sm leading-6 text-white/90 sm:text-base sm:leading-7"><span className="block">포켓몬을 모으는 동안 규칙을 미리 익혀두세요.</span><span className="block">준비가 되면 나만의 팀으로 바로 도전할 수 있어요.</span></p></div>
@@ -55,13 +55,6 @@ export function RankingLeagueComingSoon() {
     </div>
     <Card className="mt-4 p-5"><h3 className="text-base font-bold leading-6 tracking-[-0.02em] text-gray-900">점수는 이렇게 바뀌어요</h3><p className="mt-1 text-sm leading-6 text-gray-600"><span className="block">공격에서 이기면 <strong className="font-bold text-primary">+30점</strong>, 지면 <strong className="font-bold text-primary">-30점</strong>이에요.</span><span className="block">방어에 성공하면 <strong className="font-bold text-primary">+10점</strong>, 실패하면 <strong className="font-bold text-primary">-10점</strong>이에요.</span><span className="block">방어 덱을 바꾸면 다음 날 <strong className="font-bold text-primary">오전 6시</strong>부터 매칭에 반영돼요.</span></p></Card>
   </section>;
-}
-
-export function RankingLeagueTab({ profile, state }: { profile: { id: string; name: string; nickname: string | null }; state: RankingLeagueState | null }) {
-  if (RANKING_LEAGUE_PREOPEN && !RANKING_LEAGUE_OPEN) return state ? <RankingPreview state={state} profile={profile} preopen /> : <EmptyState title="랭킹전을 준비하고 있어요" description="랭킹전 데이터를 불러오지 못했어요." />;
-  if (!RANKING_LEAGUE_OPEN) return <RankingLeagueComingSoon />;
-  if (!state) return <EmptyState title="랭킹전을 준비하고 있어요" description="데모에서는 랭킹전을 이용할 수 없어요." />;
-  return <PokedexBattleTab kind="ranking" profileId={profile.id} state={state} />;
 }
 
 export default async function PokedexPage({ searchParams }: { searchParams: Promise<{ tab?: string | string[]; q?: string | string[] }> }) {
@@ -142,7 +135,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
           const count = countByPokemon.get(entry.id) ?? 0;
           return <Link key={entry.id} href={`/pokedex/${entry.pokedex_no}`} className="rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"><Card className={`p-4 text-center transition-transform hover:-translate-y-0.5 ${count ? "" : "grayscale opacity-45"}`}><img src={entry.image_path} alt={count ? entry.name_ko : "미획득 포켓몬"} loading="lazy" decoding="async" className={`mx-auto h-20 w-20 object-contain ${count ? "" : "brightness-0"}`} /><p className="mt-2 text-sm font-semibold text-gray-900">{count ? entry.name_ko : "???"}</p><p className="mt-1 text-xs text-gray-500">{count ? `${count}마리 보유` : `No. ${entry.pokedex_no}`}</p></Card></Link>;
         })}</div>}
-      </> : tab === "duels" ? <PokedexBattleTab kind="duel" profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : tab === "ranking" ? <RankingLeagueTab profile={{ id: profile.id, name: profile.name, nickname: profile.nickname }} state={rankingState} /> : <>
+      </> : tab === "duels" ? <PokedexBattleTab kind="duel" profileId={profile.id} members={duelMembers} ownedPokemon={ownedBattlePokemon} duels={duels} /> : tab === "ranking" ? <RankingLeagueTab profile={{ id: profile.id, name: profile.name, nickname: profile.nickname }} state={rankingState} comingSoon={<RankingLeagueComingSoon />} /> : <>
         <form action="/pokedex" className="mb-4 flex gap-2">
           <input type="hidden" name="tab" value="probabilities" />
           <div className="flex-1"><Input id="pokemon-search" name="q" type="search" defaultValue={query} aria-label="포켓몬 이름 검색" placeholder="포켓몬 이름 검색" /></div>

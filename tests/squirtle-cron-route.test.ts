@@ -56,7 +56,7 @@ describe("유령 메시지 방지", () => {
 
 describe("pickMessageIndex", () => {
   it("문구 개수 범위 안의 정수를 돌려준다", async () => {
-    const { pickMessageIndex } = await import("@/app/api/cron/squirtle-daily/route");
+    const { pickMessageIndex } = await import("@/app/api/cron/squirtle-daily/helpers");
     const { DAILY_MESSAGES } = await import("@/lib/squirtle/messages");
     for (let i = 0; i < 50; i += 1) {
       const index = pickMessageIndex();

@@ -5,16 +5,7 @@ import { addReaction, postMessage, updateMessage } from "@/lib/slack/api";
 import { acceptedEmojis, stageEmoji } from "@/lib/squirtle/emoji";
 import { dailyMessage, evolutionMessage, threadSummary } from "@/lib/squirtle/messages";
 import type { CheckinResult, Stage } from "@/lib/squirtle/types";
-
-type ReactionEvent = { type?: string; user?: string; reaction?: string; item?: { ts?: string } };
-
-export function shouldProcess(event: ReactionEvent, config: { emojis: string[]; botUserId: string }): boolean {
-  if (event.type !== "reaction_added") return false;
-  if (!event.reaction || !config.emojis.includes(event.reaction)) return false;
-  if (!event.user || event.user === config.botUserId) return false;
-  if (!event.item?.ts) return false;
-  return true;
-}
+import { shouldProcess, type ReactionEvent } from "./helpers";
 
 function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

@@ -1,7 +1,9 @@
 // WDS 토큰. globals.css의 @import는 Tailwind 파이프라인을 통과하지 못해 여기서 직접 싣는다.
 import "../wds.css";
+import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { requireProfile } from "@/lib/auth";
+import { PageSkeleton } from "@/components/PageSkeleton";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { AdminSidebar } from "@/app/admin/AdminSidebar";
 import { SectionTabs, EVENT_TABS } from "@/app/admin/SectionTabs";
@@ -18,11 +20,19 @@ export const metadata = { title: "스케줄", robots: { index: false, follow: fa
 /**
  * 조율 화면은 초대된 멤버도 열 수 있다. 관리자는 어드민 사이드바를, 멤버는 기본 셸을 쓴다.
  */
-export default async function ScheduleLayout({
+export default function ScheduleLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <Suspense fallback={<ScheduleLoading />}>
+      <ScheduleLayoutContent>{children}</ScheduleLayoutContent>
+    </Suspense>
+  );
+}
+
+async function ScheduleLayoutContent({ children }: { children: React.ReactNode }) {
   const profile = await requireProfile();
   const scheduleShell = (await cookies()).get("schedule-shell")?.value;
   const memberShell = scheduleShell === "member" || !isStaff(profile);
@@ -63,5 +73,15 @@ export default async function ScheduleLayout({
         {content}
       </div>
     </ResponsiveShell>
+  );
+}
+
+function ScheduleLoading() {
+  return (
+    <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
+      <div className="mx-auto max-w-[1536px] rounded-[20px] bg-gray-50 p-6 shadow-material sm:p-8">
+        <PageSkeleton />
+      </div>
+    </div>
   );
 }

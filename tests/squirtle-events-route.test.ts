@@ -43,27 +43,27 @@ describe("이벤트 라우트", () => {
 describe("shouldProcess", () => {
   const config = { emojis: ["squirtle", "wartortle"], botUserId: "UBOT" };
   it("설정된 이모지의 reaction_added를 처리한다", async () => {
-    const { shouldProcess } = await import("@/app/api/slack/events/route");
+    const { shouldProcess } = await import("@/app/api/slack/events/helpers");
     expect(shouldProcess({ type: "reaction_added", user: "U1", reaction: "squirtle", item: { ts: "1" } }, config)).toBe(true);
   });
   it("진화 뒤 단계 이모지도 처리한다", async () => {
-    const { shouldProcess } = await import("@/app/api/slack/events/route");
+    const { shouldProcess } = await import("@/app/api/slack/events/helpers");
     expect(shouldProcess({ type: "reaction_added", user: "U1", reaction: "wartortle", item: { ts: "1" } }, config)).toBe(true);
   });
   it("다른 이모지는 무시한다", async () => {
-    const { shouldProcess } = await import("@/app/api/slack/events/route");
+    const { shouldProcess } = await import("@/app/api/slack/events/helpers");
     expect(shouldProcess({ type: "reaction_added", user: "U1", reaction: "tada", item: { ts: "1" } }, config)).toBe(false);
   });
   it("reaction_added가 아니면 무시한다", async () => {
-    const { shouldProcess } = await import("@/app/api/slack/events/route");
+    const { shouldProcess } = await import("@/app/api/slack/events/helpers");
     expect(shouldProcess({ type: "reaction_removed", user: "U1", reaction: "squirtle", item: { ts: "1" } }, config)).toBe(false);
   });
   it("봇 자신의 리액션은 무시한다", async () => {
-    const { shouldProcess } = await import("@/app/api/slack/events/route");
+    const { shouldProcess } = await import("@/app/api/slack/events/helpers");
     expect(shouldProcess({ type: "reaction_added", user: "UBOT", reaction: "squirtle", item: { ts: "1" } }, config)).toBe(false);
   });
   it("item.ts가 없으면 무시한다", async () => {
-    const { shouldProcess } = await import("@/app/api/slack/events/route");
+    const { shouldProcess } = await import("@/app/api/slack/events/helpers");
     expect(shouldProcess({ type: "reaction_added", user: "U1", reaction: "squirtle", item: {} }, config)).toBe(false);
   });
 });

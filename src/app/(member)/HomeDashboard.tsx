@@ -119,7 +119,10 @@ export async function HomeDashboard({
     supabase.from("survey_responses").select("survey_id").eq("user_id", profileId),
     supabase.from("point_logs").select("amount, created_at").eq("user_id", profileId),
     supabase.from("group_members").select("group_id").eq("user_id", profileId),
-    supabase.from("events").select("*").order("starts_at", { ascending: false }),
+    supabase
+      .from("events")
+      .select("id, type, title, starts_at, ends_at, event_date, location, capacity")
+      .order("starts_at", { ascending: false }),
   ]);
 
   const list = (events ?? []) as Event[];

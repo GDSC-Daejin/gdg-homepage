@@ -12,7 +12,8 @@ vi.mock("@/lib/supabase/server", () => ({ createClient: mocks.createClient }));
 vi.mock("@/lib/demo", () => ({ isDemoMode: mocks.isDemoMode }));
 vi.mock("@/lib/auth", () => ({ requireProfile: mocks.requireProfile }));
 
-import PokedexPage, { RankingLeagueTab } from "@/app/(member)/pokedex/page";
+import PokedexPage from "@/app/(member)/pokedex/page";
+import { RankingLeagueTab } from "@/app/(member)/pokedex/RankingLeagueTab";
 
 function query(data: unknown) {
   const result = Promise.resolve({ data });
@@ -27,7 +28,7 @@ beforeEach(() => {
 
 describe("도감 랭킹전 탭", () => {
   it("랭킹 데이터가 없으면 프리오픈 안내를 보여준다", () => {
-    const page = renderToStaticMarkup(createElement(RankingLeagueTab, { profile: { id: "member", name: "테스터", nickname: "tester" }, state: null }));
+    const page = renderToStaticMarkup(createElement(RankingLeagueTab, { profile: { id: "member", name: "테스터", nickname: "tester" }, state: null, comingSoon: null }));
     const text = page.replace(/<br\/?>(?=.)/g, " ").replace(/<[^>]+>/g, "");
 
     expect(text).toContain("랭킹전 데이터를 불러오지 못했어요.");

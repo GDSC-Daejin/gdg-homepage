@@ -23,7 +23,7 @@ describe("온보딩 흐름", () => {
     // 승인 게이트는 더 이상 별도 화면으로 보내지 않는다.
     expect(auth).toContain('redirect("/onboarding")');
     expect(auth).not.toContain('redirect("/pending")');
-    expect(pending).toContain('redirect("/onboarding")');
+    expect(pending).toContain('permanentRedirect("/onboarding")');
     // 같은 화면이 제출 전/후를 나눠 그린다.
     expect(page).toContain('profile.student_no !== ""');
     expect(page).toContain("승인 대기 중");
