@@ -92,3 +92,33 @@ describe("꼬북봇 진화 사이클 마이그레이션", () => {
     expect(cycleSql).not.toContain("create or replace function public.squirtle_checkin");
   });
 });
+
+describe("단계별 이모지 마이그레이션", () => {
+  let emojiSql = "";
+
+  beforeAll(async () => {
+    emojiSql = await readFile("supabase/migrations/0097_squirtle_stage_emoji.sql", "utf8");
+  });
+
+  it("2·3단계 이모지 컬럼을 추가한다", () => {
+    expect(emojiSql).toContain("add column emoji_stage2 text");
+    expect(emojiSql).toContain("add column emoji_stage3 text");
+  });
+
+  it("1단계 이모지는 그대로 둔다 (지난 시즌 해석 근거가 사라진다)", () => {
+    expect(emojiSql).not.toMatch(/drop column emoji\b/);
+    expect(emojiSql).not.toMatch(/set emoji\s*=/);
+  });
+
+  it("어니부기 이모지를 채운다", () => {
+    expect(emojiSql).toContain("set emoji_stage2 = 'wartortle'");
+  });
+
+  it("워크스페이스에 없는 거북왕 이모지는 채우지 않는다", () => {
+    expect(emojiSql).not.toContain("emoji_stage3 = 'blastoise'");
+  });
+
+  it("RPC를 건드리지 않는다 (봉인을 다시 걸 필요가 없다)", () => {
+    expect(emojiSql).not.toContain("create or replace function");
+  });
+});

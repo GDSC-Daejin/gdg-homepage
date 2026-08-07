@@ -30,8 +30,11 @@ function ranking(top3: Contributor[]): string {
   return top3.map((c, i) => `${MEDALS[i]} <@${c.slack_user_id}> ${c.count}잔`).join("\n");
 }
 
-export function evolutionMessage(o: { stage: Stage; total: number; top3: Contributor[]; participantCount: number }): string {
-  return [`🎉 꼬북이가 ${STAGE_NAMES[o.stage]}(으)로 진화했어요!`, `   이번 시즌 ${o.total}잔 달성 🏆`, "", ranking(o.top3), "", `함께해준 ${o.participantCount}명 모두 고마워요!`].join("\n");
+export function evolutionMessage(o: { stage: Stage; total: number; top3: Contributor[]; participantCount: number; nextEmoji?: string }): string {
+  const tail = o.nextEmoji
+    ? `함께해준 ${o.participantCount}명 모두 고마워요!\n오늘 아직 안 마셨다면 :${o.nextEmoji}: 를 눌러주세요. 이전 이모지도 그대로 인정돼요.`
+    : `함께해준 ${o.participantCount}명 모두 고마워요!`;
+  return [`🎉 꼬북이가 ${STAGE_NAMES[o.stage]}(으)로 진화했어요!`, `   이번 시즌 ${o.total}잔 달성 🏆`, "", ranking(o.top3), "", tail].join("\n");
 }
 
 export function seasonEndMessage(o: { stage: Stage; total: number; top3: Contributor[]; bonuses: readonly [number, number, number]; emoji: string }): string {

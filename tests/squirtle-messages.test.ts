@@ -51,6 +51,17 @@ describe("진화 축하", () => {
     expect(text).toContain("🥉 <@U3> 19잔");
     expect(text).toContain("21명");
   });
+  it("새 이모지를 달았으면 그걸 누르라고 안내한다", () => {
+    const text = evolutionMessage({ stage: 2, total: 80, top3, participantCount: 21, nextEmoji: "wartortle" });
+    expect(text).toContain(":wartortle:");
+    // 이전 이모지도 계속 인정된다는 걸 알려야 오늘 안 마신 사람이 헷갈리지 않는다
+    expect(text).toContain("이전 이모지도");
+  });
+  it("새 이모지를 못 달았으면 누르라는 안내도 하지 않는다", () => {
+    const text = evolutionMessage({ stage: 3, total: 200, top3, participantCount: 21 });
+    expect(text).not.toContain("눌러주세요");
+    expect(text).toContain("21명");
+  });
   it("참여자가 3명 미만이면 있는 만큼만 보여준다", () => {
     const text = evolutionMessage({ stage: 2, total: 80, top3: top3.slice(0, 1), participantCount: 1 });
     expect(text).toContain("🥇 <@U1>");

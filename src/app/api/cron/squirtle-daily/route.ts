@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { hasValidCronAuthorization } from "@/lib/cron";
 import { addReaction, listUserEmails, postMessage } from "@/lib/slack/api";
+import { stageEmoji } from "@/lib/squirtle/emoji";
 import { DAILY_MESSAGES, dailyMessage, seasonEndMessage } from "@/lib/squirtle/messages";
 import { matchSlackUsers } from "@/lib/squirtle/backfill";
 import type { CloseResult, Stage } from "@/lib/squirtle/types";
@@ -48,7 +49,7 @@ export async function GET(request: NextRequest) {
   const { data: bot } = await supabase.from("bots").select("active").eq("slug", "squirtle").single();
   if (!bot?.active) return NextResponse.json({ posted: false, reason: "disabled" });
 
-  const { data: config } = await supabase.from("squirtle_config").select("channel_id, emoji, bonus_first, bonus_second, bonus_third").eq("id", 1).single();
+  const { data: config } = await supabase.from("squirtle_config").select("channel_id, emoji, emoji_stage2, emoji_stage3, bonus_first, bonus_second, bonus_third").eq("id", 1).single();
   if (!config) return NextResponse.json({ error: "꼬북봇 설정이 없어요" }, { status: 500 });
 
   const { data: closeData } = await supabase.rpc("squirtle_close_season");
@@ -71,6 +72,10 @@ export async function GET(request: NextRequest) {
   const linked = await backfillSlackIds(supabase);
   const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
 
+  // 시즌은 거북왕까지 여러 날 이어진다 — 어제 진화했다면 오늘 메시지는 새 이모지로 나가야 한다
+  const { data: season } = await supabase.from("squirtle_seasons").select("stage").eq("id", seasonId).single();
+  const emoji = stageEmoji(config, (season?.stage ?? 1) as Stage);
+
   // 슬랙에 먼저 올리면 중복 실행 때 DB에 없는 유령 메시지가 남고, 거기 달린 리액션은 영원히 stale로 무시된다.
   // 그래서 posted_on unique로 자리를 먼저 예약하고 게시한다.
   const { data: reserved, error: insertError } = await supabase
@@ -80,7 +85,7 @@ export async function GET(request: NextRequest) {
     .single();
   if (insertError) return NextResponse.json({ posted: false, reason: "already_posted" });
 
-  const posted = await postMessage({ channel: config.channel_id, text: dailyMessage(config.emoji, pickMessageIndex()) });
+  const posted = await postMessage({ channel: config.channel_id, text: dailyMessage(emoji, pickMessageIndex()) });
   if (!posted.ok) {
     // 게시 실패 — 예약을 풀어 다음 시도가 가능하게 한다
     await supabase.from("squirtle_posts").delete().eq("id", reserved.id);
@@ -88,6 +93,6 @@ export async function GET(request: NextRequest) {
   }
 
   await supabase.from("squirtle_posts").update({ message_ts: posted.ts }).eq("id", reserved.id);
-  await addReaction({ channel: config.channel_id, ts: posted.ts, emoji: config.emoji });
+  await addReaction({ channel: config.channel_id, ts: posted.ts, emoji });
   return NextResponse.json({ posted: true, linked, closed: closed?.closed ?? false });
 }
