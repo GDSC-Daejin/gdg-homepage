@@ -58,8 +58,7 @@ export function SectionTabs({ tabs, label }: { tabs: SectionTab[]; label: string
 /** 이벤트 = 조율(투표)로 정하고 확정되면 이벤트가 되는 한 흐름이다. */
 export const EVENT_TABS: SectionTab[] = [
   { href: "/admin/events", label: "이벤트", prefix: true },
-  { href: "/schedule", label: "일정 조율" },
-  { href: "/schedule/past", label: "지난 조율", prefix: true },
+  { href: "/schedule", label: "스케줄", prefix: true },
 ];
 
 /** 셋 다 회원 명단을 깔고 그 위에 다른 숫자를 얹은 화면이다. */

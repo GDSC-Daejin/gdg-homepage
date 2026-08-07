@@ -53,7 +53,7 @@ async function ScheduleLayoutContent({ children }: { children: React.ReactNode }
         <ScheduleLayoutBar
           className={styles.layoutBar}
           canCreate={isStaff(profile)}
-          showNav={memberShell}
+          navVariant={memberShell ? "default" : "segment"}
         />
         {children}
       </div>

@@ -4,37 +4,59 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/wds/Button";
 
-/** 원본 헤더의 내 일정 / 지난 일정 · 새 일정 만들기. 활성 항목만 진하다. */
-export function ScheduleNav({ variant = "default" }: { variant?: "default" | "header" }) {
+/** 진행 중인 일정과 지난 일정을 같은 스케줄 안에서 전환한다. */
+export function ScheduleNav({ variant = "default" }: { variant?: "default" | "header" | "segment" }) {
   const pathname = usePathname();
   const isPast = pathname.startsWith("/schedule/past");
   const isMine = pathname === "/schedule" || (!isPast && !pathname.startsWith("/schedule/new"));
+  const isSegment = variant === "segment";
 
   return (
-    <nav style={{ display: "flex", alignItems: "center", gap: 20 }}>
+    <nav
+      aria-label={isSegment ? "스케줄 보기" : undefined}
+      style={
+        isSegment
+          ? {
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              padding: 4,
+              background: "var(--wds-bg)",
+              border: "1px solid var(--wds-line-alternative)",
+              borderRadius: 10,
+            }
+          : { display: "flex", alignItems: "center", gap: 20 }
+      }
+    >
       <Link
         href="/schedule"
+        aria-current={isMine ? "page" : undefined}
         style={{
           font: `${isMine ? 600 : 400} 15px/1 var(--wds-font-sans)`,
-          color: isMine && variant === "header" ? "var(--wds-primary)" : isMine ? "var(--wds-label-normal)" : "var(--wds-label-alternative)",
+          color: isMine ? "var(--wds-primary)" : "var(--wds-label-alternative)",
           textDecoration: "none",
-          paddingBottom: variant === "header" ? 14 : undefined,
+          padding: variant === "header" ? "0 0 14px" : isSegment ? "7px 12px" : undefined,
+          borderRadius: isSegment ? 7 : undefined,
+          background: isMine && isSegment ? "var(--wds-primary-bg)" : undefined,
           borderBottom: isMine && variant === "header" ? "2px solid var(--wds-primary)" : undefined,
         }}
       >
-        내 일정
+        {isSegment ? "진행 중" : "내 일정"}
       </Link>
       <Link
         href="/schedule/past"
+        aria-current={isPast ? "page" : undefined}
         style={{
           font: `${isPast ? 600 : 400} 15px/1 var(--wds-font-sans)`,
-          color: isPast && variant === "header" ? "var(--wds-primary)" : isPast ? "var(--wds-label-normal)" : "var(--wds-label-alternative)",
+          color: isPast ? "var(--wds-primary)" : "var(--wds-label-alternative)",
           textDecoration: "none",
-          paddingBottom: variant === "header" ? 14 : undefined,
+          padding: variant === "header" ? "0 0 14px" : isSegment ? "7px 12px" : undefined,
+          borderRadius: isSegment ? 7 : undefined,
+          background: isPast && isSegment ? "var(--wds-primary-bg)" : undefined,
           borderBottom: isPast && variant === "header" ? "2px solid var(--wds-primary)" : undefined,
         }}
       >
-        지난 일정
+        {isSegment ? "지난 스케줄" : "지난 일정"}
       </Link>
     </nav>
   );
@@ -43,20 +65,18 @@ export function ScheduleNav({ variant = "default" }: { variant?: "default" | "he
 export function ScheduleLayoutBar({
   canCreate,
   className,
-  // 어드민 셸에서는 이벤트 탭 줄이 내 일정/지난 일정까지 함께 그려서 여기선 감춘다.
-  showNav = true,
+  navVariant,
 }: {
   canCreate: boolean;
   className: string;
-  showNav?: boolean;
+  navVariant?: "default" | "header" | "segment";
 }) {
   const pathname = usePathname();
   if (/^\/schedule\/[^/]+$/.test(pathname)) return null;
-  if (!showNav && !canCreate) return null;
 
   return (
     <div className={className}>
-      {showNav ? <ScheduleNav /> : <span />}
+      <ScheduleNav variant={navVariant} />
       <NewPollButton canCreate={canCreate} />
     </div>
   );
