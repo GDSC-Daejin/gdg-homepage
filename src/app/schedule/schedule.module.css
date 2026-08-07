@@ -151,6 +151,18 @@
   gap: 6px;
 }
 
+.participantFilter {
+  display: block;
+  width: 150px;
+  margin-top: 4px;
+  padding: 7px 28px 7px 10px;
+  border: 1px solid var(--wds-line-neutral);
+  border-radius: 8px;
+  background: var(--wds-bg);
+  color: var(--wds-label-normal);
+  font: 500 13px/1.4 var(--wds-font-sans);
+}
+
 .responseSummary {
   align-items: center;
   gap: 24px;

@@ -94,6 +94,7 @@ export function PollDetail({
   const [hovered, setHovered] = useState<Cell | null>(null);
   const [pendingOpen, setPendingOpen] = useState(false);
   const [showCounts, setShowCounts] = useState(false);
+  const [participantFilter, setParticipantFilter] = useState("");
   const [confirming, setConfirming] = useState<{
     startIso: string;
     durationMin: number;
@@ -119,9 +120,16 @@ export function PollDetail({
 
   const responded = liveViews.filter((v) => v.responded);
   const pending = liveViews.filter((v) => !v.responded);
+  const filteredViews = participantFilter
+    ? liveViews.filter((view) => view.id === participantFilter)
+    : liveViews;
+  const filteredResponded = filteredViews.filter((view) => view.responded);
+  const filteredPending = filteredViews.filter((view) => !view.responded);
   const available = useMemo(() => aggregate(heatViews), [heatViews]);
+  const filteredAvailable = useMemo(() => aggregate(filteredViews), [filteredViews]);
   /** 히트맵 농도의 분모. 드래그로 내가 응답자가 되면 여기도 같이 늘어야 색이 튀지 않는다. */
   const heatTotal = useMemo(() => heatViews.filter((v) => v.responded).length, [heatViews]);
+  const gridTotal = participantFilter ? filteredResponded.length : heatTotal;
   const percent = liveViews.length
     ? Math.round((responded.length / liveViews.length) * 100)
     : 0;
@@ -143,12 +151,14 @@ export function PollDetail({
     : recommendations;
 
   const blockAt = (cell: Cell) =>
-    recommendations.find(
-      (r) =>
-        r.dateIndex === cell.dateIndex &&
-        cell.timeIndex >= r.from &&
-        cell.timeIndex <= r.to,
-    );
+    participantFilter
+      ? undefined
+      : recommendations.find(
+          (r) =>
+            r.dateIndex === cell.dateIndex &&
+            cell.timeIndex >= r.from &&
+            cell.timeIndex <= r.to,
+        );
 
   // 다른 사람이 이만큼 모인 칸이면 여기에 칠하는 게 확정을 빠르게 한다.
   const othersTotal = Math.max(0, responded.length - (me?.responded || mine.size > 0 ? 1 : 0));
@@ -212,11 +222,11 @@ export function PollDetail({
       .finally(() => setBusy(false));
   }
 
-  const selectedNames = selected ? (available.get(selected) ?? []) : [];
+  const selectedNames = selected ? (filteredAvailable.get(selected) ?? []) : [];
   const selectedMissing = selected
-    ? responded.filter((v) => !selectedNames.includes(v))
+    ? filteredResponded.filter((v) => !selectedNames.includes(v))
     : [];
-  const selectedBlock = selected
+  const selectedBlock = selected && !participantFilter
     ? recommendations.find((r) => r.startIso <= selected && selected <= endOf(r, times, dates))
     : undefined;
 
@@ -733,7 +743,9 @@ export function PollDetail({
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <h3 style={{ margin: 0, font: "700 18px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
-                전체 가능한 시간
+                {participantFilter
+                  ? `${filteredViews[0]?.name ?? "선택한 멤버"}님의 가능한 시간`
+                  : "전체 가능한 시간"}
               </h3>
               <p
                 style={{
@@ -742,18 +754,32 @@ export function PollDetail({
                   color: "var(--wds-label-alternative)",
                 }}
               >
-                진할수록 많이 겹쳐요
-                {recommendations.length > 0 && ". 테두리 친 “N순위”는 위 추천 카드와 같은 시간이에요"}
+                {participantFilter
+                  ? "파란 칸이 이 멤버가 응답한 가능 시간이에요"
+                  : <>진할수록 많이 겹쳐요{recommendations.length > 0 && ". 테두리 친 “N순위”는 위 추천 카드와 같은 시간이에요"}</>}
               </p>
             </div>
-            <Button
-              variant="text"
-              color="assistive"
-              size="small"
-              onClick={() => setShowCounts((v) => !v)}
-            >
-              인원수 표시
-            </Button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <label style={{ font: "500 13px/1.4 var(--wds-font-sans)", color: "var(--wds-label-alternative)" }}>
+                응답자 선택
+                <select
+                  className={styles.participantFilter}
+                  value={participantFilter}
+                  onChange={(event) => setParticipantFilter(event.target.value)}
+                >
+                  <option value="">전체 응답</option>
+                  {responded.map((person) => <option key={person.id} value={person.id}>{person.name}</option>)}
+                </select>
+              </label>
+              {!participantFilter && <Button
+                variant="text"
+                color="assistive"
+                size="small"
+                onClick={() => setShowCounts((v) => !v)}
+              >
+                인원수 표시
+              </Button>}
+            </div>
           </div>
 
           <div className={styles.gridLegend}>
@@ -785,9 +811,9 @@ export function PollDetail({
                 marginLeft: 2,
               }}
             >
-              {responded.length}명
+              {filteredResponded.length}명
             </span>
-            {pending.length > 0 && (
+            {!participantFilter && pending.length > 0 && (
               <span
                 style={{
                   font: "400 12px/1.4 var(--wds-font-sans)",
@@ -819,7 +845,7 @@ export function PollDetail({
               style={{ minWidth: 52 + dates.length * 56 }}
               cell={(cell) => {
                 const slot = slotIso(dates[cell.dateIndex], times[cell.timeIndex]);
-                const people = available.get(slot) ?? [];
+                const people = filteredAvailable.get(slot) ?? [];
                 const count = people.length;
                 const isHovered =
                   hovered?.dateIndex === cell.dateIndex && hovered?.timeIndex === cell.timeIndex;
@@ -841,7 +867,7 @@ export function PollDetail({
                 if (isSel) {
                   // 진한 칸 위의 검정 테두리는 파랑을 갉아먹는다 — 숫자 색과 같은 기준으로 흰 테두리를 쓴다.
                   boxShadow =
-                    heatStep(count, heatTotal) >= 4
+                    heatStep(count, gridTotal) >= 4
                       ? "inset 0 0 0 2px rgba(255,255,255,0.92)"
                       : "inset 0 0 0 2px var(--wds-label-normal)";
                   zIndex = 3;
@@ -849,7 +875,7 @@ export function PollDetail({
                 // 말풍선이 옆 칸에 가리지 않게 올린다.
                 if (isHovered && count > 0) zIndex = 20;
                 return {
-                  background: HEAT_STEPS[heatStep(count, heatTotal)],
+                  background: HEAT_STEPS[heatStep(count, gridTotal)],
                   boxShadow,
                   zIndex,
                   content: (
@@ -892,7 +918,7 @@ export function PollDetail({
                           {block.rank}순위
                         </span>
                       )}
-                      {showCounts && count > 0 && (
+                      {!participantFilter && showCounts && count > 0 && (
                         <span
                           style={{
                             position: "absolute",
@@ -902,7 +928,7 @@ export function PollDetail({
                             justifyContent: "center",
                             font: "600 10px/1 var(--wds-font-sans)",
                             color:
-                              heatStep(count, heatTotal) >= 4
+                              heatStep(count, gridTotal) >= 4
                                 ? "#fff"
                                 : "var(--wds-label-alternative)",
                           }}
@@ -929,7 +955,7 @@ export function PollDetail({
               marginTop: 2,
               // 칸을 처음 고르는 순간 안내문 한 줄이 명단으로 부풀면 페이지가 통째로 뛴다.
               // 채워진 뒤 높이(헤더 + 줄마다 69px)를 미리 잡아둔다.
-              minHeight: DETAIL_HEADER_H + DETAIL_ROW_H * (pending.length > 0 ? 3 : 2),
+              minHeight: DETAIL_HEADER_H + DETAIL_ROW_H * (filteredPending.length > 0 ? 3 : 2),
             }}
           >
             {selected ? (
@@ -943,7 +969,7 @@ export function PollDetail({
                       {dateWithWeekday(kstDayKey(selected))} {timeAmPm(kstTime(selected))}
                     </span>
                     <span style={{ padding: "7px 12px", borderRadius: 999, background: "rgba(0,191,64,0.10)", font: "700 15px/1 var(--wds-font-sans)", color: "var(--wds-status-positive)" }}>
-                      {responded.length}명 중 {selectedNames.length}명 가능
+                      {filteredResponded.length}명 중 {selectedNames.length}명 가능
                     </span>
                   </div>
                   {selectedBlock && (
@@ -966,12 +992,12 @@ export function PollDetail({
                     count={selectedMissing.length}
                     strike
                   />
-                  {pending.length > 0 && (
+                  {filteredPending.length > 0 && (
                     <PersonRow
                       label="미응답"
                       labelColor="var(--wds-label-alternative)"
-                      people={pending}
-                      count={pending.length}
+                      people={filteredPending}
+                      count={filteredPending.length}
                       pending
                     />
                   )}
