@@ -632,7 +632,7 @@ export function PollDetail({
                       color="primary"
                       size="medium"
                       fullWidth
-                      disabled={!canManage || locked || busy}
+                      disabled={!canManage || busy}
                       onClick={() =>
                         setConfirming({
                           startIso: r.startIso,
@@ -646,7 +646,7 @@ export function PollDetail({
                       variant="text"
                       color="assistive"
                       size="medium"
-                      disabled={!canManage || locked || busy}
+                      disabled={!canManage || busy}
                       onClick={() => {
                         const options = adjustmentOptions(r, times, dates);
                         setConfirming({
