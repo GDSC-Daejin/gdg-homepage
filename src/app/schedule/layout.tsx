@@ -78,10 +78,30 @@ async function ScheduleLayoutContent({ children }: { children: React.ReactNode }
 
 function ScheduleLoading() {
   return (
-    <div className="min-h-screen bg-gray-50 p-6 sm:p-8">
-      <div className="mx-auto max-w-[1536px] rounded-[20px] bg-gray-50 p-6 shadow-material sm:p-8">
-        <PageSkeleton />
+    <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={null}>
+      <div className="mx-auto w-full max-w-[96rem] overflow-hidden rounded-[20px] bg-gray-50 shadow-material">
+        <div className="mb-6 flex gap-1 border-b border-gray-200 px-6 pt-6 sm:px-8" aria-hidden>
+          <div className="h-9 w-16 animate-pulse rounded-t-md bg-gray-100" />
+          <div className="h-9 w-20 animate-pulse rounded-t-md bg-gray-100" />
+          <div className="h-9 w-20 animate-pulse rounded-t-md bg-gray-100" />
+        </div>
+        <div
+          className="wds-surface"
+          style={{
+            minHeight: "100%",
+            background: "var(--wds-bg-alt)",
+            fontFamily: "var(--wds-font-sans)",
+          }}
+        >
+          <div className={styles.layoutBar} aria-hidden>
+            <span />
+            <div className="h-8 w-28 animate-pulse rounded-lg bg-gray-200" />
+          </div>
+          <div className={styles.page}>
+            <PageSkeleton />
+          </div>
+        </div>
       </div>
-    </div>
+    </ResponsiveShell>
   );
 }
