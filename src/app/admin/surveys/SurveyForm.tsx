@@ -147,42 +147,55 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-4">
-      <Input
-        name="title"
-        label={
-          <>
-            제목 <RequiredMark />
-          </>
-        }
-        placeholder="예) 4주차 세션 만족도 조사"
-        defaultValue={survey?.title}
-        required
-      />
-      <div className="flex flex-col gap-1">
-        <Select
-          name="event_id"
-          label={
-            <>
-              연결 이벤트 <OptionalMark />
-            </>
-          }
-          defaultValue={survey?.event_id ?? ""}
-        >
-          <option value="">연결 안 함</option>
-          {events.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.title}
-            </option>
-          ))}
-        </Select>
-        <p className="text-xs text-gray-400">
-          특정 이벤트에 연결하면 결과를 이벤트 단위로 묶어 볼 수 있어요.
-        </p>
-      </div>
+    <form action={handleSubmit} className="flex flex-col gap-6">
+      <section className="rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
+        <div className="mb-4">
+          <h2 className="text-sm font-semibold text-gray-900">기본 정보</h2>
+          <p className="mt-1 text-xs text-gray-500">응답자가 알아볼 수 있는 제목을 입력해주세요.</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="md:col-span-2">
+            <Input
+              name="title"
+              label={
+                <>
+                  제목 <RequiredMark />
+                </>
+              }
+              placeholder="예) 4주차 세션 만족도 조사"
+              defaultValue={survey?.title}
+              required
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Select
+              name="event_id"
+              label={
+                <>
+                  연결 이벤트 <OptionalMark />
+                </>
+              }
+              defaultValue={survey?.event_id ?? ""}
+            >
+              <option value="">연결 안 함</option>
+              {events.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
+              ))}
+            </Select>
+            <p className="text-xs text-gray-400">이벤트별로 결과를 묶어 볼 수 있어요.</p>
+          </div>
+        </div>
+      </section>
 
-      <div className="flex flex-col gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-        <span className="text-sm font-medium text-gray-700">질문 프리셋</span>
+      <section className="flex flex-col gap-3 rounded-xl border border-gray-200 px-4 py-3 sm:px-5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">질문 프리셋</h2>
+            <p className="text-xs text-gray-500">자주 쓰는 질문 묶음을 불러오거나 저장할 수 있어요.</p>
+          </div>
+        </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Select
             value={selectedPresetId}
@@ -237,18 +250,19 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
             {presetMsg.text}
           </p>
         )}
-      </div>
+      </section>
 
-      <div className="flex flex-col gap-3">
-        <span className="flex items-center justify-between text-sm font-medium text-gray-700">
+      <section className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
           <span>
-            질문 <RequiredMark />
+            <span className="text-base font-semibold text-gray-900">질문</span> <RequiredMark />
           </span>
-          <span className="text-xs font-normal text-gray-400">{questions.length}개</span>
-        </span>
+          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-500">{questions.length}개</span>
+        </div>
 
         {questions.length === 0 ? (
           <EmptyState
+            className="border-dashed bg-gray-50 shadow-none"
             title="아직 질문이 없어요"
             description="아래 버튼으로 평점 또는 서술 질문을 추가해주세요."
             icon={
@@ -364,12 +378,11 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
           </div>
         )}
 
-        <div className="flex gap-2">
+        <div className="grid gap-2 sm:grid-cols-2">
           <Button
             type="button"
             variant="secondary"
-            size="sm"
-            className="flex-1 border border-dashed border-primary"
+            className="h-12 border border-primary"
             onClick={() => addQuestion("rating")}
           >
             <span className="flex items-center gap-1.5">
@@ -388,8 +401,7 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
           <Button
             type="button"
             variant="ghost"
-            size="sm"
-            className="flex-1 border border-gray-300"
+            className="h-12 border border-gray-300"
             onClick={() => addQuestion("text")}
           >
             <span className="flex items-center gap-1.5">
@@ -406,7 +418,7 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
             </span>
           </Button>
         </div>
-      </div>
+      </section>
 
       {error && (
         <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-soft px-3 py-2.5 text-sm text-danger">
@@ -423,23 +435,25 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
           {error}
         </div>
       )}
-      <Button
-        type="submit"
-        variant="primary"
-        className="mt-2"
-        disabled={pending}
-      >
-        {pending ? (
-          <span className="flex items-center gap-2">
-            <Spinner />
-            {isEdit ? "저장 중..." : "생성 중..."}
-          </span>
-        ) : isEdit ? (
-          "저장"
-        ) : (
-          "생성"
-        )}
-      </Button>
+      <div className="border-t border-gray-200 pt-4">
+        <Button
+          type="submit"
+          variant="primary"
+          className="w-full"
+          disabled={pending}
+        >
+          {pending ? (
+            <span className="flex items-center gap-2">
+              <Spinner />
+              {isEdit ? "저장 중..." : "생성 중..."}
+            </span>
+          ) : isEdit ? (
+            "저장"
+          ) : (
+            "생성"
+          )}
+        </Button>
+      </div>
     </form>
   );
 }
