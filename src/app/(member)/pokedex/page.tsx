@@ -58,7 +58,7 @@ export function RankingLeagueComingSoon() {
 }
 
 export function RankingLeagueTab({ profile, state }: { profile: { id: string; name: string; nickname: string | null }; state: RankingLeagueState | null }) {
-  if (RANKING_LEAGUE_PREOPEN && !RANKING_LEAGUE_OPEN) return state ? <RankingPreview state={state} profile={profile} /> : <EmptyState title="랭킹전을 준비하고 있어요" description="랭킹전 데이터를 불러오지 못했어요." />;
+  if (RANKING_LEAGUE_PREOPEN && !RANKING_LEAGUE_OPEN) return state ? <RankingPreview state={state} profile={profile} preopen /> : <EmptyState title="랭킹전을 준비하고 있어요" description="랭킹전 데이터를 불러오지 못했어요." />;
   if (!RANKING_LEAGUE_OPEN) return <RankingLeagueComingSoon />;
   if (!state) return <EmptyState title="랭킹전을 준비하고 있어요" description="데모에서는 랭킹전을 이용할 수 없어요." />;
   return <PokedexBattleTab kind="ranking" profileId={profile.id} state={state} />;

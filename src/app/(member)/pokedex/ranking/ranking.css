@@ -392,10 +392,12 @@
 
 .rk-attackbox {
   margin-top: auto;
+  width: min(100%, 300px);
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 14px 16px;
+  gap: 7px;
+  padding: 10px 12px;
   border-radius: 14px;
   background: rgba(247, 247, 248, 0.06);
 }

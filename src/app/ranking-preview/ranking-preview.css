@@ -319,10 +319,12 @@
 
 .rp-attackbox {
   margin-top: auto;
+  width: min(100%, 300px);
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 14px 16px;
+  gap: 7px;
+  padding: 10px 12px;
   border-radius: 14px;
   background: rgba(247, 247, 248, 0.06);
 }
@@ -339,10 +341,12 @@
 .rp-partyrow {
   display: flex;
   align-items: flex-end;
-  gap: 26px;
+  gap: 8px;
 }
 
 .rp-partyslot {
+  width: 112px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -385,6 +389,7 @@
 }
 
 .rp-nameplate {
+  max-width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -726,8 +731,32 @@
     gap: 10px;
   }
 
+  .rp-topbar > .rp-inner > div:first-child {
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 10px !important;
+  }
+
   .rp-tabs {
+    display: flex;
+    flex: 1 0 100%;
+    width: 100%;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding: 2px 0;
+  }
+
+  .rp-tabs::-webkit-scrollbar {
     display: none;
+  }
+
+  .rp-tab {
+    flex: none;
+    min-height: 40px;
+    padding: 9px 13px;
+    white-space: nowrap;
   }
 
   .rp-onlymobile {
@@ -825,7 +854,12 @@
   }
 
   .rp-partyrow {
-    gap: 12px;
+    gap: 4px;
+  }
+
+  .rp-partyslot {
+    width: 96px;
+    min-width: 0;
   }
 
   .rp-stage {
@@ -840,6 +874,7 @@
   }
 
   .rp-nameplate {
+    max-width: 100%;
     padding: 6px 10px;
   }
 
@@ -934,6 +969,16 @@
     padding-bottom: 10px;
   }
 
+  .rp-topbar .rp-scorechip {
+    padding: 5px 8px;
+  }
+
+  .rp-tab {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
   .rp-mutedark {
     display: none;
   }
@@ -953,9 +998,12 @@
   }
 
   .rp-partyrow {
-    width: 100%;
-    justify-content: space-between;
+    justify-content: center;
     gap: 4px;
+  }
+
+  .rp-partyslot {
+    width: 88px;
   }
 
   .rp-stage {

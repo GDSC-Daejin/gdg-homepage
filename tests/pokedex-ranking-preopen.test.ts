@@ -13,6 +13,6 @@ describe("랭킹전 프리오픈", () => {
     expect(page).toContain('import "../../wds.css"');
     expect(page).toContain("RANKING_LEAGUE_PREOPEN && !RANKING_LEAGUE_OPEN");
     expect(page).toContain("RANKING_LEAGUE_OPEN || RANKING_LEAGUE_PREOPEN");
-    expect(page).toContain("<RankingPreview state={state} profile={profile} />");
+    expect(page).toContain("<RankingPreview state={state} profile={profile} preopen />");
   });
 });

@@ -36,6 +36,7 @@ import {
 } from "./preview-data";
 
 type TabKey = "home" | "attack" | "deck" | "log" | "ranking";
+const PRESEASON_DAYS = 7;
 type DeckKind = "attack" | "defense";
 
 const TABS: { key: TabKey; label: string; short: string; icon: GlyphName }[] = [
@@ -100,9 +101,11 @@ function useNextRefresh() {
 export function RankingPreview({
   state,
   profile,
+  preopen = false,
 }: {
   state?: RankingLeagueState | null;
   profile?: { id: string; name: string; nickname: string | null };
+  preopen?: boolean;
 }) {
   const data = state ?? PREVIEW_STATE;
   const isPreview = !state;
@@ -135,10 +138,12 @@ export function RankingPreview({
 
   const refreshIn = useNextRefresh();
   const season = useMemo(() => seasonProgress(data.season, isPreview ? TODAY : Date.now()), [data.season, isPreview]);
+  const seasonLabel = preopen ? `프리시즌 D-${PRESEASON_DAYS}` : `시즌 D-${season.daysLeft}`;
+  const opensOn = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", timeZone: "Asia/Seoul" }).format(new Date(Date.now() + PRESEASON_DAYS * 86_400_000));
   if (!isPreview && !data.entry) {
     return (
       <div className="rp">
-        <header className="rp-topbar"><div className="rp-inner"><span className="rp-brand">도감 랭킹전</span></div></header>
+        <header className="rp-topbar"><div className="rp-inner"><span className="rp-brand">랭킹전</span></div></header>
         <main className="rp-inner rp-page"><div className="rp-card"><span className="rp-cardtitle">{memberLabel}님의 랭킹전 준비</span><p className="rp-cardsub">서로 다른 포켓몬 6종을 모으면 덱을 설정할 수 있어요.</p></div></main>
       </div>
     );
@@ -241,7 +246,7 @@ export function RankingPreview({
       <header className="rp-topbar">
         <div className="rp-inner">
           <div style={{ display: "flex", alignItems: "center", gap: 20, minWidth: 0 }}>
-            <span className="rp-brand">도감 랭킹전</span>
+            <span className="rp-brand">랭킹전</span>
             <nav className="rp-tabs" aria-label="랭킹전 페이지">
               {TABS.map((item) => (
                 <button key={item.key} type="button" className="rp-tab" aria-current={tab === item.key ? "page" : undefined} onClick={() => setTab(item.key)}>
@@ -251,7 +256,7 @@ export function RankingPreview({
             </nav>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="rp-mutedark">이번 시즌 · D-{season.daysLeft}</span>
+            <span className="rp-mutedark">{seasonLabel}</span>
             <span className="rp-scorechip">
               <span style={{ fontSize: 12, fontWeight: 800, color: "var(--rp-dark-primary)" }}>{myRank}위</span>
               <span className="rp-num" style={{ fontSize: 12, fontWeight: 700, color: "var(--rp-on-dark)" }}>{rating.toLocaleString()}점</span>
@@ -266,7 +271,7 @@ export function RankingPreview({
             <div className="rp-inner">
               <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingBottom: 28 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                  <span className="rp-tierchip">시즌 D-{season.daysLeft}</span>
+                  <span className="rp-tierchip">{seasonLabel}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: dark(0.75) }}>{memberLabel}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -418,11 +423,14 @@ export function RankingPreview({
               <div className="rp-card">
                 <div className="rp-cardhead">
                   <span className="rp-cardtitle">시즌 랭킹</span>
-                  <Button size="xsmall" variant="text" color="assistive" onClick={() => setTab("ranking")}>전체 보기</Button>
+                  {!preopen && <Button size="xsmall" variant="text" color="assistive" onClick={() => setTab("ranking")}>전체 보기</Button>}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {data.leaderboard.slice(0, 3).map((member, index) => (
-                    <div key={member.rank} className="rp-rankrow">
+                  {preopen ? <div style={{ padding: "18px 0", textAlign: "center" }}>
+                    <p style={{ margin: 0, fontSize: 18, fontWeight: 800, letterSpacing: "-0.025em" }}>{opensOn}에 오픈됩니다!</p>
+                    <p className="rp-cardsub" style={{ marginTop: 8 }}>오늘 덱을 설정하면 내일부터 바로 랭킹전에 참여할 수 있어요.</p>
+                  </div> : data.leaderboard.slice(0, 3).map((member, index) => (
+                    <div key={member.userId} className="rp-rankrow">
                       <span style={medalStyle(member.rank)}>{member.rank}</span>
                       {isPreview ? <Sprite no={[6, 26, 38][index]} size={46} alt="" /> : <span aria-hidden style={{ width: 46, height: 46, borderRadius: 999, background: "var(--wds-fill-alternative)", display: "grid", placeItems: "center", fontWeight: 800, color: "var(--wds-label-alternative)" }}>{member.rank}</span>}
                       <span className="rp-truncate" style={{ fontSize: 13.5, fontWeight: 700, letterSpacing: "-0.015em" }}>{displayName(member.name, member.nickname)}</span>
@@ -936,7 +944,7 @@ export function RankingPreview({
 
       {isPreview && <footer className="rp-inner" style={{ paddingBottom: 32, display: "flex", flexDirection: "column", gap: 6 }}>
         <p style={{ margin: 0, fontSize: 11.5, color: "var(--wds-label-assistive)", lineHeight: 1.6 }}>
-          도감 랭킹전 리디자인 시안 · 실제 데이터가 아닌 미리보기 화면이에요.
+          랭킹전 리디자인 시안 · 실제 데이터가 아닌 미리보기 화면이에요.
         </p>
         <p style={{ margin: 0, fontSize: 11.5, color: "var(--wds-label-assistive)", lineHeight: 1.6 }}>
           <b style={{ fontWeight: 700 }}>미채택</b> — {UNADOPTED.join(" · ")}
