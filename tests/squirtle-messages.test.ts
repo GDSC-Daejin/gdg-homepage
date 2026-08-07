@@ -6,10 +6,14 @@ describe("일일 메시지", () => {
     expect(DAILY_MESSAGES).toHaveLength(15);
     expect(new Set(DAILY_MESSAGES).size).toBe(15);
   });
-  it("이모지 안내를 포함한다", () => expect(dailyMessage("squirtle", 0)).toContain(":squirtle:"));
-  it("index를 문구 개수로 나눈 나머지로 고른다", () => expect(dailyMessage("squirtle", 15)).toBe(dailyMessage("squirtle", 0)));
+  it("단계 이모지와 이름을 안내한다", () => {
+    const text = dailyMessage(2, "wartortle", 0);
+    expect(text).toContain(":wartortle:");
+    expect(text).toContain("어니부기");
+  });
+  it("index를 문구 개수로 나눈 나머지로 고른다", () => expect(dailyMessage(1, "squirtle", 15)).toBe(dailyMessage(1, "squirtle", 0)));
   it("외부 링크를 넣지 않는다", () => {
-    for (let i = 0; i < DAILY_MESSAGES.length; i += 1) expect(dailyMessage("squirtle", i)).not.toMatch(/https?:\/\//);
+    for (let i = 0; i < DAILY_MESSAGES.length; i += 1) expect(dailyMessage(1, "squirtle", i)).not.toMatch(/https?:\/\//);
   });
 });
 

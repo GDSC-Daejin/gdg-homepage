@@ -14,8 +14,9 @@ export const DAILY_MESSAGES = [
   "꼬북이와 함께하는 물 마시기 타임! 지금이에요.",
 ] as const;
 
-export function dailyMessage(emoji: string, index: number): string {
-  return `${DAILY_MESSAGES[index % DAILY_MESSAGES.length]}\n:${emoji}: 눌러서 함께해요!`;
+export function dailyMessage(stage: Stage, emoji: string, index: number): string {
+  const text = DAILY_MESSAGES[index % DAILY_MESSAGES.length].replaceAll("꼬북이", STAGE_NAMES[stage]);
+  return `${text}\n:${emoji}: 눌러서 함께해요!`;
 }
 
 export function threadSummary(o: { participants: string[]; total: number; stage: Stage; stage2Threshold: number; stage3Threshold: number; emoji: string }): string {

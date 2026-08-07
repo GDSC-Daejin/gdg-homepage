@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { verifySlackSignature } from "@/lib/slack/verify";
 import { addReaction, postMessage, updateMessage } from "@/lib/slack/api";
 import { acceptedEmojis, stageEmoji } from "@/lib/squirtle/emoji";
-import { evolutionMessage, threadSummary } from "@/lib/squirtle/messages";
+import { dailyMessage, evolutionMessage, threadSummary } from "@/lib/squirtle/messages";
 import type { CheckinResult, Stage } from "@/lib/squirtle/types";
 
 type ReactionEvent = { type?: string; user?: string; reaction?: string; item?: { ts?: string } };
@@ -59,7 +59,10 @@ async function handleReaction(event: ReactionEvent) {
     if (now !== before) {
       const reacted = await addReaction({ channel: config.channel_id, ts: messageTs, emoji: now });
       // 씨앗을 못 달았으면 안내도 하지 않는다 — 못 누르는 이모지를 누르라고 하는 꼴이 된다
-      if (reacted.ok || reacted.error === "already_reacted") seeded = now;
+      if (reacted.ok || reacted.error === "already_reacted") {
+        seeded = now;
+        await updateMessage({ channel: config.channel_id, ts: messageTs, text: dailyMessage(result.stage as Stage, now, 0) });
+      }
     }
     await postMessage({
       channel: config.channel_id,

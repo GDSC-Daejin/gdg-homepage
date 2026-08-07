@@ -1,16 +1,5 @@
-// WDS 토큰. globals.css의 @import는 Tailwind 파이프라인을 통과하지 못해 여기서 직접 싣는다.
-import "./wds.css";
-import { Suspense } from "react";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { getProfile, assertApproved } from "@/lib/auth";
-import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
-import { MemberShell } from "./(member)/MemberShell";
-import { HomeDashboard, HomeDashboardSkeleton } from "./(member)/HomeDashboard";
 import Landing from "./landing-preview/Landing";
 import { JsonLd } from "@/components/JsonLd";
-
-export const dynamic = "force-dynamic";
 
 export const metadata = { title: "GDGOC DJU", alternates: { canonical: "/" } };
 
@@ -32,52 +21,11 @@ const organizationLd = {
   sameAs: [] as string[],
 };
 
-export default async function RootPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
-  const cookieStore = await cookies();
-  if (!hasAuthCookie(cookieStore.getAll())) {
-    return (
-      <>
-        <JsonLd data={organizationLd} />
-        <Landing />
-      </>
-    );
-  }
-
+export default function RootPage() {
   return (
-    <Suspense fallback={<HomeLoading />}>
-      <AuthenticatedHome searchParams={searchParams} />
-    </Suspense>
-  );
-}
-
-async function AuthenticatedHome({
-  searchParams,
-}: {
-  searchParams: Promise<{ month?: string }>;
-}) {
-  const profile = await getProfile();
-  if (!profile) return <Landing />;
-  if (profile.student_no === "") redirect("/onboarding");
-  assertApproved(profile);
-  const { month } = await searchParams;
-
-  return (
-    <MemberShell profile={profile} contentClassName="max-w-[1520px]">
-      <Suspense fallback={<HomeDashboardSkeleton />}>
-        <HomeDashboard month={month} name={profile.name} profileId={profile.id} />
-      </Suspense>
-    </MemberShell>
-  );
-}
-
-function HomeLoading() {
-  return (
-    <main className="mx-auto w-full max-w-[1520px] px-4 py-6 sm:px-8 sm:py-8">
-      <HomeDashboardSkeleton />
-    </main>
+    <>
+      <JsonLd data={organizationLd} />
+      <Landing />
+    </>
   );
 }

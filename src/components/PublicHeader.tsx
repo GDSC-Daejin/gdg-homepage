@@ -1,7 +1,4 @@
 import Link from "next/link";
-import { getProfile } from "@/lib/auth";
-import { getRecruitingSettings } from "@/lib/recruiting";
-import { isStaff } from "@/lib/types";
 import { Logo } from "./Logo";
 
 const NAV_ITEMS = [
@@ -11,13 +8,7 @@ const NAV_ITEMS = [
   { label: "Projects", href: "/projects" },
 ];
 
-export async function PublicHeader() {
-  const [profile, settings] = await Promise.all([
-    getProfile(),
-    getRecruitingSettings(),
-  ]);
-  const isAdmin = isStaff(profile);
-
+export function PublicHeader() {
   return (
     <header className="sticky top-0 z-10 border-b border-white/10 bg-black/30 backdrop-blur-lg backdrop-saturate-150">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
@@ -35,46 +26,20 @@ export async function PublicHeader() {
               {item.label}
             </Link>
           ))}
-          {settings.is_open ? (
-            <Link
-              href="/apply"
-              className="ml-1 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition-[color,background-color,transform] hover:bg-primary/90 active:scale-[0.97]"
-            >
-              지원하기
-            </Link>
-          ) : (
-            <Link
-              href="/apply"
-              className="rounded-full px-3.5 py-2 text-sm font-medium text-white/70 transition-colors hover:text-white"
-            >
-              지원하기
-            </Link>
-          )}
+          <Link
+            href="/apply"
+            className="ml-1 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition-[color,background-color,transform] hover:bg-primary/90 active:scale-[0.97]"
+          >
+            지원하기
+          </Link>
         </nav>
         <div className="flex items-center gap-3">
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="text-sm font-medium text-white/70 transition-colors hover:text-white"
-            >
-              어드민
-            </Link>
-          )}
-          {profile ? (
-            <Link
-              href="/"
-              className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition-[color,background-color,transform] hover:bg-white/10 active:scale-[0.97]"
-            >
-              대시보드
-            </Link>
-          ) : (
-            <Link
-              href="/"
-              className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition-[color,background-color,transform] hover:bg-white/10 active:scale-[0.97]"
-            >
-              로그인
-            </Link>
-          )}
+          <Link
+            href="/"
+            className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition-[color,background-color,transform] hover:bg-white/10 active:scale-[0.97]"
+          >
+            로그인
+          </Link>
         </div>
       </div>
     </header>

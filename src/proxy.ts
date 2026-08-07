@@ -40,7 +40,9 @@ export async function proxy(request: NextRequest) {
   if (data?.claims.sub) requestHeaders.set("x-gdg-user-id", data.claims.sub);
 
   const refreshedCookies = response.cookies.getAll();
-  response = NextResponse.next({ request: { headers: requestHeaders } });
+  response = data?.claims.sub && request.nextUrl.pathname === "/"
+    ? NextResponse.rewrite(new URL("/dashboard", request.url), { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
   refreshedCookies.forEach((cookie) => response.cookies.set(cookie));
   return response;
 }

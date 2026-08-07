@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
     .single();
   if (insertError) return NextResponse.json({ posted: false, reason: "already_posted" });
 
-  const posted = await postMessage({ channel: config.channel_id, text: dailyMessage(emoji, pickMessageIndex()) });
+  const posted = await postMessage({ channel: config.channel_id, text: dailyMessage((season?.stage ?? 1) as Stage, emoji, pickMessageIndex()) });
   if (!posted.ok) {
     // 게시 실패 — 예약을 풀어 다음 시도가 가능하게 한다
     await supabase.from("squirtle_posts").delete().eq("id", reserved.id);
