@@ -8,6 +8,7 @@ import {
   durationLabel,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
+import { pastDue } from "./[id]/poll-detail-time";
 import styles from "./schedule.module.css";
 
 export interface PollCard {
@@ -79,9 +80,16 @@ export function PollList({
                     정기세션
                   </ContentBadge>
                 )}
+                {/* 상세 화면(PollDetail·GuestRespond)과 같은 세 갈래를 쓴다.
+                    마감이 지난 카드까지 "응답 받는 중"으로 보이면 지난 일정 탭에서 아직
+                    받는 중인 줄 알고 다시 들어가게 된다. */}
                 {poll.confirmed_at ? (
                   <ContentBadge variant="solid" color="primary" size="small">
                     확정됨
+                  </ContentBadge>
+                ) : pastDue(poll.due_at) ? (
+                  <ContentBadge variant="solid" color="neutral" size="small">
+                    응답 마감
                   </ContentBadge>
                 ) : (
                   <ContentBadge variant="solid" color="orange" size="small">
