@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   closeMeetingPoll,
@@ -95,6 +95,8 @@ export function PollDetail({
   const [pendingOpen, setPendingOpen] = useState(false);
   const [showCounts, setShowCounts] = useState(false);
   const [participantFilter, setParticipantFilter] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+  const [editingAvailability, setEditingAvailability] = useState(false);
   const [confirming, setConfirming] = useState<{
     startIso: string;
     durationMin: number;
@@ -105,6 +107,14 @@ export function PollDetail({
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
   const { show, toast } = useToast();
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   /** 드래그 중에는 커밋 전 미리보기를 그린다. 히트맵도 같은 값으로 즉시 반응한다. */
   const draft = useMemo(() => draftAvailability(mine, drag, dates, times), [drag, mine, dates, times]);
@@ -660,7 +670,7 @@ export function PollDetail({
       <div className={styles.scheduleGrids}>
         {/* 내가 가능한 시간 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div className={styles.gridHeader} style={{ alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <h3 style={{ margin: 0, font: "700 18px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
                 내가 가능한 시간
@@ -678,7 +688,9 @@ export function PollDetail({
                     ? poll.confirmed_at
                       ? "확정된 일정이라 수정할 수 없어요"
                       : "응답 마감이 지나 수정할 수 없어요"
-                    : "칸을 끌어서 칠하세요. 칠한 칸에서 시작하면 지워져요"}
+                    : isMobile && !editingAvailability
+                      ? "수정을 누르면 가능한 시간을 선택할 수 있어요"
+                      : "칸을 끌어서 칠하세요. 칠한 칸에서 시작하면 지워져요"}
               </p>
             </div>
             <Button
@@ -686,9 +698,12 @@ export function PollDetail({
               color="primary"
               size="small"
               disabled={!myParticipantId || locked || saving}
-              onClick={() => save(mine, mine)}
+              onClick={() => {
+                if (isMobile) setEditingAvailability((editing) => !editing);
+                else save(mine, mine);
+              }}
             >
-              {saving ? "저장 중…" : "저장하기"}
+              {isMobile ? (editingAvailability ? "완료" : "수정") : saving ? "저장 중…" : "저장하기"}
             </Button>
           </div>
 
@@ -716,7 +731,7 @@ export function PollDetail({
               dates={dates}
               times={times}
               slotMin={poll.slot_min}
-              interactive={Boolean(myParticipantId) && !locked}
+              interactive={Boolean(myParticipantId) && !locked && (!isMobile || editingAvailability)}
               onCellPointerDown={startDrag}
               onPointerMove={moveDrag}
               onPointerUp={endDrag}
@@ -740,7 +755,7 @@ export function PollDetail({
 
         {/* 전체 가능한 시간 */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+          <div className={styles.gridHeader} style={{ alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <h3 style={{ margin: 0, font: "700 18px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>
                 {participantFilter

@@ -232,6 +232,7 @@
 
 .gridScroller {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @media (max-width: 1080px) {
@@ -330,6 +331,19 @@
   .scheduleGrids {
     gap: 24px;
     padding: 20px 16px;
+  }
+
+  .gridHeader {
+    align-items: stretch !important;
+    flex-direction: column;
+  }
+
+  .gridHeader > button {
+    align-self: flex-start;
+  }
+
+  .participantFilter {
+    width: 100%;
   }
 
   .metaGrid {

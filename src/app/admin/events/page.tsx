@@ -96,7 +96,7 @@ export default async function AdminEventsPage({
           title="이벤트"
           description="정기세션·스터디·모각코를 관리해요"
           action={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <ViewToggle isCalendar month={gridMonth} />
               <Link href="/admin/events/new">
                 <Button type="button" variant="primary">
@@ -161,7 +161,7 @@ export default async function AdminEventsPage({
         title="이벤트"
         description="정기세션·스터디·모각코를 관리해요"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ViewToggle isCalendar={false} month={month || today.slice(0, 7)} />
             <EventStatusToggle basePath="/admin/events" past={isPastView} month={month} />
             <MonthFilter
