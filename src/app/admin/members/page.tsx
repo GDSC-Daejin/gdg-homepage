@@ -121,7 +121,7 @@ export default async function AdminMembersPage({
       </div>
 
       {!isPending && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card sm:p-6">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-card sm:p-6 dark:bg-gray-100">
           <MemberFilters q={q} role={role} status={status} academicStatus={academicStatus} />
         </div>
       )}
@@ -148,7 +148,7 @@ export default async function AdminMembersPage({
           }
         />
       ) : isPending ? (
-        <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+        <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card dark:bg-gray-100">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -187,7 +187,7 @@ export default async function AdminMembersPage({
           </div>
         </section>
       ) : (
-        <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card">
+        <section className="mt-6 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-card dark:bg-gray-100">
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 sm:px-6">
             <div className="min-w-0">
               <h2 className="text-sm font-semibold text-gray-900">회원 목록</h2>

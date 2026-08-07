@@ -13,6 +13,17 @@ function apply(theme: Theme) {
   document.documentElement.classList.toggle("dark", isDark);
 }
 
+function applyWithTransition(theme: Theme) {
+  if (
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+    !("startViewTransition" in document)
+  ) {
+    apply(theme);
+    return;
+  }
+  document.startViewTransition(() => apply(theme));
+}
+
 export function useTheme() {
   const [theme, setThemeState] = useState<Theme>("auto");
 
@@ -34,7 +45,7 @@ export function useTheme() {
   const setTheme = useCallback((next: Theme) => {
     localStorage.setItem(STORAGE_KEY, next);
     setThemeState(next);
-    apply(next);
+    applyWithTransition(next);
   }, []);
 
   return { theme, setTheme };

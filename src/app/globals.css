@@ -51,6 +51,18 @@
   color-scheme: dark;
 }
 
+/* gray 토큰은 .dark에서 반전되지만 bg-white는 고정색이다. 어드민의 표면만 토큰으로
+   바꿔 카드·테이블·필터 패널이 흰색으로 남지 않게 한다. */
+.dark .admin-surface .bg-white {
+  background-color: var(--color-gray-100);
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--duration-base);
+  animation-timing-function: var(--ease-out-quart);
+}
+
 /* 필터/탭 전환으로 콘텐츠 높이가 바뀔 때 스크롤바가 생겼다 사라지며 레이아웃이 좌우로 흔들리는 것 방지 */
 html {
   scrollbar-gutter: stable;
