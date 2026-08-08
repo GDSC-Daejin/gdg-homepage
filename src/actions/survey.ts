@@ -22,6 +22,7 @@ function parseSurveyForm(formData: FormData) {
   return surveySchema.safeParse({
     title: formData.get("title"),
     questions,
+    audience: formData.get("audience") || "all",
   });
 }
 
@@ -42,6 +43,7 @@ export async function createSurvey(formData: FormData): Promise<ActionResult> {
     title: parsed.data.title,
     questions: parsed.data.questions,
     event_id,
+    audience: parsed.data.audience,
   });
 
   if (error) return { error: toKoreanError(error) };
@@ -72,6 +74,7 @@ export async function editSurvey(
       title: parsed.data.title,
       questions: parsed.data.questions,
       event_id,
+      audience: parsed.data.audience,
     })
     .eq("id", id);
 

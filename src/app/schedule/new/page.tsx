@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 import { dayKeyKst, displayName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { listPlaces } from "@/lib/places";
 import { NewPollForm, type MemberOption } from "./NewPollForm";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function NewSchedulePage() {
   await requireAdmin();
   const demo = await isDemoMode();
+  const places = await listPlaces();
 
   let members: MemberOption[] = [];
   if (!demo) {
@@ -33,6 +35,7 @@ export default async function NewSchedulePage() {
       today={dayKeyKst(new Date().toISOString())}
       members={members}
       inviteToken={randomUUID()}
+      places={places}
     />
   );
 }

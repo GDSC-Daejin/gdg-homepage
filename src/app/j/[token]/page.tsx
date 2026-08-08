@@ -23,7 +23,7 @@ export default async function InvitePage({
   if (error || !data) notFound();
   const payload = data as {
     poll: GuestPoll;
-    participants: { id: string; name: string; slots: string[] | null; responded_at: string | null; avatar_path: string | null }[];
+    participants: { id: string; name: string; slots: string[] | null; attendance_response: "attending" | "absent" | "undecided" | null; responded_at: string | null; avatar_path: string | null }[];
   };
 
   const participants: Participant[] = payload.participants.map((p) => ({

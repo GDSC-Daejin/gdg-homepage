@@ -18,6 +18,8 @@ export interface MeetingPollInput {
   notifyBeforeDue: boolean;
   isMojisoop?: boolean;
   isRegularSession?: boolean;
+  responseMode?: "availability" | "attendance";
+  placeId?: string | null;
 }
 
 /** 후보 날짜 최대 개수. 격자 폭 상한이자 마이그레이션 0056의 check와 같은 값. */
@@ -51,6 +53,12 @@ export function prepareMeetingPollInput(
   }
   if (input.dueAt && Number.isNaN(Date.parse(input.dueAt))) {
     return { error: "응답 마감을 다시 선택해주세요" };
+  }
+  if (input.responseMode && !["availability", "attendance"].includes(input.responseMode)) {
+    return { error: "응답 방식을 선택해주세요" };
+  }
+  if (input.isRegularSession && input.responseMode === "attendance") {
+    return { error: "정기세션 일정은 가능 시간을 조사해주세요" };
   }
 
   return {
@@ -154,6 +162,7 @@ export interface Participant {
   email: string | null;
   slots: string[];
   responded_at: string | null;
+  attendance_response?: "attending" | "absent" | "undecided" | null;
   /** 회원이면 profiles.avatar_path. 초대만 된 사람은 없다. */
   avatar_path?: string | null;
 }

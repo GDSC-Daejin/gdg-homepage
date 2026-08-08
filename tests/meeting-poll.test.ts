@@ -124,6 +124,13 @@ describe("prepareMeetingPollInput", () => {
     });
   });
 
+  it("정기세션은 참석 의사만 받는 조사로 만들 수 없다", () => {
+    expect(prepareMeetingPollInput({
+      title: "정기세션", dates: ["2026-08-10"], startHour: 18, endHour: 21,
+      slotMin: 30, dueAt: null, notifyBeforeDue: true, isRegularSession: true, responseMode: "attendance",
+    })).toEqual({ error: "정기세션 일정은 가능 시간을 조사해주세요" });
+  });
+
   it("생성과 수정에서 같아야 하는 시간 규칙을 한 오류로 돌려준다", () => {
     expect(
       prepareMeetingPollInput({

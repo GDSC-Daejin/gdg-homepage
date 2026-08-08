@@ -4,6 +4,7 @@ import { isDemoMode } from "@/lib/demo";
 import { DEMO_MEETING_POLL_PARTICIPANTS, DEMO_MEETING_POLLS } from "@/lib/demoData";
 import { dayKeyKst, displayName } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+import { listPlaces } from "@/lib/places";
 import { isOrganizer, type MeetingPoll } from "@/lib/types";
 import { NewPollForm, type EditableParticipant, type MemberOption } from "../../new/NewPollForm";
 
@@ -48,11 +49,13 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
     redirect(`/schedule/${id}`);
   }
 
+  const places = await listPlaces();
   return (
     <NewPollForm
       today={dayKeyKst(new Date().toISOString())}
       members={members}
       inviteToken={poll.invite_token}
+      places={places}
       edit={{ poll, participants }}
     />
   );

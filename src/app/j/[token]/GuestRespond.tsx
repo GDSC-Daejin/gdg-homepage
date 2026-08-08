@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { respondByToken } from "@/actions/meeting-poll";
+import { respondAttendanceByToken, respondByToken } from "@/actions/meeting-poll";
 import { Avatar } from "@/components/wds/Avatar";
 import { Button } from "@/components/wds/Button";
 import { Callout, ContentBadge } from "@/components/wds/primitives";
@@ -34,6 +34,7 @@ export interface GuestPoll {
   due_at: string | null;
   confirmed_at: string | null;
   duration_min: number | null;
+  response_mode?: "availability" | "attendance";
 }
 
 /**
@@ -63,6 +64,7 @@ export function GuestRespond({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>();
   const [done, setDone] = useState(false);
+  const [attendance, setAttendance] = useState<"attending" | "absent" | "undecided">("undecided");
 
   const locked =
     Boolean(poll.confirmed_at) ||
@@ -115,6 +117,33 @@ export function GuestRespond({
         }
       })
       .finally(() => setSaving(false));
+  }
+
+  function submitAttendance() {
+    if (!meId) return;
+    setSaving(true);
+    respondAttendanceByToken(token, meId, attendance)
+      .then((result) => {
+        if (result.error) setError(result.error);
+        else { setDone(true); router.refresh(); }
+      })
+      .finally(() => setSaving(false));
+  }
+
+  if (poll.response_mode === "attendance") {
+    return <div className="wds-surface" style={{ minHeight: "100dvh", padding: "28px 24px", fontFamily: "var(--wds-font-sans)" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
+        <h1 style={{ margin: 0 }}>{poll.title}</h1>
+        <p>참석 의사를 선택해주세요.</p>
+        {views.map((view) => <button key={view.id} type="button" onClick={() => pick(view.id)} style={{ padding: 12, textAlign: "left", border: meId === view.id ? "2px solid var(--wds-primary)" : "1px solid var(--wds-line-neutral)", borderRadius: 8, background: "var(--wds-bg)" }}>{view.name}</button>)}
+        {meId && !locked && <>
+          <div style={{ display: "flex", gap: 8 }}>{(["attending", "absent", "undecided"] as const).map((value) => <Button key={value} type="button" size="medium" variant={attendance === value ? "solid" : "outlined"} color="primary" onClick={() => setAttendance(value)}>{({ attending: "참석", absent: "불참", undecided: "미정" })[value]}</Button>)}</div>
+          <Button type="button" variant="solid" color="primary" size="large" onClick={submitAttendance} disabled={saving}>응답 저장</Button>
+        </>}
+        {done && <Callout tone="positive">저장했어요.</Callout>}
+        {error && <Callout tone="negative">{error}</Callout>}
+      </div>
+    </div>;
   }
 
   return (

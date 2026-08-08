@@ -74,6 +74,8 @@ export async function createMeetingPoll(
       notify_before_due: pollInput.notifyBeforeDue,
       is_mojisoop: pollInput.isMojisoop,
       is_regular_session: pollInput.isRegularSession,
+      response_mode: pollInput.responseMode ?? "availability",
+      place_id: pollInput.placeId ?? null,
       invite_token: UUID.test(input.inviteToken) ? input.inviteToken : undefined,
       created_by: profile.id,
     })
@@ -204,6 +206,8 @@ export async function updateMeetingPoll(
       notify_before_due: pollInput.notifyBeforeDue,
       is_mojisoop: pollInput.isMojisoop,
       is_regular_session: pollInput.isRegularSession,
+      response_mode: pollInput.responseMode ?? "availability",
+      place_id: pollInput.placeId ?? null,
       due_notified_at: poll.due_at === pollInput.dueAt ? poll.due_notified_at : null,
     })
     .eq("id", pollId);
@@ -278,6 +282,25 @@ export async function saveMyAvailability(
   return {};
 }
 
+export async function saveMyAttendance(
+  pollId: string,
+  response: "attending" | "absent" | "undecided",
+): Promise<ActionResult> {
+  const profile = await requireProfile();
+  if (await isDemoMode()) return {};
+  const supabase = await createClient();
+  const { data: poll } = await supabase.from("meeting_polls").select("response_mode, confirmed_at, due_at").eq("id", pollId).single();
+  if (!poll || poll.response_mode !== "attendance" || poll.confirmed_at || (poll.due_at && Date.now() > Date.parse(poll.due_at))) return { error: "응답할 수 없는 일정이에요" };
+  const { data, error } = await supabase.from("meeting_poll_participants")
+    .update({ attendance_response: response, responded_at: new Date().toISOString() })
+    .eq("poll_id", pollId).eq("user_id", profile.id).select("id");
+  if (error) return { error: toKoreanError(error) };
+  if (!data?.length) return { error: "이 일정의 참여자가 아니에요" };
+  await notifyAllResponded(supabase, pollId);
+  revalidatePath(`/schedule/${pollId}`);
+  return {};
+}
+
 export async function confirmMeetingPoll(
   pollId: string,
   startIso: string,
@@ -301,7 +324,7 @@ export async function confirmMeetingPoll(
     })
     .eq("id", pollId)
     .is("confirmed_at", null)
-    .select("id, title, is_mojisoop, is_regular_session, event_id");
+    .select("id, title, is_mojisoop, is_regular_session, event_id, place_id");
 
   if (error) return { error: toKoreanError(error) };
   if (!data?.length) return { error: "확정 권한이 없거나 이미 확정된 일정이에요" };
@@ -316,6 +339,7 @@ export async function confirmMeetingPoll(
     is_mojisoop: boolean;
     is_regular_session: boolean;
     event_id: string | null;
+    place_id: string | null;
   };
   const { data: participantRows, error: participantError } = confirmed.is_mojisoop
     ? { data: [], error: null }
@@ -344,12 +368,15 @@ export async function confirmMeetingPoll(
         .eq("id", confirmed.event_id);
       if (error) eventWarning = "정기세션 이벤트 시간을 바꾸지 못했어요";
     } else {
-      const { count: capacity, error: memberCountError } = await supabase
+      const [{ count: capacity, error: memberCountError }, { data: place }] = await Promise.all([
+        supabase
         .from("profiles")
         .select("id", { count: "exact", head: true })
         .in("role", ["organizer", "team_member", "member"])
         .eq("status", "active")
-        .not("approved_at", "is", null);
+        .not("approved_at", "is", null),
+        confirmed.place_id ? supabase.from("places").select("name, address").eq("id", confirmed.place_id).single() : Promise.resolve({ data: null }),
+      ]);
       if (memberCountError || capacity === null) {
         eventWarning = "정기세션 정원을 계산하지 못했어요";
       } else {
@@ -360,8 +387,9 @@ export async function confirmMeetingPoll(
             title: `${Number(schedule.event_date.slice(5, 7))}월 ${Number(schedule.event_date.slice(8, 10))}일 정기세션`,
             description: "",
             ...schedule,
-            location: "",
-            address: "",
+            place_id: confirmed.place_id,
+            location: place?.name ?? "",
+            address: place?.address ?? "",
             speaker: "",
             capacity,
             created_by: profile.id,
@@ -568,6 +596,15 @@ export async function respondByToken(
     p_participant: participantId,
     p_slots: [...new Set(normalizeSlots(slots))],
   });
+  if (error) return { error: toKoreanError(error) };
+  await notifyAllRespondedByToken(supabase, token);
+  revalidatePath(`/j/${token}`);
+  return {};
+}
+
+export async function respondAttendanceByToken(token: string, participantId: string, response: "attending" | "absent" | "undecided"): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("respond_meeting_poll_attendance_by_token", { p_token: token, p_participant: participantId, p_response: response });
   if (error) return { error: toKoreanError(error) };
   await notifyAllRespondedByToken(supabase, token);
   revalidatePath(`/j/${token}`);

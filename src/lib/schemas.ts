@@ -94,6 +94,7 @@ export const surveySchema = z.object({
   questions: z
     .array(surveyQuestionSchema)
     .min(1, "질문을 1개 이상 입력해주세요"),
+  audience: z.enum(["all", "members", "staff"]).default("all"),
 });
 
 export const surveyPresetSchema = z.object({

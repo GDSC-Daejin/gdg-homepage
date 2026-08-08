@@ -8,6 +8,7 @@ import {
   closeMeetingPoll,
   confirmMeetingPoll,
   nudgeMeetingPoll,
+  saveMyAttendance,
   saveMyAvailability,
   unconfirmMeetingPoll,
 } from "@/actions/meeting-poll";
@@ -237,6 +238,29 @@ export function PollDetail({
         if (result.warning) show(result.warning);
       })
       .finally(() => setBusy(false));
+  }
+
+  if (poll.response_mode === "attendance") {
+    const counts = participants.reduce((all, participant) => {
+      const response = participant.attendance_response;
+      if (response) all[response] += 1;
+      return all;
+    }, { attending: 0, absent: 0, undecided: 0 });
+    const mineResponse = participants.find((participant) => participant.id === myParticipantId)?.attendance_response;
+    return <div className={styles.detailPage}>
+      <div className={styles.detailHeader}><div><h1 className={styles.detailTitleRow}>{poll.title}</h1><p>세미나 참석 의사를 수집하는 일정이에요.</p></div>
+        {canManage && !locked && <Button variant="outlined" color="negative" size="medium" disabled={busy} onClick={() => run(() => closeMeetingPoll(poll.id))}>응답 종료</Button>}
+      </div>
+      {error && <Callout tone="negative">{error}</Callout>}
+      <div className={styles.responseSummary}><strong>{participants.length}명 중 {participants.filter((participant) => participant.responded_at).length}명이 응답했어요</strong>
+        <span>참석 {counts.attending}명 · 불참 {counts.absent}명 · 미정 {counts.undecided}명</span>
+        {canNudge && pending.length > 0 && !locked && <Button variant="outlined" color="primary" size="medium" disabled={busy} onClick={() => run(() => nudgeMeetingPoll(poll.id))}>{pending.length}명에게 알림</Button>}
+      </div>
+      {me && !locked && <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: 24, background: "var(--wds-bg)", borderRadius: 16 }}>
+        <strong>{mineResponse ? "응답을 바꿀 수 있어요" : "참석 의사를 알려주세요"}</strong>
+        <div style={{ display: "flex", gap: 8 }}>{(["attending", "absent", "undecided"] as const).map((response) => <Button key={response} variant={mineResponse === response ? "solid" : "outlined"} color="primary" size="medium" disabled={saving} onClick={() => run(() => saveMyAttendance(poll.id, response))}>{({ attending: "참석", absent: "불참", undecided: "미정" })[response]}</Button>)}</div>
+      </div>}
+    </div>;
   }
 
   const selectedNames = selected ? (filteredAvailable.get(selected) ?? []) : [];

@@ -20,7 +20,7 @@ import type {
 interface SurveyFormProps {
   events: Pick<Event, "id" | "title">[];
   presets: SurveyPreset[];
-  survey?: Pick<Survey, "id" | "title" | "event_id" | "questions">;
+  survey?: Pick<Survey, "id" | "title" | "event_id" | "questions" | "audience">;
 }
 
 const TYPE_LABEL: Record<SurveyQuestionType, string> = {
@@ -185,6 +185,14 @@ export function SurveyForm({ events, presets: initialPresets, survey }: SurveyFo
               ))}
             </Select>
             <p className="text-xs text-gray-400">이벤트별로 결과를 묶어 볼 수 있어요.</p>
+          </div>
+          <div className="flex flex-col gap-1">
+            <Select name="audience" label="응답 대상" defaultValue={survey?.audience ?? "all"}>
+              <option value="all">전체 회원</option>
+              <option value="members">회원</option>
+              <option value="staff">운영진</option>
+            </Select>
+            <p className="text-xs text-gray-400">대상이 아닌 계정에는 설문이 보이지 않아요.</p>
           </div>
         </div>
       </section>

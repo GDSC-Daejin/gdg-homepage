@@ -25,7 +25,7 @@ import {
   suggestPollTitle,
   weekdayColor,
 } from "@/lib/meeting-poll";
-import type { MeetingPoll } from "@/lib/types";
+import type { MeetingPoll, Place } from "@/lib/types";
 import { addPollDraftPerson, defaultPollDates, dueAtEnd, pollDueOptions, setPollDateSelection, type PollDraftPerson } from "./poll-draft";
 
 export interface MemberOption {
@@ -56,12 +56,14 @@ export function NewPollForm({
   members,
   inviteToken,
   edit,
+  places = [],
 }: {
   today: string;
   members: MemberOption[];
   /** 새 일정에 붙일 고유 토큰. 초대 링크로는 노출하지 않는다. */
   inviteToken: string;
   edit?: { poll: MeetingPoll; participants: EditableParticipant[] };
+  places?: Place[];
 }) {
   const router = useRouter();
   // 제목은 날짜에서 지어 미리 채워 둔다(원본도 값이 들어가 있다). 한 번 손대면 따라가지 않는다.
@@ -88,6 +90,8 @@ export function NewPollForm({
   const [notifyBeforeDue, setNotifyBeforeDue] = useState(edit?.poll.notify_before_due ?? true);
   const [isMojisoop, setIsMojisoop] = useState(edit?.poll.is_mojisoop ?? true);
   const [isRegularSession, setIsRegularSession] = useState(edit?.poll.is_regular_session ?? false);
+  const [responseMode, setResponseMode] = useState<"availability" | "attendance">(edit?.poll.response_mode ?? "availability");
+  const [placeId, setPlaceId] = useState(edit?.poll.place_id ?? "");
   const [error, setError] = useState<string>();
   const [notice, setNotice] = useState<string>();
   const [pending, setPending] = useState(false);
@@ -147,6 +151,8 @@ export function NewPollForm({
       notifyBeforeDue,
       isMojisoop,
       isRegularSession,
+      responseMode,
+      placeId: placeId || null,
       memberIds: people.filter((p) => p.userId).map((p) => p.userId as string),
     };
     const request = edit
@@ -633,9 +639,28 @@ export function NewPollForm({
                 onChange={(checked) => {
                   setIsRegularSession(checked);
                   if (checked) setIsMojisoop(false);
+                  if (checked) setResponseMode("availability");
                 }}
               />
             </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <span style={{ font: "600 14px/1.4 var(--wds-font-sans)", color: "var(--wds-label-normal)" }}>응답 방식</span>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["availability", "attendance"] as const).map((mode) => (
+                  <Button key={mode} type="button" size="small" variant={responseMode === mode ? "solid" : "outlined"} color="primary"
+                    disabled={isRegularSession && mode === "attendance"} onClick={() => setResponseMode(mode)}>
+                    {mode === "availability" ? "가능 시간" : "참석 의사"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            {isRegularSession && <SelectBox
+              label="정기세션 장소"
+              value={placeId}
+              placeholder="장소는 나중에 정할게요"
+              options={places.map((place) => ({ value: place.id, label: place.name }))}
+              onChange={setPlaceId}
+            />}
             <div
               style={{
                 display: "flex",

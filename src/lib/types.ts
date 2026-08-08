@@ -212,10 +212,12 @@ export interface Survey {
   id: string;
   title: string;
   event_id: string | null;
+  audience?: SurveyAudience;
   questions: SurveyQuestion[];
   is_open: boolean;
   created_at: string;
 }
+export type SurveyAudience = "all" | "members" | "staff";
 
 export interface SurveyPreset {
   id: string;
@@ -403,6 +405,8 @@ export interface MeetingPoll {
   is_mojisoop: boolean;
   is_regular_session: boolean;
   event_id: string | null;
+  response_mode?: "availability" | "attendance";
+  place_id?: string | null;
   created_at: string;
 }
 
@@ -415,6 +419,7 @@ export interface MeetingPollParticipant {
   email: string | null;
   slots: string[];
   responded_at: string | null;
+  attendance_response?: "attending" | "absent" | "undecided" | null;
   created_at: string;
 }
 
