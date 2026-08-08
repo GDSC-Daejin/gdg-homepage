@@ -327,35 +327,65 @@ export async function confirmMeetingPoll(
     .flatMap((participant) => participant.profiles?.slack_user_id ?? []);
 
   let eventWarning: string | undefined;
-  if (confirmed.is_regular_session && !confirmed.event_id) {
+  if (confirmed.is_regular_session) {
     const endsAt = slotEndIso(startIso, durationMin);
-    const { data: event, error: eventError } = await supabase
-      .from("events")
-      .insert({
-        type: "session",
-        title: confirmed.title,
-        description: "",
-        starts_at: startIso,
-        ends_at: endsAt,
-        event_date: dayKeyKst(startIso),
-        start_time: timeKeyKst(startIso),
-        end_time: timeKeyKst(endsAt),
-        location: "",
-        address: "",
-        speaker: "",
-        capacity: null,
-        created_by: profile.id,
-      })
-      .select("id")
-      .single();
-    if (eventError || !event) {
-      eventWarning = "정기세션 이벤트를 만들지 못했어요";
+    const schedule = {
+      starts_at: startIso,
+      ends_at: endsAt,
+      event_date: dayKeyKst(startIso),
+      start_time: timeKeyKst(startIso),
+      end_time: timeKeyKst(endsAt),
+    };
+
+    if (confirmed.event_id) {
+      const { error } = await supabase
+        .from("events")
+        .update(schedule)
+        .eq("id", confirmed.event_id);
+      if (error) eventWarning = "정기세션 이벤트 시간을 바꾸지 못했어요";
     } else {
-      const { error: linkError } = await supabase
-        .from("meeting_polls")
-        .update({ event_id: event.id })
-        .eq("id", confirmed.id);
-      eventWarning = linkError ? "정기세션 이벤트는 만들었지만 설문에 연결하지 못했어요" : undefined;
+      const { count: capacity, error: memberCountError } = await supabase
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .in("role", ["organizer", "team_member", "member"])
+        .eq("status", "active")
+        .not("approved_at", "is", null);
+      if (memberCountError || capacity === null) {
+        eventWarning = "정기세션 정원을 계산하지 못했어요";
+      } else {
+        const { data: event, error: eventError } = await supabase
+          .from("events")
+          .insert({
+            type: "session",
+            title: `${Number(schedule.event_date.slice(5, 7))}월 ${Number(schedule.event_date.slice(8, 10))}일 정기세션`,
+            description: "",
+            ...schedule,
+            location: "",
+            address: "",
+            speaker: "",
+            capacity,
+            created_by: profile.id,
+          })
+          .select("id")
+          .single();
+        if (eventError || !event) {
+          eventWarning = "정기세션 이벤트를 만들지 못했어요";
+        } else {
+          const { error: linkError } = await supabase
+            .from("meeting_polls")
+            .update({ event_id: event.id })
+            .eq("id", confirmed.id);
+          if (linkError) {
+            eventWarning = "정기세션 이벤트는 만들었지만 설문에 연결하지 못했어요";
+          } else {
+            const { error: registrationError } = await supabase.rpc(
+              "register_available_poll_participants",
+              { p_poll_id: confirmed.id, p_event_id: event.id },
+            );
+            if (registrationError) eventWarning = "가능 응답자를 자동 신청하지 못했어요";
+          }
+        }
+      }
     }
   }
 
@@ -403,6 +433,57 @@ export async function unconfirmMeetingPoll(pollId: string): Promise<ActionResult
   revalidatePath("/schedule");
   revalidatePath("/admin/events");
   return {};
+}
+
+/** 확정된 일정을 백업 후보 시간으로 교체한다. */
+export async function applyBackupMeetingPoll(
+  pollId: string,
+  startIso: string,
+  durationMin: number,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  if (Number.isNaN(Date.parse(startIso))) return { error: "시간을 다시 선택해주세요" };
+  if (!DURATION_OPTIONS.includes(durationMin as (typeof DURATION_OPTIONS)[number])) {
+    return { error: "소요 시간을 선택해주세요" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("meeting_polls")
+    .update({
+      confirmed_at: new Date(startIso).toISOString(),
+      duration_min: durationMin,
+    })
+    .eq("id", pollId)
+    .not("confirmed_at", "is", null)
+    .select("id, is_regular_session, event_id");
+
+  if (error) return { error: toKoreanError(error) };
+  if (!data?.length) return { error: "확정되지 않았거나 일정을 바꿀 권한이 없어요" };
+
+  const poll = data[0] as { is_regular_session: boolean; event_id: string | null };
+  let warning: string | undefined;
+  if (poll.is_regular_session && poll.event_id) {
+    const endsAt = slotEndIso(startIso, durationMin);
+    const { error: eventError } = await supabase
+      .from("events")
+      .update({
+        starts_at: startIso,
+        ends_at: endsAt,
+        event_date: dayKeyKst(startIso),
+        start_time: timeKeyKst(startIso),
+        end_time: timeKeyKst(endsAt),
+      })
+      .eq("id", poll.event_id);
+    if (eventError) warning = "정기세션 이벤트 시간을 바꾸지 못했어요";
+  }
+
+  revalidatePath(`/schedule/${pollId}`);
+  revalidatePath("/schedule");
+  revalidatePath("/admin/events");
+  return warning ? { warning } : {};
 }
 
 /** 일정 확정 없이 응답만 수동으로 마감한다. */

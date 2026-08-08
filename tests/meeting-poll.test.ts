@@ -332,16 +332,41 @@ describe("recommendBlocks", () => {
     expect(block.to - block.from + 1).toBe(6);
   });
 
-  it("겹치는 구간은 하나만 남는다", () => {
+  it("겹치거나 붙은 구간은 하나만 남는다", () => {
     const blocks = recommendBlocks(DATES, TIMES, views, 30);
     for (let i = 0; i < blocks.length; i++) {
       for (let j = i + 1; j < blocks.length; j++) {
         const a = blocks[i];
         const b = blocks[j];
         if (a.dateIndex !== b.dateIndex) continue;
-        expect(a.to < b.from || b.to < a.from).toBe(true);
+        expect(a.to + 1 < b.from || b.to + 1 < a.from).toBe(true);
       }
     }
+  });
+
+  it("같은 날짜의 붙은 시간보다 다른 날짜를 먼저 추천한다", () => {
+    const dates = DATES.slice(0, 3);
+    const times = pollTimes(18, 21, 60);
+    const views = toViews([
+      {
+        ...participant("a", "가", {}),
+        slots: dates.flatMap((date) => times.map((time) => slotIso(date, time))),
+      },
+    ]);
+
+    expect(recommendBlocks(dates, times, views, 60).map((block) => block.dateIndex)).toEqual([0, 1, 2]);
+  });
+
+  it("한 날짜만 있으면 붙지 않은 시간만 추가 추천한다", () => {
+    const times = pollTimes(18, 22, 60);
+    const views = toViews([
+      {
+        ...participant("a", "가", {}),
+        slots: times.map((time) => slotIso(DATES[0], time)),
+      },
+    ]);
+
+    expect(recommendBlocks([DATES[0]], times, views, 60).map((block) => block.from)).toEqual([0, 2]);
   });
 
   it("응답이 없으면 추천도 없다", () => {
@@ -377,6 +402,8 @@ describe("durationLabel", () => {
     expect(durationLabel(60)).toBe("1시간");
     expect(durationLabel(90)).toBe("1시간 30분");
     expect(durationLabel(120)).toBe("2시간");
+    expect(durationLabel(150)).toBe("2시간 30분");
+    expect(durationLabel(180)).toBe("3시간");
   });
 });
 

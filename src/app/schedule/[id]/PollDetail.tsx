@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
+  applyBackupMeetingPoll,
   closeMeetingPoll,
   confirmMeetingPoll,
   nudgeMeetingPoll,
@@ -38,7 +40,6 @@ import {
   type Participant,
 } from "@/lib/meeting-poll";
 import type { MeetingPoll } from "@/lib/types";
-import { ConfirmDialog, NudgeDialog } from "./PollDetailDialogs";
 import { availabilityViews, draftAvailability, type AvailabilityDrag } from "@/lib/meeting-poll-availability";
 import { MetaChip, PeopleTooltip, PersonRow } from "./PollDetailPeople";
 import {
@@ -51,6 +52,13 @@ import {
   pastDue,
 } from "./poll-detail-time";
 import styles from "../schedule.module.css";
+
+const NudgeDialog = dynamic(() =>
+  import("./PollDetailDialogs").then((module) => module.NudgeDialog),
+);
+const ConfirmDialog = dynamic(() =>
+  import("./PollDetailDialogs").then((module) => module.ConfirmDialog),
+);
 
 /** 선택한 칸 상세 카드의 헤더/한 줄 높이. 자리를 미리 잡아 선택할 때 화면이 뛰지 않게 한다. */
 const DETAIL_HEADER_H = 69;
@@ -99,6 +107,7 @@ export function PollDetail({
     startIso: string;
     durationMin: number;
     timeOptions?: { value: string; label: string }[];
+    backup?: boolean;
   } | null>(null);
   const [nudging, setNudging] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -645,6 +654,22 @@ export function PollDetail({
                     >
                       일정 확정하기
                     </Button>}
+                    {poll.confirmed_at && <Button
+                      variant="solid"
+                      color="primary"
+                      size="medium"
+                      fullWidth
+                      disabled={!canManage || busy}
+                      onClick={() =>
+                        setConfirming({
+                          startIso: r.startIso,
+                          durationMin: nearestDuration(r.durationMin),
+                          backup: true,
+                        })
+                      }
+                    >
+                      백업플랜 적용하기
+                    </Button>}
                     <Button
                       variant="text"
                       color="assistive"
@@ -656,6 +681,7 @@ export function PollDetail({
                           startIso: options[0]?.startIso ?? r.startIso,
                           durationMin: 30,
                           timeOptions: options.map(({ startIso, label }) => ({ value: startIso, label })),
+                          backup: Boolean(poll.confirmed_at),
                         });
                       }}
                     >
@@ -1062,7 +1088,9 @@ export function PollDetail({
           onSubmit={() => {
             const target = confirming;
             setConfirming(null);
-            run(() => confirmMeetingPoll(poll.id, target.startIso, target.durationMin));
+            run(() => target.backup
+              ? applyBackupMeetingPoll(poll.id, target.startIso, target.durationMin)
+              : confirmMeetingPoll(poll.id, target.startIso, target.durationMin));
           }}
         />
       )}

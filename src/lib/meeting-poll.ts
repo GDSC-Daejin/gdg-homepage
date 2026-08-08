@@ -65,7 +65,7 @@ export function prepareMeetingPollInput(
 }
 
 /** 확정 모달의 소요시간 선택지(분). */
-export const DURATION_OPTIONS = [30, 60, 90, 120] as const;
+export const DURATION_OPTIONS = [30, 60, 90, 120, 150, 180] as const;
 
 /** 추천 구간의 최소 길이(분). 1시간 30분은 겹치는 구간이 잘 안 나와서 1시간으로 완화했다. */
 export const MIN_BLOCK_MIN = 60;
@@ -306,7 +306,8 @@ export function backupRecommendations(
 /**
  * 가장 많이 겹치는 연속 구간 top N.
  * 구간 길이는 minBlockMin을 채우는 최소 칸 수로 고정하고(30분 단위면 2칸),
- * "구간의 모든 칸이 가능한 사람" 수로 줄을 세운다. 겹치는 구간은 하나만 남긴다.
+ * "구간의 모든 칸이 가능한 사람" 수로 줄을 세운다. 날짜를 먼저 다양하게 고르고,
+ * 같은 날짜에서는 겹치거나 붙은 구간을 하나만 남긴다.
  */
 export function recommendBlocks(
   dates: string[],
@@ -345,22 +346,25 @@ export function recommendBlocks(
   );
 
   const picked: Recommendation[] = [];
-  for (const c of candidates) {
-    if (picked.length >= topCount) break;
-    const overlaps = picked.some(
-      (p) => p.dateIndex === c.dateIndex && c.from <= p.to && c.to >= p.from,
-    );
-    if (overlaps) continue;
-    picked.push({
-      rank: picked.length + 1,
-      dateIndex: c.dateIndex,
-      from: c.from,
-      to: c.to,
-      startIso: slotIso(dates[c.dateIndex], times[c.from]),
-      durationMin: span * slotMin,
-      available: c.available,
-      missing: responded.filter((p) => !c.available.includes(p)),
-    });
+  for (const newDateFirst of [true, false]) {
+    for (const c of candidates) {
+      if (picked.length >= topCount) break;
+      if (newDateFirst && picked.some((p) => p.dateIndex === c.dateIndex)) continue;
+      const tooClose = picked.some(
+        (p) => p.dateIndex === c.dateIndex && c.from <= p.to + 1 && c.to + 1 >= p.from,
+      );
+      if (tooClose) continue;
+      picked.push({
+        rank: picked.length + 1,
+        dateIndex: c.dateIndex,
+        from: c.from,
+        to: c.to,
+        startIso: slotIso(dates[c.dateIndex], times[c.from]),
+        durationMin: span * slotMin,
+        available: c.available,
+        missing: responded.filter((p) => !c.available.includes(p)),
+      });
+    }
   }
   return picked;
 }

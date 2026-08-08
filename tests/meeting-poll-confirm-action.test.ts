@@ -96,6 +96,11 @@ describe("confirmMeetingPoll", () => {
     const eventInsert = { select: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: { id: "event-1" }, error: null }) }) };
     const insertEvent = vi.fn(() => eventInsert);
     const eventLink = { eq: vi.fn().mockResolvedValue({ error: null }) };
+    const registerAvailable = vi.fn().mockResolvedValue({ error: null });
+    const memberCountQuery = { in: vi.fn(), eq: vi.fn(), not: vi.fn() };
+    memberCountQuery.in.mockReturnValue(memberCountQuery);
+    memberCountQuery.eq.mockReturnValue(memberCountQuery);
+    memberCountQuery.not.mockResolvedValue({ count: 14, error: null });
     const participantQuery = { select: vi.fn(), eq: vi.fn() };
     participantQuery.select.mockReturnValue(participantQuery);
     participantQuery.eq.mockResolvedValue({ data: [], error: null });
@@ -106,8 +111,10 @@ describe("confirmMeetingPoll", () => {
           return { update: vi.fn(() => (++meetingUpdates === 1 ? updateQuery : eventLink)) };
         }
         if (table === "meeting_poll_participants") return participantQuery;
+        if (table === "profiles") return { select: vi.fn(() => memberCountQuery) };
         return { insert: insertEvent };
       }),
+      rpc: registerAvailable,
     });
     mocks.sendMeetingPollConfirmation.mockResolvedValue(undefined);
 
@@ -117,15 +124,58 @@ describe("confirmMeetingPoll", () => {
     expect(eventInsert.select).toHaveBeenCalledWith("id");
     expect(insertEvent).toHaveBeenCalledWith(expect.objectContaining({
       type: "session",
-      title: "8월 정기세션",
+      title: "8월 4일 정기세션",
       starts_at: "2026-08-04T10:30:00.000Z",
       ends_at: "2026-08-04T11:30:00.000Z",
+      event_date: "2026-08-04",
+      start_time: "19:30",
+      end_time: "20:30",
+      capacity: 14,
       created_by: "admin-1",
     }));
     expect(eventLink.eq).toHaveBeenCalledWith("id", "poll-1");
+    expect(registerAvailable).toHaveBeenCalledWith("register_available_poll_participants", {
+      p_poll_id: "poll-1",
+      p_event_id: "event-1",
+    });
     expect(mocks.sendMeetingPollConfirmation).toHaveBeenCalledWith(expect.objectContaining({
       isRegularSession: true,
     }));
+  });
+
+  it("이미 연결된 정기세션 이벤트도 확정 시간으로 갱신한다", async () => {
+    const pollQuery = { eq: vi.fn(), is: vi.fn(), select: vi.fn() };
+    pollQuery.eq.mockReturnValue(pollQuery);
+    pollQuery.is.mockReturnValue(pollQuery);
+    pollQuery.select.mockResolvedValue({
+      data: [{ id: "poll-1", title: "8월 정기세션", is_mojisoop: false, is_regular_session: true, event_id: "event-1" }],
+      error: null,
+    });
+    const eventQuery = { eq: vi.fn().mockResolvedValue({ error: null }) };
+    const updateEvent = vi.fn(() => eventQuery);
+    const participantQuery = { select: vi.fn(), eq: vi.fn() };
+    participantQuery.select.mockReturnValue(participantQuery);
+    participantQuery.eq.mockResolvedValue({ data: [], error: null });
+    mocks.createClient.mockResolvedValue({
+      from: vi.fn((table: string) => {
+        if (table === "meeting_polls") return { update: vi.fn(() => pollQuery) };
+        if (table === "meeting_poll_participants") return participantQuery;
+        return { update: updateEvent };
+      }),
+    });
+    mocks.sendMeetingPollConfirmation.mockResolvedValue(undefined);
+
+    const { confirmMeetingPoll } = await import("@/actions/meeting-poll");
+    await confirmMeetingPoll("poll-1", "2026-08-04T10:30:00.000Z", 60);
+
+    expect(updateEvent).toHaveBeenCalledWith({
+      starts_at: "2026-08-04T10:30:00.000Z",
+      ends_at: "2026-08-04T11:30:00.000Z",
+      event_date: "2026-08-04",
+      start_time: "19:30",
+      end_time: "20:30",
+    });
+    expect(eventQuery.eq).toHaveBeenCalledWith("id", "event-1");
   });
 });
 
@@ -147,5 +197,41 @@ describe("closeMeetingPoll", () => {
 
     await expect(closeMeetingPoll("poll-1")).resolves.toEqual({});
     expect(mocks.updatePoll).toHaveBeenCalledWith(expect.objectContaining({ due_at: expect.any(String) }));
+  });
+});
+
+describe("applyBackupMeetingPoll", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.isDemoMode.mockResolvedValue(false);
+    mocks.requireAdmin.mockResolvedValue({ id: "admin-1" });
+  });
+
+  it("백업 시간으로 확정 일정과 연결된 정기세션 이벤트를 함께 바꾼다", async () => {
+    const pollQuery = { eq: vi.fn(), not: vi.fn(), select: vi.fn() };
+    pollQuery.eq.mockReturnValue(pollQuery);
+    pollQuery.not.mockReturnValue(pollQuery);
+    pollQuery.select.mockResolvedValue({
+      data: [{ id: "poll-1", is_regular_session: true, event_id: "event-1" }],
+      error: null,
+    });
+    const eventQuery = { eq: vi.fn().mockResolvedValue({ error: null }) };
+    const updateEvent = vi.fn(() => eventQuery);
+    mocks.createClient.mockResolvedValue({
+      from: vi.fn((table: string) => table === "meeting_polls"
+        ? { update: vi.fn(() => pollQuery) }
+        : { update: updateEvent }),
+    });
+
+    const { applyBackupMeetingPoll } = await import("@/actions/meeting-poll");
+    await expect(
+      applyBackupMeetingPoll("poll-1", "2026-08-05T10:30:00.000Z", 60),
+    ).resolves.toEqual({});
+
+    expect(updateEvent).toHaveBeenCalledWith(expect.objectContaining({
+      starts_at: "2026-08-05T10:30:00.000Z",
+      ends_at: "2026-08-05T11:30:00.000Z",
+    }));
+    expect(eventQuery.eq).toHaveBeenCalledWith("id", "event-1");
   });
 });
