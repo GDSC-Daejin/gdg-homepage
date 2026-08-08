@@ -61,7 +61,7 @@ export function InviteSender({ applications }: { applications: ApplicationOption
         <Button type="button" variant="primary" disabled={selected.length === 0 || pending} onClick={submit}>
           {pending ? "발송 중..." : "면접 링크 보내기"}
         </Button>
-        {message && <p className={`text-xs ${message.includes("실패") || message.includes("선택") ? "text-danger" : "text-success"}`}>{message}</p>}
+        {message && <p className={`text-xs ${message.includes("실패") || message.includes("선택") || message.includes("못했") ? "text-danger" : "text-success"}`}>{message}</p>}
       </div>
     </div>
   );

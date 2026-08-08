@@ -22,6 +22,7 @@ function formatSlot(slot: Slot) {
 export function BookingForm({ token, openSlots }: { token: string; openSlots: Slot[] }) {
   const [selectedId, setSelectedId] = useState("");
   const [error, setError] = useState<string>();
+  const [warning, setWarning] = useState<string>();
   const [meetUri, setMeetUri] = useState<string>();
   const [done, setDone] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -29,6 +30,7 @@ export function BookingForm({ token, openSlots }: { token: string; openSlots: Sl
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(undefined);
+    setWarning(undefined);
     startTransition(async () => {
       const result = await bookSlot(token, selectedId);
       if (result.error) {
@@ -36,6 +38,7 @@ export function BookingForm({ token, openSlots }: { token: string; openSlots: Sl
         return;
       }
       setMeetUri(result.meetUri);
+      setWarning(result.warning);
       setDone(true);
     });
   }
@@ -53,6 +56,7 @@ export function BookingForm({ token, openSlots }: { token: string; openSlots: Sl
             Meet 링크는 운영진이 확인 후 안내드릴게요.
           </p>
         )}
+        {warning && <p className="text-sm text-warning">{warning}</p>}
       </div>
     );
   }

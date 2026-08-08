@@ -31,6 +31,8 @@ describe("bookSlot", () => {
   });
 
   it("Meet 환경변수가 없어도 예약 claim은 유지한다", async () => {
-    await expect(bookSlot("token", "slot-id")).resolves.toEqual({});
+    await expect(bookSlot("token", "slot-id")).resolves.toEqual({
+      warning: "면접 예약은 확정됐지만 Meet 링크를 자동 생성하지 못했어요",
+    });
   });
 });

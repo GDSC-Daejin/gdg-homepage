@@ -1,5 +1,5 @@
 // 서버 전용: GOOGLE_MEET_*는 클라이언트 컴포넌트에서 import하지 말 것.
-async function getAccessToken(): Promise<string> {
+export async function getGoogleAccessToken(): Promise<string> {
   const clientId = process.env.GOOGLE_MEET_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_MEET_CLIENT_SECRET;
   const refreshToken = process.env.GOOGLE_MEET_REFRESH_TOKEN;
@@ -31,7 +31,7 @@ export async function createMeetSpace(): Promise<{
   meetingCode: string;
   name: string;
 }> {
-  const accessToken = await getAccessToken();
+  const accessToken = await getGoogleAccessToken();
   const res = await fetch("https://meet.googleapis.com/v2/spaces", {
     method: "POST",
     headers: {

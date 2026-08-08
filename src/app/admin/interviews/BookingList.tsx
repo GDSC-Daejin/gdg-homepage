@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { assignInterviewer, regenerateMeetLink } from "@/actions/interview";
+import { assignInterviewer, regenerateMeetLink, syncInterviewCalendar } from "@/actions/interview";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
 import type { InterviewSlot } from "@/lib/types";
@@ -44,7 +44,7 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
     setMessage(undefined);
     startTransition(async () => {
       const result = await assignInterviewer(slotId, interviewerId);
-      setMessage(result.error ?? "면접관을 배정했어요.");
+      setMessage(result.error ?? result.warning ?? "면접관을 배정했어요.");
       if (!result.error) router.refresh();
     });
   }
@@ -53,7 +53,16 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
     setMessage(undefined);
     startTransition(async () => {
       const result = await regenerateMeetLink(slotId);
-      setMessage(result.error ?? "Meet 링크를 생성했어요.");
+      setMessage(result.error ?? result.warning ?? "Meet 링크를 생성했어요.");
+      if (!result.error) router.refresh();
+    });
+  }
+
+  function syncCalendar(slotId: string) {
+    setMessage(undefined);
+    startTransition(async () => {
+      const result = await syncInterviewCalendar(slotId);
+      setMessage(result.error ?? result.warning ?? "Google Calendar 일정을 동기화했어요.");
       if (!result.error) router.refresh();
     });
   }
@@ -63,13 +72,14 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
   return (
     <div className="flex flex-col gap-3">
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[820px] text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-left text-gray-500">
               <th className="px-3 py-2 font-medium">시간</th>
               <th className="px-3 py-2 font-medium">지원자</th>
               <th className="px-3 py-2 font-medium">면접관</th>
               <th className="px-3 py-2 font-medium">Meet</th>
+              <th className="px-3 py-2 font-medium">Calendar</th>
               <th className="px-3 py-2 font-medium">상태</th>
             </tr>
           </thead>
@@ -102,13 +112,20 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
                     <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => regenerate(booking.id)}>재생성</Button>
                   ) : "-"}
                 </td>
+                <td className="px-3 py-3">
+                  {booking.status === "booked" && booking.meet_uri ? (
+                    <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => syncCalendar(booking.id)}>
+                      {booking.calendar_event_id ? "다시 동기화" : "일정 동기화"}
+                    </Button>
+                  ) : "-"}
+                </td>
                 <td className="px-3 py-3"><Badge tone={STATUS[booking.status].tone}>{STATUS[booking.status].label}</Badge></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      {message && <p className={`text-xs ${message.includes("실패") ? "text-danger" : "text-success"}`}>{message}</p>}
+      {message && <p className={`text-xs ${message.includes("실패") || message.includes("못했") ? "text-danger" : "text-success"}`}>{message}</p>}
     </div>
   );
 }

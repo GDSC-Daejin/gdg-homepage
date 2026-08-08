@@ -100,6 +100,7 @@ export interface InterviewSlot {
   interviewer_id: string | null;
   meet_uri: string | null;
   meet_code: string | null;
+  calendar_event_id: string | null;
   status: "open" | "booked" | "completed" | "canceled";
 }
 
