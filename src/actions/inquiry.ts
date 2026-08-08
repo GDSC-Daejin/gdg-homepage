@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getCommunity } from "@/lib/community";
+import { isDemoMode } from "@/lib/demo";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { inquirySchema } from "@/lib/schemas";
 import { displayName } from "@/lib/format";
@@ -10,6 +11,7 @@ import type { ActionResult } from "@/lib/types";
 
 export async function submitInquiry(formData: FormData): Promise<ActionResult> {
   const profile = await requireProfile();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 문의를 등록할 수 없어요" };
 
   const parsed = inquirySchema.safeParse({
     category: String(formData.get("category") ?? ""),
@@ -48,6 +50,7 @@ export async function answerInquiry(
   answer: string,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 답변을 등록할 수 없어요" };
 
   const trimmed = answer.trim();
   if (trimmed.length < 1) return { error: "답변을 입력해주세요" };

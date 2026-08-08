@@ -6,6 +6,7 @@ import { bookSlot } from "@/actions/interview";
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/demo", () => ({ isDemoMode: vi.fn().mockResolvedValue(false) }));
 
 describe("bookSlot", () => {
   const oldEnv = process.env;

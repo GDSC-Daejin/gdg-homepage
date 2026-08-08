@@ -5,11 +5,13 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isOwnAvatarPath } from "@/lib/avatar";
 import { getProfile } from "@/lib/auth";
+import { isDemoMode } from "@/lib/demo";
 import { profileSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import type { ActionResult } from "@/lib/types";
 
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 프로필을 변경할 수 없어요" };
   const profile = await getProfile();
   if (!profile) redirect("/");
 
@@ -52,6 +54,7 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 }
 
 export async function setProfileAvatar(path: string): Promise<ActionResult> {
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 프로필 사진을 변경할 수 없어요" };
   const profile = await getProfile();
   if (!profile) redirect("/");
   if (!isOwnAvatarPath(profile.id, path)) {
@@ -70,6 +73,7 @@ export async function setProfileAvatar(path: string): Promise<ActionResult> {
 }
 
 export async function signOut(): Promise<void> {
+  if (await isDemoMode()) redirect("/");
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/");

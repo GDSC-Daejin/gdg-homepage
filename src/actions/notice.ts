@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { getCommunity } from "@/lib/community";
+import { isDemoMode } from "@/lib/demo";
 import { noticeSchema } from "@/lib/schemas";
 import { postSlack } from "@/lib/slack";
 import type { ActionResult } from "@/lib/types";
@@ -19,6 +20,7 @@ function parseNoticeForm(formData: FormData) {
 
 export async function createNotice(formData: FormData): Promise<ActionResult> {
   const profile = await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 공지를 등록할 수 없어요" };
 
   const parsed = parseNoticeForm(formData);
   if (!parsed.success) {
@@ -41,6 +43,7 @@ export async function updateNotice(
   formData: FormData,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 공지를 수정할 수 없어요" };
 
   const parsed = parseNoticeForm(formData);
   if (!parsed.success) {
@@ -60,6 +63,7 @@ export async function updateNotice(
 
 export async function deleteNotice(id: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 공지를 삭제할 수 없어요" };
 
   const community = await getCommunity();
   const result = await community.notices.ops.delete(id);
@@ -75,6 +79,7 @@ export async function publishNotice(
   notifySlack = true,
 ): Promise<PublishResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { slack: "미리보기 모드에서는 공지를 발행하지 않아요" };
 
   const community = await getCommunity();
   const result = await community.notices.ops.publish(id);

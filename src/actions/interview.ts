@@ -3,6 +3,7 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
+import { isDemoMode } from "@/lib/demo";
 import { sendInterviewConfirmEmail, sendInterviewInviteEmail } from "@/lib/email";
 import { toKoreanError } from "@/lib/errors";
 import { syncInterviewCalendarEvent } from "@/lib/google-calendar";
@@ -99,6 +100,7 @@ const BOOK_ERRORS: Record<string, string> = {
 
 export async function createSlots(formData: FormData): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접 슬롯을 만들 수 없어요" };
   const parsed = interviewSlotsSchema.safeParse({
     starts_at: formData.getAll("starts_at").map(String),
     duration_min: Number(formData.get("duration_min") ?? 30),
@@ -125,6 +127,7 @@ export async function assignInterviewer(
   interviewerId: string,
 ): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접관을 배정할 수 없어요" };
   const supabase = await createClient();
   const { error } = await supabase.rpc("admin_assign_interviewer", {
     p_slot: slotId,
@@ -143,6 +146,7 @@ export async function assignInterviewer(
 
 export async function sendInvites(applicationIds: string[]): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접 초대장을 보낼 수 없어요" };
   if (applicationIds.length === 0) return { error: "지원자를 선택해주세요" };
 
   const [settings, supabase] = await Promise.all([
@@ -185,6 +189,7 @@ export async function bookSlot(
   token: string,
   slotId: string,
 ): Promise<ActionResult & { meetUri?: string }> {
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접을 예약할 수 없어요" };
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("book_interview_slot", {
     p_token: token,
@@ -224,6 +229,7 @@ export async function bookSlot(
 
 export async function regenerateMeetLink(slotId: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 Meet 링크를 만들 수 없어요" };
   try {
     const svc = serviceClient();
     const space = await createMeetSpace();
@@ -250,6 +256,7 @@ export async function regenerateMeetLink(slotId: string): Promise<ActionResult> 
 
 export async function syncInterviewCalendar(slotId: string): Promise<ActionResult> {
   await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 캘린더를 동기화할 수 없어요" };
   try {
     await syncCalendarForSlot(slotId);
     revalidatePath("/admin/interviews");
