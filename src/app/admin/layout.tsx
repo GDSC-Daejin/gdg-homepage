@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { AdminSidebar } from "./AdminSidebar";
+import { AdminBottomNav } from "./AdminSidebarNav";
 import { isDemoMode } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
@@ -17,12 +18,16 @@ export default async function AdminLayout({
   const demo = await isDemoMode();
 
   return (
-    <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />}>
+    <ResponsiveShell
+      asideClassName="dark:bg-gray-50"
+      sidebar={<AdminSidebar />}
+      bottomNavigation={<AdminBottomNav demo={demo} />}
+    >
       {/* 회원 테이블이 11칸이라 1152px(6xl)에선 이름·가입일이 두 줄로 접힌다 */}
-      <div className="admin-surface mx-auto max-w-[96rem] rounded-[20px] bg-gray-50 p-6 shadow-material sm:p-8">
+      <div className="admin-surface mx-auto max-w-[96rem] rounded-[20px] bg-gray-50 p-4 shadow-material lg:p-8">
         {demo && (
           <div className="mb-6 rounded-md bg-amber-50 px-4 py-2 text-sm text-amber-800">
-            둘러보기 모드 · 모든 데이터는 예시입니다
+            미리보기 모드 · 모든 데이터는 예시입니다
           </div>
         )}
         {children}

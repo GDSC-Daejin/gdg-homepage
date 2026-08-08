@@ -168,6 +168,17 @@ button.nb-btn {
   text-transform: uppercase;
   margin-bottom: 28px;
 }
+.nb-tour-notice {
+  display: inline-flex;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border: 1px solid rgba(251, 188, 4, 0.5);
+  border-radius: 999px;
+  background: rgba(251, 188, 4, 0.12);
+  color: #fdd663;
+  font-size: 13px;
+  font-weight: 700;
+}
 .nb-kicker-pulse {
   width: 8px;
   height: 8px;

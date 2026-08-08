@@ -77,6 +77,14 @@ html {
   display: none;
 }
 
+/* 투어는 어드민 화면을 그대로 재사용한다. 좁은 화면에서 표의 열을 줄바꿈으로 찌그러뜨리지 않고,
+   기존 가로 스크롤 컨테이너 안에서 읽을 수 있게 한다. */
+@media (max-width: 1023px) {
+  .admin-surface .overflow-x-auto > table {
+    min-width: max-content;
+  }
+}
+
 /* 재질(§12): 반투명 크롬. 콘텐츠가 아래로 스크롤되며 비침. 밝은 상단 엣지 = 빛 반사.
    reduced-transparency / contrast 에선 불투명·보더로 대체(§14) */
 .material {

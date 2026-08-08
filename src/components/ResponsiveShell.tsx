@@ -9,12 +9,14 @@ export function ResponsiveShell({
   sidebar,
   children,
   asideClassName = "dark:bg-gray-100",
+  bottomNavigation,
   // 조율 화면은 자기 헤더를 본문 폭 끝까지 붙여야 해서 여백을 없앤다.
-  mainClassName = "px-4 py-6 sm:px-8 sm:py-8",
+  mainClassName = "px-4 py-6 lg:px-8 lg:py-8",
 }: {
   sidebar: React.ReactNode;
   children: React.ReactNode;
   asideClassName?: string;
+  bottomNavigation?: React.ReactNode;
   mainClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -37,8 +39,8 @@ export function ResponsiveShell({
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:bg-primary focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
         본문으로 건너뛰기
       </a>
-      {/* 모바일 상단바 (§5: 사이드바 대체) */}
-      <header className="material sticky top-0 z-30 flex items-center gap-3 border-b border-gray-200 px-4 py-3 sm:hidden">
+      {/* 모바일·태블릿 상단바 (§5: 사이드바 대체) */}
+      <header className="material sticky top-0 z-30 flex items-center gap-3 border-b border-gray-200 px-4 py-3 lg:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
@@ -64,15 +66,15 @@ export function ResponsiveShell({
         {/* 백드롭 */}
         {open && (
           <div
-            className="fixed inset-0 z-40 bg-black/40 sm:hidden"
+            className="fixed inset-0 z-40 bg-black/40 lg:hidden"
             onClick={() => setOpen(false)}
             aria-hidden
           />
         )}
 
-        {/* 사이드바: 데스크톱 sticky 컬럼 / 모바일 fixed 드로어 */}
+        {/* 사이드바: 데스크톱 sticky 컬럼 / 모바일·태블릿 fixed 드로어 */}
         <aside
-          className={`no-scrollbar fixed inset-y-0 left-0 z-50 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white px-4 py-6 transition-transform duration-[var(--duration-base)] ease-[var(--ease-out-quart)] sm:sticky sm:top-0 sm:z-auto sm:translate-x-0 ${
+          className={`no-scrollbar fixed inset-y-0 left-0 z-50 flex h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-gray-200 bg-white px-4 py-6 transition-transform duration-[var(--duration-base)] ease-[var(--ease-out-quart)] lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 ${
             open ? "translate-x-0" : "-translate-x-full"
           } ${asideClassName}`}
         >
@@ -81,7 +83,7 @@ export function ResponsiveShell({
             type="button"
             onClick={() => setOpen(false)}
             aria-label="메뉴 닫기"
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 sm:hidden"
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100 lg:hidden"
           >
             <svg
               viewBox="0 0 24 24"
@@ -97,10 +99,15 @@ export function ResponsiveShell({
           {sidebar}
         </aside>
 
-        <main id="main-content" tabIndex={-1} className={`min-w-0 flex-1 ${mainClassName}`}>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`min-w-0 flex-1 ${bottomNavigation ? "pb-[calc(6rem+env(safe-area-inset-bottom))] lg:pb-0" : ""} ${mainClassName}`}
+        >
           {children}
         </main>
       </div>
+      {bottomNavigation}
     </div>
   );
 }

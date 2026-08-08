@@ -8,6 +8,7 @@ export interface SectionTab {
   label: string;
   /** 하위 경로까지 활성으로 볼지. 기본은 정확히 일치할 때만. */
   prefix?: boolean;
+  hideInTour?: boolean;
 }
 
 /**
@@ -15,8 +16,11 @@ export interface SectionTab {
  * 사이드바 항목 수를 줄이는 게 목적이라, 여기서 다시 계층을 만들지 않는다 — 항상 한 줄이다.
  */
 export function SectionTabs({ tabs, label }: { tabs: SectionTab[]; label: string }) {
-  const pathname = usePathname();
-  const activeHref = tabs.reduce<string | null>((best, tab) => {
+  const browserPathname = usePathname();
+  const tour = browserPathname.startsWith("/tour/");
+  const pathname = browserPathname.replace(/^\/tour(?=\/)/, "");
+  const visibleTabs = tour ? tabs.filter((tab) => !tab.hideInTour) : tabs;
+  const activeHref = visibleTabs.reduce<string | null>((best, tab) => {
     const hit = tab.prefix ? pathname.startsWith(tab.href) : pathname === tab.href;
     if (!hit) return best;
     // 경로가 겹치면 더 긴 쪽을 고른다(/schedule 과 /schedule/past).
@@ -25,12 +29,12 @@ export function SectionTabs({ tabs, label }: { tabs: SectionTab[]; label: string
 
   return (
     <nav aria-label={label} className="mb-6 flex gap-1 border-b border-gray-200">
-      {tabs.map((tab) => {
+      {visibleTabs.map((tab) => {
         const active = tab.href === activeHref;
         return (
           <Link
             key={tab.href}
-            href={tab.href}
+            href={tour ? `/tour${tab.href}` : tab.href}
             // /schedule은 회원 셸과 공유하는 라우트라, 어드민에서 들어갈 땐 셸을 명시한다.
             onClick={
               tab.href.startsWith("/schedule")
@@ -72,6 +76,6 @@ export const MEMBER_TABS: SectionTab[] = [
 export const SYSTEM_TABS: SectionTab[] = [
   { href: "/admin/budget", label: "예산", prefix: true },
   { href: "/admin/bots", label: "봇", prefix: true },
-  { href: "/admin/dev", label: "개발", prefix: true },
+  { href: "/admin/dev", label: "개발", prefix: true, hideInTour: true },
   { href: "/admin/settings", label: "모집 설정", prefix: true },
 ];

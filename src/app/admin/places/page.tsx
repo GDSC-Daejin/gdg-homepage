@@ -3,13 +3,15 @@ import { isDemoMode } from "@/lib/demo";
 import { PageHeader } from "@/components/PageHeader";
 import { PlaceManager } from "./PlaceManager";
 import type { Place } from "@/lib/types";
+import { DEMO_PLACES } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPlacesPage() {
-  let places: Place[] = [];
+  const demo = await isDemoMode();
+  let places: Place[] = demo ? DEMO_PLACES : [];
 
-  if (!(await isDemoMode())) {
+  if (!demo) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("places")

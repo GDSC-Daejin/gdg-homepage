@@ -9,19 +9,20 @@ const tabs = [
   { href: "/admin/pokedex", label: "도감" },
 ];
 
-export function OverviewTabs() {
-  const pathname = usePathname();
+export function OverviewTabs({ hidePokedex = false, tour = false }: { hidePokedex?: boolean; tour?: boolean }) {
+  const pathname = usePathname().replace(/^\/tour(?=\/)/, "");
+  const visibleTabs = hidePokedex ? tabs.filter((tab) => tab.href !== "/admin/pokedex") : tabs;
 
   return (
     <nav aria-label="현황" className="flex gap-1 border-b border-gray-200">
-      {tabs.map((tab) => {
+      {visibleTabs.map((tab) => {
         const active =
           tab.href === "/admin" ? pathname === "/admin" : pathname.startsWith(tab.href);
 
         return (
           <Link
             key={tab.href}
-            href={tab.href}
+            href={tour ? `/tour${tab.href}` : tab.href}
             aria-current={active ? "page" : undefined}
             className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${
               active

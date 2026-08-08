@@ -8,12 +8,12 @@ import { SlackLinkList, type LinkableMember } from "./SlackLinkList";
 export const dynamic = "force-dynamic";
 
 const DEMO_MEMBERS: LinkableMember[] = [
-  { id: "p1", name: "옥지훈", email: "jieunsse@gmail.com", slack_user_id: "U04K8FKSNMS" },
-  { id: "p2", name: "Yuki", email: "yuki@gmail.com", slack_user_id: null },
+  { id: "demo-link-1", name: "예시 회원 A", email: "member-a@example.com", slack_user_id: "UDEMO001" },
+  { id: "demo-link-2", name: "예시 회원 B", email: "member-b@example.com", slack_user_id: null },
 ];
 const DEMO_SLACK: SlackMemberSummary[] = [
-  { id: "U04K8FKSNMS", name: "Jayden", email: "jieunsse@gmail.com" },
-  { id: "U0B1MBS7TQ9", name: "Yuki", email: "yukionna13@naver.com" },
+  { id: "UDEMO001", name: "sample-a", email: "member-a@example.com" },
+  { id: "UDEMO002", name: "sample-b", email: "member-b@example.com" },
 ];
 
 export default async function AdminSlackLinksPage() {

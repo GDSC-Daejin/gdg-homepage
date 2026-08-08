@@ -1,11 +1,12 @@
 import { PollList } from "../PollList";
 import { loadPollCards } from "../queries";
+import { isDemoMode } from "@/lib/demo";
 import styles from "../schedule.module.css";
 
 export const dynamic = "force-dynamic";
 
 export default async function SchedulePastPage() {
-  const cards = await loadPollCards("past");
+  const [cards, tour] = await Promise.all([loadPollCards("past"), isDemoMode()]);
 
   return (
     <div className={styles.page}>
@@ -27,6 +28,7 @@ export default async function SchedulePastPage() {
         cards={cards}
         emptyTitle="지난 일정이 없어요"
         emptyBody="확정하거나 마감이 지난 조율이 여기로 모여요"
+        tour={tour}
       />
     </div>
   );

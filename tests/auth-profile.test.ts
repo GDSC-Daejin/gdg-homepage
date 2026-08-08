@@ -30,4 +30,13 @@ describe("getProfile", () => {
     expect(getClaims).not.toHaveBeenCalled();
     expect(eq).toHaveBeenCalledWith("id", "user-1");
   });
+
+  it("둘러보기 경로에서는 인증 쿠키보다 가상 프로필을 우선한다", async () => {
+    headers.mockResolvedValue({ get: (name: string) => name === "x-gdg-demo-mode" ? "1" : null });
+
+    const { getProfile } = await import("@/lib/auth");
+
+    await expect(getProfile()).resolves.toMatchObject({ id: "demo-m1", role: "organizer" });
+    expect(createClient).not.toHaveBeenCalled();
+  });
 });

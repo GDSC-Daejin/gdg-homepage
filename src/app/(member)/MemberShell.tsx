@@ -10,7 +10,7 @@ import { isDemoMode } from "@/lib/demo";
 import { DEMO_NOTIFICATIONS } from "@/lib/demoData";
 import { createClient } from "@/lib/supabase/server";
 import { NotificationBell } from "./NotificationBell";
-import { SidebarNav } from "./SidebarNav";
+import { MemberBottomNav, SidebarNav } from "./SidebarNav";
 import { ThemeToggle } from "./ThemeToggle";
 
 const roleLabel: Record<string, string> = {
@@ -82,6 +82,7 @@ export function MemberShell({
         </div>
         </>
       }
+      bottomNavigation={<MemberBottomNav />}
     >
       <div className={`mx-auto w-full ${contentClassName}`}>{children}</div>
     </ResponsiveShell>

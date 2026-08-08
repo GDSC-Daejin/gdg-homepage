@@ -314,13 +314,15 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <OverviewTabs />
+        <OverviewTabs hidePokedex={demo} tour={demo} />
       <PageHeader title="대시보드" description="동아리 현황을 한눈에 확인해요" />
 
-      <Card>
-        <p className="mb-3 text-sm font-semibold text-gray-900">운영 도구</p>
-        <SyncMeetingsButton />
-      </Card>
+      {!demo && (
+        <Card>
+          <p className="mb-3 text-sm font-semibold text-gray-900">운영 도구</p>
+          <SyncMeetingsButton />
+        </Card>
+      )}
 
       {recruitingSettings.is_open && (
         <RecruitingWidget
@@ -331,7 +333,7 @@ export default async function AdminDashboardPage() {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="전체 회원 수" value={totalMembers ?? 0} />
         <StatCard label="활동 회원 수" value={activeMembers ?? 0} />
         <StatCard label="다가오는 이벤트 수" value={upcomingEvents ?? 0} />
@@ -342,7 +344,7 @@ export default async function AdminDashboardPage() {
         />
       </div>
 
-      <Card className="overflow-x-auto p-0">
+      <Card className="p-0">
         <div className="border-b border-gray-200 px-4 py-3">
           <p className="text-sm font-semibold text-gray-900">최근 이벤트</p>
         </div>
@@ -351,41 +353,50 @@ export default async function AdminDashboardPage() {
             <EmptyState title="지난 이벤트가 없어요" />
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 text-left text-gray-500">
-                <th className="px-4 py-3 font-medium">제목</th>
-                <th className="px-4 py-3 font-medium">유형</th>
-                <th className="px-4 py-3 font-medium">일시</th>
-                <th className="px-4 py-3 font-medium">확정 인원</th>
-                <th className="px-4 py-3 font-medium">출석 인원</th>
-                <th className="px-4 py-3 font-medium">출석률</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div className="divide-y divide-gray-200 lg:hidden">
               {rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b border-gray-100 last:border-0"
-                >
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {row.title}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {EVENT_TYPE_LABEL[row.type]}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {formatKst(row.starts_at)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-700">{row.confirmed}</td>
-                  <td className="px-4 py-3 text-gray-700">{row.attended}</td>
-                  <td className="px-4 py-3 text-gray-700">
-                    {row.rate !== null ? `${Math.round(row.rate * 100)}%` : "-"}
-                  </td>
-                </tr>
+                <div key={row.id} className="space-y-3 px-4 py-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 truncate font-medium text-gray-900">{row.title}</p>
+                    <span className="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                      {EVENT_TYPE_LABEL[row.type]}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500">{formatKst(row.starts_at)}</p>
+                  <dl className="grid grid-cols-3 divide-x divide-gray-200 rounded-lg bg-gray-50 py-2 text-sm">
+                    <div className="px-3"><dt className="text-xs text-gray-400">확정</dt><dd className="mt-0.5 font-semibold tabular-nums text-gray-800">{row.confirmed}</dd></div>
+                    <div className="px-3"><dt className="text-xs text-gray-400">출석</dt><dd className="mt-0.5 font-semibold tabular-nums text-gray-800">{row.attended}</dd></div>
+                    <div className="px-3"><dt className="text-xs text-gray-400">출석률</dt><dd className="mt-0.5 font-semibold tabular-nums text-gray-800">{row.rate !== null ? `${Math.round(row.rate * 100)}%` : "-"}</dd></div>
+                  </dl>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+            <table className="hidden w-full text-sm lg:table">
+              <thead>
+                <tr className="border-b border-gray-200 text-left text-gray-500">
+                  <th className="px-4 py-3 font-medium">제목</th>
+                  <th className="px-4 py-3 font-medium">유형</th>
+                  <th className="px-4 py-3 font-medium">일시</th>
+                  <th className="px-4 py-3 font-medium">확정 인원</th>
+                  <th className="px-4 py-3 font-medium">출석 인원</th>
+                  <th className="px-4 py-3 font-medium">출석률</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id} className="border-b border-gray-100 last:border-0">
+                    <td className="px-4 py-3 font-medium text-gray-900">{row.title}</td>
+                    <td className="px-4 py-3 text-gray-700">{EVENT_TYPE_LABEL[row.type]}</td>
+                    <td className="px-4 py-3 text-gray-500">{formatKst(row.starts_at)}</td>
+                    <td className="px-4 py-3 text-gray-700">{row.confirmed}</td>
+                    <td className="px-4 py-3 text-gray-700">{row.attended}</td>
+                    <td className="px-4 py-3 text-gray-700">{row.rate !== null ? `${Math.round(row.rate * 100)}%` : "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
         )}
       </Card>
 

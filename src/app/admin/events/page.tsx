@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_EVENTS, DEMO_EVENT_CONFIRMED_COUNTS } from "@/lib/demoData";
+import { DEMO_EVENTS, DEMO_EVENT_CONFIRMED_COUNTS, DEMO_PLACES } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { SectionTabs, EVENT_TABS } from "../SectionTabs";
 import { EmptyState } from "@/components/EmptyState";
@@ -44,7 +44,7 @@ export default async function AdminEventsPage({
     );
     let interviews: CalendarInterview[] = [];
     let meetings: CalendarMeeting[] = [];
-    let places: Place[] = [];
+    let places: Place[] = DEMO_PLACES;
 
     if (!demo) {
       const supabase = await createClient();

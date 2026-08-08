@@ -9,6 +9,12 @@ const NAV_ITEMS = [
   { label: "운영진", href: "/team" },
 ];
 
+const TOUR_NAV_ITEMS = [
+  { label: "대시보드", href: "/tour/admin" },
+  { label: "이벤트", href: "/tour/admin/events" },
+  { label: "회원", href: "/tour/admin/members" },
+];
+
 const TICKER = [
   "정기세션",
   "스터디",
@@ -35,13 +41,30 @@ const STATS = [
   { value: "월 1회", label: "정기세션" },
 ];
 
+const TOUR_STATS = [
+  { value: "28명", label: "예시 활동 멤버" },
+  { value: "4개", label: "예시 진행 프로젝트" },
+  { value: "3개", label: "예시 스터디 팀" },
+  { value: "월 2회", label: "예시 정기세션" },
+];
+
 const PROJECTS = [
   { no: "01", title: "Campus Map AI", desc: "캠퍼스 길찾기 · Gemini 기반", color: "#4285F4" },
   { no: "02", title: "Event Hub", desc: "행사 등록 플랫폼 · Firebase", color: "#EA4335" },
   { no: "03", title: "StudyMate", desc: "스터디 매칭 앱 · Flutter", color: "#FBBC04" },
 ];
 
-export default function Landing() {
+const TOUR_PROJECTS = [
+  { no: "01", title: "Campus Connect", desc: "교내 커뮤니티 · 예시 프로젝트", color: "#4285F4" },
+  { no: "02", title: "Event Flow", desc: "행사 운영 도구 · 예시 프로젝트", color: "#EA4335" },
+  { no: "03", title: "Study Loop", desc: "스터디 기록 앱 · 예시 프로젝트", color: "#FBBC04" },
+];
+
+export default function Landing({ tour = false }: { tour?: boolean }) {
+  const navItems = tour ? TOUR_NAV_ITEMS : NAV_ITEMS;
+  const stats = tour ? TOUR_STATS : STATS;
+  const projects = tour ? TOUR_PROJECTS : PROJECTS;
+
   return (
     <div className="nb">
       {/* ── 네비게이션 ─────────────────────────── */}
@@ -58,13 +81,17 @@ export default function Landing() {
           </span>
         </Link>
         <nav className="nb-nav-links">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <Link key={item.href} href={item.href} className="nb-nav-link">
               {item.label}
             </Link>
           ))}
         </nav>
-        <GoogleLoginButton className="nb-nav-cta" />
+        {tour ? (
+          <Link href="/tour/admin" className="nb-nav-cta">관리 화면 보기</Link>
+        ) : (
+          <GoogleLoginButton className="nb-nav-cta" />
+        )}
       </header>
 
       <main>
@@ -87,35 +114,61 @@ export default function Landing() {
               />
             ))}
           </div>
+          {tour && (
+            <p className="nb-tour-notice">
+              서비스 미리보기 · 화면 속 회원, 일정, 수치는 모두 예시 데이터입니다.
+            </p>
+          )}
           <p className="nb-kicker">
             <span className="nb-kicker-pulse" aria-hidden />
-            2026 신규 멤버 모집 중 — 대진대학교
+            {tour ? "GDGOC DJU 관리 서비스 미리보기" : "2026 신규 멤버 모집 중 — 대진대학교"}
           </p>
-          <h1 className="nb-display" aria-label="배우고, 만들고, 배포한다.">
-            <span className="nb-line nb-line--soft">
-              배우고<i className="dot" style={{ color: "#4285F4" }}>,</i>
-            </span>
-            <span className="nb-line nb-line--soft">
-              만들고<i className="dot" style={{ color: "#FBBC04" }}>,</i>
-            </span>
-            <span className="nb-line">
-              <em>배포한다</em>
-              <i className="dot" style={{ color: "#34A853" }}>.</i>
-            </span>
+          <h1 className="nb-display" aria-label={tour ? "편하게, 둘러보세요." : "배우고, 만들고, 배포한다."}>
+            {tour ? <>
+              <span className="nb-line nb-line--soft">
+                편하게<i className="dot" style={{ color: "#4285F4" }}>,</i>
+              </span>
+              <span className="nb-line">
+                <em>둘러보세요</em>
+                <i className="dot" style={{ color: "#34A853" }}>.</i>
+              </span>
+            </> : <>
+              <span className="nb-line nb-line--soft">
+                배우고<i className="dot" style={{ color: "#4285F4" }}>,</i>
+              </span>
+              <span className="nb-line nb-line--soft">
+                만들고<i className="dot" style={{ color: "#FBBC04" }}>,</i>
+              </span>
+              <span className="nb-line">
+                <em>배포한다</em>
+                <i className="dot" style={{ color: "#34A853" }}>.</i>
+              </span>
+            </>}
           </h1>
           <div className="nb-hero-foot">
             <p className="nb-lede">
-              구글 기술로 함께 성장하는 학생 개발자 커뮤니티.
-              <br />
-              혼자 끝내지 못했던 프로젝트, 여기서는 배포까지 갑니다.
+              {tour ? "회원 관리, 이벤트 운영, 설문 결과를 예시 데이터로 살펴볼 수 있습니다." : <>
+                구글 기술로 함께 성장하는 학생 개발자 커뮤니티.
+                <br />
+                혼자 끝내지 못했던 프로젝트, 여기서는 배포까지 갑니다.
+              </>}
             </p>
             <div className="nb-cta-row">
-              <Link href="/apply" className="nb-btn nb-btn--fill">
-                지원하기 <span aria-hidden>↗</span>
-              </Link>
-              <Link href="/about" className="nb-btn nb-btn--line">
-                활동 둘러보기
-              </Link>
+              {tour ? <>
+                <Link href="/tour/admin" className="nb-btn nb-btn--fill">
+                  관리 화면 미리보기 <span aria-hidden>↗</span>
+                </Link>
+                <Link href="/tour/schedule" className="nb-btn nb-btn--line">
+                  스케줄 보기
+                </Link>
+              </> : <>
+                <Link href="/apply" className="nb-btn nb-btn--fill">
+                  지원하기 <span aria-hidden>↗</span>
+                </Link>
+                <Link href="/about" className="nb-btn nb-btn--line">
+                  활동 둘러보기
+                </Link>
+              </>}
             </div>
           </div>
         </section>
@@ -143,7 +196,7 @@ export default function Landing() {
 
         {/* ── 스탯 ─────────────────────────── */}
         <section className="nb-stats">
-          {STATS.map((s) => (
+          {stats.map((s) => (
             <div key={s.label} className="nb-stat">
               <div className="nb-stat-value">{s.value}</div>
               <div className="nb-stat-label">{s.label}</div>
@@ -199,8 +252,8 @@ export default function Landing() {
             <h2 className="nb-h2">멤버들이 만든 것들</h2>
           </div>
           <div className="nb-rows">
-            {PROJECTS.map((p) => (
-              <Link key={p.title} href="/projects" className="nb-row">
+            {projects.map((p) => (
+              <Link key={p.title} href={tour ? "/tour/admin" : "/projects"} className="nb-row">
                 <span className="nb-row-no">{p.no}</span>
                 <span className="nb-row-title">
                   <i className="nb-row-dot" style={{ background: p.color }} />
@@ -223,14 +276,15 @@ export default function Landing() {
           </div>
           <figure className="nb-quote">
             <blockquote>
-              &ldquo;혼자 공부할 때보다 훨씬 멀리 왔어요.
-              <br />첫 커밋부터 배포까지 <em>같이</em> 했거든요.&rdquo;
+              {tour ? <>&ldquo;이 화면은 서비스 미리보기용입니다.
+              <br />실제 회원과 운영 데이터는 <em>표시하지 않습니다.</em>&rdquo;</> : <>&ldquo;혼자 공부할 때보다 훨씬 멀리 왔어요.
+              <br />첫 커밋부터 배포까지 <em>같이</em> 했거든요.&rdquo;</>}
             </blockquote>
             <figcaption>
               <span className="nb-quote-avatar" aria-hidden>
                 AQ
               </span>
-              아쿠아 — 프론트엔드 · 2기
+              {tour ? "예시 멤버 — 프론트엔드 · 2기" : "아쿠아 — 프론트엔드 · 2기"}
             </figcaption>
           </figure>
         </section>
@@ -242,12 +296,18 @@ export default function Landing() {
             <br />
             같이 만들어요<span style={{ color: "#4285F4" }}>.</span>
           </h2>
-          <p className="nb-final-sub">지원서 작성은 5분이면 충분해요.</p>
+          <p className="nb-final-sub">{tour ? "모든 화면은 읽기 전용 예시 데이터입니다." : "지원서 작성은 5분이면 충분해요."}</p>
           <div className="nb-cta-row nb-cta-row--center">
-            <Link href="/apply" className="nb-btn nb-btn--fill nb-btn--big">
-              2026 신규 멤버 지원하기 <span aria-hidden>↗</span>
-            </Link>
-            <GoogleLoginButton className="nb-btn nb-btn--line" />
+            {tour ? (
+              <Link href="/tour/admin" className="nb-btn nb-btn--fill nb-btn--big">
+                관리 화면 미리보기 <span aria-hidden>↗</span>
+              </Link>
+            ) : <>
+              <Link href="/apply" className="nb-btn nb-btn--fill nb-btn--big">
+                2026 신규 멤버 지원하기 <span aria-hidden>↗</span>
+              </Link>
+              <GoogleLoginButton className="nb-btn nb-btn--line" />
+            </>}
           </div>
         </section>
       </main>

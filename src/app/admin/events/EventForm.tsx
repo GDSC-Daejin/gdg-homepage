@@ -221,7 +221,7 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
         <Input
           name="speaker"
           label="발표자"
-          placeholder="예) 제이든"
+          placeholder="예) 홍길동"
           defaultValue={event?.speaker}
         />
       </div>

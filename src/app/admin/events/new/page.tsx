@@ -2,14 +2,16 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
+import { DEMO_PLACES } from "@/lib/demoData";
 import type { Place } from "@/lib/types";
 import { EventForm } from "../EventForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewEventPage() {
-  let places: Place[] = [];
-  if (!(await isDemoMode())) {
+  const demo = await isDemoMode();
+  let places: Place[] = demo ? DEMO_PLACES : [];
+  if (!demo) {
     const supabase = await createClient();
     const { data } = await supabase
       .from("places")

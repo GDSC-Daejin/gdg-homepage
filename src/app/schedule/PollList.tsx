@@ -24,10 +24,12 @@ export function PollList({
   cards,
   emptyTitle,
   emptyBody,
+  tour = false,
 }: {
   cards: PollCard[];
   emptyTitle: string;
   emptyBody: string;
+  tour?: boolean;
 }) {
   if (cards.length === 0) {
     return (
@@ -72,7 +74,7 @@ export function PollList({
                 </span>
                 {poll.is_mojisoop && (
                   <ContentBadge variant="solid" color="violet" size="small">
-                    모지숲
+                    {tour ? "회의 일정" : "모지숲"}
                   </ContentBadge>
                 )}
                 {poll.is_regular_session && (

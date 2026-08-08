@@ -18,6 +18,7 @@ import type {
   InterviewQuestion,
   Group,
   GroupMember,
+  Place,
 } from "@/lib/types";
 
 export const DEMO_MEMBERS: Profile[] = [
@@ -32,6 +33,12 @@ export const DEMO_MEMBERS: Profile[] = [
   { id: "demo-m9", name: "강하늘", nickname: "Sky", student_no: "20220111", major: "컴퓨터공학과", phone: "010-1111-1119", interests: [], role: "member", position: "frontend", status: "withdrawn", academic_status: "graduated", joined_at: "2022-03-01T00:00:00.000Z", approved_at: "2022-03-01T00:00:00.000Z" },
   { id: "demo-m10", name: "윤태경", nickname: "Ted", student_no: "20230111", major: "수학과", phone: "010-1111-1120", interests: [], role: "member", position: "frontend", status: "withdrawn", academic_status: "graduated", joined_at: "2023-03-01T00:00:00.000Z", approved_at: "2023-03-01T00:00:00.000Z" },
   { id: "demo-m11", name: "신예준", nickname: "Yejun", student_no: "20261111", major: "컴퓨터공학과", phone: "010-1111-1121", interests: ["웹"], role: "member", position: null, status: "active", academic_status: "enrolled", joined_at: "2026-07-20T00:00:00.000Z", approved_at: null },
+];
+
+export const DEMO_PLACES: Place[] = [
+  { id: "demo-place-1", name: "GDG 대진 스페이스", address: "경기도 포천시 호국로 1007", lat: 37.8745, lng: 127.1569, notes: "정기세션과 스터디에 사용하는 예시 장소예요.", created_at: "2026-01-10T00:00:00.000Z" },
+  { id: "demo-place-2", name: "학생회관 세미나실", address: "경기도 포천시 호국로 1007", lat: 37.8741, lng: 127.1575, notes: "소규모 회의와 프로젝트 모임에 적합해요.", created_at: "2026-02-01T00:00:00.000Z" },
+  { id: "demo-place-3", name: "온라인 회의실", address: "", lat: null, lng: null, notes: "온라인으로 진행하는 예시 장소예요.", created_at: "2026-03-01T00:00:00.000Z" },
 ];
 
 export const DEMO_EVENTS: Event[] = [
@@ -113,7 +120,7 @@ export const DEMO_APPLICATIONS: Application[] = [
 ];
 
 export const DEMO_EVENT_CONFIRMED_COUNTS: Record<string, number> = {
-  "demo-e1": 120,
+  "demo-e1": 24,
   "demo-e2": 28,
   "demo-e3": 40,
   "demo-e4": 30,

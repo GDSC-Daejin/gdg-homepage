@@ -6,7 +6,9 @@ import { Button } from "@/components/wds/Button";
 
 /** 진행 중인 일정과 지난 일정을 같은 스케줄 안에서 전환한다. */
 export function ScheduleNav({ variant = "default" }: { variant?: "default" | "header" | "segment" }) {
-  const pathname = usePathname();
+  const browserPathname = usePathname();
+  const tour = browserPathname.startsWith("/tour/");
+  const pathname = browserPathname.replace(/^\/tour(?=\/)/, "");
   const isPast = pathname.startsWith("/schedule/past");
   const isMine = pathname === "/schedule" || (!isPast && !pathname.startsWith("/schedule/new"));
   const isSegment = variant === "segment";
@@ -29,7 +31,7 @@ export function ScheduleNav({ variant = "default" }: { variant?: "default" | "he
       }
     >
       <Link
-        href="/schedule"
+        href={tour ? "/tour/schedule" : "/schedule"}
         aria-current={isMine ? "page" : undefined}
         style={{
           font: `${isMine ? 600 : 400} 15px/1 var(--wds-font-sans)`,
@@ -44,7 +46,7 @@ export function ScheduleNav({ variant = "default" }: { variant?: "default" | "he
         {isSegment ? "진행 중" : "내 일정"}
       </Link>
       <Link
-        href="/schedule/past"
+        href={tour ? "/tour/schedule/past" : "/schedule/past"}
         aria-current={isPast ? "page" : undefined}
         style={{
           font: `${isPast ? 600 : 400} 15px/1 var(--wds-font-sans)`,
@@ -71,7 +73,8 @@ export function ScheduleLayoutBar({
   className: string;
   navVariant?: "default" | "header" | "segment";
 }) {
-  const pathname = usePathname();
+  const browserPathname = usePathname();
+  const pathname = browserPathname.replace(/^\/tour(?=\/)/, "");
   if (/^\/schedule\/[^/]+$/.test(pathname)) return null;
 
   return (
@@ -83,11 +86,13 @@ export function ScheduleLayoutBar({
 }
 
 export function NewPollButton({ canCreate }: { canCreate: boolean }) {
-  const pathname = usePathname();
+  const browserPathname = usePathname();
+  const tour = browserPathname.startsWith("/tour/");
+  const pathname = browserPathname.replace(/^\/tour(?=\/)/, "");
   // 목록 두 화면에서만 띄운다. 만들기·상세 화면에는 그 화면의 버튼이 따로 있다.
   if (!canCreate || (pathname !== "/schedule" && pathname !== "/schedule/past")) return null;
   return (
-    <Link href="/schedule/new">
+    <Link href={tour ? "/tour/schedule/new" : "/schedule/new"}>
       <Button variant="solid" color="primary" size="small" round>
         새 일정 만들기
       </Button>

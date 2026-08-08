@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_EVENTS } from "@/lib/demoData";
+import { DEMO_EVENTS, DEMO_PLACES } from "@/lib/demoData";
 import { Badge } from "@/components/Badge";
 import { Card } from "@/components/Card";
 import { AttendanceStatusCard } from "@/components/AttendanceStatusCard";
@@ -41,6 +41,7 @@ export default async function AdminEventDetailPage({
 
   if (demo) {
     e = DEMO_EVENTS.find((ev) => ev.id === id) ?? DEMO_EVENTS[0];
+    places = DEMO_PLACES;
   } else {
     const supabase = await createClient();
     const { data: event } = await supabase

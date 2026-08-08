@@ -6,6 +6,7 @@ import { requireProfile } from "@/lib/auth";
 import { PageSkeleton } from "@/components/PageSkeleton";
 import { ResponsiveShell } from "@/components/ResponsiveShell";
 import { AdminSidebar } from "@/app/admin/AdminSidebar";
+import { AdminBottomNav } from "@/app/admin/AdminSidebarNav";
 import { SectionTabs, EVENT_TABS } from "@/app/admin/SectionTabs";
 import { MemberShell } from "@/app/(member)/MemberShell";
 import { isStaff } from "@/lib/types";
@@ -64,10 +65,14 @@ async function ScheduleLayoutContent({ children }: { children: React.ReactNode }
     return <MemberShell profile={profile} contentClassName="max-w-[1536px]">{content}</MemberShell>;
   }
   return (
-    <ResponsiveShell asideClassName="dark:bg-gray-50" sidebar={<AdminSidebar />}>
+    <ResponsiveShell
+      asideClassName="dark:bg-gray-50"
+      sidebar={<AdminSidebar />}
+      bottomNavigation={<AdminBottomNav />}
+    >
       <div className="mx-auto w-full max-w-[96rem] overflow-hidden rounded-[20px] bg-gray-50 shadow-material">
         {/* 사이드바 `이벤트` 한 칸이 이벤트·조율을 함께 품는다 — 여기가 그 탭 줄이다. */}
-        <div className="px-6 pt-6 sm:px-8">
+        <div className="px-4 pt-4 lg:px-8 lg:pt-6">
           <SectionTabs tabs={EVENT_TABS} label="이벤트" />
         </div>
         {content}

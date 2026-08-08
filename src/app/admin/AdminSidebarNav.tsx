@@ -118,6 +118,12 @@ const allHrefs = groups.flatMap((g) =>
   g.items.flatMap((i) => [i.href, ...(i.covers ?? [])]),
 );
 
+const bottomItems = [
+  ...groups[0].items,
+  ...groups[1].items.slice(0, 1),
+  { ...groups[3].items[0], label: "예산", icon: "budget" as const },
+];
+
 function pathActive(href: string, pathname: string) {
   // 대시보드 항목은 하위 탭(분석)까지 포함해 active로 본다.
   if (href === "/admin") {
@@ -132,8 +138,9 @@ function itemActive(item: NavItem, pathname: string) {
   return [item.href, ...(item.covers ?? [])].some((href) => pathActive(href, pathname));
 }
 
-export function AdminSidebarNav({ recruitingOpen }: { recruitingOpen: boolean }) {
-  const pathname = usePathname();
+export function AdminSidebarNav({ demo = false, recruitingOpen }: { demo?: boolean; recruitingOpen: boolean }) {
+  const browserPathname = usePathname();
+  const pathname = browserPathname.replace(/^\/tour(?=\/)/, "");
   // 모집 시즌이 닫혀 있어도 이미 그 화면에 들어와 있다면 그룹을 보여준다(길을 잃지 않게).
   const visible = groups.filter(
     (g) =>
@@ -152,12 +159,12 @@ export function AdminSidebarNav({ recruitingOpen }: { recruitingOpen: boolean })
                 {group.title}
               </p>
             )}
-            {group.items.map((item) => {
+            {group.items.filter((item) => !demo || item.href !== "/admin/interviews").map((item) => {
               const active = itemActive(item, pathname);
               return (
                 <Link
                   key={item.href}
-                  href={item.href}
+                  href={demo ? `/tour${item.href}` : item.href}
                   aria-current={active ? "page" : undefined}
                   className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-100 ${
                     active
@@ -171,6 +178,37 @@ export function AdminSidebarNav({ recruitingOpen }: { recruitingOpen: boolean })
               );
             })}
           </div>
+        );
+      })}
+    </nav>
+  );
+}
+
+export function AdminBottomNav({ demo = false }: { demo?: boolean }) {
+  const browserPathname = usePathname();
+  const pathname = browserPathname.replace(/^\/tour(?=\/)/, "");
+  const tour = demo || browserPathname.startsWith("/tour/");
+
+  return (
+    <nav
+      aria-label="주요 메뉴"
+      className="material fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-gray-200 px-1 pt-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))] lg:hidden"
+      style={{ background: "var(--color-gray-50)" }}
+    >
+      {bottomItems.map((item) => {
+        const active = itemActive(item, pathname);
+        return (
+          <Link
+            key={item.href}
+            href={tour ? `/tour${item.href}` : item.href}
+            aria-current={active ? "page" : undefined}
+            className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium transition-colors ${
+              active ? "text-primary" : "text-gray-500 hover:bg-gray-100"
+            }`}
+          >
+            <Icon d={icons[item.icon]} className="h-5 w-5" />
+            {item.label}
+          </Link>
         );
       })}
     </nav>

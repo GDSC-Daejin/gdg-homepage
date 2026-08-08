@@ -36,7 +36,7 @@ export function GroupForm({ group }: { group?: Group }) {
     <form
       id="group-form"
       action={onSubmit}
-      className="h-full rounded-xl border border-gray-200 bg-white p-5 shadow-card dark:bg-gray-100 sm:p-6"
+      className="h-full min-w-0 w-full rounded-xl border border-gray-200 bg-white p-5 shadow-card dark:bg-gray-100 sm:p-6"
     >
       <div className="mb-5">
         <Badge tone="primary">{isEditing ? "그룹 수정" : "그룹 생성"}</Badge>
@@ -44,7 +44,7 @@ export function GroupForm({ group }: { group?: Group }) {
         <p className="mt-1 text-sm text-gray-500">{isEditing ? "그룹 정보를 수정하세요" : "그룹 정보를 입력해 생성하세요"}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid min-w-0 gap-4 sm:grid-cols-2">
         <Select name="type" label="종류" defaultValue={group?.type ?? "study"} required>
           <option value="study">스터디</option>
           <option value="project">프로젝트</option>

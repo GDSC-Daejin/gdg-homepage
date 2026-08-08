@@ -70,6 +70,22 @@ const baseGroups: NavGroup[] = [
   },
 ];
 
+const bottomItems = [
+  ...baseGroups[0].items,
+  ...baseGroups[1].items.slice(0, 3),
+  ...baseGroups[2].items,
+];
+
+function itemActive(item: NavItem, pathname: string) {
+  return item.href === "/"
+    ? pathname === "/"
+    : item.matchPrefixes?.some((prefix) => pathname.startsWith(prefix)) ?? pathname.startsWith(item.href);
+}
+
+function setScheduleShellCookie() {
+  document.cookie = "schedule-shell=member; Path=/schedule; SameSite=Lax";
+}
+
 export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
 
@@ -88,17 +104,12 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
             {group.title}
           </p>
           {group.items.map((item) => {
-            const active =
-              item.href === "/"
-                ? pathname === "/"
-                : item.matchPrefixes?.some((prefix) => pathname.startsWith(prefix)) ?? pathname.startsWith(item.href);
+            const active = itemActive(item, pathname);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={item.href === "/schedule" ? () => {
-                  document.cookie = "schedule-shell=member; Path=/schedule; SameSite=Lax";
-                } : undefined}
+                onClick={item.href === "/schedule" ? setScheduleShellCookie : undefined}
                 aria-current={active ? "page" : undefined}
                 className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-100 ${
                   active
@@ -113,6 +124,36 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
           })}
         </div>
       ))}
+    </nav>
+  );
+}
+
+export function MemberBottomNav() {
+  const pathname = usePathname();
+
+  return (
+    <nav
+      aria-label="주요 메뉴"
+      className="material fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-gray-200 px-1 pt-1 pb-[calc(0.5rem+env(safe-area-inset-bottom))] lg:hidden"
+      style={{ background: "var(--color-gray-50)" }}
+    >
+      {bottomItems.map((item) => {
+        const active = itemActive(item, pathname);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={item.href === "/schedule" ? setScheduleShellCookie : undefined}
+            aria-current={active ? "page" : undefined}
+            className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-md text-[11px] font-medium transition-colors ${
+              active ? "text-primary" : "text-gray-500 hover:bg-gray-100"
+            }`}
+          >
+            <Icon d={icons[item.icon]} className="h-5 w-5" />
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

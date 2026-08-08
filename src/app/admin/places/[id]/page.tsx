@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
+import { DEMO_PLACES } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
@@ -27,24 +28,31 @@ export default async function AdminPlaceDetailPage({
 }) {
   await requireAdmin();
   const { id } = await params;
-  // 데모 모드엔 places 데이터가 없어 목록도 비어 있다 — 상세로 오는 링크 자체가 없다
-  if (await isDemoMode()) notFound();
+  const demo = await isDemoMode();
+  let place: Place | undefined;
+  let events: PlaceEventRow[] = [];
 
-  const supabase = await createClient();
-  const { data: placeData } = await supabase
-    .from("places")
-    .select("*")
-    .eq("id", id)
-    .single();
-  if (!placeData) notFound();
-  const place = placeData as Place;
+  if (demo) {
+    place = DEMO_PLACES.find((item) => item.id === id);
+  } else {
+    const supabase = await createClient();
+    const { data: placeData } = await supabase
+      .from("places")
+      .select("*")
+      .eq("id", id)
+      .single();
+    place = placeData ? (placeData as Place) : undefined;
+    if (place) {
+      const { data: eventData } = await supabase
+        .from("events")
+        .select("id, title, starts_at")
+        .eq("place_id", id)
+        .order("starts_at", { ascending: false });
+      events = (eventData ?? []) as PlaceEventRow[];
+    }
+  }
 
-  const { data: eventData } = await supabase
-    .from("events")
-    .select("id, title, starts_at")
-    .eq("place_id", id)
-    .order("starts_at", { ascending: false });
-  const events = (eventData ?? []) as PlaceEventRow[];
+  if (!place) notFound();
 
   const coords =
     place.lat != null && place.lng != null

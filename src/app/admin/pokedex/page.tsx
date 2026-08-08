@@ -16,9 +16,9 @@ type Profile = { id: string; name: string; nickname: string | null; avatar_path:
 type Pokemon = { id: string; pokedex_no: number; name_ko: string; image_path: string };
 
 const DEMO_PROFILES: Profile[] = [
-  { id: "jaden", name: "옥지훈", nickname: "제이든", avatar_path: null },
-  { id: "yuki", name: "유키", nickname: null, avatar_path: null },
-  { id: "momo", name: "모모", nickname: null, avatar_path: null },
+  { id: "sample-a", name: "예시 회원 A", nickname: "샘플A", avatar_path: null },
+  { id: "sample-b", name: "예시 회원 B", nickname: "샘플B", avatar_path: null },
+  { id: "sample-c", name: "예시 회원 C", nickname: "샘플C", avatar_path: null },
 ];
 const DEMO_POKEMON: Pokemon[] = [
   { id: "squirtle", pokedex_no: 7, name_ko: "꼬부기", image_path: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png" },
@@ -32,11 +32,11 @@ const DEMO_APPEARANCES: Appearance[] = [
   { pokemon_id: "eevee", starts_at: "2026-07-30T01:00:00.000Z" },
 ];
 const DEMO_CATCHES: Catch[] = [
-  { user_id: "jaden", pokemon_id: "squirtle", created_at: "2026-08-02T01:00:00.000Z" },
-  { user_id: "jaden", pokemon_id: "pikachu", created_at: "2026-08-01T01:00:00.000Z" },
-  { user_id: "jaden", pokemon_id: "squirtle", created_at: "2026-07-31T01:00:00.000Z" },
-  { user_id: "yuki", pokemon_id: "squirtle", created_at: "2026-07-30T01:00:00.000Z" },
-  { user_id: "momo", pokemon_id: "eevee", created_at: "2026-07-29T01:00:00.000Z" },
+  { user_id: "sample-a", pokemon_id: "squirtle", created_at: "2026-08-02T01:00:00.000Z" },
+  { user_id: "sample-a", pokemon_id: "pikachu", created_at: "2026-08-01T01:00:00.000Z" },
+  { user_id: "sample-a", pokemon_id: "squirtle", created_at: "2026-07-31T01:00:00.000Z" },
+  { user_id: "sample-b", pokemon_id: "squirtle", created_at: "2026-07-30T01:00:00.000Z" },
+  { user_id: "sample-c", pokemon_id: "eevee", created_at: "2026-07-29T01:00:00.000Z" },
 ];
 
 export const dynamic = "force-dynamic";

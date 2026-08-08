@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createMeetingPoll, updateMeetingPoll } from "@/actions/meeting-poll";
 import { Avatar } from "@/components/wds/Avatar";
 import { Button } from "@/components/wds/Button";
@@ -66,6 +66,7 @@ export function NewPollForm({
   places?: Place[];
 }) {
   const router = useRouter();
+  const tour = usePathname()?.startsWith("/tour/") ?? false;
   // 제목은 날짜에서 지어 미리 채워 둔다(원본도 값이 들어가 있다). 한 번 손대면 따라가지 않는다.
   const [typedTitle, setTypedTitle] = useState<string | null>(edit?.poll.title ?? null);
   const [dates, setDates] = useState<string[]>(() => edit?.poll.dates ?? defaultPollDates(today));
@@ -105,7 +106,8 @@ export function NewPollForm({
   const suggestion = sorted.length
     ? suggestPollTitle(sorted[0], sorted[sorted.length - 1])
     : "";
-  const title = typedTitle ?? suggestion;
+  const tourSuggestion = tour ? suggestion.replace("모지숲 회의", "회의 일정") : suggestion;
+  const title = typedTitle ?? tourSuggestion;
   const activePreset = RANGE_PRESETS.find((p) => p.start === startHour && p.end === endHour);
   const memberSuggestions = useMemo(
     () => members.filter((member) =>
@@ -142,7 +144,7 @@ export function NewPollForm({
     setError(undefined);
     setPending(true);
     const input = {
-      title: (title || suggestion).trim(),
+      title: (title || tourSuggestion).trim(),
       dates: sorted,
       startHour,
       endHour,
@@ -225,7 +227,7 @@ export function NewPollForm({
             <TextField
               label="일정 이름"
               value={title}
-              placeholder={suggestion}
+              placeholder={tourSuggestion}
               onChange={(e) => setTypedTitle(e.target.value)}
               onKeyDown={(e) => {
                 // 지우고 Tab을 누르면 날짜에서 지은 제목으로 되돌린다.
@@ -589,7 +591,7 @@ export function NewPollForm({
                     color: "var(--wds-label-normal)",
                   }}
                 >
-                  모지숲 일정
+                  {tour ? "회의 일정" : "모지숲 일정"}
                 </span>
                 <span
                   style={{

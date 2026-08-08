@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   applyBackupMeetingPoll,
   closeMeetingPoll,
@@ -84,6 +84,7 @@ export function PollDetail({
   ownerName,
 }: PollDetailProps) {
   const router = useRouter();
+  const tour = usePathname()?.startsWith("/tour/") ?? false;
   const dates = poll.dates;
   const times = useMemo(
     () => pollTimes(poll.start_hour, poll.end_hour, poll.slot_min),
@@ -289,7 +290,7 @@ export function PollDetail({
             </h1>
             {poll.is_mojisoop && (
               <ContentBadge variant="solid" color="violet" size="medium">
-                모지숲
+                {tour ? "회의 일정" : "모지숲"}
               </ContentBadge>
             )}
             {poll.confirmed_at ? (

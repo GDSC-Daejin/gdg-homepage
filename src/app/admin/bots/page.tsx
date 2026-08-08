@@ -23,8 +23,8 @@ const DEMO_BOTS: Bot[] = [
 ];
 
 const DEMO_CONTRIBUTORS = [
-  { id: "p1", name: "제이든(옥지훈)", count: 8 },
-  { id: "p2", name: "Yuki", count: 6 },
+  { id: "demo-contributor-1", name: "예시 회원 A", count: 8 },
+  { id: "demo-contributor-2", name: "예시 회원 B", count: 6 },
 ];
 
 export default async function AdminBotsPage() {
@@ -83,7 +83,7 @@ export default async function AdminBotsPage() {
         {contributors.length === 0 ? (
           <EmptyState title="아직 기여 기록이 없어요" description="첫 인증이 들어오면 회원별 횟수를 보여줘요." />
         ) : (
-          <Card className="overflow-hidden p-0">
+          <Card className="overflow-x-auto p-0">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-left text-xs text-gray-500">
                 <tr>

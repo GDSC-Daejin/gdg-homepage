@@ -20,7 +20,7 @@ export async function createPlace(
   formData: FormData,
 ): Promise<ActionResult & { place?: Place }> {
   await requireAdmin();
-  if (await isDemoMode()) return { error: "둘러보기 모드에서는 장소를 추가할 수 없어요" };
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 장소를 추가할 수 없어요" };
 
   const { name, address } = readPlaceForm(formData);
   if (!name) return { error: "장소명을 입력해주세요" };

@@ -2,8 +2,6 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
-import { isDemoMode } from "@/lib/demo";
-import { TourModeToggle } from "../TourModeToggle";
 import { SectionTabs, SYSTEM_TABS } from "../SectionTabs";
 
 export const dynamic = "force-dynamic";
@@ -59,7 +57,6 @@ const sections: { title: string; links: { href: string; label: string; descripti
 
 export default async function AdminDevPage() {
   await requireAdmin();
-  const demo = await isDemoMode();
 
   return (
     <div className="flex flex-col gap-6">
@@ -68,14 +65,6 @@ export default async function AdminDevPage() {
         title="개발"
         description="미리보기와 개발용 화면을 한곳에 모아뒀어요"
       />
-
-      <Card>
-        <h2 className="text-sm font-semibold text-gray-900">둘러보기 모드</h2>
-        <p className="mt-1 mb-3 text-sm text-gray-500">
-          예시 데이터로 화면을 훑어봐요. 켜 두면 실제 데이터가 보이지 않아요.
-        </p>
-        <TourModeToggle active={demo} />
-      </Card>
 
       {sections.map((section) => (
         <Card key={section.title}>

@@ -4,8 +4,12 @@ import { cookies, headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 import { isStaff, type Profile } from "@/lib/types";
+import { DEMO_PROFILE, isDemoMode } from "@/lib/demo";
 
 export const getProfile = cache(async (): Promise<Profile | null> => {
+  // 둘러보기는 실제 인증 쿠키가 남아 있어도 가상 관리자만 쓴다.
+  if (await isDemoMode()) return DEMO_PROFILE;
+
   const cookieStore = await cookies();
   if (!hasAuthCookie(cookieStore.getAll())) return null;
 

@@ -91,7 +91,7 @@ export async function createSurveyPreset(
   formData: FormData,
 ): Promise<{ error?: string; preset?: SurveyPreset }> {
   const profile = await requireAdmin();
-  if (await isDemoMode()) return { error: "둘러보기 모드에서는 저장할 수 없어요" };
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 저장할 수 없어요" };
 
   let questions: unknown = [];
   try {
