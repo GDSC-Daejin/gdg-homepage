@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
 import { dayKeyKst, displayName } from "@/lib/format";
@@ -29,15 +28,11 @@ export default async function NewSchedulePage() {
     }));
   }
 
-  const host = (await headers()).get("host") ?? "";
-  const proto = host.startsWith("localhost") ? "http" : "https";
-
   return (
     <NewPollForm
       today={dayKeyKst(new Date().toISOString())}
       members={members}
       inviteToken={randomUUID()}
-      inviteOrigin={`${proto}://${host}`}
     />
   );
 }

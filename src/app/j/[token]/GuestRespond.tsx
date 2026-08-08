@@ -127,27 +127,6 @@ export function GuestRespond({
         color: "var(--wds-label-normal)",
       }}
     >
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          height: 60,
-          padding: "0 32px",
-          background: "var(--wds-bg)",
-          borderBottom: "1px solid var(--wds-line-alternative)",
-        }}
-      >
-        <span
-          style={{
-            font: "800 19px/1 var(--wds-font-sans)",
-            letterSpacing: "-0.03em",
-            color: "var(--wds-primary)",
-          }}
-        >
-          언제되지
-        </span>
-      </header>
-
       <div
         style={{
           maxWidth: 880,
@@ -252,7 +231,12 @@ export function GuestRespond({
                     color: on ? "var(--wds-primary-strong)" : "var(--wds-label-neutral)",
                   }}
                 >
-                  <Avatar initial={avatarInitial(v.name)} color={avatarColor(v.name)} size={26} />
+                  <Avatar
+                    initial={avatarInitial(v.name)}
+                    color={avatarColor(v.name)}
+                    size={26}
+                    avatarPath={v.avatarPath}
+                  />
                   {v.name}
                   {v.responded && (
                     <span

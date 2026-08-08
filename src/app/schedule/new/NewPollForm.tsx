@@ -55,14 +55,12 @@ export function NewPollForm({
   today,
   members,
   inviteToken,
-  inviteOrigin,
   edit,
 }: {
   today: string;
   members: MemberOption[];
-  /** 만들기 전에도 초대 링크를 보여줄 수 있게 토큰을 서버에서 미리 받아온다. */
+  /** 새 일정에 붙일 고유 토큰. 초대 링크로는 노출하지 않는다. */
   inviteToken: string;
-  inviteOrigin: string;
   edit?: { poll: MeetingPoll; participants: EditableParticipant[] };
 }) {
   const router = useRouter();
@@ -111,7 +109,6 @@ export function NewPollForm({
     ),
     [draftName, members, people],
   );
-  const inviteUrl = `${inviteOrigin}/j/${edit?.poll.invite_token ?? inviteToken}`;
   // 원본의 "6명 이상 응답하면" = 초대 7명의 80%. 같은 식으로 문턱을 잡는다.
   const recommendGate = Math.max(2, Math.ceil(people.length * 0.8));
 
@@ -515,40 +512,6 @@ export function NewPollForm({
                   + 회원 추가
                 </button>
               )}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "12px 14px",
-                borderRadius: 10,
-                background: "var(--wds-bg-alt)",
-              }}
-            >
-              <span
-                style={{
-                  flex: 1,
-                  font: "400 14px/1.4 var(--wds-font-mono)",
-                  color: "var(--wds-label-alternative)",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {inviteUrl.replace(/^https?:\/\//, "")}
-              </span>
-              <Button
-                variant="solid"
-                color="assistive"
-                size="small"
-                onClick={() => {
-                  navigator.clipboard?.writeText(inviteUrl);
-                  setNotice(edit ? "초대 링크를 복사했어요." : "초대 링크를 복사했어요. 일정을 만들면 바로 열려요.");
-                }}
-              >
-                링크 복사
-              </Button>
             </div>
           </div>
         </div>

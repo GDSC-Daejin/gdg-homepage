@@ -6,7 +6,7 @@ import { GuestRespond, type GuestPoll } from "./GuestRespond";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = { title: "언제되지", robots: { index: false, follow: false } };
+export const metadata = { title: "일정 응답", robots: { index: false, follow: false } };
 
 /** 초대 링크. 로그인 없이 열리므로 RLS를 우회하는 토큰 RPC만 쓴다. */
 export default async function InvitePage({
@@ -23,7 +23,7 @@ export default async function InvitePage({
   if (error || !data) notFound();
   const payload = data as {
     poll: GuestPoll;
-    participants: { id: string; name: string; slots: string[] | null; responded_at: string | null }[];
+    participants: { id: string; name: string; slots: string[] | null; responded_at: string | null; avatar_path: string | null }[];
   };
 
   const participants: Participant[] = payload.participants.map((p) => ({
@@ -33,6 +33,7 @@ export default async function InvitePage({
     email: null,
     slots: p.slots ?? [],
     responded_at: p.responded_at,
+    avatar_path: p.avatar_path,
   }));
 
   return <GuestRespond token={token} poll={payload.poll} participants={participants} />;

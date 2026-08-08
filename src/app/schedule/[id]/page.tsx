@@ -21,10 +21,6 @@ export default async function SchedulePollPage({
   const { id } = await params;
   const profile = await requireProfile();
 
-  // 초대 링크는 정식 주소로만 만든다 — 요청 host를 쓰면 프리뷰 배포에서 복사한 링크가
-  // 외부인이 못 여는 프리뷰 도메인으로 나간다.
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
-
   if (await isDemoMode()) {
     const demoPoll = DEMO_MEETING_POLLS.find((p) => p.id === id);
     if (!demoPoll) notFound();
@@ -39,7 +35,6 @@ export default async function SchedulePollPage({
         canManage
         canNudge
         ownerName={owner ? displayName(owner.name, owner.nickname) : "알 수 없음"}
-        inviteUrl={`${siteUrl}/j/${demoPoll.invite_token}`}
       />
     );
   }
@@ -71,8 +66,6 @@ export default async function SchedulePollPage({
   const me = participants.find((p) => p.user_id === profile.id) ?? null;
   const canManage = isStaff(profile) && (poll.created_by === profile.id || isOrganizer(profile));
   const canNudge = canManage || (isStaff(profile) && poll.is_mojisoop);
-  const inviteUrl = `${siteUrl}/j/${poll.invite_token}`;
-
   return (
     <PollDetail
       poll={poll}
@@ -83,7 +76,6 @@ export default async function SchedulePollPage({
       ownerName={
         ownerProfile ? displayName(ownerProfile.name, ownerProfile.nickname) : "알 수 없음"
       }
-      inviteUrl={inviteUrl}
     />
   );
 }

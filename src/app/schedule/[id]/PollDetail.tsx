@@ -64,7 +64,6 @@ interface PollDetailProps {
   canManage: boolean;
   canNudge: boolean;
   ownerName: string;
-  inviteUrl: string;
 }
 
 export function PollDetail({
@@ -74,7 +73,6 @@ export function PollDetail({
   canManage,
   canNudge,
   ownerName,
-  inviteUrl,
 }: PollDetailProps) {
   const router = useRouter();
   const dates = poll.dates;
@@ -256,6 +254,11 @@ export function PollDetail({
             >
               {poll.title}
             </h1>
+            {poll.is_mojisoop && (
+              <ContentBadge variant="solid" color="violet" size="medium">
+                모지숲
+              </ContentBadge>
+            )}
             {poll.confirmed_at ? (
               <ContentBadge variant="solid" color="primary" size="medium">
                 확정됨
@@ -293,11 +296,11 @@ export function PollDetail({
             size="medium"
             leadingIcon={<TinyIcon d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />}
             onClick={() => {
-              navigator.clipboard?.writeText(inviteUrl);
-              show("초대 링크를 복사했어요");
+              navigator.clipboard?.writeText(window.location.href);
+              show("일정 링크를 복사했어요");
             }}
           >
-            초대 링크 복사
+            일정 링크 복사
           </Button>}
           <Button
             variant="outlined"

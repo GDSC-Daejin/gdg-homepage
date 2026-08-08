@@ -53,7 +53,6 @@ export default async function EditSchedulePage({ params }: { params: Promise<{ i
       today={dayKeyKst(new Date().toISOString())}
       members={members}
       inviteToken={poll.invite_token}
-      inviteOrigin={(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "")}
       edit={{ poll, participants }}
     />
   );
