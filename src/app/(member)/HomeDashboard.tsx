@@ -87,11 +87,11 @@ function PeopleIcon() {
 
 export async function HomeDashboard({
   month,
-  name,
+  nickname,
   profileId,
 }: {
   month?: string;
-  name: string;
+  nickname: string;
   profileId: string;
 }) {
   const supabase = await createClient();
@@ -183,7 +183,7 @@ export async function HomeDashboard({
     <div className={`wds-surface ${styles.home}`}>
       <header className={styles.head}>
         <div>
-          <h1 className={styles.greeting}>안녕하세요, {name}님</h1>
+          <h1 className={styles.greeting}>안녕하세요, {nickname}</h1>
           <p className={styles.sub}>
             {upcoming.length > 0
               ? `다가오는 이벤트 ${upcoming.length}개 · 이번 달 ${monthPoints}P 적립`

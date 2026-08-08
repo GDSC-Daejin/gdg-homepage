@@ -41,7 +41,11 @@ export default async function SchedulePollPage({
 
   const supabase = await createClient();
   const [{ data: pollRow }, { data: participantRows }] = await Promise.all([
-    supabase.from("meeting_polls").select("*").eq("id", id).single(),
+    supabase
+      .from("meeting_polls")
+      .select("*, owner:profiles(name, nickname)")
+      .eq("id", id)
+      .single(),
     supabase
       // 아바타는 회원 프로필 사진을 쓴다 — user_id로 profiles를 함께 끌어온다.
       .from("meeting_poll_participants")
@@ -51,17 +55,12 @@ export default async function SchedulePollPage({
   ]);
 
   if (!pollRow) notFound();
-  const poll = pollRow as MeetingPoll;
+  const { owner: ownerProfile, ...poll } = pollRow as MeetingPoll & {
+    owner: { name: string; nickname: string } | null;
+  };
   const participants = ((participantRows ?? []) as (MeetingPollParticipant & {
     profiles: { avatar_path: string | null } | null;
   })[]).map(({ profiles, ...p }) => ({ ...p, avatar_path: profiles?.avatar_path ?? null }));
-
-  const { data: owner } = await supabase
-    .from("profiles")
-    .select("name, nickname")
-    .eq("id", poll.created_by)
-    .single();
-  const ownerProfile = owner as { name: string; nickname: string } | null;
 
   const me = participants.find((p) => p.user_id === profile.id) ?? null;
   const canManage = isStaff(profile) && (poll.created_by === profile.id || isOrganizer(profile));

@@ -41,7 +41,7 @@ async function AuthenticatedDashboard({
   return (
     <MemberShell profile={profile} contentClassName="max-w-[1520px]">
       <Suspense fallback={<HomeDashboardSkeleton />}>
-        <HomeDashboard month={month} name={profile.name} profileId={profile.id} />
+        <HomeDashboard month={month} nickname={profile.nickname} profileId={profile.id} />
       </Suspense>
     </MemberShell>
   );

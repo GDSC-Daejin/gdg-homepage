@@ -186,11 +186,11 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
 
       <div className="grid gap-4 sm:grid-cols-3">
         <DatePicker name="event_date" label={<>날짜 <RequiredMark /></>} defaultValue={event?.event_date ?? defaultDate ?? ""} emptyOption="미정" />
-        <Select name="start_time" label={<>시작 시간 <RequiredMark /></>} defaultValue={event?.start_time ?? ""}>
+        <Select name="start_time" label={<>시작 시간 <RequiredMark /></>} defaultValue={event?.start_time?.slice(0, 5) ?? ""}>
           <option value="">미정</option>
           {TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}
         </Select>
-        <Select name="end_time" label={<>종료 시간 <RequiredMark /></>} defaultValue={event?.end_time ?? ""}>
+        <Select name="end_time" label={<>종료 시간 <RequiredMark /></>} defaultValue={event?.end_time?.slice(0, 5) ?? ""}>
           <option value="">미정</option>
           {TIME_OPTIONS.map((time) => <option key={time} value={time}>{time}</option>)}
         </Select>

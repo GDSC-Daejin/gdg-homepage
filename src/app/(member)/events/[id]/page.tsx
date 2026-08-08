@@ -54,6 +54,12 @@ export default async function MemberEventDetailPage({
 
   if (!event) notFound();
   const e = event as Event & { place: { lat: number | null; lng: number | null } | null };
+  const descriptionParts = e.description.trim().split("💻");
+  const supplies =
+    e.type === "session" && descriptionParts.length > 1
+      ? descriptionParts.pop()?.trim()
+      : null;
+  const introduction = descriptionParts.join("💻").trim();
 
   const community = await getCommunity();
   const countRows = await community.events.confirmedCounts([e.id]);
@@ -178,10 +184,53 @@ export default async function MemberEventDetailPage({
           )}
         </div>
       </Card>
-      {e.description && (
-        <Card className="flex flex-col gap-2">
-          <p className="text-sm font-semibold text-gray-900">세션 소개</p>
-          <p className="text-sm leading-6 text-gray-700">{e.description}</p>
+      {(introduction || supplies) && (
+        <Card className="overflow-hidden p-0">
+          <div className="border-b border-gray-100 px-5 py-4 sm:px-6">
+            <p className="text-sm font-semibold text-gray-900">세션 소개</p>
+          </div>
+          <div className="px-5 py-6 sm:px-6">
+            <div className="max-w-4xl border-l-2 border-primary pl-4 sm:pl-5">
+              {introduction
+                .split(/\n+/)
+                .filter((paragraph) => paragraph.trim())
+                .map((paragraph, index) => (
+                  <p
+                    key={index}
+                    className={`text-[15px] leading-8 text-gray-700 sm:text-base ${index ? "mt-4" : ""}`}
+                  >
+                    {paragraph}
+                  </p>
+                ))}
+            </div>
+            {e.type === "session" && (
+              <div className="mt-6 overflow-hidden rounded-lg bg-primary-soft">
+                <div className="grid divide-y divide-primary/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                  <div className="p-4">
+                    <p className="text-sm font-semibold text-primary">🗓 일시</p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-gray-900">{formatEventSchedule(e)}</p>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm font-semibold text-primary">📍 장소</p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-gray-900">{e.location || "장소 미정"}</p>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm font-semibold text-primary">🚇 오시는 길</p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-gray-900">{e.address || "안내 예정"}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            {supplies && (
+              <div className="mt-6 flex gap-3 border-t border-gray-100 pt-6">
+                <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xl">💻</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">준비물</p>
+                  <p className="mt-1 text-[15px] leading-7 text-gray-700 sm:text-base">{supplies}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </Card>
       )}
       <RegistrationPanel eventId={e.id} profile={profile} code={code} />
