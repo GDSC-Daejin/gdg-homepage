@@ -18,5 +18,5 @@ export async function POST(request: Request) {
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: bot } = await supabase.from("bots").select("active").eq("slug", "trainer_market").maybeSingle();
   if (!bot?.active) return reply("트레이너 마켓봇은 지금 쉬는 중이에요.");
-  return reply("🎒 포켓몬 메뉴\n버튼을 눌러 시작·출석·게임코너·상점·내 카드를 이용하세요.", homeBlocks());
+  return reply("🎒 포켓몬 메뉴\n버튼을 눌러 출석·게임코너·프렌들리숍·주식 매수권을 이용하세요.", homeBlocks());
 }

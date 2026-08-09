@@ -16,7 +16,7 @@ export function gameAmountBlocks(): SlackBlock[] {
 }
 
 export function homeBlocks(): SlackBlock[] {
-  return [actions(button("🎒 시작", "trainer_home_start", "start"), button("📟 출석", "trainer_home_checkin", "checkin"), button("🎲 게임코너", "trainer_home_game", "game"), button("🏪 상점", "trainer_home_shop", "shop"), button("🪪 내 카드", "trainer_home_card", "card"))];
+  return [actions(button("📟 출석", "trainer_home_checkin", "checkin"), button("🎲 게임코너", "trainer_home_game", "game"), button("🏪 프렌들리숍", "trainer_home_shop", "shop"), button("📈 주식 매수권", "trainer_home_card", "card"))];
 }
 
 export function gameGuessBlocks(stake: number): SlackBlock[] {

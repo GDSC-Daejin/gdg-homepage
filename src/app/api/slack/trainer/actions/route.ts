@@ -12,7 +12,7 @@ function reply(text: string, blocks?: Record<string, unknown>[]) {
 }
 
 function actionError(reason?: string) {
-  const texts: Record<string, string> = { unlinked: "회원 승인과 Slack 계정 연결이 필요해요.", not_started: "먼저 `/포켓몬 시작`으로 트레이너 카드를 발급해 주세요.", insufficient: "TP가 부족해요.", daily_count: "게임코너는 오늘 3회까지예요.", daily_stake: "오늘 게임코너 베팅 한도 100TP를 모두 사용했어요.", closed: "포켓몬 주식시장은 09:00~22:00에만 열려요.", duplicate: "같은 기업은 오늘 한 번만 고를 수 있어요.", company_limit: "오늘은 서로 다른 기업을 세 곳까지 고를 수 있어요.", ticket_limit: "오늘 응원권은 총 5장까지예요." };
+  const texts: Record<string, string> = { unlinked: "회원 승인과 Slack 계정 연결이 필요해요.", insufficient: "TP가 부족해요.", daily_count: "게임코너는 오늘 3회까지예요.", daily_stake: "오늘 게임코너 베팅 한도 100TP를 모두 사용했어요.", closed: "포켓몬 주식시장은 09:00~22:00에만 열려요.", duplicate: "같은 기업은 오늘 한 번만 고를 수 있어요.", company_limit: "오늘은 서로 다른 기업을 세 곳까지 고를 수 있어요.", ticket_limit: "오늘 응원권은 총 5장까지예요." };
   return texts[reason ?? ""] ?? "요청을 처리하지 못했어요. 다시 시도해 주세요.";
 }
 
@@ -26,12 +26,6 @@ async function handleAction(payload: ActionPayload) {
   const { data: bot } = await supabase.from("bots").select("active").eq("slug", "trainer_market").maybeSingle();
   if (!bot?.active) return reply("트레이너 마켓봇은 지금 쉬는 중이에요.");
 
-  if (action.action_id === "trainer_home_start") {
-    const { data } = await supabase.rpc("trainer_start", { p_slack_user: slackUserId });
-    const result = data as { ok?: boolean; started?: boolean; balance?: number } | null;
-    if (!result?.ok) return reply("연결된 활성 회원 계정을 찾지 못했어요. 회원 승인과 Slack 계정 연결을 확인해 주세요.");
-    return reply(result.started ? `🎒 트레이너 카드가 발급됐어요! 시작 500TP를 받았어요. 현재 ${result.balance}TP` : `이미 트레이너 카드가 있어요. 현재 ${result.balance}TP`);
-  }
   if (action.action_id === "trainer_home_checkin") {
     const { data } = await supabase.rpc("trainer_checkin", { p_slack_user: slackUserId });
     const result = data as { ok?: boolean; reason?: string; claimed?: boolean; balance?: number } | null;
