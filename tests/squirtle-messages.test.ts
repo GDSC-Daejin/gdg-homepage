@@ -26,6 +26,7 @@ describe("스레드 집계", () => {
   it("어니부기면 거북왕까지 남은 잔을 센다", () => {
     const text = threadSummary({ participants: ["U1", "U2"], total: 158, stage: 2, stage2Threshold: 80, stage3Threshold: 200, emoji: "squirtle" });
     expect(text).toContain("2명");
+    expect(text).toContain("어니부기와 함께했어요");
     expect(text).toContain("<@U1>");
     expect(text).toContain("<@U2>");
     expect(text).toContain("거북왕까지 42잔");
