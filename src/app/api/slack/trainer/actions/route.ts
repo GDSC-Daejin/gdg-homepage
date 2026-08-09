@@ -1,13 +1,14 @@
+import { after } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { gameAmountBlocks, gameGuessBlocks, shareGameBlock, shopBlocks, stockQuantityBlocks } from "@/lib/trainer-market/blocks";
 import { gameResultMessage, trendMessage } from "@/lib/trainer-market/messages";
 import { postMessage } from "@/lib/slack/api";
 import { verifySlackSignature } from "@/lib/slack/verify";
 
-type ActionPayload = { user?: { id?: string }; channel?: { id?: string }; actions?: Array<{ action_id?: string; value?: string; action_ts?: string }> };
+type ActionPayload = { response_url?: string; user?: { id?: string }; channel?: { id?: string }; actions?: Array<{ action_id?: string; value?: string; action_ts?: string }> };
 
 function reply(text: string, blocks?: Record<string, unknown>[]) {
-  return Response.json({ response_type: "ephemeral", text, blocks });
+  return { response_type: "ephemeral", text, blocks };
 }
 
 function actionError(reason?: string) {
@@ -15,17 +16,12 @@ function actionError(reason?: string) {
   return texts[reason ?? ""] ?? "요청을 처리하지 못했어요. 다시 시도해 주세요.";
 }
 
-export async function POST(request: Request) {
-  const rawBody = await request.text();
-  const signingSecret = process.env.TRAINER_SLACK_SIGNING_SECRET ?? process.env.POKEDEX_SLACK_SIGNING_SECRET;
-  if (!signingSecret || !verifySlackSignature({ rawBody, timestamp: request.headers.get("x-slack-request-timestamp"), signature: request.headers.get("x-slack-signature"), signingSecret })) return Response.json({ error: "invalid_signature" }, { status: 401 });
-  let payload: ActionPayload;
-  try { payload = JSON.parse(new URLSearchParams(rawBody).get("payload") ?? ""); } catch { return Response.json({ error: "invalid_payload" }, { status: 400 }); }
+async function handleAction(payload: ActionPayload) {
   const action = payload.actions?.[0];
   const slackUserId = payload.user?.id;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!action?.action_id || !action.value || !action.action_ts || !slackUserId || !url || !key) return Response.json({ error: "not_configured" }, { status: 500 });
+  if (!action?.action_id || !action.value || !action.action_ts || !slackUserId || !url || !key) return reply("요청을 처리하지 못했어요. 다시 시도해 주세요.");
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: bot } = await supabase.from("bots").select("active").eq("slug", "trainer_market").maybeSingle();
   if (!bot?.active) return reply("트레이너 마켓봇은 지금 쉬는 중이에요.");
@@ -93,4 +89,27 @@ export async function POST(request: Request) {
     return reply(posted.ok ? "채널에 결과를 공개했어요!" : "결과는 저장됐지만 채널 공개에는 실패했어요.");
   }
   return reply("알 수 없는 버튼이에요.");
+}
+
+async function postResponse(responseUrl: string, result: ReturnType<typeof reply>) {
+  await fetch(responseUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json; charset=utf-8" },
+    body: JSON.stringify(result),
+    signal: AbortSignal.timeout(5000),
+  });
+}
+
+export async function POST(request: Request) {
+  const rawBody = await request.text();
+  const signingSecret = process.env.TRAINER_SLACK_SIGNING_SECRET ?? process.env.POKEDEX_SLACK_SIGNING_SECRET;
+  if (!signingSecret || !verifySlackSignature({ rawBody, timestamp: request.headers.get("x-slack-request-timestamp"), signature: request.headers.get("x-slack-signature"), signingSecret })) return Response.json({ error: "invalid_signature" }, { status: 401 });
+  let payload: ActionPayload;
+  try { payload = JSON.parse(new URLSearchParams(rawBody).get("payload") ?? ""); } catch { return Response.json({ error: "invalid_payload" }, { status: 400 }); }
+  if (!payload.response_url) return Response.json({ error: "invalid_payload" }, { status: 400 });
+  after(async () => {
+    const result = await handleAction(payload).catch(() => reply("요청을 처리하지 못했어요. 다시 시도해 주세요."));
+    await postResponse(payload.response_url!, result);
+  });
+  return new Response();
 }
