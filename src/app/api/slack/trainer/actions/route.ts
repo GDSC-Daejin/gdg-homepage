@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
-import { gameGuessBlocks, shareGameBlock, shopBlocks, stockQuantityBlocks } from "@/lib/trainer-market/blocks";
-import { gameResultMessage } from "@/lib/trainer-market/messages";
+import { gameAmountBlocks, gameGuessBlocks, shareGameBlock, shopBlocks, stockQuantityBlocks } from "@/lib/trainer-market/blocks";
+import { gameResultMessage, trendMessage } from "@/lib/trainer-market/messages";
 import { postMessage } from "@/lib/slack/api";
 import { verifySlackSignature } from "@/lib/slack/verify";
 
@@ -11,7 +11,7 @@ function reply(text: string, blocks?: Record<string, unknown>[]) {
 }
 
 function actionError(reason?: string) {
-  const texts: Record<string, string> = { unlinked: "회원 승인과 Slack 계정 연결이 필요해요.", not_started: "먼저 `/trainer 시작`으로 트레이너 카드를 발급해 주세요.", insufficient: "TP가 부족해요.", daily_count: "게임코너는 오늘 3회까지예요.", daily_stake: "오늘 게임코너 베팅 한도 100TP를 모두 사용했어요.", closed: "관동 증권거래소는 09:00~22:00에만 열려요.", duplicate: "같은 기업은 오늘 한 번만 고를 수 있어요.", company_limit: "오늘은 서로 다른 기업을 세 곳까지 고를 수 있어요.", ticket_limit: "오늘 응원권은 총 5장까지예요." };
+  const texts: Record<string, string> = { unlinked: "회원 승인과 Slack 계정 연결이 필요해요.", not_started: "먼저 `/포켓몬 시작`으로 트레이너 카드를 발급해 주세요.", insufficient: "TP가 부족해요.", daily_count: "게임코너는 오늘 3회까지예요.", daily_stake: "오늘 게임코너 베팅 한도 100TP를 모두 사용했어요.", closed: "포켓몬 주식시장은 09:00~22:00에만 열려요.", duplicate: "같은 기업은 오늘 한 번만 고를 수 있어요.", company_limit: "오늘은 서로 다른 기업을 세 곳까지 고를 수 있어요.", ticket_limit: "오늘 응원권은 총 5장까지예요." };
   return texts[reason ?? ""] ?? "요청을 처리하지 못했어요. 다시 시도해 주세요.";
 }
 
@@ -29,6 +29,27 @@ export async function POST(request: Request) {
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: bot } = await supabase.from("bots").select("active").eq("slug", "trainer_market").maybeSingle();
   if (!bot?.active) return reply("트레이너 마켓봇은 지금 쉬는 중이에요.");
+
+  if (action.action_id === "trainer_home_start") {
+    const { data } = await supabase.rpc("trainer_start", { p_slack_user: slackUserId });
+    const result = data as { ok?: boolean; started?: boolean; balance?: number } | null;
+    if (!result?.ok) return reply("연결된 활성 회원 계정을 찾지 못했어요. 회원 승인과 Slack 계정 연결을 확인해 주세요.");
+    return reply(result.started ? `🎒 트레이너 카드가 발급됐어요! 시작 500TP를 받았어요. 현재 ${result.balance}TP` : `이미 트레이너 카드가 있어요. 현재 ${result.balance}TP`);
+  }
+  if (action.action_id === "trainer_home_checkin") {
+    const { data } = await supabase.rpc("trainer_checkin", { p_slack_user: slackUserId });
+    const result = data as { ok?: boolean; reason?: string; claimed?: boolean; balance?: number } | null;
+    if (!result?.ok) return reply(actionError(result?.reason));
+    return reply(result.claimed ? `📟 포켓기어가 오늘의 탐험을 기록했어요. +50TP · 현재 ${result.balance}TP` : `오늘 출석은 이미 기록됐어요. 현재 ${result.balance}TP`);
+  }
+  if (action.action_id === "trainer_home_game") return reply("🎲 게임코너 · 피카츄 주사위의 홀짝을 맞혀 보세요. 하루 3회, 총 100TP까지예요.", gameAmountBlocks());
+  if (action.action_id === "trainer_home_shop") return reply("🏪 프렌들리숍 · 몬스터볼 1개는 200TP예요.", shopBlocks());
+  if (action.action_id === "trainer_home_card") {
+    const { data } = await supabase.rpc("trainer_card", { p_slack_user: slackUserId });
+    const result = data as { ok?: boolean; reason?: string; balance?: number; checked_in?: boolean; bets?: number; bet_stake?: number } | null;
+    if (!result?.ok) return reply(actionError(result?.reason));
+    return reply(`🎒 트레이너 카드\nTP ${result.balance}\n오늘 출석 ${result.checked_in ? "완료" : "미완료"} · 게임코너 ${result.bets}/3회 · 베팅 ${result.bet_stake}/100TP`);
+  }
 
   if (action.action_id === "trainer_game_amount") return reply(`${action.value}TP를 걸어요. 홀 또는 짝을 골라 주세요.`, gameGuessBlocks(Number(action.value)));
   if (action.action_id === "trainer_game_guess") {
@@ -55,6 +76,11 @@ export async function POST(request: Request) {
     const result = data as { ok?: boolean; reason?: string; name?: string; quantity?: number; balance?: number } | null;
     if (!result?.ok) return reply(actionError(result?.reason));
     return reply(`📈 ${result.name} 응원권 ${result.quantity}장을 골랐어요. -${result.quantity! * 100}TP · 오늘 22:00에 자동 정산 · 현재 ${result.balance}TP`);
+  }
+  if (action.action_id === "trainer_stock_trend") {
+    const { data } = await supabase.rpc("trainer_stock_trend", { p_symbol: action.value });
+    const result = data as { symbol: string; name: string | null; prices: Array<{ close: number; open: number }> } | null;
+    return reply(result ? trendMessage(result.symbol, result.name, result.prices) : "시세를 불러오지 못했어요.");
   }
   if (action.action_id === "trainer_game_share") {
     const { data } = await supabase.rpc("trainer_share_game_bet", { p_slack_user: slackUserId, p_bet_id: action.value });

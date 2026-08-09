@@ -2,10 +2,6 @@ type TrendPrice = { close: number; open: number };
 
 const spark = "▁▂▃▄▅▆▇█";
 
-export function trainerHelp() {
-  return "🎒 트레이너 마켓봇\n`/trainer 시작`으로 500TP를 받고, `/trainer 출석`으로 하루 50TP를 받아요.\n`/trainer 게임코너` · `/trainer 상점` · `/trainer 내 TP` · `/trainer 시세 SILPH`\n관동 응원판은 매일 09:00~22:00에 채널에 열립니다.";
-}
-
 export function trendMessage(symbol: string, name: string | null, prices: TrendPrice[]) {
   if (!name || prices.length === 0) return `${symbol}의 마감 기록이 아직 없어요.`;
   const closes = prices.map((price) => price.close);

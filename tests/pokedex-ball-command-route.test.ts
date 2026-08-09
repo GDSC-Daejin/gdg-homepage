@@ -1,4 +1,5 @@
 import { createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const originalSecret = process.env.POKEDEX_SLACK_SIGNING_SECRET;
@@ -29,6 +30,10 @@ afterEach(() => {
 });
 
 describe("도감봇 몬스터볼 명령", () => {
+  it("남은 몬스터볼은 요청한 사람에게만 보인다", () => {
+    expect(readFileSync("src/app/api/slack/pokedex/command/route.ts", "utf8")).toContain('response_type: "ephemeral"');
+  });
+
   it("유효하지 않은 Slack 요청을 거부한다", async () => {
     const module = await import("@/app/api/slack/pokedex/command/route").catch(() => null);
     expect(module).not.toBeNull();

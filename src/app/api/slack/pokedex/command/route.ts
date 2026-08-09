@@ -3,7 +3,7 @@ import { ballCountMessage } from "@/lib/pokedex/messages";
 import { verifySlackSignature } from "@/lib/slack/verify";
 
 function response(text: string) {
-  return Response.json({ response_type: "in_channel", text });
+  return Response.json({ response_type: "ephemeral", text });
 }
 
 export async function POST(request: Request) {

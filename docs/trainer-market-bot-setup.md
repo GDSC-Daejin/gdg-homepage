@@ -24,9 +24,9 @@ Slash Commands에 아래 명령을 추가한다.
 
 | 항목 | 값 |
 | --- | --- |
-| Command | `/trainer` |
+| Command | `/포켓몬` |
 | Request URL | `https://gdg-homepage.vercel.app/api/slack/trainer/command` |
-| Short description | 트레이너 마켓봇 |
+| Short description | 포켓몬 메뉴를 열어요 |
 
 Interactivity & Shortcuts를 켜고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/trainer/actions`로 둔다. Bot Token Scopes에는 `chat:write`, `commands`를 추가하고, 관동 응원판을 올릴 채널에 봇을 초대한다.
 
