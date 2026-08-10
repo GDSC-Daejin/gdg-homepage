@@ -37,7 +37,7 @@ export function stockQuantityBlocks(symbol: string): SlackBlock[] {
 export function marketBlocks(quotes: Quote[]): SlackBlock[] {
   const rows: SlackBlock[] = [];
   for (let index = 0; index < quotes.length; index += 3) {
-    rows.push(actions(...quotes.slice(index, index + 3).map((quote) => button(`${quote.emoji} ${quote.name_ko}`, "trainer_stock_symbol", quote.symbol))));
+    rows.push(...quotes.slice(index, index + 3).map((quote) => actions(button(`${quote.emoji} ${quote.name_ko}`, "trainer_stock_symbol", quote.symbol))));
   }
   return rows;
 }
