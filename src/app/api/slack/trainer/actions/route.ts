@@ -101,6 +101,9 @@ export async function POST(request: Request) {
   let payload: ActionPayload;
   try { payload = JSON.parse(new URLSearchParams(rawBody).get("payload") ?? ""); } catch { return Response.json({ error: "invalid_payload" }, { status: 400 }); }
   if (!payload.response_url) return Response.json({ error: "invalid_payload" }, { status: 400 });
+  if (["trainer_stock_symbol", "trainer_stock"].includes(payload.actions?.[0]?.action_id ?? "")) {
+    return Response.json(await handleAction(payload).catch(() => reply("요청을 처리하지 못했어요. 다시 시도해 주세요.")));
+  }
   after(async () => {
     const result = await handleAction(payload).catch(() => reply("요청을 처리하지 못했어요. 다시 시도해 주세요."));
     await postResponse(payload.response_url!, result);
