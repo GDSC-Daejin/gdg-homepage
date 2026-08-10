@@ -8,7 +8,7 @@ import { verifySlackSignature } from "@/lib/slack/verify";
 type ActionPayload = { response_url?: string; user?: { id?: string }; channel?: { id?: string }; actions?: Array<{ action_id?: string; value?: string; action_ts?: string }> };
 
 function reply(text: string, blocks?: Record<string, unknown>[]) {
-  return { response_type: "ephemeral", text, blocks };
+  return { response_type: "ephemeral", replace_original: false, text, blocks };
 }
 
 function actionError(reason?: string) {
