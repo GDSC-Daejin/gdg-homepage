@@ -60,7 +60,7 @@ async function handleAction(payload: ActionPayload) {
     const name = (quote?.trainer_market_symbols as { name_ko?: string } | null)?.name_ko ?? action.value;
     return reply(`📈 ${name} · 응원권은 장당 100TP예요. 장마감 22:00에 자동 정산됩니다.`, stockQuantityBlocks(action.value));
   }
-  if (action.action_id === "trainer_stock") {
+  if (/^trainer_stock_[123]$/.test(action.action_id)) {
     const [symbol, quantity] = action.value.split(":");
     const { data } = await supabase.rpc("trainer_pick_stock", { p_slack_user: slackUserId, p_symbol: symbol, p_quantity: Number(quantity), p_interaction_id: action.action_ts });
     const result = data as { ok?: boolean; reason?: string; name?: string; quantity?: number; balance?: number } | null;
@@ -101,7 +101,7 @@ export async function POST(request: Request) {
   let payload: ActionPayload;
   try { payload = JSON.parse(new URLSearchParams(rawBody).get("payload") ?? ""); } catch { return Response.json({ error: "invalid_payload" }, { status: 400 }); }
   if (!payload.response_url) return Response.json({ error: "invalid_payload" }, { status: 400 });
-  if (["trainer_stock_symbol", "trainer_stock"].includes(payload.actions?.[0]?.action_id ?? "")) {
+  if (["trainer_stock_symbol", "trainer_stock_1", "trainer_stock_2", "trainer_stock_3"].includes(payload.actions?.[0]?.action_id ?? "")) {
     return Response.json(await handleAction(payload).catch(() => reply("요청을 처리하지 못했어요. 다시 시도해 주세요.")));
   }
   after(async () => {

@@ -29,7 +29,7 @@ export function shopBlocks(): SlackBlock[] {
 
 export function stockQuantityBlocks(symbol: string): SlackBlock[] {
   return [
-    actions(button("1장 · 100TP", "trainer_stock", `${symbol}:1`), button("2장 · 200TP", "trainer_stock", `${symbol}:2`), button("3장 · 300TP", "trainer_stock", `${symbol}:3`)),
+    actions(button("1장 · 100TP", "trainer_stock_1", `${symbol}:1`), button("2장 · 200TP", "trainer_stock_2", `${symbol}:2`), button("3장 · 300TP", "trainer_stock_3", `${symbol}:3`)),
     actions(button("최근 7일 추이", "trainer_stock_trend", symbol)),
   ];
 }
