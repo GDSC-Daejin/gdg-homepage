@@ -38,18 +38,20 @@ async function handleAction(payload: ActionPayload) {
     const { data } = await supabase.rpc("trainer_card", { p_slack_user: slackUserId });
     const result = data as { ok?: boolean; reason?: string; balance?: number; checked_in?: boolean; bets?: number; bet_stake?: number } | null;
     if (!result?.ok) return reply(actionError(result?.reason));
-    return reply(`🎒 트레이너 카드\nTP ${result.balance}\n오늘 출석 ${result.checked_in ? "완료" : "미완료"} · 게임코너 ${result.bets}/3회 · 베팅 ${result.bet_stake}/100TP`);
+    const { data: picks } = await supabase.from("trainer_market_picks").select("quantity, trainer_market_symbols!inner(name_ko), profiles!inner(slack_user_id)").eq("market_date", new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" })).eq("profiles.slack_user_id", slackUserId);
+    const stocks = (picks ?? []).map((pick) => `${(pick.trainer_market_symbols as unknown as { name_ko: string }).name_ko} ${pick.quantity}장`).join(" · ") || "구매 없음";
+    return reply(`🎒 트레이너 카드\nTP ${result.balance}\n오늘 출석 ${result.checked_in ? "완료" : "미완료"} · 게임코너 ${result.bets}/3회 · 베팅 ${result.bet_stake}/100TP\n오늘 주식 ${stocks}`);
   }
 
-  if (action.action_id === "trainer_game_amount") return reply(`${action.value}TP를 걸어요. 홀 또는 짝을 골라 주세요.`, gameGuessBlocks(Number(action.value)));
-  if (action.action_id === "trainer_game_guess") {
+  if (/^trainer_game_amount_(10|50|100)$/.test(action.action_id)) return reply(`${action.value}TP를 걸어요. 홀 또는 짝을 골라 주세요.`, gameGuessBlocks(Number(action.value)));
+  if (/^trainer_game_guess_(odd|even)$/.test(action.action_id)) {
     const [stake, guess] = action.value.split(":");
     const { data } = await supabase.rpc("trainer_game_bet", { p_slack_user: slackUserId, p_stake: Number(stake), p_guess: guess, p_interaction_id: action.action_ts });
     const result = data as { ok?: boolean; reason?: string; id?: string; roll?: number; guess?: string; stake?: number; payout?: number; balance?: number } | null;
     if (!result?.ok) return reply(actionError(result?.reason));
     return reply(gameResultMessage({ roll: result.roll!, guess: result.guess!, stake: result.stake!, payout: result.payout!, balance: result.balance! }), shareGameBlock(result.id!));
   }
-  if (action.action_id === "trainer_shop") {
+  if (/^trainer_shop_[123]$/.test(action.action_id)) {
     const { data } = await supabase.rpc("trainer_buy_balls", { p_slack_user: slackUserId, p_quantity: Number(action.value), p_interaction_id: action.action_ts });
     const result = data as { ok?: boolean; reason?: string; quantity?: number; balls?: number; balance?: number } | null;
     if (!result?.ok) return reply(actionError(result?.reason), result?.reason === "insufficient" ? shopBlocks() : undefined);

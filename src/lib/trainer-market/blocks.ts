@@ -12,7 +12,7 @@ const button = (text: string, actionId: string, value: string): SlackBlock => ({
 const actions = (...elements: SlackBlock[]): SlackBlock => ({ type: "actions", elements });
 
 export function gameAmountBlocks(): SlackBlock[] {
-  return [actions(button("10TP", "trainer_game_amount", "10"), button("50TP", "trainer_game_amount", "50"), button("100TP", "trainer_game_amount", "100"))];
+  return [actions(button("10TP", "trainer_game_amount_10", "10"), button("50TP", "trainer_game_amount_50", "50"), button("100TP", "trainer_game_amount_100", "100"))];
 }
 
 export function homeBlocks(): SlackBlock[] {
@@ -20,11 +20,11 @@ export function homeBlocks(): SlackBlock[] {
 }
 
 export function gameGuessBlocks(stake: number): SlackBlock[] {
-  return [actions(button("⚡ 홀", "trainer_game_guess", `${stake}:odd`), button("🔵 짝", "trainer_game_guess", `${stake}:even`))];
+  return [actions(button("⚡ 홀", "trainer_game_guess_odd", `${stake}:odd`), button("🔵 짝", "trainer_game_guess_even", `${stake}:even`))];
 }
 
 export function shopBlocks(): SlackBlock[] {
-  return [actions(button("1개 · 200TP", "trainer_shop", "1"), button("2개 · 400TP", "trainer_shop", "2"), button("3개 · 600TP", "trainer_shop", "3"))];
+  return [actions(button("1개 · 200TP", "trainer_shop_1", "1"), button("2개 · 400TP", "trainer_shop_2", "2"), button("3개 · 600TP", "trainer_shop_3", "3"))];
 }
 
 export function stockQuantityBlocks(symbol: string): SlackBlock[] {
