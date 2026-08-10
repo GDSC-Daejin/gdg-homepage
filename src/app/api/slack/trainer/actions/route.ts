@@ -80,7 +80,7 @@ async function handleAction(payload: ActionPayload) {
     if (!result?.ok) return reply(actionError(result?.reason));
     if (result.already_shared) return reply("이미 채널에 공개한 결과예요.");
     if (!payload.channel?.id) return reply("공개할 채널을 찾지 못했어요.");
-    const text = `<@${slackUserId}>님이 게임코너에서 ${result.guess === "odd" ? "홀" : "짝"}을 골랐어요. 피카츄 주사위 ${result.roll} · ${result.payout ? `+${result.payout - result.stake!}TP` : `-${result.stake}TP`}`;
+    const text = `<@${slackUserId}> 게임코너에서 ${result.guess === "odd" ? "홀" : "짝"}을 골랐어요. 피카츄 주사위 ${result.roll} · ${result.payout ? `+${result.payout - result.stake!}TP` : `-${result.stake}TP`}`;
     const posted = await postMessage({ channel: payload.channel.id, text, botToken: process.env.TRAINER_SLACK_BOT_TOKEN });
     return reply(posted.ok ? "채널에 결과를 공개했어요!" : "결과는 저장됐지만 채널 공개에는 실패했어요.");
   }
