@@ -34,12 +34,15 @@ export function stockQuantityBlocks(symbol: string): SlackBlock[] {
   ];
 }
 
-export function marketBlocks(quotes: Quote[]): SlackBlock[] {
+export function marketBlocks(quotes: Quote[], intro?: string): SlackBlock[] {
   const rows: SlackBlock[] = [];
   for (let index = 0; index < quotes.length; index += 3) {
     rows.push(...quotes.slice(index, index + 3).map((quote) => actions(button(`${quote.emoji} ${quote.name_ko}`, "trainer_stock_symbol", quote.symbol))));
   }
-  return rows;
+  return [
+    ...(intro ? [{ type: "section", text: { type: "mrkdwn", text: `${intro}\n\n응원할 종목을 누른 뒤, 원하는 수량을 선택하세요.\n한 사람당 최대 3개 종목·총 5장까지 살 수 있어요.\n장마감 22:00에 자동 정산됩니다.` } }] : []),
+    ...rows,
+  ];
 }
 
 export function shareGameBlock(betId: string): SlackBlock[] {

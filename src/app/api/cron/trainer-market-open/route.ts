@@ -26,12 +26,12 @@ export async function POST(request: NextRequest) {
     const symbol = row.trainer_market_symbols as unknown as { name_ko: string; emoji: string };
     return { symbol: row.symbol, open_price: row.open_price, ...symbol };
   });
-  const text = `📰 관동 아침 속보 · 09:00\n${claimed.morning_news}\n\n📈 관동 응원판 · 장중 09:00~22:00\n${quotes.map((quote) => `${quote.emoji} ${quote.symbol} ${quote.open_price}TP`).join(" · ")}`;
+  const text = `📰 포켓몬 주식 아침 속보 · 09:00\n${claimed.morning_news}\n\n📈 포켓몬 주식 · 장중 09:00~22:00\n${quotes.map((quote) => `${quote.emoji} ${quote.name_ko} ${quote.open_price}TP`).join(" · ")}`;
   if (!config?.channel_id) {
     await supabase.from("trainer_markets").update({ open_message_ts: null }).eq("market_date", date);
     return NextResponse.json({ error: "게시 채널 설정이 없어요" }, { status: 500 });
   }
-  const posted = await postMessage({ channel: config.channel_id, text, blocks: marketBlocks(quotes), botToken: process.env.TRAINER_SLACK_BOT_TOKEN });
+  const posted = await postMessage({ channel: config.channel_id, text, blocks: marketBlocks(quotes, text), botToken: process.env.TRAINER_SLACK_BOT_TOKEN });
   if (!posted.ok) {
     await supabase.from("trainer_markets").update({ open_message_ts: null }).eq("market_date", date);
     return NextResponse.json({ error: posted.error, posted: false }, { status: 502 });
