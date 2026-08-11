@@ -21,9 +21,9 @@ export function gameResultMessage(result: { roll: number; guess: string; stake: 
   return `⚡ 피카츄 주사위: ${result.roll} · ${choice}\n${won ? `적중! ${result.stake}TP를 걸어 ${result.payout}TP를 돌려받았어요. +${net}TP` : `아쉽게 빗나갔어요. -${result.stake}TP`} · 현재 ${result.balance}TP`;
 }
 
-export function closeBriefing(briefing: { gainer?: { symbol: string; change: number }; profits?: Array<{ slack_user_id: string; amount: number; symbols: string }>; losses?: Array<{ slack_user_id: string; amount: number; symbols: string }> }) {
-  const lines = ["📣 관동 증권거래소 장마감", "📰 관동 저녁 특보 · 오늘의 응원 결과가 확정됐어요. 내일 시가는 오늘 종가에서 이어집니다."];
-  if (briefing.gainer) lines.push(`오늘의 큰 움직임: ${briefing.gainer.symbol} ${briefing.gainer.change >= 0 ? "+" : ""}${briefing.gainer.change}%`);
+export function closeBriefing(briefing: { gainer?: { name: string; change: number }; profits?: Array<{ slack_user_id: string; amount: number; symbols: string }>; losses?: Array<{ slack_user_id: string; amount: number; symbols: string }> }) {
+  const lines = ["📣 포켓몬 주식 장마감", "📰 포켓몬 주식 저녁 특보 · 오늘의 결과가 확정됐어요. 내일 시가는 오늘 종가에서 이어집니다."];
+  if (briefing.gainer) lines.push(`오늘의 큰 움직임: ${briefing.gainer.name} ${briefing.gainer.change >= 0 ? "+" : ""}${briefing.gainer.change}%`);
   if (briefing.profits?.length) lines.push("💰 오늘의 수익", ...briefing.profits.map((row, index) => `${index + 1}. <@${row.slack_user_id}> +${row.amount}TP · ${row.symbols}`));
   if (briefing.losses?.length) lines.push("📉 오늘의 손실", ...briefing.losses.map((row, index) => `${index + 1}. <@${row.slack_user_id}> ${row.amount}TP · ${row.symbols}`));
   return lines.join("\n");

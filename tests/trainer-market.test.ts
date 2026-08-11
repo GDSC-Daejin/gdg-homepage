@@ -2,10 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { gameAmountBlocks, homeBlocks, marketBlocks, shopBlocks, stockQuantityBlocks } from "@/lib/trainer-market/blocks";
 import { trendMessage } from "@/lib/trainer-market/messages";
+import { isMarketNewsDrafts, marketNewsBundleMessage, marketNewsMessage, type MarketNewsDraft } from "@/lib/trainer-market/news";
 
 const migration = readFileSync("supabase/migrations/0104_trainer_market.sql", "utf8");
 const startAllMigration = readFileSync("supabase/migrations/0105_trainer_market_start_all.sql", "utf8");
+const newsMigration = readFileSync("supabase/migrations/0106_trainer_market_news.sql", "utf8");
+const newsPoolMigration = readFileSync("supabase/migrations/0107_trainer_market_news_pool.sql", "utf8");
 const actionsRoute = readFileSync("src/app/api/slack/trainer/actions/route.ts", "utf8");
+const newsRoute = readFileSync("src/app/api/cron/trainer-market-news/route.ts", "utf8");
+const marketOpenRoute = readFileSync("src/app/api/cron/trainer-market-open/route.ts", "utf8");
 
 describe("트레이너 마켓봇", () => {
   it("TP 원장, 장중 제한, 중복 방지와 구매 볼 보존을 마이그레이션에 둔다", () => {
@@ -34,5 +39,22 @@ describe("트레이너 마켓봇", () => {
   it("활성 회원 모두에게 시작 TP를 한 번 지급한다", () => {
     expect(startAllMigration).toContain("amount, reason)\nselect id, 500, 'signup'");
     expect(startAllMigration).toContain("status = 'active' and role <> 'applicant'");
+  });
+
+  it("AI 뉴스 형식은 보존하고, 기본값은 한 달 뉴스 풀을 사용한다", () => {
+    const news = ["SILPH", "BALL", "CENTER", "CELADON", "OAK"].map((symbol, index) => ({ symbol, headline: `${symbol} 새 소식`, body: "현장에 도착한 트레이너들 사이에서 새로운 소식이 빠르게 퍼지고 있어요.", sentiment: [2, 1, 0, -1, -2][index] }));
+    expect(isMarketNewsDrafts(news, ["SILPH", "BALL", "CENTER", "CELADON", "OAK"])).toBe(true);
+    expect(isMarketNewsDrafts([...news, news[0]], ["SILPH", "BALL", "CENTER", "CELADON", "OAK"])).toBe(false);
+    expect(marketNewsMessage({ ...news[0], sentiment: 2, name: "실프 주식회사", emoji: "🧪" })).toContain("*강한 호재 📈*");
+    expect(marketNewsBundleMessage(news.map((item, index) => ({ ...item, name: item.symbol, emoji: "🧪", sentiment: [2, 1, 0, -1, -2][index] as MarketNewsDraft["sentiment"] })))).toContain("*SILPH*");
+    expect(newsMigration).toContain("trainer_market_news");
+    expect(newsMigration).toContain("금빛시티 백화점");
+    expect(newsRoute).toContain("trainer-market/news/silph.png");
+    expect(newsPoolMigration).toContain("trainer_market_news_pool");
+    expect(newsPoolMigration).toContain("(29,");
+    expect(marketOpenRoute).toContain('TRAINER_MARKET_AI_NEWS === "true"');
+    expect(marketOpenRoute).toContain('from("trainer_market_news_pool")');
+    expect(marketOpenRoute).toContain("poolNews.length !== 6");
+    expect(newsRoute).toContain("news.length !== 6");
   });
 });

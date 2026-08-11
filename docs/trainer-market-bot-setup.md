@@ -28,11 +28,11 @@ Slash Commands에 아래 명령을 추가한다.
 | Request URL | `https://gdg-homepage.vercel.app/api/slack/trainer/command` |
 | Short description | 포켓몬 메뉴를 열어요 |
 
-Interactivity & Shortcuts를 켜고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/trainer/actions`로 둔다. Bot Token Scopes에는 `chat:write`, `commands`를 추가하고, 관동 응원판을 올릴 채널에 봇을 초대한다.
+Interactivity & Shortcuts를 켜고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/trainer/actions`로 둔다. Bot Token Scopes에는 `chat:write`, `commands`를 추가하고, 포켓몬 주식 소식을 올릴 채널에 봇을 초대한다.
 
 공개 채널은 기존 `squirtle_config.channel_id`를 재사용한다. 필요하다면 먼저 그 값을 운영 채널 ID로 바꾼다.
 
-## 3. 관동 증권거래소 크론
+## 3. 포켓몬 주식 크론
 
 Supabase SQL Editor에서 실행한다. Vault의 `cron_secret`은 기존 값이 있으면 재사용한다.
 
@@ -42,6 +42,15 @@ select cron.schedule(
   '0 0 * * *', -- UTC 00:00 = KST 09:00
   $$ select net.http_post(
        url := 'https://gdg-homepage.vercel.app/api/cron/trainer-market-open',
+       headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret'))
+     ) $$
+);
+
+select cron.schedule(
+  'trainer-market-news',
+  '30 1 * * *', -- UTC 01:30 = KST 10:30, 여섯 종목 뉴스를 한 번에 발송
+  $$ select net.http_post(
+       url := 'https://gdg-homepage.vercel.app/api/cron/trainer-market-news',
        headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'cron_secret'))
      ) $$
 );
@@ -61,6 +70,7 @@ select cron.schedule(
 ```bash
 curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://gdg-homepage.vercel.app/api/cron/trainer-market-open
 curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://gdg-homepage.vercel.app/api/cron/trainer-market-close
+curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://gdg-homepage.vercel.app/api/cron/trainer-market-news
 ```
 
-첫 명령은 관동 응원판을 게시하고, 두 번째 명령은 종가와 장마감 브리핑을 게시한다. 실제 운영 전 테스트한 날짜의 시장 기록은 그대로 남으므로, 테스트는 운영 시작 전날에 하거나 테스트용 Supabase 프로젝트에서 한다.
+첫 명령은 포켓몬 주식 응원판과 DB 뉴스 풀의 그날 뉴스 여섯 건을 준비한다. 뉴스 크론은 10:30에 여섯 종목 뉴스를 하나의 Slack 알림으로 발송하고, 장마감 크론은 종가와 장마감 브리핑을 게시한다. 실제 운영 전 테스트한 날짜의 시장 기록은 그대로 남으므로, 테스트는 운영 시작 전날에 하거나 테스트용 Supabase 프로젝트에서 한다.
