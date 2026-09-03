@@ -344,6 +344,14 @@ export async function HomeDashboard({
 
           <section className={styles.card}>
             <div className={styles.cardHead}>
+              <h2 className={styles.cardTitle}>꼬북봇</h2>
+              <Link href="/squirtle" className={styles.cardMeta}>지난 시즌 보기</Link>
+            </div>
+            <p className={styles.empty}>물 마시기 인증으로 함께 키운 꼬북이의 기록을 확인해요.</p>
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHead}>
               <h2 className={styles.cardTitle}>
                 <span className={styles.accent} />
                 공지

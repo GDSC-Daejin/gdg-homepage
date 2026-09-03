@@ -37,6 +37,7 @@ const icons: Record<string, string> = {
   inquiries: "M21 12a8 8 0 1 1-3.3-6.5M21 4v5h-5",
   profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
   pokedex: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3.1 12h6.15M14.75 12h6.15M12 14.75a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5Z",
+  squirtle: "M7 20v-3.5a5 5 0 0 1 10 0V20M5 10a7 7 0 1 1 14 0c0 3-1.5 5-3.5 6.5M9 10h.01M15 10h.01",
   meetingPoll: "M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm3 4h3v3H8V8Zm5 3h3v3h-3v-3Zm-5 4h3v3H8v-3Z",
   admin: "m12 3 7 3v5c0 4.5-3 7.5-7 10-4-2.5-7-5.5-7-10V6Z",
 };
@@ -61,6 +62,7 @@ const baseGroups: NavGroup[] = [
       { href: "/events", label: "이벤트", icon: "events" },
       { href: "/schedule", label: "스케줄", icon: "meetingPoll" },
       { href: "/pokedex", label: "포켓몬", icon: "pokedex" },
+      { href: "/squirtle", label: "꼬북봇", icon: "squirtle" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
     ],
   },
