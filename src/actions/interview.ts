@@ -4,9 +4,13 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
-import { sendInterviewConfirmEmail, sendInterviewInviteEmail } from "@/lib/email";
+import {
+  sendInterviewCancelEmail,
+  sendInterviewConfirmEmail,
+  sendInterviewInviteEmail,
+} from "@/lib/email";
 import { toKoreanError } from "@/lib/errors";
-import { syncInterviewCalendarEvent } from "@/lib/google-calendar";
+import { deleteInterviewCalendarEvent, syncInterviewCalendarEvent } from "@/lib/google-calendar";
 import { createMeetSpace } from "@/lib/google-meet";
 import { getRecruitingSettings } from "@/lib/recruiting";
 import { interviewSlotsSchema } from "@/lib/schemas";
@@ -90,6 +94,80 @@ async function sendConfirmationForSlot(slotId: string) {
     startsAt: slot.starts_at,
     meetUri: slot.meet_uri,
   });
+}
+
+type BookingChange = {
+  application_id?: string;
+  slot_id?: string;
+  old_slot_id?: string;
+  old_calendar_event_id?: string | null;
+  new_slot_id?: string;
+  calendar_event_id?: string | null;
+  starts_at: string;
+  email: string;
+  applicant_name: string;
+};
+
+async function sendCancellationEmail(change: BookingChange) {
+  return sendInterviewCancelEmail({
+    to: change.email,
+    name: change.applicant_name,
+    startsAt: change.starts_at,
+  });
+}
+
+async function finishReschedule(change: BookingChange): Promise<ActionResult> {
+  const warnings: string[] = [];
+  if (change.old_calendar_event_id) {
+    try {
+      await deleteInterviewCalendarEvent(change.old_calendar_event_id);
+    } catch {
+      warnings.push("기존 Google Calendar 일정 삭제에 실패했어요");
+    }
+  }
+
+  const newSlotId = change.new_slot_id;
+  if (!newSlotId) return { warning: warnings.join(" ") || undefined };
+
+  try {
+    const svc = serviceClient();
+    const space = await createMeetSpace();
+    const { error } = await svc
+      .from("interview_slots")
+      .update({ meet_uri: space.meetingUri, meet_code: space.meetingCode })
+      .eq("id", newSlotId);
+    if (error) throw new Error("MEET_LINK_SAVE_FAILED");
+    try {
+      await syncCalendarForSlot(newSlotId);
+    } catch {
+      warnings.push("Google Calendar 일정 생성에 실패했어요");
+    }
+  } catch {
+    warnings.push("면접 예약은 변경됐지만 Meet 링크를 자동 생성하지 못했어요");
+    return { warning: warnings.join(" ") };
+  }
+
+  const confirmation = await sendConfirmationForSlot(newSlotId);
+  if (!confirmation.sent) warnings.push("확정 이메일 발송에 실패했어요");
+  return { warning: warnings.join(" ") || undefined };
+}
+
+function interviewError(error: { message?: string } | null): string | undefined {
+  if (!error) return undefined;
+  const code = String(error.message ?? "");
+  const known = [
+    "INVALID_TOKEN",
+    "ALREADY_BOOKED",
+    "SLOT_TAKEN",
+    "NOT_BOOKED",
+    "CANCEL_DEADLINE",
+    "CHANGE_DEADLINE",
+    "CHANGE_LIMIT",
+    "INVALID_OUTCOME",
+    "INTERVIEW_NOT_STARTED",
+  ];
+  const key = known.find((name) => code.includes(name));
+  return key ? toKoreanError({ message: key }) : toKoreanError(error);
 }
 
 const BOOK_ERRORS: Record<string, string> = {
@@ -198,7 +276,7 @@ export async function bookSlot(
   if (error) {
     const code = String(error.message ?? "");
     const key = Object.keys(BOOK_ERRORS).find((name) => code.includes(name));
-    return { error: key ? BOOK_ERRORS[key] : toKoreanError(error) };
+    return { error: key ? BOOK_ERRORS[key] : interviewError(error) };
   }
 
   try {
@@ -227,6 +305,42 @@ export async function bookSlot(
   }
 }
 
+export async function cancelBooking(token: string): Promise<ActionResult> {
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접을 취소할 수 없어요" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("cancel_interview_booking", { p_token: token });
+  if (error) return { error: interviewError(error) };
+
+  const change = data as BookingChange;
+  const warnings: string[] = [];
+  if (change.calendar_event_id) {
+    try {
+      await deleteInterviewCalendarEvent(change.calendar_event_id);
+    } catch {
+      warnings.push("Google Calendar 일정 삭제에 실패했어요");
+    }
+  }
+  const email = await sendCancellationEmail(change);
+  if (!email.sent) warnings.push("취소 이메일 발송에 실패했어요");
+  revalidatePath("/interview");
+  revalidatePath("/admin/interviews");
+  return { warning: warnings.join(" ") || undefined };
+}
+
+export async function rescheduleBooking(token: string, newSlotId: string): Promise<ActionResult> {
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접 일정을 변경할 수 없어요" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("reschedule_interview_booking", {
+    p_token: token,
+    p_new_slot: newSlotId,
+  });
+  if (error) return { error: interviewError(error) };
+  const result = await finishReschedule(data as BookingChange);
+  revalidatePath("/interview");
+  revalidatePath("/admin/interviews");
+  return result;
+}
+
 export async function regenerateMeetLink(slotId: string): Promise<ActionResult> {
   await requireAdmin();
   if (await isDemoMode()) return { error: "미리보기 모드에서는 Meet 링크를 만들 수 없어요" };
@@ -252,6 +366,113 @@ export async function regenerateMeetLink(slotId: string): Promise<ActionResult> 
   } catch {
     return { error: "Meet 링크 생성에 실패했어요. 잠시 후 다시 시도해주세요" };
   }
+}
+
+export async function resendInterviewConfirmation(slotId: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 확정 이메일을 보낼 수 없어요" };
+
+  const result = await sendConfirmationForSlot(slotId);
+  if (result.skipped) return { warning: "확정 이메일을 보내려면 Resend 설정이 필요해요" };
+  if (!result.sent) return { warning: "확정 이메일 발송에 실패했어요" };
+  revalidatePath("/admin/interviews");
+  return {};
+}
+
+export async function resendInterviewCancellationEmail(eventId: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "취소 이메일을 보낼 수 없어요" };
+
+  const supabase = await createClient();
+  const { data: event, error: eventError } = await supabase
+    .from("interview_booking_events")
+    .select("application_id, slot_id, action")
+    .eq("id", eventId)
+    .single();
+  if (eventError || !event || !["canceled_by_applicant", "canceled_by_admin"].includes(event.action)) {
+    return { error: "취소된 면접 이력을 찾을 수 없어요" };
+  }
+
+  const [{ data: application }, { data: slot }] = await Promise.all([
+    supabase
+      .from("applications")
+      .select("email, applicant_name")
+      .eq("id", event.application_id)
+      .single(),
+    supabase.from("interview_slots").select("starts_at").eq("id", event.slot_id).single(),
+  ]);
+  if (!application?.email || !slot?.starts_at) return { error: "면접 정보를 찾을 수 없어요" };
+
+  const result = await sendInterviewCancelEmail({
+    to: application.email,
+    name: application.applicant_name,
+    startsAt: slot.starts_at,
+  });
+  if (result.skipped) return { warning: "취소 이메일을 보내려면 Resend 설정이 필요해요" };
+  if (!result.sent) return { warning: "취소 이메일 발송에 실패했어요" };
+  revalidatePath(`/admin/applications/${event.application_id}`);
+  return {};
+}
+
+export async function cancelInterviewBooking(slotId: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접을 취소할 수 없어요" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_cancel_interview_booking", {
+    p_slot: slotId,
+  });
+  if (error) return { error: interviewError(error) };
+
+  const change = data as BookingChange;
+  const warnings: string[] = [];
+  if (change.calendar_event_id) {
+    try {
+      await deleteInterviewCalendarEvent(change.calendar_event_id);
+    } catch {
+      warnings.push("Google Calendar 일정 삭제에 실패했어요");
+    }
+  }
+  const email = await sendCancellationEmail(change);
+  if (!email.sent) warnings.push("취소 이메일 발송에 실패했어요");
+  revalidatePath("/admin/interviews");
+  revalidatePath(`/admin/applications/${change.application_id ?? ""}`);
+  return { warning: warnings.join(" ") || undefined };
+}
+
+export async function rescheduleInterviewBooking(
+  slotId: string,
+  newSlotId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접 일정을 변경할 수 없어요" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_reschedule_interview_booking", {
+    p_slot: slotId,
+    p_new_slot: newSlotId,
+  });
+  if (error) return { error: interviewError(error) };
+  const result = await finishReschedule(data as BookingChange);
+  revalidatePath("/admin/interviews");
+  return result;
+}
+
+export async function markInterviewOutcome(
+  slotId: string,
+  result: "attended" | "no_show",
+  reason = "",
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 면접 결과를 기록할 수 없어요" };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_mark_interview_outcome", {
+    p_slot: slotId,
+    p_result: result,
+    p_reason: reason.trim(),
+  });
+  if (error) return { error: interviewError(error) };
+  revalidatePath("/admin/interviews");
+  revalidatePath("/admin/applications");
+  return {};
 }
 
 export async function syncInterviewCalendar(slotId: string): Promise<ActionResult> {

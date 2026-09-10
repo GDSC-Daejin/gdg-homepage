@@ -11,7 +11,15 @@ import { ApplicationCard } from "./ApplicationCard";
 import { SeasonFilter } from "./SeasonFilter";
 import { StatCard } from "./StatCard";
 
-const STATUSES: ApplicationStatus[] = ["waiting", "pending", "accepted", "rejected"];
+const STATUSES: ApplicationStatus[] = [
+  "waiting",
+  "reviewing",
+  "pending",
+  "accepted",
+  "rejected",
+  "no_show",
+  "withdrawn",
+];
 
 const STAT_CARDS: {
   value: "all" | ApplicationStatus;
@@ -52,9 +60,12 @@ export function ApplicationsView({
     () => ({
       all: applications.length,
       waiting: applications.filter((a) => a.status === "waiting").length,
+      reviewing: applications.filter((a) => a.status === "reviewing").length,
       pending: applications.filter((a) => a.status === "pending").length,
       accepted: applications.filter((a) => a.status === "accepted").length,
       rejected: applications.filter((a) => a.status === "rejected").length,
+      no_show: applications.filter((a) => a.status === "no_show").length,
+      withdrawn: applications.filter((a) => a.status === "withdrawn").length,
     }),
     [applications],
   );

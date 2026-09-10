@@ -25,29 +25,43 @@ export const ACADEMIC_STATUS_LABELS: Record<AcademicStatus, string> = {
   graduated: "졸업",
   completed: "수료",
 };
-export type ApplicationStatus = "waiting" | "pending" | "accepted" | "rejected";
+export type ApplicationStatus =
+  | "waiting"
+  | "reviewing"
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "no_show"
+  | "withdrawn";
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
-  waiting: "심사 대기",
-  pending: "심사 중",
+  waiting: "지원 접수",
+  reviewing: "서류 검토",
+  pending: "면접 단계",
   accepted: "합격",
   rejected: "불합격",
+  no_show: "면접 노쇼",
+  withdrawn: "지원 철회",
 };
 export const APPLICATION_STATUS_TONES: Record<
   ApplicationStatus,
   "neutral" | "warning" | "primary" | "success" | "danger"
 > = {
   waiting: "warning",
+  reviewing: "primary",
   pending: "primary",
   accepted: "success",
   rejected: "danger",
+  no_show: "danger",
+  withdrawn: "neutral",
 };
-// 문서화 목적: 합법적 다음 상태 표. RPC(admin_set_application_status)나 UI가 이 순서를
-// 강제하지는 않음 — 강제는 별도 스코프.
 export const APPLICATION_STATUS_TRANSITIONS: Record<ApplicationStatus, ApplicationStatus[]> = {
-  waiting: ["pending"],
-  pending: ["accepted", "rejected"],
+  waiting: ["reviewing", "pending", "rejected"],
+  reviewing: ["waiting", "pending", "rejected"],
+  pending: ["accepted", "rejected", "no_show", "reviewing"],
   accepted: [],
   rejected: [],
+  no_show: [],
+  withdrawn: [],
 };
 export type EventType = "session" | "study" | "mogakco" | "party";
 export type RegistrationStatus = "confirmed" | "waitlisted";
@@ -91,6 +105,33 @@ export interface Application {
   review_note: string;
 }
 
+export type ApplicationEvaluationStage = "document" | "interview";
+export type EvaluationRecommendation = "accepted" | "pending" | "rejected";
+export type EvaluationScores = Record<string, number>;
+
+export interface ApplicationEvaluation {
+  id: string;
+  application_id: string;
+  evaluator_id: string;
+  stage: ApplicationEvaluationStage;
+  scores: EvaluationScores;
+  recommendation: EvaluationRecommendation;
+  note: string;
+  submitted_at: string;
+  updated_at: string;
+}
+
+export interface ApplicationOnboardingInvite {
+  application_id: string;
+  applicant_name: string;
+  email: string;
+  season: string;
+  position: Position | null;
+  expires_at: string;
+  used_at: string | null;
+  linked_profile_id: string | null;
+}
+
 export interface InterviewSlot {
   id: string;
   season: string;
@@ -101,6 +142,7 @@ export interface InterviewSlot {
   meet_uri: string | null;
   meet_code: string | null;
   calendar_event_id: string | null;
+  interview_result: "attended" | "no_show" | null;
   status: "open" | "booked" | "completed" | "canceled";
 }
 

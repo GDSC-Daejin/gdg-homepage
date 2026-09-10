@@ -26,6 +26,7 @@ export async function sendResultEmail(params: {
   name: string;
   season: string;
   accepted: boolean;
+  onboardingUrl?: string;
 }): Promise<{ sent: boolean; skipped?: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -44,9 +45,10 @@ export async function sendResultEmail(params: {
       },
       body: JSON.stringify({
         from,
+        reply_to: "gdgocdju@gmail.com",
         to: params.to,
         subject: buildSubject(params.season),
-        html: buildHtml(params.name, params.accepted),
+        html: buildHtmlWithOnboarding(params.name, params.accepted, params.onboardingUrl),
       }),
       signal: AbortSignal.timeout(5000),
     });
@@ -64,6 +66,12 @@ export async function sendResultEmail(params: {
   }
 }
 
+function buildHtmlWithOnboarding(name: string, accepted: boolean, onboardingUrl?: string): string {
+  const base = buildHtml(name, accepted);
+  if (!accepted || !onboardingUrl) return base;
+  return `${base}<p>아래 링크에서 Google 계정으로 가입을 진행해주세요. 링크는 7일간 유효해요.</p><p><a href="${escapeHtml(onboardingUrl)}">멤버 가입 진행하기</a></p>`;
+}
+
 async function sendEmail(to: string, subject: string, html: string) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return { sent: false, skipped: true };
@@ -76,7 +84,7 @@ async function sendEmail(to: string, subject: string, html: string) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ from, to, subject, html }),
+      body: JSON.stringify({ from, reply_to: "gdgocdju@gmail.com", to, subject, html }),
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return { sent: false, error: "이메일 전송에 실패했어요" };
@@ -103,6 +111,20 @@ export async function sendInterviewInviteEmail(params: {
   return sendEmail(params.to, `[GDGOC DJU] ${params.season} 면접 일정 예약 안내`, html);
 }
 
+export async function sendApplicationOnboardingInviteEmail(params: {
+  to: string;
+  name: string;
+  season: string;
+  onboardingUrl: string;
+}) {
+  const html = `<div style="font-family: sans-serif; line-height: 1.6;">
+    <p>${escapeHtml(params.name)}님, GDGOC DJU ${escapeHtml(params.season)} 멤버 가입을 진행해주세요.</p>
+    <p>아래 링크에서 지원서에 입력한 이메일 계정으로 로그인하면 가입을 이어갈 수 있어요. 링크는 7일간 유효해요.</p>
+    <p><a href="${escapeHtml(params.onboardingUrl)}">멤버 가입 진행하기</a></p>
+  </div>`;
+  return sendEmail(params.to, `[GDGOC DJU] ${params.season} 멤버 가입 안내`, html);
+}
+
 export async function sendInterviewConfirmEmail(params: {
   to: string;
   name: string;
@@ -121,4 +143,22 @@ export async function sendInterviewConfirmEmail(params: {
     <p><b>Google Meet:</b> <a href="${safeMeetUri}">${safeMeetUri}</a></p>
   </div>`;
   return sendEmail(params.to, "[GDGOC DJU] 면접 예약이 확정됐어요", html);
+}
+
+export async function sendInterviewCancelEmail(params: {
+  to: string;
+  name: string;
+  startsAt: string;
+}) {
+  const when = new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    dateStyle: "full",
+    timeStyle: "short",
+  }).format(new Date(params.startsAt));
+  const html = `<div style="font-family: sans-serif; line-height: 1.6;">
+    <p>${escapeHtml(params.name)}님, 면접 예약이 취소됐어요.</p>
+    <p><b>기존 일시:</b> ${escapeHtml(when)} (KST)</p>
+    <p>새로운 면접 시간이 필요하면 안내받은 링크에서 다시 예약해주세요.</p>
+  </div>`;
+  return sendEmail(params.to, "[GDGOC DJU] 면접 예약이 취소됐어요", html);
 }

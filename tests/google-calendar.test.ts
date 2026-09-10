@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { syncInterviewCalendarEvent } from "@/lib/google-calendar";
+import { deleteInterviewCalendarEvent, syncInterviewCalendarEvent } from "@/lib/google-calendar";
 
 describe("syncInterviewCalendarEvent", () => {
   const OLD = process.env;
@@ -71,5 +71,17 @@ describe("syncInterviewCalendarEvent", () => {
 
     expect((fetchMock.mock.calls[1][1] as RequestInit).method).toBe("PATCH");
     expect((fetchMock.mock.calls[2][1] as RequestInit).method).toBe("POST");
+  });
+
+  it("Calendar 이벤트를 삭제한다", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "atoken" }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(deleteInterviewCalendarEvent("gdgdjuabc")).resolves.toBeUndefined();
+    expect(fetchMock.mock.calls[1][0]).toContain("events/gdgdjuabc");
+    expect((fetchMock.mock.calls[1][1] as RequestInit).method).toBe("DELETE");
   });
 });

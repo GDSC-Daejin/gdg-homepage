@@ -7,31 +7,42 @@ import { Badge } from "@/components/Badge";
 import type { Application, ApplicationStatus } from "@/lib/types";
 import { POSITION_LABELS } from "@/lib/types";
 import { ReviewPanel } from "./ReviewPanel";
+import { EvaluationPanel } from "./EvaluationPanel";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_APPLICATIONS, DEMO_MEMBERS } from "@/lib/demoData";
 import { getInterviewQuestionsFor } from "@/lib/interview-questions";
+import { CancellationEmailRetryButton } from "./CancellationEmailRetryButton";
 
 export const dynamic = "force-dynamic";
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
-  waiting: "심사 대기",
-  pending: "심사 중",
+  waiting: "지원 접수",
+  reviewing: "서류 검토",
+  pending: "면접 단계",
   accepted: "합격",
   rejected: "불합격",
+  no_show: "면접 노쇼",
+  withdrawn: "지원 철회",
 };
 
 const STATUS_TONE: Record<ApplicationStatus, "neutral" | "warning" | "success" | "danger"> = {
-  waiting: "neutral",
+  waiting: "warning",
+  reviewing: "warning",
   pending: "warning",
   accepted: "success",
   rejected: "danger",
+  no_show: "danger",
+  withdrawn: "neutral",
 };
 
 const STATUS_DOT: Record<ApplicationStatus, string> = {
-  waiting: "bg-gray-400",
+  waiting: "bg-warning",
+  reviewing: "bg-warning",
   pending: "bg-warning",
   accepted: "bg-success",
   rejected: "bg-danger",
+  no_show: "bg-danger",
+  withdrawn: "bg-gray-400",
 };
 
 const QUESTIONS: { key: string; label: string }[] = [
@@ -39,6 +50,15 @@ const QUESTIONS: { key: string; label: string }[] = [
   { key: "motivation", label: "지원 동기" },
   { key: "interest", label: "관심 분야" },
 ];
+
+const INTERVIEW_EVENT_LABELS: Record<string, string> = {
+  booked: "면접 예약",
+  rescheduled: "면접 일정 변경",
+  canceled_by_applicant: "지원자 취소",
+  canceled_by_admin: "운영진 취소",
+  attended: "면접 참석",
+  no_show: "면접 노쇼",
+};
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -49,12 +69,20 @@ function formatDate(iso: string): string {
   return `${yyyy}.${mm}.${dd}`;
 }
 
+function formatDateTime(iso: string): string {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
+}
+
 export default async function AdminApplicationDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const { id } = await params;
   const demo = await isDemoMode();
 
@@ -107,6 +135,28 @@ export default async function AdminApplicationDetailPage({
   if (!app) notFound();
 
   const interviewQuestions = await getInterviewQuestionsFor(app.position);
+  const { data: interviewHistory } = demo
+    ? { data: [] }
+    : await (await createClient())
+        .from("interview_booking_events")
+        .select("id, slot_id, new_slot_id, action, actor_type, reason, created_at")
+        .eq("application_id", app.id)
+        .order("created_at", { ascending: false });
+  const { data: evaluationData } = demo
+    ? { data: [] }
+    : await (await createClient())
+        .from("application_evaluations")
+        .select("*")
+        .eq("application_id", app.id)
+        .order("stage")
+        .order("updated_at", { ascending: false });
+  const { data: statusHistory } = demo
+    ? { data: [] }
+    : await (await createClient())
+        .from("application_status_history")
+        .select("id, from_status, to_status, actor_type, reason, created_at")
+        .eq("application_id", app.id)
+        .order("created_at", { ascending: false });
 
   const name = app.applicant_name || "알 수 없음";
   const studentNo = app.student_no || "정보 없음";
@@ -247,6 +297,77 @@ export default async function AdminApplicationDetailPage({
             ))}
           </ol>
         )}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold text-gray-700">면접 이력</p>
+        {!interviewHistory?.length ? (
+          <p className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm text-gray-400">
+            기록된 면접 이력이 없어요.
+          </p>
+        ) : (
+          <ol className="flex flex-col gap-2">
+            {(interviewHistory as {
+              id: string;
+              action: string;
+              actor_type: string;
+              reason: string;
+              created_at: string;
+            }[]).map((event) => (
+              <li key={event.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm">
+                <span className="flex min-w-0 flex-col gap-0.5 font-medium text-gray-800">
+                  <span>{INTERVIEW_EVENT_LABELS[event.action] ?? event.action}</span>
+                  {event.reason && <span className="text-xs font-normal text-gray-500">사유: {event.reason}</span>}
+                </span>
+                  <span className="text-xs text-gray-500">
+                    {event.actor_type === "admin" ? "운영진" : "지원자"} · {formatDateTime(event.created_at)}
+                  </span>
+                  {(event.action === "canceled_by_applicant" || event.action === "canceled_by_admin") && (
+                    <CancellationEmailRetryButton eventId={event.id} />
+                  )}
+                </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-semibold text-gray-700">지원서 상태 이력</p>
+        {!statusHistory?.length ? (
+          <p className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm text-gray-400">
+            기록된 상태 변경이 없어요.
+          </p>
+        ) : (
+          <ol className="flex flex-col gap-2">
+            {(statusHistory as {
+              id: string;
+              from_status: string | null;
+              to_status: ApplicationStatus;
+              actor_type: string;
+              reason: string;
+              created_at: string;
+            }[]).map((event) => (
+              <li key={event.id} className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm">
+                <span className="font-medium text-gray-800">
+                  {event.from_status ? `${STATUS_LABEL[event.from_status as ApplicationStatus] ?? event.from_status} → ` : "초기 상태 → "}
+                  {STATUS_LABEL[event.to_status] ?? event.to_status}
+                  {event.reason && <span className="ml-2 font-normal text-gray-500">{event.reason}</span>}
+                </span>
+                <span className="shrink-0 text-xs text-gray-500">
+                  {event.actor_type === "admin" ? "운영진" : "시스템"} · {formatDateTime(event.created_at)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </div>
+
+      <div className="border-t border-gray-100 pt-6">
+        <EvaluationPanel
+          applicationId={app.id}
+          evaluatorId={admin.id}
+          evaluations={(evaluationData ?? []) as import("@/lib/types").ApplicationEvaluation[]}
+        />
       </div>
 
       <div className="border-t border-gray-100 pt-6">

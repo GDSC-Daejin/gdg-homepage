@@ -3,6 +3,7 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { createClient } from "@/lib/supabase/server";
 import { BookingForm } from "./BookingForm";
+import { BookingActions } from "./BookingActions";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,11 @@ interface InterviewContext {
     starts_at: string;
     duration_min: number;
     meet_uri: string | null;
+    can_cancel: boolean;
+    can_reschedule: boolean;
   } | null;
   open_slots: { id: string; starts_at: string; duration_min: number }[];
+  can_book: boolean;
 }
 
 function formatSlot(startsAt: string, durationMin: number) {
@@ -30,6 +34,14 @@ function formatSlot(startsAt: string, durationMin: number) {
     timeStyle: "short",
   }).format(new Date(startsAt));
   return `${formatted} · ${durationMin}분`;
+}
+
+function formatDeadline(startsAt: string) {
+  return new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(new Date(startsAt).getTime() - 24 * 60 * 60 * 1000));
 }
 
 export default async function InterviewPage({
@@ -68,13 +80,18 @@ export default async function InterviewPage({
           </Link>
         </Card>
       ) : context.booked_slot ? (
-        <Card className="flex flex-col gap-3">
+          <Card className="flex flex-col gap-3">
           <p className="text-base font-semibold text-gray-900">
             {context.applicant_name}님의 면접 예약이 확정됐어요
           </p>
           <p className="text-sm text-gray-600">
             {formatSlot(context.booked_slot.starts_at, context.booked_slot.duration_min)}
           </p>
+          <div className="rounded-lg bg-gray-50 p-3 text-xs text-gray-500">
+            <p className="font-medium text-gray-700">취소·변경 안내</p>
+            <p className="mt-1">{formatDeadline(context.booked_slot.starts_at)}까지 취소·변경할 수 있어요.</p>
+            <p className="mt-1">일정 변경은 지원자당 1회만 가능해요.</p>
+          </div>
           {context.booked_slot.meet_uri ? (
             <a
               href={context.booked_slot.meet_uri}
@@ -85,6 +102,12 @@ export default async function InterviewPage({
           ) : (
             <p className="text-sm text-gray-500">Meet 링크는 운영진이 안내드릴게요.</p>
           )}
+          <BookingActions
+            token={validToken}
+            openSlots={context.open_slots}
+            canCancel={context.booked_slot.can_cancel}
+            canReschedule={context.booked_slot.can_reschedule}
+          />
         </Card>
       ) : (
         <Card>
@@ -92,7 +115,11 @@ export default async function InterviewPage({
             {context.applicant_name}님, 반가워요
           </p>
           <p className="mb-5 text-sm text-gray-500">{context.season} 면접 시간을 예약해주세요.</p>
-          <BookingForm token={validToken} openSlots={context.open_slots} />
+          {context.can_book ? (
+            <BookingForm token={validToken} openSlots={context.open_slots} />
+          ) : (
+            <p className="text-sm text-gray-500">면접 일정 변경 횟수를 모두 사용했어요.</p>
+          )}
         </Card>
       )}
     </div>

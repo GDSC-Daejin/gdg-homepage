@@ -68,3 +68,17 @@ export async function syncInterviewCalendarEvent(
   if (!event.id) throw new Error("GOOGLE_CALENDAR_EVENT_FAILED");
   return { eventId: event.id };
 }
+
+export async function deleteInterviewCalendarEvent(eventId: string): Promise<void> {
+  const accessToken = await getGoogleAccessToken();
+  const calendarId = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID ?? "primary");
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${encodeURIComponent(eventId)}`;
+  const response = await fetch(url, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok && response.status !== 404) {
+    throw new Error("GOOGLE_CALENDAR_EVENT_DELETE_FAILED");
+  }
+}

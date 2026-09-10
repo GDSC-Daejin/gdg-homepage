@@ -1,5 +1,6 @@
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
+import { StatCard } from "@/components/StatCard";
 import { requireAdmin } from "@/lib/auth";
 import { getRecruitingSettings } from "@/lib/recruiting";
 import { createClient } from "@/lib/supabase/server";
@@ -18,7 +19,7 @@ export default async function AdminInterviewsPage() {
       .from("interview_slots")
       .select("*")
       .eq("season", settings.season)
-      .in("status", ["open", "booked"])
+      .in("status", ["open", "booked", "completed"])
       .order("starts_at"),
     supabase
       .from("applications")
@@ -47,10 +48,21 @@ export default async function AdminInterviewsPage() {
     ...slot,
     applicant_name: slot.application_id ? applicationNames.get(slot.application_id) : undefined,
   }));
+  const summary = [
+    { label: "예약 가능", value: bookings.filter((booking) => booking.status === "open").length, hint: "열린 슬롯", emphasis: false },
+    { label: "예약 완료", value: bookings.filter((booking) => booking.status === "booked").length, hint: "면접 예정", emphasis: true },
+    { label: "면접 완료", value: bookings.filter((booking) => booking.interview_result === "attended").length, hint: "참석 기록", emphasis: false },
+    { label: "노쇼", value: bookings.filter((booking) => booking.interview_result === "no_show").length, hint: "운영진 확인 필요", emphasis: false },
+  ];
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="면접 일정" description={`${settings.season} 면접 슬롯과 예약을 관리해요`} />
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {summary.map((item) => (
+          <StatCard key={item.label} label={item.label} value={item.value} hint={item.hint} emphasis={item.emphasis} />
+        ))}
+      </div>
       <Card>
         <h2 className="mb-4 text-base font-semibold text-gray-900">슬롯 만들기</h2>
         <SlotCreator />

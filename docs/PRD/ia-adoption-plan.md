@@ -3,6 +3,7 @@
 > 외부 IA(정보 구조도)를 현 서비스에 적용하기 위한 기획 문서.
 > 각 항목을 **흡수 / 절충 / 폐기** 3단계로 판정하고, 근거와 구체안을 기록한다.
 > 이 문서는 기획안이며, 코드 변경은 포함하지 않는다.
+> 면접 운영에 관한 기존 판단은 최신 [신규 멤버 모집 프로세스 기획·설계](../plans/new-member-recruitment.md)로 대체되었다.
 
 ---
 
@@ -19,7 +20,7 @@
 - **라우트 3계층**: 퍼블릭(`/about` `/team` `/events` `/projects` `/apply` `/login`) · 멤버(`/` 대시보드, `/attend` `/notices` `/surveys` `/inquiries` `/materials` `/profile`) · 어드민(`/admin/*` 12개 메뉴)
 - **역할**: `organizer` `team_member`(둘이 ADMIN_ROLES) / `member` / `applicant`
 - **포지션**: `frontend` `backend` `designer` 3개
-- **지원서 상태**: `waiting → pending → accepted / rejected` (자유 전환 가능)
+- **지원서 상태**: `waiting → reviewing → pending(면접 단계) → accepted / rejected`
 - **소통 채널**: Slack (공지 발행, 출석 경고 등 이미 연동). 이메일 인프라 없음
 - **`/` 는 로그인 필수 멤버 대시보드** → 비로그인 방문자용 랜딩 홈이 없음 (IA와의 최대 격차)
 - **`/apply` 는 상시 오픈** — 모집 on/off 개념 없음, 지원서에 지원 파트 없음
@@ -53,11 +54,11 @@ IA의 소통(Email)·콘텐츠(CMS) 축은 우리의 Slack·코드 관리 방식
 | IA 요소 | 판정 | 요지 |
 |---|---|---|
 | Dashboard — Overview (모집 상태·지원자 수·진행 단계) | **흡수** | 기존 대시보드에 리크루팅 위젯 추가 (모집 중일 때만 노출) |
-| Dashboard — Today (오늘 일정·할 일) | **절충** | 오늘 일정은 events에서, 할 일은 심사 대기 카운트로 (면접 미운영으로 "면접 예정" 없음) |
+| Dashboard — Today (오늘 일정·할 일) | **절충** | 오늘 일정은 events에서, 모집 관련 할 일은 심사 대기와 면접 일정 관리 화면에서 확인 |
 | Dashboard — Quick Actions | **흡수** | 링크 3개 수준의 저비용 요소 |
 | Applications — 검색 | **흡수** | 이름/학번 검색 추가 (시즌·상태 필터는 이미 있음) |
 | Applications — By Role (파트별) | **절충** | 지원서에 지원 파트 필드 추가, 단 우리 3파트 기준 |
-| Applications — Pipeline (서류→인터뷰→합불) | **폐기** | 면접 미운영 확정 — `interview` 단계 도입 안 함. 서류→합불로 유지 |
+| Applications — Pipeline (서류→인터뷰→합불) | **흡수** | 최신 모집 프로세스에 따라 서류 검토 → 면접(`pending`) → 합불 흐름으로 운영 |
 | Applications — Applicant Detail | **흡수(기존 유지)** | 상세·상태 변경·감사 로그 이미 있음. 심사 메모만 보강 |
 | Communication — Email (Templates/Send/Bulk) | **절충** | 합불 통보 이메일 자동 발송 도입 확정 (Phase 3). 범용 이메일 시스템은 폐기 |
 | Communication — Email Log | **절충** | 합불 통보 발송 기록만. 기존 audit log 재사용 |
@@ -68,7 +69,7 @@ IA의 소통(Email)·콘텐츠(CMS) 축은 우리의 Slack·코드 관리 방식
 | Members — Profile | **폐기(중복)** | 멤버 상세 + 본인 프로필 페이지 이미 존재 |
 | Content (About/Team/Activities/Join 페이지 편집) | **폐기** | 정적 페이지는 코드로 관리. CMS 구축 비용 > 효용 |
 | Schedule — Calendar | **폐기(보류)** | 기존 events 리스트로 충분. 월 뷰는 수요 확인 후 |
-| Schedule — Interview Schedule | **폐기** | 면접 미운영 확정 — 면접 일정 개념 없음 |
+| Schedule — Interview Schedule | **흡수** | `/admin/interviews`에서 면접 슬롯·예약·변경·취소·노쇼를 관리 |
 | Schedule — Events | **폐기(중복)** | `/admin/events` 이미 존재 |
 | Settings — 모집 상태 on/off | **흡수** | 이번 통합의 핵심. 신규 설정 도입 |
 | Settings — 파트 활성화 | **절충** | 시즌별 모집 파트 선택으로 변형 |
@@ -118,8 +119,8 @@ IA의 파트별 지원자 관리를 흡수하되, 파트 축은 IA의 6개가 �
 기존 대시보드(회원 수·이벤트·만족도·포인트 랭킹)는 유지하고, **모집 중일 때만** 리크루팅 섹션을 상단에 추가한다.
 
 **안:**
-- Overview: 현재 시즌·모집 상태 배지, 지원자 수(전체/파트별), 단계별 카운트(심사 대기 waiting / 검토 중 pending / 합격 / 불합격) — 각 숫자는 해당 필터가 걸린 지원서 리스트로 링크
-- Today: 오늘 시작하는 이벤트(기존 events 조회) + "심사 대기 N건" 할 일 카드. IA의 "면접 예정"은 면접 미운영으로 제외
+- Overview: 현재 시즌·모집 상태 배지, 지원자 수(전체/파트별), 단계별 카운트(심사 대기 waiting / 면접 단계 pending / 합격 / 불합격) — 각 숫자는 해당 필터가 걸린 지원서 리스트로 링크
+- Today: 오늘 시작하는 이벤트(기존 events 조회) + "심사 대기 N건" 할 일 카드. 면접 일정은 `/admin/interviews`에서 관리
 - Quick Actions: 지원자 관리 / 공지 작성 / 이벤트 생성 바로가기 3개 (IA의 "이메일 발송"은 우리 체계에선 "공지 작성"으로 치환)
 
 ### 2.5 퍼블릭 랜딩 홈 (IA: Home 허브)
@@ -136,7 +137,7 @@ IA와의 최대 격차. 현재 비로그인 방문자는 `/login`으로 튕겨 �
 
 - `/about`: IA 섹션 구조 흡수 — 소개 / What is GDG on Campus / Mission & Vision / Core Values / What We Do. 정적 콘텐츠로 작성 (CMS 없음, §3.4)
 - `/team`: Chapter Lead → Core Team → 파트별(3파트) 멤버 → Contact & Links 순 재구성
-- Join: 별도 페이지 대신 `/apply` 상단에 "지원 절차" 안내(서류 → 심사 → 결과 안내)와 모집 상태 표시. 랜딩 CTA가 IA의 Join 진입 역할을 대신함
+- Join: 별도 페이지 대신 `/apply` 상단에 "지원 절차" 안내(서류 → 심사 → 면접 → 결과 안내)와 모집 상태 표시. 랜딩 CTA가 IA의 Join 진입 역할을 대신함
 
 ### 2.7 회원 목록 역할 필터 (IA: Members → Core Team/Members)
 
@@ -144,10 +145,9 @@ IA와의 최대 격차. 현재 비로그인 방문자는 `/login`으로 튕겨 �
 
 ### 2.8 [Phase 3] 합불 통보 이메일 (IA: Email)
 
-> **결정 확정(2026-07-12):** ① 면접 전형 미운영 → `interview` 상태·면접 일시는 도입하지 않음. ② 파트 3개 유지. ③ 합불 통보는 이메일 자동 발송.
-> 따라서 Phase 3 = **합불 통보 이메일**만. IA의 Pipeline·Interview Schedule 요소는 폐기.
+> **기준 갱신:** 면접 전형은 운영한다. 업무상 면접 단계는 DB의 `pending` 상태로 매핑하며, 면접 일정은 최신 모집 프로세스 문서와 면접 일정 설계서를 따른다. 합불 통보는 면접 후 이메일로 발송한다.
 
-- 파이프라인은 `waiting → pending → accepted/rejected` 그대로 유지 (면접 단계 없음)
+- 파이프라인은 `waiting → reviewing → pending(면접) → accepted/rejected`로 운영한다.
 - 합불 통보 이메일: 지원자는 Slack에 없어 이메일이 유일한 통보 수단. **범위 최소화** — 합격/불합격 템플릿 2종 고정, 상태 확정 시 개별/일괄 발송, 발송 기록은 audit log. Resend 등 단일 발송 API 사용. IA의 범용 Email Templates·Bulk Send 시스템은 이 최소 기능으로 대체
 - 선행 준비: 발송 서비스(Resend 등) 계정 + 발신 도메인 인증, `applications`에 지원자 이메일 수집 필드 확보(`/apply` 폼)
 
@@ -205,6 +205,6 @@ Phase 1이 선행돼야 하는 이유: 랜딩 CTA·apply 마감 안내·대시�
 
 ### 열린 결정 — 확정 완료 (2026-07-12)
 
-1. **면접 전형 운영 여부** → **운영 안 함.** `interview` 상태·면접 일시·면접 일정은 도입하지 않음. 필요해지면 상태 자유 전환이라 나중에 `interview` 1개만 추가 가능.
+1. **면접 전형 운영 여부** → **운영함.** 업무상 단계명은 면접이며, DB 상태값은 기존 호환성을 위해 `pending`을 사용한다. 세부 규칙은 최신 모집 프로세스 문서에서 관리한다.
 2. **모집 파트 3개 초과 확장** → **3개 유지.** §2.2 그대로 진행, `Position` 타입 재사용. 확장은 조직 차원 결정이 선행돼야 하므로 이 기획 범위 밖.
 3. **합불 통보 방식** → **이메일 자동.** Phase 3에서 Resend 등 발송 서비스 도입. 선행 준비: 발송 계정 + 발신 도메인 인증, `/apply`에서 지원자 이메일 수집.

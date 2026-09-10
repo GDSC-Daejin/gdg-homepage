@@ -9,8 +9,12 @@ describe("온보딩 흐름", () => {
     ]);
 
     expect(layout).toContain("requireProfile");
-    expect(form).toContain("interests.length > 0");
-    expect(form).toContain("disabled={pending || !isComplete}");
+    expect(form).toContain("useForm<OnboardingValues>");
+    expect(form).toContain("zodResolver(onboardingProfileSchema)");
+    expect(form).toContain('mode: "onChange"');
+    expect(form).toContain("void trigger()");
+    expect(form).toContain("errors.interests");
+    expect(form).toContain("formState: { errors, isDirty, isSubmitting }");
   });
 
   it("승인 대기 안내를 온보딩 화면 하나로 합친다", async () => {
@@ -37,9 +41,12 @@ describe("온보딩 흐름", () => {
 
     // 제출했다고 화면 밖으로 튕기면 오타를 고칠 방법이 없다.
     expect(page).not.toContain('if (profile.student_no !== "") redirect("/")');
-    expect(form).toContain("defaultValue={profile.student_no}");
-    expect(form).toContain("defaultValue={profile.phone}");
+    expect(form).toContain("student_no: profile.student_no ?? \"\"");
+    expect(form).toContain("phone: formatPhone(profile.phone ?? \"\")");
     expect(form).toContain('submitted ? "수정 내용 저장"');
+    expect(form).toContain("useToast()");
+    expect(form).toContain('show("수정한 내용을 저장했어요", "positive")');
+    expect(form).toContain("저장하지 않고 로그아웃할까요?");
   });
 
   it("온보딩을 안 끝낸 계정은 승인 대기 목록에 올리지 않는다", async () => {

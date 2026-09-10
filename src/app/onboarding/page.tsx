@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation";
 import { getProfile } from "@/lib/auth";
 import { isStaff } from "@/lib/types";
-import { signOut } from "@/actions/profile";
 import { PageHeader } from "@/components/PageHeader";
-import { Button } from "@/components/Button";
 import { OnboardingForm } from "./OnboardingForm";
 
 export const dynamic = "force-dynamic";
@@ -39,14 +37,6 @@ export default async function OnboardingPage() {
         )}
 
         <OnboardingForm profile={profile} submitted={submitted} />
-
-        {submitted && (
-          <form action={signOut} className="mt-4">
-            <Button type="submit" variant="ghost" className="w-full">
-              로그아웃
-            </Button>
-          </form>
-        )}
       </div>
     </main>
   );

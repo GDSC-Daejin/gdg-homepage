@@ -17,6 +17,13 @@ export const profileSchema = z.object({
   featured_pokemon_id: z.string().uuid("대표 포켓몬 값이 올바르지 않아요").nullable().optional(),
 });
 
+export const onboardingProfileSchema = profileSchema.extend({
+  interests: z.array(z.string()).min(1, "관심 분야를 하나 이상 선택해주세요"),
+  academic_status: z.enum(["enrolled", "leave", "graduated", "completed"], {
+    message: "재학 여부를 선택해주세요",
+  }),
+});
+
 export const eventSchema = z
   .object({
     type: z.enum(["session", "study", "mogakco", "party"]),
@@ -47,6 +54,13 @@ export const applicationSchema = z.object({
   position: z.enum(["frontend", "backend", "designer", "beginner"], {
     message: "지원 파트를 선택해주세요",
   }),
+});
+
+export const applicationEvaluationSchema = z.object({
+  stage: z.enum(["document", "interview"]),
+  scores: z.record(z.string(), z.number().int().min(1).max(5)),
+  recommendation: z.enum(["accepted", "pending", "rejected"]),
+  note: z.string().max(1000, "평가 의견은 1000자까지 입력할 수 있어요"),
 });
 
 const dateStr = z

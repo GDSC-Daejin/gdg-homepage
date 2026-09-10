@@ -3,13 +3,37 @@
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth";
+import { getProfile, requireAdmin } from "@/lib/auth";
 import { applicationSchema } from "@/lib/schemas";
 import { toKoreanError } from "@/lib/errors";
 import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
 import { isDemoMode } from "@/lib/demo";
-import { sendResultEmail } from "@/lib/email";
-import type { ActionResult, ApplicationStatus } from "@/lib/types";
+import { sendApplicationOnboardingInviteEmail, sendResultEmail } from "@/lib/email";
+import { applicationInviteUrl, createApplicationInviteToken, hashApplicationInviteToken } from "@/lib/application-invite";
+import { applicationEvaluationSchema } from "@/lib/schemas";
+import type {
+  ActionResult,
+  ApplicationEvaluationStage,
+  ApplicationStatus,
+  EvaluationRecommendation,
+} from "@/lib/types";
+import { isStaff } from "@/lib/types";
+
+const ONBOARDING_INVITE_DAYS = 7;
+
+async function issueOnboardingInvite(supabase: Awaited<ReturnType<typeof createClient>>, id: string) {
+  const token = createApplicationInviteToken();
+  const expiresAt = new Date(
+    Date.now() + ONBOARDING_INVITE_DAYS * 24 * 60 * 60 * 1000,
+  ).toISOString();
+  const { error } = await supabase.rpc("admin_issue_application_onboarding_invite", {
+    p_application: id,
+    p_token_hash: hashApplicationInviteToken(token),
+    p_expires_at: expiresAt,
+  });
+  if (error) return { error: toKoreanError(error) };
+  return { token, expiresAt };
+}
 
 export async function submitApplication(formData: FormData): Promise<ActionResult> {
   if (await isDemoMode()) return {};
@@ -78,8 +102,6 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
   return {};
 }
 
-// DB RPC(admin_set_application_status)는 APPLICATION_STATUS_TRANSITIONS(src/lib/types.ts)에
-// 정의된 waiting → pending → accepted/rejected 순서를 강제하지 않음 — 강제는 별도 스코프.
 export async function setApplicationStatus(
   id: string,
   status: ApplicationStatus,
@@ -99,6 +121,7 @@ export async function setApplicationStatus(
   revalidatePath(`/admin/applications/${id}`);
 
   let emailWarning: string | undefined;
+  let onboardingUrl: string | undefined;
   if (status === "accepted" || status === "rejected") {
     const { data: application } = await supabase
       .from("applications")
@@ -107,11 +130,20 @@ export async function setApplicationStatus(
       .single();
 
     if (application?.email) {
+      if (status === "accepted") {
+        const invite = await issueOnboardingInvite(supabase, id);
+        if ("error" in invite) {
+          emailWarning = `합격 처리는 됐지만 가입 초대를 만들지 못했어요: ${invite.error}`;
+        } else {
+          onboardingUrl = applicationInviteUrl(invite.token);
+        }
+      }
       const result = await sendResultEmail({
         to: application.email,
         name: application.applicant_name,
         season: application.season,
         accepted: status === "accepted",
+        onboardingUrl,
       });
 
       if (!result.skipped) {
@@ -128,6 +160,151 @@ export async function setApplicationStatus(
   }
 
   if (emailWarning) return { warning: emailWarning };
+  return {};
+}
+
+export async function resendApplicationResultEmail(id: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 결과 이메일을 보낼 수 없어요" };
+
+  const supabase = await createClient();
+  const { data: application, error: applicationError } = await supabase
+    .from("applications")
+    .select("applicant_name, email, season, status, applicant_id")
+    .eq("id", id)
+    .single();
+  if (applicationError || !application) return { error: "지원서를 찾을 수 없어요" };
+  if (application.status !== "accepted" && application.status !== "rejected") {
+    return { error: "최종 결정이 끝난 지원자만 결과 이메일을 보낼 수 있어요" };
+  }
+  if (!application.email) return { error: "지원자 이메일이 없어요" };
+
+  let onboardingUrl: string | undefined;
+  if (application.status === "accepted" && !application.applicant_id) {
+    const invite = await issueOnboardingInvite(supabase, id);
+    if ("error" in invite) return { error: invite.error };
+    onboardingUrl = applicationInviteUrl(invite.token);
+  }
+
+  const result = await sendResultEmail({
+    to: application.email,
+    name: application.applicant_name,
+    season: application.season,
+    accepted: application.status === "accepted",
+    onboardingUrl,
+  });
+
+  if (!result.skipped) {
+    await supabase.rpc("admin_log_result_email", {
+      p_application: id,
+      p_detail: { status: application.status, to: application.email, sent: result.sent, retry: true },
+    });
+  }
+  if (result.skipped) return { warning: "결과 이메일을 보내려면 Resend 설정이 필요해요" };
+  if (!result.sent) return { warning: result.error ?? "결과 이메일 발송에 실패했어요" };
+  revalidatePath(`/admin/applications/${id}`);
+  revalidatePath("/admin/applications/conversions");
+  return {};
+}
+
+export async function saveApplicationEvaluation(
+  id: string,
+  stage: ApplicationEvaluationStage,
+  scores: Record<string, number>,
+  recommendation: EvaluationRecommendation,
+  note: string,
+): Promise<ActionResult> {
+  const evaluator = await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const parsed = applicationEvaluationSchema.safeParse({
+    stage,
+    scores,
+    recommendation,
+    note: note.trim(),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "평가 내용을 확인해주세요" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.from("application_evaluations").upsert(
+    {
+      application_id: id,
+      evaluator_id: evaluator.id,
+      stage: parsed.data.stage,
+      scores: parsed.data.scores,
+      recommendation: parsed.data.recommendation,
+      note: parsed.data.note,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "application_id,evaluator_id,stage" },
+  );
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath(`/admin/applications/${id}`);
+  revalidatePath("/admin/applications/conversions");
+  return {};
+}
+
+export async function reopenInterview(id: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return {};
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_reopen_interview", { p_application: id });
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath(`/admin/applications/${id}`);
+  revalidatePath("/admin/applications");
+  revalidatePath("/admin/interviews");
+  return {};
+}
+
+export async function resendApplicationInvite(id: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 가입 초대를 보낼 수 없어요" };
+
+  const supabase = await createClient();
+  const { data: application, error: applicationError } = await supabase
+    .from("applications")
+    .select("applicant_name, email, season, status")
+    .eq("id", id)
+    .single();
+  if (applicationError || !application || application.status !== "accepted") {
+    return { error: "합격 상태인 지원자만 가입 초대를 보낼 수 있어요" };
+  }
+
+  const invite = await issueOnboardingInvite(supabase, id);
+  if ("error" in invite) return { error: invite.error };
+
+  const result = await sendApplicationOnboardingInviteEmail({
+    to: application.email,
+    name: application.applicant_name,
+    season: application.season,
+    onboardingUrl: applicationInviteUrl(invite.token),
+  });
+  revalidatePath("/admin/applications/conversions");
+  if (result.skipped) return { warning: "가입 초대는 갱신됐지만 Resend 설정이 없어 이메일을 보내지 못했어요" };
+  if (!result.sent) return { warning: "가입 초대는 갱신됐지만 이메일 발송에 실패했어요" };
+  return {};
+}
+
+export async function linkApplicationAccount(token: string): Promise<ActionResult> {
+  const profile = await getProfile();
+  if (!profile) return { error: "로그인이 필요해요" };
+  if (isStaff(profile)) return { error: "운영진 계정으로는 합격자 가입 연결을 할 수 없어요" };
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 가입 연결을 할 수 없어요" };
+  if (!token.trim()) return { error: "가입 초대 링크가 올바르지 않아요" };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("link_application_to_profile", {
+    p_token_hash: hashApplicationInviteToken(token),
+  });
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath("/onboarding");
+  revalidatePath("/admin/applications/conversions");
   return {};
 }
 

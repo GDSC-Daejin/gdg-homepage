@@ -95,6 +95,7 @@ const groups: NavGroup[] = [
     seasonal: true,
     items: [
       { href: "/admin/applications", label: "지원서", icon: "applications" },
+      { href: "/admin/applications/conversions", label: "합격자 전환", icon: "applications" },
       { href: "/admin/interviews", label: "면접 일정", icon: "interview" },
       { href: "/admin/interview-questions", label: "면접 질문", icon: "interview" },
     ],

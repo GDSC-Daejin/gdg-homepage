@@ -1,129 +1,197 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { updateProfile } from "@/actions/profile";
-import { Input } from "@/components/Input";
-import { Select } from "@/components/Select";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { signOut, updateProfile } from "@/actions/profile";
 import { Button } from "@/components/Button";
+import { Input } from "@/components/Input";
+import { Modal } from "@/components/Modal";
+import { Select } from "@/components/Select";
+import { useToast } from "@/components/wds/Toast";
+import { onboardingProfileSchema } from "@/lib/schemas";
 import type { Profile } from "@/lib/types";
+import type { z } from "zod";
 
 const INTEREST_OPTIONS = ["Android", "Web", "iOS", "ML", "Cloud", "Design"];
-const REQUIRED_FIELDS = ["name", "nickname", "student_no", "major", "phone", "position", "academic_status"] as const;
 
-type RequiredField = (typeof REQUIRED_FIELDS)[number];
+type OnboardingValues = z.input<typeof onboardingProfileSchema>;
+
+function formatPhone(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
 
 export function OnboardingForm({
   profile,
   submitted,
 }: {
   profile: Profile;
-  /** 이미 제출한 뒤라면 승인 대기 중 오타를 고치는 용도다. */
   submitted: boolean;
 }) {
   const [error, setError] = useState<string>();
-  const [saved, setSaved] = useState(false);
-  const [pending, startTransition] = useTransition();
-  const [values, setValues] = useState<Record<RequiredField, string>>({
-    name: profile.name ?? "",
-    nickname: profile.nickname ?? "",
-    student_no: profile.student_no ?? "",
-    major: profile.major ?? "",
-    phone: profile.phone ?? "",
-    position: profile.position ?? "",
-    academic_status: profile.academic_status ?? "",
+  const [logoutOpen, setLogoutOpen] = useState(false);
+  const { show, toast } = useToast();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    trigger,
+    watch,
+    formState: { errors, isDirty, isSubmitting },
+  } = useForm<OnboardingValues>({
+    resolver: zodResolver(onboardingProfileSchema),
+    mode: "onChange",
+    defaultValues: {
+      name: profile.name ?? "",
+      nickname: profile.nickname ?? "",
+      student_no: profile.student_no ?? "",
+      major: profile.major ?? "",
+      phone: formatPhone(profile.phone ?? ""),
+      position: profile.position ?? undefined,
+      academic_status: profile.academic_status ?? undefined,
+      interests: profile.interests ?? [],
+    },
   });
-  const [interests, setInterests] = useState<string[]>(profile.interests ?? []);
-  const isComplete = REQUIRED_FIELDS.every((field) => values[field].trim()) && interests.length > 0;
+  const interests = watch("interests");
+  const position = watch("position");
+  const academicStatus = watch("academic_status");
 
-  function updateValue(field: RequiredField, value: string) {
-    setValues((current) => ({ ...current, [field]: value }));
-  }
+  useEffect(() => {
+    void trigger();
+  }, [trigger]);
 
-  function toggleInterest(interest: string) {
-    setInterests((current) =>
-      current.includes(interest) ? current.filter((value) => value !== interest) : [...current, interest],
-    );
-  }
-
-  function handleSubmit(formData: FormData) {
-    if (!isComplete) {
-      setError("모든 필수 항목을 입력해주세요");
-      return;
-    }
+  async function submit(values: OnboardingValues) {
     setError(undefined);
-    setSaved(false);
-    startTransition(async () => {
-      // 첫 제출이면 updateProfile이 "/"로 보내고, 승인 게이트가 이 화면으로 되돌린다.
-      const result = await updateProfile(formData);
-      if (result?.error) setError(result.error);
-      else setSaved(true);
-    });
+    const formData = new FormData();
+    formData.set("name", values.name);
+    formData.set("nickname", values.nickname);
+    formData.set("student_no", values.student_no);
+    formData.set("major", values.major);
+    formData.set("phone", values.phone);
+    formData.set("position", values.position);
+    formData.set("academic_status", values.academic_status);
+    values.interests.forEach((interest) => formData.append("interests", interest));
+
+    const result = await updateProfile(formData);
+    if (result?.error) setError(result.error);
+    else {
+      reset(values);
+      show("수정한 내용을 저장했어요", "positive");
+    }
+  }
+
+  function requestSignOut() {
+    if (isDirty) setLogoutOpen(true);
+    else void signOut();
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-4">
-      <Input name="name" label="이름" defaultValue={profile.name} onChange={(event) => updateValue("name", event.target.value)} required />
+    <form noValidate onSubmit={handleSubmit(submit)} className="flex flex-col gap-4">
+      <Input label="이름" error={errors.name?.message} required {...register("name")} />
       <Input
-        name="nickname"
         label="영어 닉네임"
         placeholder="활동에 사용할 영어 닉네임"
-        defaultValue={profile.nickname}
-        onChange={(event) => updateValue("nickname", event.target.value)}
+        error={errors.nickname?.message}
         required
+        {...register("nickname", {
+          onChange: (event) => setValue("nickname", event.target.value.replace(/[ㄱ-ㅎㅏ-ㅣ가-힣]/g, ""), { shouldValidate: true }),
+        })}
       />
-      <Input name="student_no" label="학번" defaultValue={profile.student_no} onChange={(event) => updateValue("student_no", event.target.value)} required />
-      <Input name="major" label="전공" defaultValue={profile.major} onChange={(event) => updateValue("major", event.target.value)} required />
-      <Input name="phone" label="전화번호" type="tel" defaultValue={profile.phone} onChange={(event) => updateValue("phone", event.target.value)} required />
-      <Select name="position" label="포지션" defaultValue={profile.position ?? ""} onChange={(event) => updateValue("position", event.target.value)} required>
-        <option value="" disabled>
-          선택
-        </option>
+      <Input
+        label="학번"
+        error={errors.student_no?.message}
+        inputMode="numeric"
+        maxLength={8}
+        required
+        {...register("student_no", {
+          onChange: (event) => setValue("student_no", event.target.value.replace(/\D/g, "").slice(0, 8), { shouldValidate: true }),
+        })}
+      />
+      <Input label="전공" error={errors.major?.message} required {...register("major")} />
+      <Input
+        label="전화번호"
+        type="tel"
+        error={errors.phone?.message}
+        inputMode="numeric"
+        maxLength={13}
+        placeholder="010-1234-5678"
+        required
+        {...register("phone", {
+          onChange: (event) => setValue("phone", formatPhone(event.target.value), { shouldValidate: true }),
+        })}
+      />
+      <Select
+        name="position"
+        label="포지션"
+        value={position}
+        error={errors.position?.message}
+        onChange={(event) => setValue("position", event.target.value as OnboardingValues["position"], { shouldValidate: true })}
+        required
+      >
+        <option value="" disabled>선택</option>
         <option value="frontend">프론트엔드</option>
         <option value="backend">백엔드</option>
         <option value="designer">디자이너</option>
         <option value="beginner">비기너</option>
       </Select>
-      <Select name="academic_status" label="재학여부" defaultValue={profile.academic_status ?? ""} onChange={(event) => updateValue("academic_status", event.target.value)} required>
-        <option value="" disabled>
-          선택
-        </option>
+      <Select
+        name="academic_status"
+        label="재학여부"
+        value={academicStatus}
+        error={errors.academic_status?.message}
+        onChange={(event) => setValue("academic_status", event.target.value as OnboardingValues["academic_status"], { shouldValidate: true })}
+        required
+      >
+        <option value="" disabled>선택</option>
         <option value="enrolled">재학</option>
         <option value="leave">휴학</option>
         <option value="graduated">졸업</option>
         <option value="completed">수료</option>
       </Select>
       <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-gray-700">관심 분야 <span aria-hidden="true" className="text-danger">*</span></span>
+        <span className="text-sm font-medium text-gray-700">관심 분야 <span aria-hidden className="text-danger">*</span></span>
         <div className="flex flex-wrap gap-x-4 gap-y-2">
           {INTEREST_OPTIONS.map((interest) => (
-            <label
-              key={interest}
-              className="flex items-center gap-1.5 text-sm text-gray-700"
-            >
+            <label key={interest} className="flex items-center gap-1.5 text-sm text-gray-700">
               <input
                 type="checkbox"
-                name="interests"
-                value={interest}
                 checked={interests.includes(interest)}
-                onChange={() => toggleInterest(interest)}
+                onChange={() => setValue(
+                  "interests",
+                  interests.includes(interest)
+                    ? interests.filter((value) => value !== interest)
+                    : [...interests, interest],
+                  { shouldValidate: true },
+                )}
               />
               {interest}
             </label>
           ))}
         </div>
+        {errors.interests && <p role="alert" className="text-xs text-danger">{errors.interests.message}</p>}
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
-      {saved && !error && (
-        <p className="text-xs text-primary">수정한 내용을 저장했어요.</p>
-      )}
-      <Button
-        type="submit"
-        variant="primary"
-        className="mt-2 w-full"
-        disabled={pending || !isComplete}
-      >
+      {error && <p role="alert" className="text-xs text-danger">{error}</p>}
+      <Button type="submit" variant="primary" className="mt-2 w-full" disabled={isSubmitting}>
         {submitted ? "수정 내용 저장" : "제출"}
       </Button>
+      {submitted && (
+        <Button type="button" variant="ghost" className="mt-2 w-full" onClick={requestSignOut}>
+          로그아웃
+        </Button>
+      )}
+      <Modal open={logoutOpen} onClose={() => setLogoutOpen(false)} ariaLabel="로그아웃 확인">
+        <h2 className="text-base font-semibold text-gray-900">저장하지 않고 로그아웃할까요?</h2>
+        <p className="mt-2 text-sm leading-6 text-gray-500">수정 중인 내용은 저장되지 않고 사라집니다.</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => setLogoutOpen(false)}>계속 수정</Button>
+          <Button type="button" variant="danger" onClick={() => void signOut()}>로그아웃</Button>
+        </div>
+      </Modal>
+      {toast}
     </form>
   );
 }

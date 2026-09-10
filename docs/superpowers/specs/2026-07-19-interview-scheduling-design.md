@@ -154,3 +154,12 @@ createMeetSpace(): Promise<{ meetingUri: string; meetingCode: string; name: stri
 - 모집 단계별 날짜 기간 관리 (recruiting_settings 확장 건).
 - Google Calendar 이벤트/알림 생성 (Meet 링크만 생성).
 - Meet 링크 자동생성의 서비스 계정/도메인 위임 방식(무료 Gmail이라 불가).
+
+## 운영 확장 결정 (2026-09-09)
+
+- 지원자 취소·일정 변경은 면접 시작 24시간 전까지만 허용한다.
+- 지원자 일정 변경은 최초 예약 이후 총 1회만 허용한다. 취소 후 재예약도 변경 1회로 계산한다.
+- 운영진은 취소·일정 변경에 제한이 없다.
+- 면접 결과는 참석/노쇼를 운영진이 수동 기록한다. 노쇼는 지원서 상태 `no_show`와 면접 이력에 함께 남긴다.
+- 노쇼 안내 이메일은 발송하지 않는다. 취소·일정 변경 시에는 기존 이메일 흐름을 사용한다.
+- 구현은 기존 `interview_slots`를 유지하고 `interview_booking_events`에 예약 변경 이력을 추가하는 방식으로 한다.

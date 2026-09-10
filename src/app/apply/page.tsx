@@ -23,7 +23,7 @@ const faqLd = {
       name: "GDGOC DJU는 어떻게 지원하나요?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "서류 접수 → 운영진 심사 → 결과 이메일 안내 순으로 진행돼요. 로그인 없이 이 페이지에서 바로 지원서를 작성할 수 있어요.",
+        text: "서류 접수 → 운영진 심사 → 면접 일정 예약·진행 → 최종 결과 이메일 안내 순으로 진행돼요. 로그인 없이 이 페이지에서 바로 지원서를 작성할 수 있어요.",
       },
     },
     {
@@ -39,8 +39,9 @@ const faqLd = {
 
 const STEPS = [
   { title: "서류 접수", description: "지원서를 작성해 제출해요" },
-  { title: "운영진 심사", description: "운영진이 지원서를 검토해요" },
-  { title: "결과 이메일 안내", description: "입력한 이메일로 결과를 안내드려요" },
+  { title: "서류 심사", description: "운영진이 지원서를 검토해요" },
+  { title: "면접 진행", description: "안내받은 링크에서 일정을 예약해요" },
+  { title: "결과 이메일 안내", description: "최종 결과를 입력한 이메일로 안내드려요" },
 ];
 
 export default async function ApplyPage() {
