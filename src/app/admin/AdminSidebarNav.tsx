@@ -160,7 +160,7 @@ export function AdminSidebarNav({ demo = false, recruitingOpen }: { demo?: boole
                 {group.title}
               </p>
             )}
-            {group.items.filter((item) => !demo || item.href !== "/admin/interviews").map((item) => {
+            {group.items.map((item) => {
               const active = itemActive(item, pathname);
               return (
                 <Link

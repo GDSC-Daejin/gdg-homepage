@@ -9,6 +9,8 @@ export interface SectionTab {
   /** 하위 경로까지 활성으로 볼지. 기본은 정확히 일치할 때만. */
   prefix?: boolean;
   hideInTour?: boolean;
+  /** 둘러보기 경로 접두사를 붙이지 않고 이동하는 탭. */
+  direct?: boolean;
 }
 
 /**
@@ -34,7 +36,7 @@ export function SectionTabs({ tabs, label }: { tabs: SectionTab[]; label: string
         return (
           <Link
             key={tab.href}
-            href={tour ? `/tour${tab.href}` : tab.href}
+            href={tab.direct ? tab.href : tour ? `/tour${tab.href}` : tab.href}
             // /schedule은 회원 셸과 공유하는 라우트라, 어드민에서 들어갈 땐 셸을 명시한다.
             onClick={
               tab.href.startsWith("/schedule")
@@ -78,4 +80,5 @@ export const SYSTEM_TABS: SectionTab[] = [
   { href: "/admin/bots", label: "봇", prefix: true },
   { href: "/admin/dev", label: "개발", prefix: true, hideInTour: true },
   { href: "/admin/settings", label: "모집 설정", prefix: true },
+  { href: "/tour/admin", label: "둘러보기", hideInTour: true, direct: true },
 ];

@@ -5,7 +5,7 @@ import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 
 const TOUR_PATHS = [
   /^\/tour\/landing$/,
-  /^\/admin(?:\/(?:analytics|applications|attendance|bots|budget|dev|events|groups|inquiries|interview-questions|members|notices|places|points|settings|surveys)(?:\/.*)?)?$/,
+  /^\/admin(?:\/(?:analytics|applications|attendance|bots|budget|dev|events|groups|inquiries|interview-questions|interviews|members|notices|places|points|settings|surveys)(?:\/.*)?)?$/,
   /^\/schedule(?:\/.*)?$/,
 ];
 

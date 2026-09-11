@@ -16,10 +16,21 @@ import type {
   BudgetEntry,
   Notification,
   InterviewQuestion,
+  RecruitingSettings,
   Group,
   GroupMember,
   Place,
+  ApplicationEvaluation,
+  InterviewSlot,
 } from "@/lib/types";
+
+export const DEMO_RECRUITING_SETTINGS: RecruitingSettings = {
+  season: "2026-1",
+  is_open: true,
+  open_positions: ["frontend", "backend", "designer"],
+  apply_start: null,
+  apply_end: null,
+};
 
 export const DEMO_MEMBERS: Profile[] = [
   { id: "demo-m1", name: "김도윤", nickname: "Ryan", student_no: "20231234", major: "컴퓨터공학과", phone: "010-1111-1111", interests: ["백엔드", "클라우드"], role: "organizer", position: "backend", status: "active", academic_status: "enrolled", joined_at: "2023-02-01T00:00:00.000Z", approved_at: "2023-02-01T00:00:00.000Z" },
@@ -115,8 +126,44 @@ export const DEMO_APPLICATIONS: Application[] = [
   { id: "demo-ap2", applicant_id: null, applicant_name: "이준서", student_no: "20231002", major: "소프트웨어학과", phone: "010-1000-0002", email: "junseo@dju.ac.kr", season: "2026-1", answers: { intro: "소프트웨어학과 23학번 이준서입니다.", motivation: "백엔드 개발 역량을 키우고 싶습니다.", interest: "백엔드" }, status: "pending", reviewed_by: null, reviewed_at: null, created_at: "2026-07-02T00:00:00.000Z", position: "backend", review_note: "포트폴리오 확인 필요" },
   { id: "demo-ap3", applicant_id: null, applicant_name: "최지우", student_no: "20241003", major: "정보통신공학과", phone: "010-1000-0003", email: "jiwoo@dju.ac.kr", season: "2026-1", answers: { intro: "정보통신공학과 24학번 최지우입니다.", motivation: "동아리 활동을 통해 팀 프로젝트 경험을 쌓고 싶습니다.", interest: "안드로이드" }, status: "accepted", reviewed_by: "demo-m1", reviewed_at: "2026-07-03T00:00:00.000Z", created_at: "2026-06-28T00:00:00.000Z", position: "backend", review_note: "" },
   { id: "demo-ap4", applicant_id: null, applicant_name: "한서준", student_no: "20221004", major: "전자공학과", phone: "010-1000-0004", email: "seojun@dju.ac.kr", season: "2026-1", answers: { intro: "전자공학과 22학번 한서준입니다.", motivation: "임베디드와 웹을 함께 다뤄보고 싶습니다.", interest: "임베디드" }, status: "rejected", reviewed_by: "demo-m2", reviewed_at: "2026-07-03T00:00:00.000Z", created_at: "2026-06-29T00:00:00.000Z", position: null, review_note: "지원 파트 미기재" },
+  { id: "demo-ap7", applicant_id: null, applicant_name: "박서윤", student_no: "20241007", major: "컴퓨터공학과", phone: "010-1000-0007", email: "seoyun@dju.ac.kr", season: "2026-1", answers: { intro: "컴퓨터공학과 24학번 박서윤입니다.", motivation: "팀 프로젝트에서 함께 성장하고 싶습니다.", interest: "디자인" }, status: "reviewing", reviewed_by: "demo-m2", reviewed_at: "2026-07-03T00:00:00.000Z", created_at: "2026-07-02T12:00:00.000Z", position: "designer", review_note: "서류 검토 중" },
+  { id: "demo-ap8", applicant_id: null, applicant_name: "김태호", student_no: "20231008", major: "소프트웨어학과", phone: "010-1000-0008", email: "taeho@dju.ac.kr", season: "2026-1", answers: { intro: "소프트웨어학과 23학번 김태호입니다.", motivation: "실전 개발 경험을 쌓고 싶습니다.", interest: "백엔드" }, status: "no_show", reviewed_by: "demo-m1", reviewed_at: "2026-07-04T00:00:00.000Z", created_at: "2026-07-02T18:00:00.000Z", position: "backend", review_note: "면접 노쇼" },
+  { id: "demo-ap9", applicant_id: null, applicant_name: "윤하린", student_no: "20221009", major: "경영학과", phone: "010-1000-0009", email: "harin@dju.ac.kr", season: "2026-1", answers: { intro: "경영학과 22학번 윤하린입니다.", motivation: "개인 사정으로 이번 모집 지원을 철회합니다.", interest: "기획" }, status: "withdrawn", reviewed_by: null, reviewed_at: null, created_at: "2026-07-03T00:00:00.000Z", position: "designer", review_note: "지원자 요청" },
+  { id: "demo-ap10", applicant_id: "demo-m3", applicant_name: "박지훈", student_no: "20241111", major: "정보통신공학과", phone: "010-1000-0010", email: "jihoon@dju.ac.kr", season: "2026-1", answers: { intro: "정보통신공학과 24학번 박지훈입니다.", motivation: "동아리에서 다양한 프로젝트를 경험하고 싶습니다.", interest: "프론트엔드" }, status: "accepted", reviewed_by: "demo-m1", reviewed_at: "2026-07-04T00:00:00.000Z", created_at: "2026-07-01T18:00:00.000Z", position: "frontend", review_note: "" },
   { id: "demo-ap5", applicant_id: null, applicant_name: "정예린", student_no: "20231005", major: "경영학과", phone: "010-1000-0005", email: "yerin@dju.ac.kr", season: "2025-2", answers: { intro: "경영학과 23학번 정예린입니다.", motivation: "IT 동아리 경험을 통해 시야를 넓히고 싶습니다.", interest: "기획" }, status: "accepted", reviewed_by: "demo-m1", reviewed_at: "2025-09-05T00:00:00.000Z", created_at: "2025-09-01T00:00:00.000Z", position: "designer", review_note: "" },
   { id: "demo-ap6", applicant_id: null, applicant_name: "임도현", student_no: "20241006", major: "수학과", phone: "010-1000-0006", email: "dohyun@dju.ac.kr", season: "2025-2", answers: { intro: "수학과 24학번 임도현입니다.", motivation: "알고리즘 스터디에 참여하고 싶습니다.", interest: "AI" }, status: "rejected", reviewed_by: "demo-m2", reviewed_at: "2025-09-05T00:00:00.000Z", created_at: "2025-09-02T00:00:00.000Z", position: null, review_note: "" },
+];
+
+export const DEMO_INTERVIEW_SLOTS: InterviewSlot[] = [
+  { id: "demo-is1", season: "2026-1", starts_at: "2026-09-18T10:00:00.000Z", duration_min: 30, application_id: null, interviewer_id: null, meet_uri: null, meet_code: null, calendar_event_id: null, interview_result: null, status: "open" },
+  { id: "demo-is2", season: "2026-1", starts_at: "2026-09-18T11:00:00.000Z", duration_min: 30, application_id: "demo-ap2", interviewer_id: "demo-m1", meet_uri: "https://meet.google.com/demo-interview-1", meet_code: "demo-interview-1", calendar_event_id: "demo-calendar-1", interview_result: null, status: "booked" },
+  { id: "demo-is3", season: "2026-1", starts_at: "2026-08-05T10:00:00.000Z", duration_min: 30, application_id: "demo-ap3", interviewer_id: "demo-m2", meet_uri: "https://meet.google.com/demo-interview-2", meet_code: "demo-interview-2", calendar_event_id: "demo-calendar-2", interview_result: "attended", status: "completed" },
+  { id: "demo-is4", season: "2026-1", starts_at: "2026-08-06T10:00:00.000Z", duration_min: 30, application_id: "demo-ap8", interviewer_id: "demo-m1", meet_uri: "https://meet.google.com/demo-interview-3", meet_code: "demo-interview-3", calendar_event_id: "demo-calendar-3", interview_result: "no_show", status: "completed" },
+];
+
+export const DEMO_APPLICATION_EVALUATIONS: ApplicationEvaluation[] = [
+  { id: "demo-eval1", application_id: "demo-ap2", evaluator_id: "demo-m1", stage: "document", scores: { motivation: 4, fit: 4, growth: 5 }, recommendation: "pending", note: "면접에서 협업 경험을 확인해요.", submitted_at: "2026-07-03T00:00:00.000Z", updated_at: "2026-07-03T00:00:00.000Z" },
+  { id: "demo-eval2", application_id: "demo-ap3", evaluator_id: "demo-m1", stage: "document", scores: { motivation: 5, fit: 4, growth: 4 }, recommendation: "accepted", note: "프로젝트 경험이 인상적이에요.", submitted_at: "2026-07-03T00:00:00.000Z", updated_at: "2026-07-03T00:00:00.000Z" },
+  { id: "demo-eval3", application_id: "demo-ap3", evaluator_id: "demo-m2", stage: "interview", scores: { communication: 5, collaboration: 5, growth: 4 }, recommendation: "accepted", note: "질문 의도를 잘 이해하고 답변했어요.", submitted_at: "2026-08-05T12:00:00.000Z", updated_at: "2026-08-05T12:00:00.000Z" },
+  { id: "demo-eval4", application_id: "demo-ap8", evaluator_id: "demo-m1", stage: "interview", scores: { communication: 1, collaboration: 1, growth: 2 }, recommendation: "rejected", note: "면접 노쇼로 추가 평가가 어려워요.", submitted_at: "2026-08-06T12:00:00.000Z", updated_at: "2026-08-06T12:00:00.000Z" },
+];
+
+export const DEMO_INTERVIEW_BOOKING_EVENTS = [
+  { id: "demo-ibe1", application_id: "demo-ap2", slot_id: "demo-is2", new_slot_id: null, action: "booked", actor_type: "applicant", reason: "", created_at: "2026-08-20T01:00:00.000Z" },
+  { id: "demo-ibe2", application_id: "demo-ap3", slot_id: "demo-is3", new_slot_id: null, action: "booked", actor_type: "applicant", reason: "", created_at: "2026-08-01T01:00:00.000Z" },
+  { id: "demo-ibe3", application_id: "demo-ap3", slot_id: "demo-is3", new_slot_id: null, action: "attended", actor_type: "admin", reason: "정상 참석", created_at: "2026-08-05T12:00:00.000Z" },
+  { id: "demo-ibe4", application_id: "demo-ap8", slot_id: "demo-is4", new_slot_id: null, action: "no_show", actor_type: "admin", reason: "연락 두절", created_at: "2026-08-06T12:00:00.000Z" },
+];
+
+export const DEMO_APPLICATION_STATUS_HISTORY = [
+  { id: "demo-ash1", application_id: "demo-ap2", from_status: "reviewing", to_status: "pending", actor_type: "admin", reason: "면접 대상 확정", created_at: "2026-07-03T00:00:00.000Z" },
+  { id: "demo-ash2", application_id: "demo-ap3", from_status: "pending", to_status: "accepted", actor_type: "admin", reason: "최종 합격", created_at: "2026-08-07T00:00:00.000Z" },
+  { id: "demo-ash3", application_id: "demo-ap8", from_status: "pending", to_status: "no_show", actor_type: "admin", reason: "면접 노쇼", created_at: "2026-08-06T12:00:00.000Z" },
+];
+
+export const DEMO_APPLICATION_ONBOARDING_INVITES = [
+  { application_id: "demo-ap3", expires_at: "2026-09-18T00:00:00.000Z", used_at: null, revoked_at: null, created_at: "2026-08-07T01:00:00.000Z" },
+  { application_id: "demo-ap10", expires_at: "2026-08-30T00:00:00.000Z", used_at: "2026-08-20T01:00:00.000Z", revoked_at: null, created_at: "2026-08-10T01:00:00.000Z" },
 ];
 
 export const DEMO_EVENT_CONFIRMED_COUNTS: Record<string, number> = {

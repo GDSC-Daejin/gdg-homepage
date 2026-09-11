@@ -7,6 +7,8 @@ import { Badge } from "@/components/Badge";
 import { PageHeader } from "@/components/PageHeader";
 import { POSITION_LABELS, type Position } from "@/lib/types";
 import { InviteResendButton } from "./InviteResendButton";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_APPLICATIONS, DEMO_APPLICATION_ONBOARDING_INVITES, DEMO_MEMBERS, DEMO_RECRUITING_SETTINGS } from "@/lib/demoData";
 
 export const dynamic = "force-dynamic";
 
@@ -36,36 +38,53 @@ function formatDate(iso: string) {
 
 export default async function ApplicationConversionsPage() {
   const admin = await requireAdmin();
-  const [settings, supabase] = await Promise.all([getRecruitingSettings(), createClient()]);
-  const { data: applications } = await supabase
-    .from("applications")
-    .select("id, applicant_name, email, season, position, applicant_id")
-    .eq("season", settings.season)
-    .eq("status", "accepted")
-    .order("applicant_name");
+  const demo = await isDemoMode();
+  const settings = demo ? DEMO_RECRUITING_SETTINGS : await getRecruitingSettings();
+  let rows: ApplicationRow[];
+  let invites: InviteRow[];
+  let profiles: { id: string; approved_at: string | null }[];
 
-  const rows = (applications ?? []) as ApplicationRow[];
-  const ids = rows.map((row) => row.id);
-  const profileIds = rows.flatMap((row) => (row.applicant_id ? [row.applicant_id] : []));
-  const [{ data: invites }, { data: profiles }] = ids.length
-    ? await Promise.all([
-        supabase
-          .from("application_onboarding_invites")
-          .select("application_id, expires_at, used_at, revoked_at, created_at")
-          .in("application_id", ids)
-          .order("created_at", { ascending: false }),
-        profileIds.length
-          ? supabase.from("profiles").select("id, approved_at").in("id", profileIds)
-          : Promise.resolve({ data: [] }),
-      ])
-    : [{ data: [] }, { data: [] }];
+  if (demo) {
+    rows = DEMO_APPLICATIONS
+      .filter((application) => application.season === settings.season && application.status === "accepted")
+      .map(({ id, applicant_name, email, season, position, applicant_id }) => ({ id, applicant_name, email, season, position, applicant_id }));
+    invites = DEMO_APPLICATION_ONBOARDING_INVITES;
+    profiles = DEMO_MEMBERS
+      .filter((member) => rows.some((row) => row.applicant_id === member.id))
+      .map(({ id, approved_at }) => ({ id, approved_at }));
+  } else {
+    const supabase = await createClient();
+    const { data: applications } = await supabase
+      .from("applications")
+      .select("id, applicant_name, email, season, position, applicant_id")
+      .eq("season", settings.season)
+      .eq("status", "accepted")
+      .order("applicant_name");
+    rows = (applications ?? []) as ApplicationRow[];
+    const ids = rows.map((row) => row.id);
+    const profileIds = rows.flatMap((row) => (row.applicant_id ? [row.applicant_id] : []));
+    const [{ data: inviteData }, { data: profileData }] = ids.length
+      ? await Promise.all([
+          supabase
+            .from("application_onboarding_invites")
+            .select("application_id, expires_at, used_at, revoked_at, created_at")
+            .in("application_id", ids)
+            .order("created_at", { ascending: false }),
+          profileIds.length
+            ? supabase.from("profiles").select("id, approved_at").in("id", profileIds)
+            : Promise.resolve({ data: [] }),
+        ])
+      : [{ data: [] }, { data: [] }];
+    invites = (inviteData ?? []) as InviteRow[];
+    profiles = (profileData ?? []) as { id: string; approved_at: string | null }[];
+  }
 
   const latestInvite = new Map<string, InviteRow>();
-  for (const invite of (invites ?? []) as InviteRow[]) {
+  for (const invite of invites) {
     if (!latestInvite.has(invite.application_id)) latestInvite.set(invite.application_id, invite);
   }
   const approvalByProfile = new Map(
-    (profiles ?? []).map((profile) => [profile.id, profile.approved_at as string | null]),
+    profiles.map((profile) => [profile.id, profile.approved_at]),
   );
 
   return (

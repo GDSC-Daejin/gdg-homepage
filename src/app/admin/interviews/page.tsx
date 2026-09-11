@@ -5,6 +5,8 @@ import { requireAdmin } from "@/lib/auth";
 import { getRecruitingSettings } from "@/lib/recruiting";
 import { createClient } from "@/lib/supabase/server";
 import type { InterviewSlot } from "@/lib/types";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_APPLICATIONS, DEMO_INTERVIEW_SLOTS, DEMO_MEMBERS, DEMO_RECRUITING_SETTINGS } from "@/lib/demoData";
 import { BookingList } from "./BookingList";
 import { InviteSender } from "./InviteSender";
 import { SlotCreator } from "./SlotCreator";
@@ -13,38 +15,50 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminInterviewsPage() {
   await requireAdmin();
-  const [settings, supabase] = await Promise.all([getRecruitingSettings(), createClient()]);
-  const [{ data: slotData }, { data: applicationData }, { data: interviewerData }] = await Promise.all([
-    supabase
-      .from("interview_slots")
-      .select("*")
-      .eq("season", settings.season)
-      .in("status", ["open", "booked", "completed"])
-      .order("starts_at"),
-    supabase
-      .from("applications")
-      .select("id, applicant_name, email, status")
-      .eq("season", settings.season)
-      .order("applicant_name"),
-    supabase
-      .from("profiles")
-      .select("id, name, nickname")
-      .in("role", ["organizer", "team_member", "member"])
-      .not("approved_at", "is", null)
-      .order("name"),
-  ]);
+  const demo = await isDemoMode();
+  const settings = demo ? DEMO_RECRUITING_SETTINGS : await getRecruitingSettings();
+  let slotData: InterviewSlot[];
+  let applicationData: { id: string; applicant_name: string; email: string; status: string }[];
+  let interviewerData: { id: string; name: string; nickname: string }[];
 
-  const seasonApplications = (applicationData ?? []) as {
-    id: string;
-    applicant_name: string;
-    email: string;
-    status: string;
-  }[];
+  if (demo) {
+    slotData = DEMO_INTERVIEW_SLOTS;
+    applicationData = DEMO_APPLICATIONS.filter((application) => application.season === settings.season);
+    interviewerData = DEMO_MEMBERS
+      .filter((member) => member.role === "organizer" || member.role === "team_member" || member.role === "member")
+      .map(({ id, name, nickname }) => ({ id, name, nickname }));
+  } else {
+    const supabase = await createClient();
+    const [{ data: slots }, { data: applications }, { data: interviewers }] = await Promise.all([
+      supabase
+        .from("interview_slots")
+        .select("*")
+        .eq("season", settings.season)
+        .in("status", ["open", "booked", "completed"])
+        .order("starts_at"),
+      supabase
+        .from("applications")
+        .select("id, applicant_name, email, status")
+        .eq("season", settings.season)
+        .order("applicant_name"),
+      supabase
+        .from("profiles")
+        .select("id, name, nickname")
+        .in("role", ["organizer", "team_member", "member"])
+        .not("approved_at", "is", null)
+        .order("name"),
+    ]);
+    slotData = (slots ?? []) as InterviewSlot[];
+    applicationData = (applications ?? []) as typeof applicationData;
+    interviewerData = (interviewers ?? []) as typeof interviewerData;
+  }
+
+  const seasonApplications = applicationData;
   const applications = seasonApplications.filter((application) => application.status === "pending");
   const applicationNames = new Map(
     seasonApplications.map((application) => [application.id, application.applicant_name]),
   );
-  const bookings = ((slotData ?? []) as InterviewSlot[]).map((slot) => ({
+  const bookings = slotData.map((slot) => ({
     ...slot,
     applicant_name: slot.application_id ? applicationNames.get(slot.application_id) : undefined,
   }));
@@ -76,7 +90,7 @@ export default async function AdminInterviewsPage() {
           <h2 className="text-base font-semibold text-gray-900">예약 현황</h2>
         </div>
         <div className="p-3 sm:p-6">
-          <BookingList bookings={bookings} interviewers={(interviewerData ?? []) as { id: string; name: string; nickname: string }[]} />
+          <BookingList bookings={bookings} interviewers={interviewerData} />
         </div>
       </Card>
     </div>

@@ -7,7 +7,8 @@ import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/app/(member)/ThemeToggle";
 import { AdminSidebarNav } from "./AdminSidebarNav";
 import { isDemoMode } from "@/lib/demo";
-import { getRecruitingSettings, isRecruitingOpen, DEFAULT_SETTINGS } from "@/lib/recruiting";
+import { DEMO_RECRUITING_SETTINGS } from "@/lib/demoData";
+import { getRecruitingSettings, isRecruitingOpen } from "@/lib/recruiting";
 
 const roleLabel: Record<string, string> = {
   organizer: "오거나이저",
@@ -22,7 +23,7 @@ export async function AdminSidebar() {
   const demo = await isDemoMode();
   // 모집이 닫혀 있으면 모집 그룹을 통째로 감춘다 — 켜고 끄는 스위치는 시스템 그룹에 남아 있다.
   const recruitingOpen = isRecruitingOpen(
-    demo ? DEFAULT_SETTINGS : await getRecruitingSettings(),
+    demo ? DEMO_RECRUITING_SETTINGS : await getRecruitingSettings(),
   );
 
   return (
@@ -36,7 +37,15 @@ export async function AdminSidebar() {
       </Link>
       <AdminSidebarNav demo={demo} recruitingOpen={recruitingOpen} />
       <div className="mt-auto flex flex-col gap-3 border-t border-gray-200 pt-6">
-        {!demo && (
+        {demo ? (
+          <a
+            href="/admin"
+            className="flex w-full items-center justify-center rounded-lg bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-200"
+            referrerPolicy="no-referrer"
+          >
+            실제 운영 화면으로 돌아가기
+          </a>
+        ) : (
           <Link
             href="/"
             className="flex w-full items-center justify-center rounded-lg bg-gray-100 px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-200"

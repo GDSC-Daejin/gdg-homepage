@@ -9,7 +9,7 @@ import { POSITION_LABELS } from "@/lib/types";
 import { ReviewPanel } from "./ReviewPanel";
 import { EvaluationPanel } from "./EvaluationPanel";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_APPLICATIONS, DEMO_MEMBERS } from "@/lib/demoData";
+import { DEMO_APPLICATIONS, DEMO_APPLICATION_EVALUATIONS, DEMO_APPLICATION_STATUS_HISTORY, DEMO_INTERVIEW_BOOKING_EVENTS, DEMO_MEMBERS } from "@/lib/demoData";
 import { getInterviewQuestionsFor } from "@/lib/interview-questions";
 import { CancellationEmailRetryButton } from "./CancellationEmailRetryButton";
 
@@ -136,14 +136,14 @@ export default async function AdminApplicationDetailPage({
 
   const interviewQuestions = await getInterviewQuestionsFor(app.position);
   const { data: interviewHistory } = demo
-    ? { data: [] }
+    ? { data: DEMO_INTERVIEW_BOOKING_EVENTS.filter((event) => event.application_id === app.id) }
     : await (await createClient())
         .from("interview_booking_events")
         .select("id, slot_id, new_slot_id, action, actor_type, reason, created_at")
         .eq("application_id", app.id)
         .order("created_at", { ascending: false });
   const { data: evaluationData } = demo
-    ? { data: [] }
+    ? { data: DEMO_APPLICATION_EVALUATIONS.filter((evaluation) => evaluation.application_id === app.id) }
     : await (await createClient())
         .from("application_evaluations")
         .select("*")
@@ -151,7 +151,7 @@ export default async function AdminApplicationDetailPage({
         .order("stage")
         .order("updated_at", { ascending: false });
   const { data: statusHistory } = demo
-    ? { data: [] }
+    ? { data: DEMO_APPLICATION_STATUS_HISTORY.filter((event) => event.application_id === app.id) }
     : await (await createClient())
         .from("application_status_history")
         .select("id, from_status, to_status, actor_type, reason, created_at")

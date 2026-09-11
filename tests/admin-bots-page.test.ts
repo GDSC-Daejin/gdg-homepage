@@ -80,6 +80,12 @@ describe("어드민 화면", () => {
     expect(tabs).toContain('label: "봇"');
   });
 
+  it("시스템 탭에서 어드민 둘러보기로 이동한다", () => {
+    expect(tabs).toContain('href: "/tour/admin"');
+    expect(tabs).toContain('label: "둘러보기"');
+    expect(tabs).toContain("direct: true");
+  });
+
   it("사이드바 시스템 한 칸이 봇 화면을 활성으로 잡는다", () => {
     expect(nav).toContain('label: "시스템"');
     expect(nav).toContain('"/admin/bots"');

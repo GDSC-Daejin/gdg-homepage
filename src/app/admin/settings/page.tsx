@@ -1,9 +1,10 @@
 import { requireAdmin } from "@/lib/auth";
-import { getRecruitingSettings, DEFAULT_SETTINGS } from "@/lib/recruiting";
+import { getRecruitingSettings } from "@/lib/recruiting";
 import { PageHeader } from "@/components/PageHeader";
 import { SectionTabs, SYSTEM_TABS } from "../SectionTabs";
 import { Card } from "@/components/Card";
 import { isDemoMode } from "@/lib/demo";
+import { DEMO_RECRUITING_SETTINGS } from "@/lib/demoData";
 import { SettingsForm } from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ export default async function AdminSettingsPage() {
   await requireAdmin();
   const demo = await isDemoMode();
 
-  const settings = demo ? DEFAULT_SETTINGS : await getRecruitingSettings();
+  const settings = demo ? DEMO_RECRUITING_SETTINGS : await getRecruitingSettings();
 
   return (
     <div>
