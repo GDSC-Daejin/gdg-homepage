@@ -37,4 +37,10 @@ describe("모집 둘러보기 데이터", () => {
     expect(sidebar).toContain("실제 운영 화면으로 돌아가기");
     expect(sidebar).toContain('href="/admin"');
   });
+
+  it("개발 화면에서 전체 어드민 둘러보기로 전환한다", async () => {
+    const dev = await readFile("src/app/admin/dev/page.tsx", "utf8");
+    expect(dev).toContain('href="/tour/admin"');
+    expect(dev).toContain("어드민 둘러보기 시작");
+  });
 });

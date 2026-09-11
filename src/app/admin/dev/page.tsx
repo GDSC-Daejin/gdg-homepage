@@ -66,6 +66,21 @@ export default async function AdminDevPage() {
         description="미리보기와 개발용 화면을 한곳에 모아뒀어요"
       />
 
+      <Card className="flex items-center justify-between gap-4 bg-primary-soft">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">어드민 둘러보기</h2>
+          <p className="mt-1 text-xs text-gray-600">
+            모집·면접 운영 화면을 예시 데이터로 확인해요.
+          </p>
+        </div>
+        <Link
+          href="/tour/admin"
+          className="shrink-0 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          어드민 둘러보기 시작
+        </Link>
+      </Card>
+
       {sections.map((section) => (
         <Card key={section.title}>
           <h2 className="text-sm font-semibold text-gray-900">{section.title}</h2>
