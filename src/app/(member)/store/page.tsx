@@ -33,6 +33,6 @@ export default async function StorePage() {
       <Card className="p-4"><p className="text-sm text-gray-500">몬스터볼 보유량</p><p className="mt-1 text-3xl font-bold text-primary">{balls}<span className="ml-1 text-base font-medium text-gray-500">개</span></p></Card>
     </div>
     <ShopClient dailyPurchased={dailyPurchased} />
-    <p className="mt-6 text-xs leading-5 text-gray-500">하루에 최대 10개까지 교환할 수 있어요. 5개 묶음은 450P, 10개 묶음은 900P예요.</p>
+    <p className="mt-6 text-xs leading-5 text-gray-500">하루에 최대 5개까지 교환할 수 있어요. 3개 묶음은 70P, 5개 묶음은 110P예요.</p>
   </div>;
 }
