@@ -1,5 +1,11 @@
 import { access, readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { buildRankingBattleSteps } from "@/app/(member)/pokedex/RankingBattleAnimation";
+import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pokedex/ranking-league";
+
+const pokemon = (throwId: string): RankingPokemon => ({ throwId, pokemonId: throwId, name: throwId, imagePath: "", combatPower: 100, battleType: "normal", rarity: "common" });
+const turn = (actor: RankingTurn["actor"], attackerDamage: number, defenderDamage: number): RankingTurn => ({ actor, attackerIndex: 0, defenderIndex: 0, attackerDamage, defenderDamage, attackerHealth: 900, defenderHealth: 900, attackerTypeMultiplier: 1, defenderTypeMultiplier: 1, attackerMonoMultiplier: 1, defenderMonoMultiplier: 1 });
+const battle = (firstTurnUserId: string | null): RankingBattleDetail => ({ id: "battle", attackerId: "a", defenderId: "d", attackerTeam: [pokemon("a1")], defenderTeam: [pokemon("d1")], battleLog: [turn("defender", 0, 50), turn("attacker", 40, 0)], winnerId: "a", firstTurnUserId, attackerDelta: 30, defenderDelta: -10, createdAt: "2026-09-24T03:00:00.000Z" });
 
 describe("도감 전투 선공", () => {
   it("친선전과 랭킹전의 첫 턴을 서버 동전으로 한 번만 확정한다", async () => {
@@ -28,7 +34,16 @@ describe("도감 전투 선공", () => {
     expect(duel).toContain("BattleCoin");
     expect(ranking).toContain("BattleCoin");
     expect(duel).toContain('setIntro("firstTurn")');
-    expect(ranking).toContain('setPhase("firstTurn")');
+    // 랭킹전은 단계(step) 재생: 저장된 선공이 있으면 동전(intro)부터, 이후 공격마다 차징·공격·명중을 한 번씩 재생한다.
+    expect(buildRankingBattleSteps(battle("d")).map((step) => `${step.phase}:${step.actor ?? "-"}`)).toEqual([
+      "intro:-",
+      "charge:defender", "attack:defender", "impact:defender",
+      "charge:attacker", "attack:attacker", "impact:attacker",
+      "result:-",
+    ]);
+    expect(buildRankingBattleSteps(battle(null))[0].phase).toBe("charge");
+    expect(ranking).toContain('step.phase === "intro" && battle.firstTurnUserId && <div className={`${styles.coinToss}');
+    expect(ranking).toContain("<BattleCoin heads={battle.firstTurnUserId === battle.attackerId}");
     expect(styles).toContain(".firstTurn");
     expect(styles).toContain("will-change: transform");
     expect(styles).toContain("prefers-reduced-motion: reduce");
