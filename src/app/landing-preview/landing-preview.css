@@ -14,7 +14,9 @@
     linear-gradient(90deg, rgba(255, 255, 255, 0.028) 1px, transparent 1px) 0 0 / 88px 100%,
     var(--nb-bg);
   color: var(--nb-ink);
-  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  /* 사이트 테마와 무관하게 늘 다크 화면이므로 스크롤바·기본 컨트롤도 다크로 */
+  color-scheme: dark;
+  font-family: var(--font-sans);
   letter-spacing: -0.01em;
   overflow-x: clip;
 }
@@ -22,6 +24,10 @@
 .nb :where(a) {
   color: inherit;
   text-decoration: none;
+}
+/* 전역 포커스 링(#2d64fa)은 거의 검은 배경에서 대비가 낮아 밝은 파랑으로 바꾼다 */
+.nb :where(a, button):focus-visible {
+  outline-color: #8ab4f8;
 }
 
 /* ── 네비게이션 ── */
@@ -42,6 +48,7 @@
   gap: 10px;
   font-weight: 700;
   font-size: 15px;
+  white-space: nowrap;
 }
 .nb-brand-text em {
   font-style: normal;
@@ -80,6 +87,7 @@
   border-radius: 999px;
   font-size: 13.5px;
   font-weight: 600;
+  white-space: nowrap;
   transition: border-color var(--duration-fast), background var(--duration-fast);
 }
 .nb-nav-cta:hover {
@@ -98,8 +106,20 @@ button.nb-btn {
   .nb-nav-links {
     display: none;
   }
+  .nb-nav {
+    gap: 12px;
+  }
   .nb-nav-cta {
     margin-left: auto;
+  }
+}
+@media (max-width: 380px) {
+  .nb-brand {
+    font-size: 14px;
+  }
+  .nb-nav-cta {
+    padding-inline: 12px;
+    font-size: 13px;
   }
 }
 
@@ -184,12 +204,17 @@ button.nb-btn {
   text-transform: uppercase;
   margin-bottom: 24px;
 }
+/* 키커와 같은 줄에 붙지 않도록 블록으로 두고 가운데 정렬 */
 .nb-tour-notice {
-  display: inline-flex;
-  margin: 0 0 16px;
-  padding: 8px 12px;
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 20px;
+  padding: 8px 14px;
   border: 1px solid rgba(251, 188, 4, 0.5);
-  border-radius: 999px;
+  /* 모바일에서 두 줄로 꺾여도 모양이 무너지지 않게 알약 대신 둥근 사각 */
+  border-radius: 14px;
+  line-height: 1.5;
+  text-wrap: balance;
   background: rgba(251, 188, 4, 0.12);
   color: #fdd663;
   font-size: 13px;
@@ -234,6 +259,7 @@ button.nb-btn {
   color: rgba(242, 243, 245, 0.78);
   max-width: 46ch;
   margin: 0;
+  text-wrap: balance;
 }
 .nb-hero-foot .nb-cta-row {
   justify-content: center;
@@ -451,6 +477,7 @@ button.nb-btn {
   line-height: 1.6;
   color: var(--nb-mute);
   margin: 0;
+  text-wrap: pretty;
 }
 /* 첫 카드 사진 자리: 이퀄라이저풍 바 아트 */
 .nb-cell-art--session {
@@ -471,12 +498,36 @@ button.nb-btn {
 .nb-cell-art--session i:nth-child(4n + 2) { height: 78%; background: linear-gradient(180deg, #ea4335, rgba(234, 67, 53, 0.15)); }
 .nb-cell-art--session i:nth-child(4n + 3) { height: 58%; background: linear-gradient(180deg, #fbbc04, rgba(251, 188, 4, 0.15)); }
 .nb-cell-art--session i:nth-child(4n + 4) { height: 92%; background: linear-gradient(180deg, #34a853, rgba(52, 168, 83, 0.15)); }
+/* 한 줄로 쌓일 때 빈 사진 자리가 화면을 차지하지 않도록:
+   태블릿은 사진 왼쪽·글 오른쪽, 좁은 모바일은 낮은 띠로 */
 @media (max-width: 900px) {
   .nb-cards {
     grid-template-columns: 1fr;
   }
+  .nb-card {
+    flex-direction: row;
+  }
   .nb-card-media {
-    aspect-ratio: 16 / 9;
+    flex: 0 0 38%;
+    aspect-ratio: auto;
+    min-height: 180px;
+  }
+  .nb-card-body {
+    align-self: center;
+  }
+}
+@media (max-width: 560px) {
+  .nb-card {
+    flex-direction: column;
+  }
+  .nb-card-media {
+    flex: none;
+    aspect-ratio: 5 / 2;
+    min-height: 0;
+  }
+  .nb-card-body {
+    align-self: auto;
+    padding: 20px 20px 24px;
   }
 }
 
@@ -549,6 +600,7 @@ button.nb-btn {
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: -0.03em;
+  text-wrap: balance;
 }
 .nb-quote em {
   font-style: normal;
