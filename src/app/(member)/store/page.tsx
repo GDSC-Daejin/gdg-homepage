@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
+import { PokedexTabs } from "../pokedex/PokedexTabs";
 import { ShopClient } from "./ShopClient";
 
 export default async function StorePage() {
@@ -28,6 +29,7 @@ export default async function StorePage() {
 
   return <div>
     <PageHeader title="프렌들리숍" description="포인트로 몬스터볼을 교환해 도감 포획을 준비해요." />
+    <PokedexTabs active="store" />
     <div className="mb-6 grid gap-3 sm:grid-cols-2">
       <Card className="p-4"><p className="text-sm text-gray-500">사용 가능 포인트</p><p className="mt-1 text-3xl font-bold text-gray-900">{points.toLocaleString()}<span className="ml-1 text-base font-medium text-gray-500">P</span></p></Card>
       <Card className="p-4"><p className="text-sm text-gray-500">몬스터볼 보유량</p><p className="mt-1 text-3xl font-bold text-primary">{balls}<span className="ml-1 text-base font-medium text-gray-500">개</span></p></Card>
