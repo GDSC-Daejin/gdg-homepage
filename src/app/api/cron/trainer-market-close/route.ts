@@ -19,13 +19,13 @@ export async function POST(request: NextRequest) {
   if (closeError) return NextResponse.json({ error: "시장을 마감하지 못했어요" }, { status: 500 });
   const date = today();
   const { data: config } = await supabase.from("squirtle_config").select("channel_id").eq("id", 1).maybeSingle();
-  const { data: claimed } = await supabase.from("trainer_markets").update({ close_message_ts: "pending" }).eq("market_date", date).is("close_message_ts", null).select("close_briefing").maybeSingle();
+  const { data: claimed } = await supabase.from("trainer_markets").update({ close_message_ts: "pending" }).eq("market_date", date).is("close_message_ts", null).select("close_briefing, story_closing_note").maybeSingle();
   if (!claimed) return NextResponse.json({ posted: false, reason: "already_posted" });
   if (!config?.channel_id) {
     await supabase.from("trainer_markets").update({ close_message_ts: null }).eq("market_date", date);
     return NextResponse.json({ error: "게시 채널 설정이 없어요" }, { status: 500 });
   }
-  const posted = await postMessage({ channel: config.channel_id, text: closeBriefing((claimed.close_briefing ?? {}) as Parameters<typeof closeBriefing>[0]), botToken: process.env.TRAINER_SLACK_BOT_TOKEN });
+  const posted = await postMessage({ channel: config.channel_id, text: closeBriefing({ ...(claimed.close_briefing ?? {}), closingNote: claimed.story_closing_note ?? undefined } as Parameters<typeof closeBriefing>[0]), botToken: process.env.TRAINER_SLACK_BOT_TOKEN });
   if (!posted.ok) {
     await supabase.from("trainer_markets").update({ close_message_ts: null }).eq("market_date", date);
     return NextResponse.json({ error: posted.error, posted: false }, { status: 502 });

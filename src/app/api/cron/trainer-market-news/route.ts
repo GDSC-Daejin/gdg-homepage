@@ -1,19 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { hasValidCronAuthorization } from "@/lib/cron";
-import { marketNewsBundleMessage, type MarketNewsDraft } from "@/lib/trainer-market/news";
-import { stockQuantityBlocks } from "@/lib/trainer-market/blocks";
+import { marketNewsBundleMessage, type MarketNewsDraft, type MarketStory, validateMarketStory } from "@/lib/trainer-market/news";
 import { postMessage } from "@/lib/slack/api";
 
 const today = () => new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" });
-const newsImagePath: Record<string, string | undefined> = {
-  SILPH: "/trainer-market/news/silph.png",
-  BALL: "/trainer-market/news/ball.png",
-  CENTER: "/trainer-market/news/center.png",
-  CELADON: "/trainer-market/news/celadon.png",
-  OAK: "/trainer-market/news/oak.png",
-  ROCKET: "/trainer-market/news/rocket.png",
-};
 
 export async function POST(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -28,7 +19,7 @@ export async function POST(request: NextRequest) {
 
   const { data: news } = await supabase
     .from("trainer_market_news")
-    .select("id, symbol, headline, body, sentiment")
+    .select("id, symbol, headline, body, sentiment, angle, predecessors")
     .eq("market_date", today())
     .is("posted_at", null)
     .lte("publish_at", new Date().toISOString())
@@ -37,11 +28,12 @@ export async function POST(request: NextRequest) {
   if (!news?.length) return NextResponse.json({ posted: false, reason: "nothing_due" });
   if (news.length !== 6) return NextResponse.json({ error: "오늘의 뉴스 수가 올바르지 않아요" }, { status: 500 });
 
-  const [{ data: symbols }, { data: config }] = await Promise.all([
+  const [{ data: symbols }, { data: market }, { data: config }] = await Promise.all([
     supabase.from("trainer_market_symbols").select("symbol, name_ko, emoji").in("symbol", news.map((item) => item.symbol)),
+    supabase.from("trainer_markets").select("story_title, story_summary, story_causal_chain, story_closing_note").eq("market_date", today()).maybeSingle(),
     supabase.from("squirtle_config").select("channel_id").eq("id", 1).maybeSingle(),
   ]);
-  if (!symbols || symbols.length !== 6 || !config?.channel_id) return NextResponse.json({ error: "종목 또는 게시 채널 설정이 없어요" }, { status: 500 });
+  if (!symbols || symbols.length !== 6 || !market?.story_title || !market.story_summary || !market.story_causal_chain || !market.story_closing_note || !config?.channel_id) return NextResponse.json({ error: "종목 또는 게시 채널 설정이 없어요" }, { status: 500 });
 
   const staleAt = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const { data: claimed } = await supabase
@@ -59,18 +51,15 @@ export async function POST(request: NextRequest) {
   const symbolsByCode = new Map(symbols.map((symbol) => [symbol.symbol, symbol]));
   const marketNews = news.map((item) => {
     const symbol = symbolsByCode.get(item.symbol)!;
-    return { ...item, name: symbol.name_ko, emoji: symbol.emoji, sentiment: item.sentiment as MarketNewsDraft["sentiment"] };
+    return { ...item, name: symbol.name_ko, emoji: symbol.emoji, sentiment: item.sentiment as MarketNewsDraft["sentiment"], predecessors: item.predecessors as string[] };
   });
-  const text = marketNewsBundleMessage(marketNews);
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
-  const blocks = [
-    { type: "section", text: { type: "mrkdwn", text } },
-    ...marketNews.flatMap((item) => {
-      const imagePath = newsImagePath[item.symbol];
-      return siteUrl && imagePath ? [{ type: "image", image_url: `${siteUrl}${imagePath}`, alt_text: `${item.name} 관련 이미지` }] : [];
-    }),
-    ...news.flatMap((item) => stockQuantityBlocks(item.symbol)),
-  ];
+  const story: MarketStory = { title: market.story_title, summary: market.story_summary, causalChain: market.story_causal_chain, closingNote: market.story_closing_note };
+  if (!validateMarketStory(story, marketNews)) {
+    await supabase.from("trainer_market_news").update({ posting_at: null }).in("id", news.map((item) => item.id));
+    return NextResponse.json({ error: "오늘의 주식 속보 구성이 올바르지 않아요" }, { status: 500 });
+  }
+  const text = marketNewsBundleMessage(story, marketNews);
+  const blocks = [{ type: "section", text: { type: "mrkdwn", text } }];
   const posted = await postMessage({ channel: config.channel_id, text, blocks, botToken: process.env.TRAINER_SLACK_BOT_TOKEN });
   if (!posted.ok) {
     await supabase.from("trainer_market_news").update({ posting_at: null }).in("id", news.map((item) => item.id));

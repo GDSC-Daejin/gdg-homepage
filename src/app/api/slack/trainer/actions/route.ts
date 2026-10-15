@@ -12,7 +12,7 @@ function reply(text: string, blocks?: Record<string, unknown>[]) {
 }
 
 function actionError(reason?: string) {
-  const texts: Record<string, string> = { unlinked: "회원 승인과 Slack 계정 연결이 필요해요.", insufficient: "TP가 부족해요.", daily_count: "게임코너는 오늘 3회까지예요.", daily_stake: "오늘 게임코너 베팅 한도 100TP를 모두 사용했어요.", closed: "포켓몬 주식시장은 09:00~22:00에만 열려요.", duplicate: "같은 기업은 오늘 한 번만 고를 수 있어요.", company_limit: "오늘은 서로 다른 기업을 세 곳까지 고를 수 있어요.", ticket_limit: "오늘 응원권은 총 5장까지예요." };
+  const texts: Record<string, string> = { invalid: "올바르지 않은 선택이에요. 처음부터 다시 골라 주세요.", unlinked: "회원 승인과 Slack 계정 연결이 필요해요.", not_started: "먼저 트레이너 메뉴를 시작해 주세요.", insufficient: "TP가 부족해요.", daily_count: "게임코너는 오늘 3회까지예요.", daily_stake: "오늘 게임코너 베팅 한도 100TP를 모두 사용했어요.", closed: "포켓몬 주식시장은 09:00~22:00에만 열려요.", duplicate: "같은 기업은 오늘 한 번만 고를 수 있어요.", company_limit: "오늘은 서로 다른 기업을 세 곳까지 고를 수 있어요.", ticket_limit: "오늘 응원권은 총 5장까지예요." };
   return texts[reason ?? ""] ?? "요청을 처리하지 못했어요. 다시 시도해 주세요.";
 }
 
@@ -59,15 +59,16 @@ async function handleAction(payload: ActionPayload) {
   }
   if (action.action_id === "trainer_stock_symbol") {
     const { data: quote } = await supabase.from("trainer_market_prices").select("open_price, trainer_market_symbols!inner(name_ko)").eq("market_date", new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Seoul" })).eq("symbol", action.value).maybeSingle();
+    if (!quote) return reply("시세를 불러오지 못했어요.");
     const name = (quote?.trainer_market_symbols as { name_ko?: string } | null)?.name_ko ?? action.value;
-    return reply(`📈 ${name} · 응원권은 장당 100TP예요. 장마감 22:00에 자동 정산됩니다.`, stockQuantityBlocks(action.value));
+    return reply(`📈 ${name} · 현재가 ${quote.open_price}TP · 장마감 22:00에 자동 정산됩니다.`, stockQuantityBlocks(action.value, quote.open_price));
   }
   if (/^trainer_stock_[123]$/.test(action.action_id)) {
     const [symbol, quantity] = action.value.split(":");
     const { data } = await supabase.rpc("trainer_pick_stock", { p_slack_user: slackUserId, p_symbol: symbol, p_quantity: Number(quantity), p_interaction_id: action.action_ts });
-    const result = data as { ok?: boolean; reason?: string; name?: string; quantity?: number; balance?: number } | null;
+    const result = data as { ok?: boolean; reason?: string; name?: string; quantity?: number; stake?: number; balance?: number } | null;
     if (!result?.ok) return reply(actionError(result?.reason));
-    return reply(`📈 ${result.name} 응원권 ${result.quantity}장을 골랐어요. -${result.quantity! * 100}TP · 오늘 22:00에 자동 정산 · 현재 ${result.balance}TP`);
+    return reply(`📈 ${result.name} 응원권 ${result.quantity}장을 골랐어요. -${result.stake}TP · 오늘 22:00에 자동 정산 · 현재 ${result.balance}TP`);
   }
   if (action.action_id === "trainer_stock_trend") {
     const { data } = await supabase.rpc("trainer_stock_trend", { p_symbol: action.value });
