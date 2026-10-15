@@ -417,7 +417,7 @@ graph TD
 
 ### 고친 것 (`Landing.tsx`, `landing-preview.css`)
 
-- 폰트: `.nb`가 시스템 폰트로 덮어써 Pretendard가 빠져 있었다. `var(--font-sans)`로 되돌렸다(docs/frontend/assets.md 기준).
+- 폰트: `.nb`의 시스템 폰트는 LCP를 위한 의도된 선택이다(`818999c`, docs/research/lighthouse-performance-2026-08-01.md, tests/landing-performance.test.ts). Pretendard로 바꾸지 않는다.
 - 둘러보기 안내 배지: 키커와 같은 줄에 붙어 히어로 가운데 정렬이 깨졌다. 블록으로 가운데 두고, 모바일에서 두 줄로 꺾여도 모양이 유지되게 둥근 사각으로 바꿨다.
 - 모바일 헤더: 브랜드와 `Google로 로그인하기`가 두 줄로 꺾여 헤더가 약 104px까지 커졌다. 줄바꿈을 막고 간격을 줄여 81px로 맞췄다.
 - 활동 카드 리듬: 한 줄로 쌓이면 빈 사진 자리(16:9)가 화면 대부분을 차지했다. 태블릿은 사진 왼쪽·글 오른쪽, 560px 이하는 낮은 5:2 띠로 바꿨다. 데스크톱 3열 4:3은 사진이 들어올 자리라 그대로 뒀다.

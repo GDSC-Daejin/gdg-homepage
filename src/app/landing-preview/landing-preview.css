@@ -16,7 +16,8 @@
   color: var(--nb-ink);
   /* 사이트 테마와 무관하게 늘 다크 화면이므로 스크롤바·기본 컨트롤도 다크로 */
   color-scheme: dark;
-  font-family: var(--font-sans);
+  /* 랜딩은 LCP를 위해 웹폰트를 요청하지 않는다 (docs/research/lighthouse-performance-2026-08-01.md) */
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
   letter-spacing: -0.01em;
   overflow-x: clip;
 }
