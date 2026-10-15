@@ -8,22 +8,19 @@ import { Button } from "@/components/Button";
 import { cn } from "@/lib/cn";
 import { EVENTS, trackEvent } from "@/lib/analytics";
 import { POSITION_LABELS, type Position } from "@/lib/types";
-
-const QUESTIONS = [
-  { name: "intro", label: "자기소개" },
-  { name: "motivation", label: "지원 동기" },
-  { name: "interest", label: "관심 분야" },
-] as const;
+import type { ApplicationQuestion } from "@/lib/types";
 
 interface ApplyFormProps {
   openPositions: Position[];
+  questionsByPosition: Partial<Record<string, ApplicationQuestion[]>>;
 }
 
-export function ApplyForm({ openPositions }: ApplyFormProps) {
+export function ApplyForm({ openPositions, questionsByPosition }: ApplyFormProps) {
   const [error, setError] = useState<string>();
   const [done, setDone] = useState(false);
   const [position, setPosition] = useState<Position | "">("");
   const [pending, startTransition] = useTransition();
+  const questions = position ? questionsByPosition[position] ?? [] : [];
 
   function handleSubmit(formData: FormData) {
     setError(undefined);
@@ -63,22 +60,28 @@ export function ApplyForm({ openPositions }: ApplyFormProps) {
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <form action={handleSubmit} className="flex flex-col gap-6">
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900">지원자 정보</h2>
+        <p className="mt-1 text-sm text-gray-500">연락 가능한 정보를 정확하게 입력해 주세요.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         <Input name="applicant_name" label="이름" required />
         <Input name="student_no" label="학번" required />
         <Input name="major" label="전공" required />
         <Input name="phone" label="전화번호" type="tel" required />
+        <div className="sm:col-span-2">
+          <Input name="email" label="이메일" type="email" required />
+        </div>
       </div>
-      <Input name="email" label="이메일" type="email" required />
-      <div className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-gray-700">지원 파트</span>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <fieldset className="flex flex-col gap-3">
+        <legend className="text-sm font-medium text-gray-700">지원 포지션</legend>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {openPositions.map((opt) => (
             <label
               key={opt}
               className={cn(
-                "flex cursor-pointer items-center justify-center rounded-md border px-3 py-2.5 text-sm font-medium",
+                "flex min-h-12 cursor-pointer items-center justify-center rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
                 position === opt
                   ? "border-primary bg-primary-soft text-primary"
                   : "border-gray-300 text-gray-700 hover:bg-gray-50",
@@ -97,15 +100,22 @@ export function ApplyForm({ openPositions }: ApplyFormProps) {
             </label>
           ))}
         </div>
+      </fieldset>
+      <div>
+        <h2 className="mb-4 text-lg font-semibold text-gray-900">지원 내용</h2>
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          {questions.map((question, index) => (
+            <div key={question.id} className={index === questions.length - 1 ? "sm:col-span-2" : undefined}>
+              <Textarea name={question.id} label={question.label} required rows={6} />
+            </div>
+          ))}
+        </div>
       </div>
-      {QUESTIONS.map((q) => (
-        <Textarea key={q.name} name={q.name} label={q.label} required rows={4} />
-      ))}
       {error && <p className="text-xs text-danger">{error}</p>}
       <Button
         type="submit"
         variant="primary"
-        className="mt-2 w-full"
+        className="w-full sm:ml-auto sm:w-auto sm:min-w-40"
         disabled={pending}
       >
         {pending ? "제출 중..." : "제출"}

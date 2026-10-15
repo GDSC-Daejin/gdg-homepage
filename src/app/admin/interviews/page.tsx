@@ -19,14 +19,14 @@ export default async function AdminInterviewsPage() {
   const settings = demo ? DEMO_RECRUITING_SETTINGS : await getRecruitingSettings();
   let slotData: InterviewSlot[];
   let applicationData: { id: string; applicant_name: string; email: string; status: string }[];
-  let interviewerData: { id: string; name: string; nickname: string }[];
+  let interviewerData: { id: string; name: string; nickname: string; avatar_path: string | null }[];
 
   if (demo) {
     slotData = DEMO_INTERVIEW_SLOTS;
     applicationData = DEMO_APPLICATIONS.filter((application) => application.season === settings.season);
     interviewerData = DEMO_MEMBERS
-      .filter((member) => member.role === "organizer" || member.role === "team_member" || member.role === "member")
-      .map(({ id, name, nickname }) => ({ id, name, nickname }));
+      .filter((member) => member.role === "organizer" || member.role === "team_member")
+      .map(({ id, name, nickname, avatar_path }) => ({ id, name, nickname, avatar_path: avatar_path ?? null }));
   } else {
     const supabase = await createClient();
     const [{ data: slots }, { data: applications }, { data: interviewers }] = await Promise.all([
@@ -43,8 +43,8 @@ export default async function AdminInterviewsPage() {
         .order("applicant_name"),
       supabase
         .from("profiles")
-        .select("id, name, nickname")
-        .in("role", ["organizer", "team_member", "member"])
+        .select("id, name, nickname, avatar_path")
+        .in("role", ["organizer", "team_member"])
         .not("approved_at", "is", null)
         .order("name"),
     ]);

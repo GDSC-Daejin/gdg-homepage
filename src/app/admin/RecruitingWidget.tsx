@@ -15,6 +15,9 @@ interface RecruitingWidgetCounts {
   backend: number;
   designer: number;
   beginner: number;
+  pm: number;
+  marketer: number;
+  vibecoder: number;
   unassigned: number;
 }
 
@@ -55,6 +58,9 @@ export function RecruitingWidget({ season, open, counts, todayEvents }: Recruiti
     { label: POSITION_LABELS.backend, count: counts.backend },
     { label: POSITION_LABELS.designer, count: counts.designer },
     { label: POSITION_LABELS.beginner, count: counts.beginner },
+    { label: POSITION_LABELS.pm, count: counts.pm },
+    { label: POSITION_LABELS.marketer, count: counts.marketer },
+    { label: POSITION_LABELS.vibecoder, count: counts.vibecoder },
     { label: "미지정", count: counts.unassigned },
   ];
 

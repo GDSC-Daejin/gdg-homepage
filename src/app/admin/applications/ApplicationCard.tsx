@@ -33,6 +33,7 @@ export function ApplicationCard({
     application.answers.motivation ||
     application.answers.intro ||
     application.answers.interest ||
+    Object.values(application.answers)[0] ||
     "작성된 답변이 없어요";
 
   return (

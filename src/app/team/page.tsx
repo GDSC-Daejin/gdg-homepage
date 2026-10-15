@@ -8,7 +8,7 @@ import { loadTeamMembers } from "./team-data";
 export const metadata = {
   title: "팀",
   description:
-    "GDGOC DJU 운영진을 소개합니다. 오거나이저와 팀 멤버가 프론트엔드·백엔드·디자이너 파트로 활동해요.",
+    "GDGOC DJU 운영진을 소개합니다. 오거나이저와 팀 멤버가 다양한 포지션으로 활동해요.",
   alternates: { canonical: "/team" },
 };
 
@@ -71,7 +71,7 @@ export default async function TeamPage() {
         </ul>
 
         <h2 className="mt-14 text-sm font-bold tracking-widest text-white/40">
-          파트 소개
+          포지션 소개
         </h2>
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
           {PARTS.map((p) => (

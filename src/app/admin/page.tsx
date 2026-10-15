@@ -52,6 +52,9 @@ const DEMO_RECRUITING_COUNTS: RecruitingCounts = {
   backend: 5,
   designer: 2,
   beginner: 0,
+  pm: 0,
+  marketer: 0,
+  vibecoder: 0,
   unassigned: 1,
 };
 

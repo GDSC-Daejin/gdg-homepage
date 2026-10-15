@@ -34,7 +34,18 @@ export async function updateRecruitingSettings(
     p_apply_end: parsed.data.apply_end,
   });
 
-  if (error) return { error: toKoreanError(error) };
+  if (error) {
+    const isNewPosition = parsed.data.open_positions.some((position) =>
+      ["pm", "marketer", "vibecoder"].includes(position),
+    );
+    if (error.message === "INVALID_INPUT" && isNewPosition) {
+      return {
+        error:
+          "새 포지션을 저장하려면 Supabase 마이그레이션을 먼저 적용해주세요",
+      };
+    }
+    return { error: toKoreanError(error) };
+  }
 
   revalidatePath("/admin/settings");
   revalidatePath("/admin");

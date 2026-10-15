@@ -1,3 +1,10 @@
+export type EmailSendResult = {
+  sent: boolean;
+  skipped?: boolean;
+  error?: string;
+  providerEmailId?: string;
+};
+
 // 서버 전용: RESEND_API_KEY는 서버 환경변수이므로 클라이언트 컴포넌트에서 import하지 말 것.
 function buildSubject(season: string): string {
   return `[GDGOC DJU] ${season} 리크루팅 결과 안내`;
@@ -27,7 +34,7 @@ export async function sendResultEmail(params: {
   season: string;
   accepted: boolean;
   onboardingUrl?: string;
-}): Promise<{ sent: boolean; skipped?: boolean; error?: string }> {
+}): Promise<EmailSendResult> {
   const apiKey = process.env.RESEND_API_KEY;
 
   if (!apiKey) {
@@ -57,7 +64,8 @@ export async function sendResultEmail(params: {
       return { sent: false, error: "결과 이메일 전송에 실패했어요" };
     }
 
-    return { sent: true };
+    const body = (await res.json().catch(() => null)) as { id?: string } | null;
+    return { sent: true, providerEmailId: body?.id };
   } catch (err) {
     if (err instanceof Error && err.name === "TimeoutError") {
       return { sent: false, error: "결과 이메일 응답이 시간 초과됐어요" };
@@ -88,7 +96,8 @@ async function sendEmail(to: string, subject: string, html: string) {
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return { sent: false, error: "이메일 전송에 실패했어요" };
-    return { sent: true };
+    const body = (await res.json().catch(() => null)) as { id?: string } | null;
+    return { sent: true, providerEmailId: body?.id };
   } catch (err) {
     if (err instanceof Error && err.name === "TimeoutError") {
       return { sent: false, error: "이메일 응답이 시간 초과됐어요" };

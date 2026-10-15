@@ -18,6 +18,8 @@ import type {
   EvaluationRecommendation,
 } from "@/lib/types";
 import { isStaff } from "@/lib/types";
+import { recordApplicationEmail } from "@/lib/application-email";
+import { getApplicationQuestionsFor } from "@/lib/application-questions";
 
 const ONBOARDING_INVITE_DAYS = 7;
 
@@ -43,13 +45,13 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
     return { error: "지금은 모집 기간이 아니에요" };
   }
 
-  const answers = {
-    intro: String(formData.get("intro") ?? "").trim(),
-    motivation: String(formData.get("motivation") ?? "").trim(),
-    interest: String(formData.get("interest") ?? "").trim(),
-  };
+  const positionValue = String(formData.get("position") ?? "");
+  const questions = await getApplicationQuestionsFor(positionValue as Parameters<typeof getApplicationQuestionsFor>[0]);
+  const answers = Object.fromEntries(
+    questions.map((question) => [question.id, String(formData.get(question.id) ?? "").trim()]),
+  );
 
-  if (!answers.intro || !answers.motivation || !answers.interest) {
+  if (!questions.length || Object.values(answers).some((answer) => !answer)) {
     return { error: "모든 항목을 입력해주세요" };
   }
 
@@ -61,13 +63,13 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
     email: String(formData.get("email") ?? "").trim(),
     season: settings.season,
     answers,
-    position: String(formData.get("position") ?? ""),
+    position: positionValue,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
   }
   if (!settings.open_positions.includes(parsed.data.position)) {
-    return { error: "지금은 모집하지 않는 파트예요" };
+    return { error: "지금은 모집하지 않는 포지션이에요" };
   }
 
   const supabase = await createClient();
@@ -145,6 +147,12 @@ export async function setApplicationStatus(
         accepted: status === "accepted",
         onboardingUrl,
       });
+      await recordApplicationEmail({
+        applicationId: id,
+        kind: "result",
+        recipientEmail: application.email,
+        result,
+      });
 
       if (!result.skipped) {
         await supabase.rpc("admin_log_result_email", {
@@ -192,6 +200,12 @@ export async function resendApplicationResultEmail(id: string): Promise<ActionRe
     season: application.season,
     accepted: application.status === "accepted",
     onboardingUrl,
+  });
+  await recordApplicationEmail({
+    applicationId: id,
+    kind: "result",
+    recipientEmail: application.email,
+    result,
   });
 
   if (!result.skipped) {
@@ -283,6 +297,12 @@ export async function resendApplicationInvite(id: string): Promise<ActionResult>
     name: application.applicant_name,
     season: application.season,
     onboardingUrl: applicationInviteUrl(invite.token),
+  });
+  await recordApplicationEmail({
+    applicationId: id,
+    kind: "onboarding_invite",
+    recipientEmail: application.email,
+    result,
   });
   revalidatePath("/admin/applications/conversions");
   if (result.skipped) return { warning: "가입 초대는 갱신됐지만 Resend 설정이 없어 이메일을 보내지 못했어요" };

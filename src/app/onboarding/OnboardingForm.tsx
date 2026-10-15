@@ -137,6 +137,9 @@ export function OnboardingForm({
         <option value="backend">백엔드</option>
         <option value="designer">디자이너</option>
         <option value="beginner">비기너</option>
+        <option value="pm">PM</option>
+        <option value="marketer">마케터</option>
+        <option value="vibecoder">바이브코더</option>
       </Select>
       <Select
         name="academic_status"

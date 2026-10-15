@@ -18,10 +18,12 @@ export default async function AdminSettingsPage() {
   return (
     <div>
       <SectionTabs tabs={SYSTEM_TABS} label="시스템" />
-      <PageHeader title="모집 설정" description="모집 시즌과 지원 파트를 관리해요" />
-      <Card>
-        <SettingsForm settings={settings} />
-      </Card>
+      <div className="mx-auto w-full max-w-4xl">
+        <PageHeader title="모집 설정" description="모집 시즌과 지원 포지션을 관리해요" />
+        <Card className="p-5 sm:p-7">
+          <SettingsForm settings={settings} />
+        </Card>
+      </div>
     </div>
   );
 }

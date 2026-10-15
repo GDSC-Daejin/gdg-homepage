@@ -4,13 +4,18 @@ import { createClient as createServiceClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { isDemoMode } from "@/lib/demo";
+import { recordApplicationEmail } from "@/lib/application-email";
 import {
   sendInterviewCancelEmail,
   sendInterviewConfirmEmail,
   sendInterviewInviteEmail,
 } from "@/lib/email";
 import { toKoreanError } from "@/lib/errors";
-import { deleteInterviewCalendarEvent, syncInterviewCalendarEvent } from "@/lib/google-calendar";
+import {
+  deleteInterviewCalendarEvent,
+  getInterviewCalendarEvent,
+  syncInterviewCalendarEvent,
+} from "@/lib/google-calendar";
 import { createMeetSpace } from "@/lib/google-meet";
 import { getRecruitingSettings } from "@/lib/recruiting";
 import { interviewSlotsSchema } from "@/lib/schemas";
@@ -45,28 +50,65 @@ async function syncCalendarForSlot(slotId: string) {
   if (!application?.email) throw new Error("APPLICATION_EMAIL_MISSING");
 
   const attendeeEmails = [application.email];
+  let interviewerEmail: string | null = null;
   if (slot.interviewer_id) {
     const { data: interviewer } = await svc
       .from("profiles")
       .select("email")
       .eq("id", slot.interviewer_id)
       .single();
-    if (interviewer?.email) attendeeEmails.push(interviewer.email);
+    if (interviewer?.email) {
+      interviewerEmail = interviewer.email;
+      attendeeEmails.push(interviewer.email);
+    }
   }
 
-  const { eventId } = await syncInterviewCalendarEvent({
-    slotId,
-    calendarEventId: slot.calendar_event_id,
-    season: slot.season,
-    startsAt: slot.starts_at,
-    durationMin: slot.duration_min,
-    applicantName: application.applicant_name,
-    meetUri: slot.meet_uri,
-    attendeeEmails,
-  });
+  let synced: Awaited<ReturnType<typeof syncInterviewCalendarEvent>>;
+  try {
+    synced = await syncInterviewCalendarEvent({
+      slotId,
+      calendarEventId: slot.calendar_event_id,
+      season: slot.season,
+      startsAt: slot.starts_at,
+      durationMin: slot.duration_min,
+      applicantName: application.applicant_name,
+      meetUri: slot.meet_uri,
+      attendeeEmails,
+    });
+  } catch (error) {
+    await svc.from("interview_slots").update({
+      calendar_sync_status: "failed",
+      calendar_checked_at: new Date().toISOString(),
+      calendar_error: error instanceof Error ? error.message : "GOOGLE_CALENDAR_EVENT_FAILED",
+    }).eq("id", slotId);
+    throw error;
+  }
+  let attendees: Awaited<ReturnType<typeof getInterviewCalendarEvent>>;
+  try {
+    attendees = await getInterviewCalendarEvent(synced.eventId);
+  } catch (error) {
+    await svc.from("interview_slots").update({
+      calendar_sync_status: "failed",
+      calendar_checked_at: new Date().toISOString(),
+      calendar_error: error instanceof Error ? error.message : "GOOGLE_CALENDAR_EVENT_FETCH_FAILED",
+    }).eq("id", slotId);
+    throw error;
+  }
+  const applicantResponse = calendarResponse(attendees.find((attendee) => attendee.email?.toLowerCase() === application.email.toLowerCase())?.responseStatus);
+  const interviewerResponse = interviewerEmail
+    ? calendarResponse(attendees.find((attendee) => attendee.email?.toLowerCase() === interviewerEmail?.toLowerCase())?.responseStatus)
+    : null;
   const { error: saveError } = await svc
     .from("interview_slots")
-    .update({ calendar_event_id: eventId })
+    .update({
+      calendar_event_id: synced.eventId,
+      calendar_sync_status: "synced",
+      calendar_synced_at: new Date().toISOString(),
+      calendar_checked_at: new Date().toISOString(),
+      calendar_error: null,
+      applicant_calendar_response: applicantResponse,
+      interviewer_calendar_response: interviewerResponse,
+    })
     .eq("id", slotId);
   if (saveError) throw new Error("GOOGLE_CALENDAR_EVENT_SAVE_FAILED");
   return true;
@@ -88,12 +130,20 @@ async function sendConfirmationForSlot(slotId: string) {
     .single();
   if (!application?.email) return { sent: false, skipped: true };
 
-  return sendInterviewConfirmEmail({
+  const result = await sendInterviewConfirmEmail({
     to: application.email,
     name: application.applicant_name,
     startsAt: slot.starts_at,
     meetUri: slot.meet_uri,
   });
+  await recordApplicationEmail({
+    applicationId: slot.application_id,
+    slotId,
+    kind: "interview_confirmation",
+    recipientEmail: application.email,
+    result,
+  });
+  return result;
 }
 
 type BookingChange = {
@@ -108,12 +158,28 @@ type BookingChange = {
   applicant_name: string;
 };
 
+function calendarResponse(value: string | undefined | null) {
+  return ["needsAction", "accepted", "tentative", "declined"].includes(value ?? "")
+    ? value
+    : null;
+}
+
 async function sendCancellationEmail(change: BookingChange) {
-  return sendInterviewCancelEmail({
+  const result = await sendInterviewCancelEmail({
     to: change.email,
     name: change.applicant_name,
     startsAt: change.starts_at,
   });
+  if (change.application_id) {
+    await recordApplicationEmail({
+      applicationId: change.application_id,
+      slotId: change.slot_id,
+      kind: "interview_cancellation",
+      recipientEmail: change.email,
+      result,
+    });
+  }
+  return result;
 }
 
 async function finishReschedule(change: BookingChange): Promise<ActionResult> {
@@ -238,6 +304,7 @@ export async function sendInvites(applicationIds: string[]): Promise<ActionResul
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? "";
   const rows = (data ?? []) as {
+    application_id: string;
     token: string;
     email: string;
     applicant_name: string;
@@ -245,14 +312,21 @@ export async function sendInvites(applicationIds: string[]): Promise<ActionResul
   const results = await Promise.all(
     rows
       .filter((row) => row.email)
-      .map((row) =>
-        sendInterviewInviteEmail({
+      .map(async (row) => {
+        const result = await sendInterviewInviteEmail({
           to: row.email,
           name: row.applicant_name,
           season: settings.season,
           bookingUrl: `${origin}/interview?token=${row.token}`,
-        }),
-      ),
+        });
+        await recordApplicationEmail({
+          applicationId: row.application_id,
+          kind: "interview_invite",
+          recipientEmail: row.email,
+          result,
+        });
+        return result;
+      }),
   );
 
   revalidatePath("/admin/interviews");
@@ -408,6 +482,13 @@ export async function resendInterviewCancellationEmail(eventId: string): Promise
     name: application.applicant_name,
     startsAt: slot.starts_at,
   });
+  await recordApplicationEmail({
+    applicationId: event.application_id,
+    slotId: event.slot_id,
+    kind: "interview_cancellation",
+    recipientEmail: application.email,
+    result,
+  });
   if (result.skipped) return { warning: "취소 이메일을 보내려면 Resend 설정이 필요해요" };
   if (!result.sent) return { warning: "취소 이메일 발송에 실패했어요" };
   revalidatePath(`/admin/applications/${event.application_id}`);
@@ -484,5 +565,48 @@ export async function syncInterviewCalendar(slotId: string): Promise<ActionResul
     return {};
   } catch {
     return { error: "Google Calendar 일정 동기화에 실패했어요. 설정을 확인한 뒤 다시 시도해주세요" };
+  }
+}
+
+export async function refreshInterviewCalendarResponse(slotId: string): Promise<ActionResult> {
+  await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 캘린더 응답을 갱신할 수 없어요" };
+
+  const svc = serviceClient();
+  const { data: slot, error } = await svc
+    .from("interview_slots")
+    .select("calendar_event_id, application_id, interviewer_id")
+    .eq("id", slotId)
+    .single();
+  if (error || !slot?.calendar_event_id || !slot.application_id) {
+    return { error: "동기화된 Google Calendar 일정이 없어요" };
+  }
+
+  const [{ data: application }, { data: interviewer }] = await Promise.all([
+    svc.from("applications").select("email").eq("id", slot.application_id).single(),
+    slot.interviewer_id
+      ? svc.from("profiles").select("email").eq("id", slot.interviewer_id).single()
+      : Promise.resolve({ data: null }),
+  ]);
+  try {
+    const attendees = await getInterviewCalendarEvent(slot.calendar_event_id);
+    const applicantResponse = calendarResponse(attendees.find((attendee) => attendee.email?.toLowerCase() === application?.email?.toLowerCase())?.responseStatus);
+    const interviewerResponse = calendarResponse(attendees.find((attendee) => attendee.email?.toLowerCase() === interviewer?.email?.toLowerCase())?.responseStatus);
+    const { error: saveError } = await svc.from("interview_slots").update({
+      calendar_checked_at: new Date().toISOString(),
+      calendar_error: null,
+      applicant_calendar_response: applicantResponse,
+      interviewer_calendar_response: interviewerResponse,
+    }).eq("id", slotId);
+    if (saveError) return { error: "Calendar 응답 저장에 실패했어요" };
+    revalidatePath("/admin/interviews");
+    revalidatePath(`/admin/applications/${slot.application_id}`);
+    return {};
+  } catch {
+    await svc.from("interview_slots").update({
+      calendar_checked_at: new Date().toISOString(),
+      calendar_error: "GOOGLE_CALENDAR_EVENT_FETCH_FAILED",
+    }).eq("id", slotId);
+    return { error: "Google Calendar 응답을 확인하지 못했어요" };
   }
 }

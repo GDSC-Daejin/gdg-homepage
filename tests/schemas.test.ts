@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   profileSchema,
+  onboardingProfileSchema,
   eventSchema,
   applicationSchema,
   attendCodeSchema,
@@ -15,6 +16,7 @@ import {
   budgetSchema,
   recruitingSettingsSchema,
   interviewSlotsSchema,
+  applicationEvaluationSchema,
 } from "@/lib/schemas";
 
 describe("profileSchema", () => {
@@ -33,7 +35,7 @@ describe("profileSchema", () => {
     const result = profileSchema.safeParse({
       name: "홍길동",
       nickname: "Gildong",
-      student_no: "202012345",
+      student_no: "20201234",
       major: "컴퓨터공학과",
       phone: "010-1234-5678",
       interests: ["Android", "Web"],
@@ -45,7 +47,7 @@ describe("profileSchema", () => {
   it("포지션 미선택은 reject한다", () => {
     const result = profileSchema.safeParse({
       name: "홍길동",
-      student_no: "202012345",
+      student_no: "20201234",
       major: "컴퓨터공학과",
       phone: "010-1234-5678",
       interests: [],
@@ -57,7 +59,7 @@ describe("profileSchema", () => {
     for (const empty of ["student_no", "major", "phone"] as const) {
       const result = profileSchema.safeParse({
         name: "홍길동",
-        student_no: "202012345",
+        student_no: "20201234",
         major: "컴퓨터공학과",
         phone: "010-1234-5678",
         interests: [],
@@ -66,6 +68,24 @@ describe("profileSchema", () => {
       });
       expect(result.success).toBe(false);
     }
+  });
+
+  it("학번·전화번호·영어 닉네임 형식을 확인한다", () => {
+    const valid = {
+      name: "홍길동",
+      nickname: "Gildong Kim",
+      student_no: "20201234",
+      major: "컴퓨터공학과",
+      phone: "010-1234-5678",
+      interests: ["Web"],
+      position: "frontend",
+      academic_status: "enrolled",
+    };
+
+    expect(onboardingProfileSchema.safeParse(valid).success).toBe(true);
+    expect(onboardingProfileSchema.safeParse({ ...valid, nickname: "길동" }).success).toBe(false);
+    expect(onboardingProfileSchema.safeParse({ ...valid, student_no: "202012345" }).success).toBe(false);
+    expect(onboardingProfileSchema.safeParse({ ...valid, phone: "01012345678" }).success).toBe(false);
   });
 });
 
@@ -106,6 +126,20 @@ describe("applicationSchema", () => {
     expect(
       applicationSchema.safeParse({ ...valid, position: "planning" }).success,
     ).toBe(false);
+  });
+});
+
+describe("applicationEvaluationSchema", () => {
+  it("평가 점수는 1~5점만 허용한다", () => {
+    const valid = {
+      stage: "interview",
+      scores: { motivation: 5, communication: 1 },
+      recommendation: "pending",
+      note: "근거",
+    };
+    expect(applicationEvaluationSchema.safeParse(valid).success).toBe(true);
+    expect(applicationEvaluationSchema.safeParse({ ...valid, scores: { motivation: 6 } }).success).toBe(false);
+    expect(applicationEvaluationSchema.safeParse({ ...valid, scores: { motivation: 0 } }).success).toBe(false);
   });
 });
 
@@ -383,7 +417,7 @@ describe("interviewQuestionSchema", () => {
   });
 
   it("잘못된 position은 reject한다", () => {
-    const result = interviewQuestionSchema.safeParse({ position: "pm", body: "질문" });
+    const result = interviewQuestionSchema.safeParse({ position: "unknown", body: "질문" });
     expect(result.success).toBe(false);
   });
 });

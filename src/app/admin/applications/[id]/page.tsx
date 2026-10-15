@@ -4,13 +4,15 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
-import type { Application, ApplicationStatus } from "@/lib/types";
+import type { Application, ApplicationEmailLog, ApplicationStatus, InterviewSlot } from "@/lib/types";
 import { POSITION_LABELS } from "@/lib/types";
 import { ReviewPanel } from "./ReviewPanel";
 import { EvaluationPanel } from "./EvaluationPanel";
 import { isDemoMode } from "@/lib/demo";
-import { DEMO_APPLICATIONS, DEMO_APPLICATION_EVALUATIONS, DEMO_APPLICATION_STATUS_HISTORY, DEMO_INTERVIEW_BOOKING_EVENTS, DEMO_MEMBERS } from "@/lib/demoData";
+import { DEMO_APPLICATIONS, DEMO_APPLICATION_EMAIL_LOGS, DEMO_APPLICATION_EVALUATIONS, DEMO_APPLICATION_STATUS_HISTORY, DEMO_INTERVIEW_BOOKING_EVENTS, DEMO_INTERVIEW_SLOTS, DEMO_MEMBERS } from "@/lib/demoData";
 import { getInterviewQuestionsFor } from "@/lib/interview-questions";
+import { getApplicationQuestionsFor } from "@/lib/application-questions";
+import type { ApplicationQuestion } from "@/lib/types";
 import { CancellationEmailRetryButton } from "./CancellationEmailRetryButton";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +47,7 @@ const STATUS_DOT: Record<ApplicationStatus, string> = {
   withdrawn: "bg-gray-400",
 };
 
-const QUESTIONS: { key: string; label: string }[] = [
+const LEGACY_QUESTIONS: { key: string; label: string }[] = [
   { key: "intro", label: "자기소개" },
   { key: "motivation", label: "지원 동기" },
   { key: "interest", label: "관심 분야" },
@@ -58,6 +60,32 @@ const INTERVIEW_EVENT_LABELS: Record<string, string> = {
   canceled_by_admin: "운영진 취소",
   attended: "면접 참석",
   no_show: "면접 노쇼",
+};
+
+const EMAIL_KIND_LABELS: Record<ApplicationEmailLog["kind"], string> = {
+  interview_invite: "면접 예약 안내",
+  interview_confirmation: "면접 확정 안내",
+  interview_cancellation: "면접 취소 안내",
+  result: "전형 결과 안내",
+  onboarding_invite: "가입 초대",
+};
+
+const EMAIL_STATUS_LABELS: Record<ApplicationEmailLog["status"], string> = {
+  not_configured: "설정 필요",
+  requested: "발송 요청",
+  delivered: "수신 서버 전달 완료",
+  delivery_delayed: "전달 지연",
+  failed: "발송 실패",
+  bounced: "반송",
+  complained: "스팸 신고",
+  suppressed: "발송 차단",
+};
+
+const CALENDAR_RESPONSE_LABELS: Record<NonNullable<InterviewSlot["applicant_calendar_response"]>, string> = {
+  needsAction: "응답 대기",
+  accepted: "수락",
+  tentative: "미정",
+  declined: "거절",
 };
 
 function formatDate(iso: string): string {
@@ -90,6 +118,8 @@ export default async function AdminApplicationDetailPage({
   let reviewerName: string | null = null;
   let rank = 0;
   let total = 0;
+  let interviewSlot: InterviewSlot | undefined;
+  let emailLogs: ApplicationEmailLog[] = [];
 
   if (demo) {
     app = DEMO_APPLICATIONS.find((a) => a.id === id) ?? DEMO_APPLICATIONS[0];
@@ -130,11 +160,29 @@ export default async function AdminApplicationDetailPage({
         .single();
       reviewerName = (reviewer as { name: string } | null)?.name ?? null;
     }
+
+    const [{ data: slot }, { data: logs }] = await Promise.all([
+      supabase.from("interview_slots").select("*").eq("application_id", app.id).order("starts_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("application_email_logs").select("*").eq("application_id", app.id).order("created_at", { ascending: false }),
+    ]);
+    interviewSlot = (slot as InterviewSlot | null) ?? undefined;
+    emailLogs = (logs as ApplicationEmailLog[] | null) ?? [];
   }
 
   if (!app) notFound();
 
+  if (demo) {
+    interviewSlot = DEMO_INTERVIEW_SLOTS.find((slot) => slot.application_id === app!.id);
+    emailLogs = DEMO_APPLICATION_EMAIL_LOGS.filter((log) => log.application_id === app!.id);
+  }
+
   const interviewQuestions = await getInterviewQuestionsFor(app.position);
+  const configuredApplicationQuestions = app.position
+    ? await getApplicationQuestionsFor(app.position)
+    : [];
+  const applicationQuestions: { key: string; label: string }[] = configuredApplicationQuestions.length
+    ? configuredApplicationQuestions.map((question: ApplicationQuestion) => ({ key: question.id, label: question.label }))
+    : LEGACY_QUESTIONS;
   const { data: interviewHistory } = demo
     ? { data: DEMO_INTERVIEW_BOOKING_EVENTS.filter((event) => event.application_id === app.id) }
     : await (await createClient())
@@ -215,7 +263,7 @@ export default async function AdminApplicationDetailPage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_18rem]">
         <div className="flex flex-col gap-3">
           <p className="text-sm font-semibold text-gray-700">지원 문항 답변</p>
-          {QUESTIONS.map((q, i) => (
+          {applicationQuestions.map((q, i) => (
             <div
               key={q.key}
               className="rounded-lg border border-gray-100 bg-gray-50 p-4"
@@ -329,6 +377,47 @@ export default async function AdminApplicationDetailPage({
             ))}
           </ol>
         )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-gray-700">면접 연동 현황</p>
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm">
+            {!interviewSlot ? (
+              <p className="text-gray-400">예약된 면접이 없어요.</p>
+            ) : (
+              <dl className="flex flex-col gap-2">
+                <div className="flex justify-between gap-3"><dt className="text-gray-500">면접 일정</dt><dd className="font-medium text-gray-800">{formatDateTime(interviewSlot.starts_at)}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-gray-500">Calendar 생성</dt><dd className="font-medium text-gray-800">{interviewSlot.calendar_sync_status === "synced" ? "동기화 완료" : interviewSlot.calendar_sync_status === "failed" ? "동기화 실패" : "미동기화"}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-gray-500">지원자 응답</dt><dd className="font-medium text-gray-800">{interviewSlot.applicant_calendar_response ? CALENDAR_RESPONSE_LABELS[interviewSlot.applicant_calendar_response] : "응답 대기"}</dd></div>
+                <div className="flex justify-between gap-3"><dt className="text-gray-500">면접관 응답</dt><dd className="font-medium text-gray-800">{interviewSlot.interviewer_calendar_response ? CALENDAR_RESPONSE_LABELS[interviewSlot.interviewer_calendar_response] : "응답 대기"}</dd></div>
+                {interviewSlot.calendar_error && <div className="text-xs text-danger">오류: {interviewSlot.calendar_error}</div>}
+              </dl>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-semibold text-gray-700">이메일 발송·수신 현황</p>
+          {!emailLogs.length ? (
+            <p className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm text-gray-400">기록된 이메일이 없어요.</p>
+          ) : (
+            <ol className="flex flex-col gap-2">
+              {emailLogs.map((log) => (
+                <li key={log.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-medium text-gray-800">{EMAIL_KIND_LABELS[log.kind]}</span>
+                    <Badge tone={log.status === "delivered" ? "success" : log.status === "requested" ? "warning" : log.status === "bounced" || log.status === "failed" ? "danger" : "neutral"}>
+                      {EMAIL_STATUS_LABELS[log.status]}
+                    </Badge>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">{log.recipient_email} · {formatDateTime(log.created_at)}</p>
+                  {log.error && <p className="mt-1 text-xs text-danger">{log.error}</p>}
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">

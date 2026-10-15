@@ -1,5 +1,12 @@
 export type Role = "organizer" | "team_member" | "member" | "applicant";
-export type Position = "frontend" | "backend" | "designer" | "beginner";
+export type Position =
+  | "frontend"
+  | "backend"
+  | "designer"
+  | "beginner"
+  | "pm"
+  | "marketer"
+  | "vibecoder";
 export const ADMIN_ROLES: Role[] = ["organizer", "team_member"];
 const DEVELOPER_EMAIL = "jieunsse@gmail.com";
 export function isDeveloper(profile: Pick<Profile, "email"> | null | undefined): boolean {
@@ -16,6 +23,9 @@ export const POSITION_LABELS: Record<Position, string> = {
   backend: "백엔드",
   designer: "디자이너",
   beginner: "비기너",
+  pm: "PM",
+  marketer: "마케터",
+  vibecoder: "바이브코더",
 };
 export type MemberStatus = "active" | "dormant" | "withdrawn";
 export type AcademicStatus = "enrolled" | "leave" | "graduated" | "completed";
@@ -142,8 +152,46 @@ export interface InterviewSlot {
   meet_uri: string | null;
   meet_code: string | null;
   calendar_event_id: string | null;
+  calendar_sync_status?: "not_synced" | "synced" | "failed" | "deleted" | "delete_failed";
+  calendar_synced_at?: string | null;
+  calendar_checked_at?: string | null;
+  calendar_error?: string | null;
+  applicant_calendar_response?: "needsAction" | "accepted" | "tentative" | "declined" | null;
+  interviewer_calendar_response?: "needsAction" | "accepted" | "tentative" | "declined" | null;
   interview_result: "attended" | "no_show" | null;
   status: "open" | "booked" | "completed" | "canceled";
+}
+
+export type ApplicationEmailKind =
+  | "interview_invite"
+  | "interview_confirmation"
+  | "interview_cancellation"
+  | "result"
+  | "onboarding_invite";
+
+export type ApplicationEmailStatus =
+  | "not_configured"
+  | "requested"
+  | "delivered"
+  | "delivery_delayed"
+  | "failed"
+  | "bounced"
+  | "complained"
+  | "suppressed";
+
+export interface ApplicationEmailLog {
+  id: string;
+  application_id: string;
+  slot_id: string | null;
+  kind: ApplicationEmailKind;
+  recipient_email: string;
+  provider_email_id: string | null;
+  status: ApplicationEmailStatus;
+  error: string | null;
+  requested_at: string | null;
+  delivered_at: string | null;
+  last_event_at: string | null;
+  created_at: string;
 }
 
 export interface RecruitingSettings {
@@ -224,6 +272,25 @@ export interface InterviewQuestion {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ApplicationQuestion {
+  id: string;
+  position: Position;
+  label: string;
+  sort_order: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApplicationQuestionPreset {
+  id: string;
+  name: string;
+  position: Position;
+  questions: string[];
+  created_by: string | null;
+  created_at: string;
 }
 
 export type NotificationType =

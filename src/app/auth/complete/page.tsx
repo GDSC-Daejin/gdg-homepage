@@ -7,7 +7,10 @@ function LoginCompleteRedirect() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
-  const destination = next === "/admin" || next === "/onboarding" ? next : "/";
+  const destination =
+    next === "/admin" || next === "/onboarding" || next?.startsWith("/onboarding/invite?token=")
+      ? next
+      : "/";
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID) {

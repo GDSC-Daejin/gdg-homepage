@@ -1,13 +1,17 @@
 import { z } from "zod";
 
 export const profileSchema = z.object({
-  name: z.string().min(1, "이름을 입력해주세요"),
-  nickname: z.string().min(1, "영어 닉네임을 입력해주세요"),
-  student_no: z.string().min(1, "학번을 입력해주세요"),
-  major: z.string().min(1, "전공을 입력해주세요"),
-  phone: z.string().min(1, "전화번호를 입력해주세요"),
+  name: z.string().trim().min(1, "이름을 입력해주세요"),
+  nickname: z
+    .string()
+    .trim()
+    .min(1, "영어 닉네임을 입력해주세요")
+    .regex(/^[A-Za-z][A-Za-z ]*$/, "영어 닉네임은 영문과 공백만 사용할 수 있어요"),
+  student_no: z.string().regex(/^\d{8}$/, "학번은 숫자 8자리로 입력해주세요"),
+  major: z.string().trim().min(1, "전공을 입력해주세요"),
+  phone: z.string().regex(/^010-\d{4}-\d{4}$/, "전화번호는 010-1234-5678 형식으로 입력해주세요"),
   interests: z.array(z.string()),
-  position: z.enum(["frontend", "backend", "designer", "beginner"], {
+  position: z.enum(["frontend", "backend", "designer", "beginner", "pm", "marketer", "vibecoder"], {
     message: "포지션을 선택해주세요",
   }),
   academic_status: z
@@ -51,8 +55,8 @@ export const applicationSchema = z.object({
   email: z.email("이메일 형식이 올바르지 않아요"),
   season: z.string().min(1),
   answers: z.record(z.string(), z.string()),
-  position: z.enum(["frontend", "backend", "designer", "beginner"], {
-    message: "지원 파트를 선택해주세요",
+  position: z.enum(["frontend", "backend", "designer", "beginner", "pm", "marketer", "vibecoder"], {
+    message: "지원 포지션을 선택해주세요",
   }),
 });
 
@@ -73,8 +77,8 @@ export const recruitingSettingsSchema = z
     season: z.string().min(1, "시즌명을 입력해주세요"),
     is_open: z.boolean(),
     open_positions: z
-      .array(z.enum(["frontend", "backend", "designer", "beginner"]))
-      .min(1, "모집 파트를 1개 이상 선택해주세요"),
+      .array(z.enum(["frontend", "backend", "designer", "beginner", "pm", "marketer", "vibecoder"]))
+      .min(1, "모집 포지션을 1개 이상 선택해주세요"),
     apply_start: dateStr,
     apply_end: dateStr,
   })
@@ -93,8 +97,19 @@ export const noticeSchema = z.object({
 });
 
 export const interviewQuestionSchema = z.object({
-  position: z.enum(["frontend", "backend", "designer", "beginner"]).nullable(),
+  position: z.enum(["frontend", "backend", "designer", "beginner", "pm", "marketer", "vibecoder"]).nullable(),
   body: z.string().min(1, "질문을 입력해주세요"),
+});
+
+export const applicationQuestionSchema = z.object({
+  position: z.enum(["frontend", "backend", "designer", "beginner", "pm", "marketer", "vibecoder"]),
+  label: z.string().trim().min(1, "질문을 입력해주세요").max(300, "질문은 300자까지 입력할 수 있어요"),
+});
+
+export const applicationQuestionPresetSchema = z.object({
+  name: z.string().trim().min(1, "프리셋 이름을 입력해주세요").max(100, "프리셋 이름은 100자까지 입력할 수 있어요"),
+  position: z.enum(["frontend", "backend", "designer", "beginner", "pm", "marketer", "vibecoder"]),
+  questions: z.array(z.string().trim().min(1)).min(1, "질문을 1개 이상 추가해주세요"),
 });
 
 export const surveyQuestionSchema = z.object({

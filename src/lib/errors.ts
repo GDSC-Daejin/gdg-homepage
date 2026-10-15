@@ -8,6 +8,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   NO_CODE_ISSUED: "출석 코드가 아직 발급되지 않았어요",
   FORBIDDEN: "권한이 없어요",
   INVALID_INPUT: "입력값이 올바르지 않아요",
+  OPEN_POSITIONS_LOCKED: "모집 포지션을 바꾸려면 모집을 먼저 종료해야 해요",
   NOT_FOUND: "대상을 찾을 수 없어요",
   ORGANIZER_EXISTS: "오거나이저는 1명만 지정할 수 있어요",
   DUPLICATE_APPLICANT: "이미 같은 학번/연락처로 지원한 내역이 있어요",
@@ -20,6 +21,17 @@ const ERROR_MESSAGES: Record<string, string> = {
   INVALID_RANKING_TEAM: "서로 다른 포켓몬 3마리와 전설/환상 1마리 이하로 덱을 구성해주세요",
   RANKING_REROLL_UNAVAILABLE: "리롤은 첫 공격 전 하루 한 번만 할 수 있어요",
   RANKING_BATTLE_UNAVAILABLE: "지금은 이 상대에게 결투할 수 없어요",
+  NOT_BOOKED: "예약된 면접이 없어요",
+  CANCEL_DEADLINE: "면접 24시간 전부터는 취소할 수 없어요",
+  CHANGE_DEADLINE: "면접 24시간 전부터는 일정을 변경할 수 없어요",
+  CHANGE_LIMIT: "면접 일정 변경은 1회만 가능해요",
+  INVALID_OUTCOME: "면접 결과가 올바르지 않아요",
+  INTERVIEW_NOT_STARTED: "면접 시작 전에는 결과를 기록할 수 없어요",
+  INVALID_TRANSITION: "현재 단계에서 변경할 수 없는 상태예요",
+  INVITE_EXPIRED: "가입 초대 링크가 만료됐어요",
+  EMAIL_MISMATCH: "초대받은 이메일 계정으로 로그인해주세요",
+  ALREADY_LINKED: "이미 다른 계정에 연결된 지원서예요",
+  UNAUTHORIZED: "로그인이 필요해요",
 };
 
 export function toKoreanError(e: unknown): string {

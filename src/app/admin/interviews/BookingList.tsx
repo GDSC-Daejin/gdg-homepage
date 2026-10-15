@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   assignInterviewer,
@@ -9,13 +9,14 @@ import {
   markInterviewOutcome,
   regenerateMeetLink,
   resendInterviewConfirmation,
+  refreshInterviewCalendarResponse,
   rescheduleInterviewBooking,
   syncInterviewCalendar,
 } from "@/actions/interview";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
+import { Avatar } from "@/components/Avatar";
 import type { InterviewSlot } from "@/lib/types";
-import { displayName } from "@/lib/format";
 
 interface Booking extends InterviewSlot {
   applicant_name?: string;
@@ -24,7 +25,8 @@ interface Booking extends InterviewSlot {
 interface Interviewer {
   id: string;
   name: string;
-  nickname: string;
+  nickname: string | null;
+  avatar_path: string | null;
 }
 
 function formatSlot(startsAt: string) {
@@ -42,9 +44,17 @@ const STATUS: Record<InterviewSlot["status"], { label: string; tone: "neutral" |
   canceled: { label: "취소", tone: "danger" },
 };
 
+const CALENDAR_RESPONSE: Record<NonNullable<InterviewSlot["applicant_calendar_response"]>, string> = {
+  needsAction: "응답 대기",
+  accepted: "수락",
+  tentative: "미정",
+  declined: "거절",
+};
+
 export function BookingList({ bookings, interviewers }: { bookings: Booking[]; interviewers: Interviewer[] }) {
   const [message, setMessage] = useState<string>();
   const [newSlotByBooking, setNewSlotByBooking] = useState<Record<string, string>>({});
+  const [activeBookingId, setActiveBookingId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
 
@@ -54,7 +64,10 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
     startTransition(async () => {
       const result = await assignInterviewer(slotId, interviewerId);
       setMessage(result.error ?? result.warning ?? "면접관을 배정했어요.");
-      if (!result.error) router.refresh();
+      if (!result.error) {
+        setActiveBookingId(null);
+        router.refresh();
+      }
     });
   }
 
@@ -81,6 +94,15 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
     startTransition(async () => {
       const result = await resendInterviewConfirmation(slotId);
       setMessage(result.error ?? result.warning ?? "확정 이메일을 다시 보냈어요.");
+    });
+  }
+
+  function refreshCalendarResponse(slotId: string) {
+    setMessage(undefined);
+    startTransition(async () => {
+      const result = await refreshInterviewCalendarResponse(slotId);
+      setMessage(result.error ?? result.warning ?? "Calendar 참석자 응답을 갱신했어요.");
+      if (!result.error) router.refresh();
     });
   }
 
@@ -147,15 +169,17 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
                   ) : "-"}
                 </td>
                 <td className="px-3 py-3">
-                  <select
-                    value={booking.interviewer_id ?? ""}
-                    onChange={(event) => assign(booking.id, event.target.value)}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
                     disabled={pending}
-                    className="h-8 rounded-md border border-gray-300 bg-white px-2 text-xs text-gray-700"
+                    onClick={() => setActiveBookingId(booking.id)}
                   >
-                    <option value="">배정 안 함</option>
-                    {interviewers.map((interviewer) => <option key={interviewer.id} value={interviewer.id}>{displayName(interviewer.name, interviewer.nickname)}</option>)}
-                  </select>
+                    {booking.interviewer_id
+                      ? interviewerName(interviewers.find((interviewer) => interviewer.id === booking.interviewer_id))
+                      : "면접관 선택"}
+                  </Button>
                 </td>
                 <td className="px-3 py-3">
                   {booking.meet_uri ? (
@@ -173,6 +197,17 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
                       <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => resendConfirmation(booking.id)}>
                         확정 메일
                       </Button>
+                      {booking.calendar_event_id && (
+                        <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => refreshCalendarResponse(booking.id)}>
+                          응답 새로고침
+                        </Button>
+                      )}
+                      {booking.calendar_event_id && (
+                        <span className="text-xs text-gray-500">
+                          지원자 {booking.applicant_calendar_response ? CALENDAR_RESPONSE[booking.applicant_calendar_response] : "-"}
+                          {booking.interviewer_calendar_response ? ` · 면접관 ${CALENDAR_RESPONSE[booking.interviewer_calendar_response]}` : ""}
+                        </span>
+                      )}
                     </div>
                   ) : "-"}
                 </td>
@@ -214,6 +249,72 @@ export function BookingList({ bookings, interviewers }: { bookings: Booking[]; i
         </table>
       </div>
       {message && <p className={`text-xs ${message.includes("실패") || message.includes("못했") ? "text-danger" : "text-success"}`}>{message}</p>}
+      {activeBookingId && (
+        <InterviewerModal
+          interviewers={interviewers}
+          pending={pending}
+          onClose={() => setActiveBookingId(null)}
+          onSelect={(interviewerId) => assign(activeBookingId, interviewerId)}
+        />
+      )}
+    </div>
+  );
+}
+
+function interviewerName(interviewer?: Interviewer) {
+  if (!interviewer) return "면접관 선택";
+  return interviewer.nickname ? `${interviewer.nickname} (${interviewer.name})` : interviewer.name;
+}
+
+function InterviewerModal({
+  interviewers,
+  pending,
+  onClose,
+  onSelect,
+}: {
+  interviewers: Interviewer[];
+  pending: boolean;
+  onClose: () => void;
+  onSelect: (interviewerId: string) => void;
+}) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/45 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="interviewer-modal-title" className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl">
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 id="interviewer-modal-title" className="text-lg font-semibold text-gray-900">면접관 선택</h2>
+            <p className="mt-1 text-sm text-gray-500">팀 멤버와 오거나이저 중에서 선택해 주세요.</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-md p-1 text-xl leading-none text-gray-400 hover:bg-gray-100 hover:text-gray-700" aria-label="면접관 선택 닫기">×</button>
+        </div>
+        {interviewers.length > 0 ? (
+          <div className="grid max-h-[min(60vh,28rem)] grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+            {interviewers.map((interviewer) => (
+              <button
+                key={interviewer.id}
+                type="button"
+                disabled={pending}
+                onClick={() => onSelect(interviewer.id)}
+                className="flex min-h-32 flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 text-center transition hover:border-primary hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-wait disabled:opacity-60"
+              >
+                <Avatar name={interviewer.name} avatarPath={interviewer.avatar_path} className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-soft text-xl font-semibold text-primary" />
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-gray-900">{interviewer.nickname || interviewer.name}</span>
+                  {interviewer.nickname && <span className="block truncate text-xs text-gray-500">{interviewer.name}</span>}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : <p className="py-8 text-center text-sm text-gray-500">선택할 수 있는 면접관이 없어요.</p>}
+      </div>
     </div>
   );
 }

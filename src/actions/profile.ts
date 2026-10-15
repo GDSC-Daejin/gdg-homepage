@@ -47,9 +47,12 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 
   if (error) return { error: toKoreanError(error) };
 
-  revalidatePath("/", "layout");
+  if (profile.student_no === "") {
+    revalidatePath("/onboarding");
+    redirect("/onboarding");
+  }
 
-  if (profile.student_no === "") redirect("/");
+  revalidatePath("/", "layout");
   return {};
 }
 

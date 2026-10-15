@@ -26,6 +26,9 @@ export interface RecruitingCounts {
   backend: number;
   designer: number;
   beginner: number;
+  pm: number;
+  marketer: number;
+  vibecoder: number;
   unassigned: number;
 }
 
@@ -73,6 +76,9 @@ export function countApplications(
     backend: applications.filter((application) => application.position === "backend").length,
     designer: applications.filter((application) => application.position === "designer").length,
     beginner: applications.filter((application) => application.position === "beginner").length,
+    pm: applications.filter((application) => application.position === "pm").length,
+    marketer: applications.filter((application) => application.position === "marketer").length,
+    vibecoder: applications.filter((application) => application.position === "vibecoder").length,
     unassigned: applications.filter((application) => application.position === null).length,
   };
 }

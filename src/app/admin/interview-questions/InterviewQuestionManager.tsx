@@ -21,6 +21,9 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "backend", label: POSITION_LABELS.backend },
   { key: "designer", label: POSITION_LABELS.designer },
   { key: "beginner", label: POSITION_LABELS.beginner },
+  { key: "pm", label: POSITION_LABELS.pm },
+  { key: "marketer", label: POSITION_LABELS.marketer },
+  { key: "vibecoder", label: POSITION_LABELS.vibecoder },
   { key: "common", label: "공통" },
 ];
 

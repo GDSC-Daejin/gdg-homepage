@@ -4,6 +4,8 @@ import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
 import { ApplyForm } from "./ApplyForm";
 import { JsonLd, breadcrumb } from "@/components/JsonLd";
+import { getApplicationQuestionsFor } from "@/lib/application-questions";
+import type { ApplicationQuestion } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -46,17 +48,21 @@ const STEPS = [
 
 export default async function ApplyPage() {
   const settings = await getRecruitingSettings();
+  const questionEntries = await Promise.all(
+    settings.open_positions.map(async (position) => [position, await getApplicationQuestionsFor(position)] as const),
+  );
+  const questionsByPosition = Object.fromEntries(questionEntries) as Partial<Record<string, ApplicationQuestion[]>>;
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col justify-center px-4 py-12">
+    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
       <JsonLd data={faqLd} />
       <JsonLd data={breadcrumb("지원하기", "/apply")} />
       <div className="mb-6">
         <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">
           ← GDGOC DJU
         </Link>
-        <h1 className="mt-3 text-2xl font-bold tracking-tight text-gray-900">지원하기</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">지원하기</h1>
+        <p className="mt-2 text-base text-gray-500">
           {settings.season} 리크루팅 · 로그인 없이 바로 지원할 수 있어요
         </p>
       </div>
@@ -76,24 +82,24 @@ export default async function ApplyPage() {
         </Card>
       ) : (
         <>
-          <Card className="mb-4">
-            <p className="mb-3 text-sm font-semibold text-gray-900">지원 절차</p>
-            <div className="flex flex-col gap-3 sm:flex-row sm:gap-2">
+          <Card className="mb-5 p-5 sm:p-7">
+            <p className="mb-6 text-base font-semibold text-gray-900">지원 절차</p>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-4 sm:gap-4">
               {STEPS.map((step, i) => (
-                <div key={step.title} className="flex flex-1 items-start gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary">
+                <div key={step.title} className="flex items-start gap-3 sm:flex-col sm:gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary">
                     {i + 1}
                   </span>
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{step.title}</p>
-                    <p className="text-xs text-gray-500">{step.description}</p>
+                    <p className="text-base font-medium text-gray-900">{step.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-gray-500">{step.description}</p>
                   </div>
                 </div>
               ))}
             </div>
           </Card>
-          <Card>
-            <ApplyForm openPositions={settings.open_positions} />
+          <Card className="p-5 sm:p-7 lg:p-8">
+            <ApplyForm openPositions={settings.open_positions} questionsByPosition={questionsByPosition} />
           </Card>
         </>
       )}

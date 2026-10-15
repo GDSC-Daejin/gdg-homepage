@@ -11,6 +11,8 @@ type CalendarEventParams = {
   attendeeEmails: string[];
 };
 
+export type CalendarAttendee = { email?: string; responseStatus?: string };
+
 function eventIdFor(slotId: string) {
   return `gdgdju${slotId.replaceAll("-", "")}`;
 }
@@ -67,6 +69,19 @@ export async function syncInterviewCalendarEvent(
   const event = (await response.json()) as { id?: string };
   if (!event.id) throw new Error("GOOGLE_CALENDAR_EVENT_FAILED");
   return { eventId: event.id };
+}
+
+export async function getInterviewCalendarEvent(eventId: string): Promise<CalendarAttendee[]> {
+  const accessToken = await getGoogleAccessToken();
+  const calendarId = encodeURIComponent(process.env.GOOGLE_CALENDAR_ID ?? "primary");
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${encodeURIComponent(eventId)}`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(5000),
+  });
+  if (!response.ok) throw new Error("GOOGLE_CALENDAR_EVENT_FETCH_FAILED");
+  const event = (await response.json()) as { attendees?: CalendarAttendee[] };
+  return event.attendees ?? [];
 }
 
 export async function deleteInterviewCalendarEvent(eventId: string): Promise<void> {
