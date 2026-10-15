@@ -5,6 +5,7 @@ import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 
 const TOUR_PATHS = [
   /^\/$/,
+  /^\/dashboard$/,
   /^\/tour\/landing$/,
   /^\/admin(?:\/(?:analytics|applications|attendance|bots|budget|dev|events|groups|inquiries|interview-questions|interviews|members|notices|places|points|settings|surveys)(?:\/.*)?)?$/,
   /^\/(?:attend|board|events|inquiries|materials|meetings|notices|profile|qna|surveys)(?:\/.*)?$/,
@@ -23,7 +24,7 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (pathname.startsWith("/tour/")) {
-    const destination = pathname.slice("/tour".length);
+    const destination = pathname === "/tour/home" ? "/dashboard" : pathname.slice("/tour".length);
     if (request.method !== "GET" && request.method !== "HEAD") {
       return new NextResponse(null, { status: 403 });
     }
@@ -33,7 +34,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.next({ request: { headers: requestHeaders } });
     }
     if (!isTourPath(destination)) {
-      return NextResponse.redirect(new URL(destination.startsWith("/pokedex") ? "/tour/" : "/tour/admin", request.url));
+      return NextResponse.redirect(new URL(destination.startsWith("/pokedex") ? "/tour/home" : "/tour/admin", request.url));
     }
     const url = request.nextUrl.clone();
     url.pathname = destination;
@@ -43,7 +44,7 @@ export async function proxy(request: NextRequest) {
   const referer = request.headers.get("referer");
   if (referer && isTourPath(pathname) && new URL(referer).pathname.startsWith("/tour/")) {
     const url = request.nextUrl.clone();
-    url.pathname = `/tour${pathname}`;
+    url.pathname = pathname === "/" ? "/tour/home" : `/tour${pathname}`;
     return NextResponse.redirect(url);
   }
 
