@@ -9,6 +9,7 @@ import { isDemoMode } from "@/lib/demo";
 import type { ActionResult, ApplicationQuestionPreset, Position } from "@/lib/types";
 
 function refresh() {
+  revalidatePath("/admin/questions");
   revalidatePath("/admin/application-questions");
   revalidatePath("/apply");
 }
@@ -31,8 +32,10 @@ export async function updateApplicationQuestion(id: string, label: string): Prom
   if (await isDemoMode()) return {};
   const parsed = applicationQuestionSchema.shape.label.safeParse(label);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "질문을 확인해주세요" };
-  const { error } = await (await createClient()).from("application_questions").update({ label: parsed.data, updated_at: new Date().toISOString() }).eq("id", id);
+  const { data, error } = await (await createClient()).from("application_questions").update({ label: parsed.data, updated_at: new Date().toISOString() }).eq("id", id).select("id");
   if (error) return { error: toKoreanError(error) };
+  // RLS에 막히거나 이미 지워진 질문이면 오류 없이 0행이 바뀐다 — 성공으로 보이지 않게 한다.
+  if (!data?.length) return { error: toKoreanError({ message: "NOT_FOUND" }) };
   refresh();
   return {};
 }
@@ -40,8 +43,9 @@ export async function updateApplicationQuestion(id: string, label: string): Prom
 export async function deleteApplicationQuestion(id: string): Promise<ActionResult> {
   await requireAdmin();
   if (await isDemoMode()) return {};
-  const { error } = await (await createClient()).from("application_questions").delete().eq("id", id);
+  const { data, error } = await (await createClient()).from("application_questions").delete().eq("id", id).select("id");
   if (error) return { error: toKoreanError(error) };
+  if (!data?.length) return { error: toKoreanError({ message: "NOT_FOUND" }) };
   refresh();
   return {};
 }

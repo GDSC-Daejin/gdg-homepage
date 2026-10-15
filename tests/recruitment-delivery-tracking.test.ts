@@ -22,9 +22,11 @@ describe("모집 외부 연동 추적", () => {
 
   it("Resend webhook이 서명과 전달 상태를 처리한다", () => {
     const route = readFileSync(`${root}/src/app/api/webhooks/resend/route.ts`, "utf8");
-    expect(route).toContain("svix-signature");
-    expect(route).toContain('"email.delivered"');
-    expect(route).toContain('"email.bounced"');
+    const webhook = readFileSync(`${root}/src/lib/resend-webhook.ts`, "utf8");
+    expect(webhook).toContain("svix-signature");
+    expect(webhook).toContain('"email.delivered"');
+    expect(webhook).toContain('"email.bounced"');
+    expect(route).toContain("verifyResendSignature");
     expect(route).toContain("provider_event_id");
   });
 });

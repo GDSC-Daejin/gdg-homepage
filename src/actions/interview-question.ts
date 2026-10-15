@@ -30,6 +30,7 @@ export async function createInterviewQuestion(
   if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/interview-questions");
+  revalidatePath("/admin/questions");
   return {};
 }
 
@@ -51,6 +52,7 @@ export async function updateInterviewQuestion(
   if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/interview-questions");
+  revalidatePath("/admin/questions");
   return {};
 }
 
@@ -67,5 +69,6 @@ export async function deleteInterviewQuestion(id: string): Promise<ActionResult>
   if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/interview-questions");
+  revalidatePath("/admin/questions");
   return {};
 }
