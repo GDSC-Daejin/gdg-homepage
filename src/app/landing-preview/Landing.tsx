@@ -70,7 +70,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
     <div className="nb">
       {/* ── 네비게이션 ─────────────────────────── */}
       <header className="nb-nav">
-        <Link href="/" className="nb-brand">
+        <Link href={tour ? "/tour/landing" : "/"} className="nb-brand">
           <span className="nb-brand-mark" aria-hidden>
             <i style={{ background: "#4285F4" }} />
             <i style={{ background: "#EA4335" }} />
