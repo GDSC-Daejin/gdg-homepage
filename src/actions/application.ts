@@ -46,7 +46,11 @@ export async function submitApplication(formData: FormData): Promise<ActionResul
   }
 
   const positionValue = String(formData.get("position") ?? "");
-  const questions = await getApplicationQuestionsFor(positionValue as Parameters<typeof getApplicationQuestionsFor>[0]);
+  const position = applicationSchema.shape.position.safeParse(positionValue);
+  if (!position.success) {
+    return { error: position.error.issues[0]?.message ?? "지원 포지션을 선택해주세요" };
+  }
+  const questions = await getApplicationQuestionsFor(position.data);
   const answers = Object.fromEntries(
     questions.map((question) => [question.id, String(formData.get(question.id) ?? "").trim()]),
   );

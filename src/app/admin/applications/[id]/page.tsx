@@ -11,8 +11,7 @@ import { EvaluationPanel } from "./EvaluationPanel";
 import { isDemoMode } from "@/lib/demo";
 import { DEMO_APPLICATIONS, DEMO_APPLICATION_EMAIL_LOGS, DEMO_APPLICATION_EVALUATIONS, DEMO_APPLICATION_STATUS_HISTORY, DEMO_INTERVIEW_BOOKING_EVENTS, DEMO_INTERVIEW_SLOTS, DEMO_MEMBERS } from "@/lib/demoData";
 import { getInterviewQuestionsFor } from "@/lib/interview-questions";
-import { getApplicationQuestionsFor } from "@/lib/application-questions";
-import type { ApplicationQuestion } from "@/lib/types";
+import { buildApplicationAnswerRows, getApplicationQuestionsFor } from "@/lib/application-questions";
 import { CancellationEmailRetryButton } from "./CancellationEmailRetryButton";
 
 export const dynamic = "force-dynamic";
@@ -46,12 +45,6 @@ const STATUS_DOT: Record<ApplicationStatus, string> = {
   no_show: "bg-danger",
   withdrawn: "bg-gray-400",
 };
-
-const LEGACY_QUESTIONS: { key: string; label: string }[] = [
-  { key: "intro", label: "자기소개" },
-  { key: "motivation", label: "지원 동기" },
-  { key: "interest", label: "관심 분야" },
-];
 
 const INTERVIEW_EVENT_LABELS: Record<string, string> = {
   booked: "면접 예약",
@@ -180,9 +173,7 @@ export default async function AdminApplicationDetailPage({
   const configuredApplicationQuestions = app.position
     ? await getApplicationQuestionsFor(app.position)
     : [];
-  const applicationQuestions: { key: string; label: string }[] = configuredApplicationQuestions.length
-    ? configuredApplicationQuestions.map((question: ApplicationQuestion) => ({ key: question.id, label: question.label }))
-    : LEGACY_QUESTIONS;
+  const answerRows = buildApplicationAnswerRows(configuredApplicationQuestions, app.answers ?? {});
   const { data: interviewHistory } = demo
     ? { data: DEMO_INTERVIEW_BOOKING_EVENTS.filter((event) => event.application_id === app.id) }
     : await (await createClient())
@@ -263,7 +254,10 @@ export default async function AdminApplicationDetailPage({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_18rem]">
         <div className="flex flex-col gap-3">
           <p className="text-sm font-semibold text-gray-700">지원 문항 답변</p>
-          {applicationQuestions.map((q, i) => (
+          {answerRows.length === 0 && (
+            <p className="rounded-lg border border-gray-100 bg-gray-50 p-4 text-sm text-gray-500">제출된 답변이 없어요.</p>
+          )}
+          {answerRows.map((q, i) => (
             <div
               key={q.key}
               className="rounded-lg border border-gray-100 bg-gray-50 p-4"
@@ -273,7 +267,7 @@ export default async function AdminApplicationDetailPage({
                 {q.label}
               </p>
               <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
-                {app.answers[q.key] || "-"}
+                {q.answer || "-"}
               </p>
             </div>
           ))}

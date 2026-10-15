@@ -389,3 +389,65 @@ waiting → reviewing → pending → accepted
 
 - 합격자별 전환 상태를 `초대 전 → 초대 발송 → 계정 연결 → 승인 대기 → 승인 완료`로 표시한다.
 - 초대 만료일과 재발송 행동을 같은 행에서 제공한다.
+
+## 16. 운영 연결 절차
+
+아래 등록·적용은 운영자가 직접 한다. 순서는 **마이그레이션 → 환경변수 → 코드 배포 → Resend 웹훅 등록 → 확인**이다. 코드가 0116~0119 스키마를 먼저 쓰므로 마이그레이션보다 코드를 먼저 올리지 않는다.
+
+### 16.1 프로덕션 마이그레이션
+
+1. 프로덕션에 어디까지 적용됐는지 먼저 본다.
+
+   ```bash
+   supabase migration list
+   ```
+
+2. `0116_recruiting_positions` → `0117_recruitment_delivery_tracking` → `0118_lock_open_recruiting_positions` → `0119_application_questions` 순서로 적용한다. `supabase db push`는 아직 적용되지 않은 다른 번호(예: 0120~0123 도감·마켓)도 함께 올리므로, 목록을 보고 같이 올려도 되는지 확인한 뒤 실행한다.
+
+   ```bash
+   supabase db push
+   ```
+
+3. 적용 뒤 확인할 것:
+   - `application_questions`에 7개 포지션 × 기본 질문 3개(자기소개·지원 동기·관심 분야)가 들어 있다.
+   - `application_email_logs`, `application_email_events`, `application_questions`, `application_question_presets` 모두 RLS가 켜져 있다.
+
+0119 이전 지원서의 답변 키(`intro`·`motivation`·`interest`)는 그대로 두고, 운영진 지원서 상세에서 이전 라벨로 보여준다. 0119 이후 지원서는 질문 id를 답변 키로 쓴다.
+
+### 16.2 Vercel 환경변수 (Production)
+
+| 이름 | 용도 | 없을 때 |
+| --- | --- | --- |
+| `RESEND_API_KEY` | 모집 메일 발송 | 메일을 보내지 않고 이력에 `not_configured`로 남긴다 |
+| `SUPABASE_SERVICE_ROLE_KEY` | 메일 이력 저장, 웹훅 상태 갱신 | 메일 이력이 남지 않고, 웹훅은 500으로 답한다 |
+| `RESEND_WEBHOOK_SECRET` | 웹훅 서명 검증 (`whsec_`로 시작) | 웹훅이 500으로 답한다. Resend가 재시도하므로 값을 넣고 재배포하면 밀린 이벤트가 들어온다 |
+
+환경변수를 바꾼 뒤에는 재배포해야 반영된다.
+
+### 16.3 Resend 웹훅 등록
+
+1. Resend 대시보드 → Webhooks → Add Endpoint.
+2. Endpoint URL: `https://<프로덕션 도메인>/api/webhooks/resend`
+3. 이벤트: `email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`, `email.suppressed`, `email.failed`. 다른 이벤트(`email.sent`, `email.opened` 등)를 함께 골라도 200으로 받고 무시한다.
+4. 생성된 Signing Secret을 Vercel의 `RESEND_WEBHOOK_SECRET`에 넣고 재배포한다.
+
+### 16.4 웹훅 동작 기준
+
+| 상황 | 응답 | 처리 |
+| --- | --- | --- |
+| `RESEND_WEBHOOK_SECRET` 없음 | 500 | 아무것도 저장하지 않는다 (Resend 재시도) |
+| Svix 헤더 누락·서명 불일치·타임스탬프 5분 초과 | 401 | 아무것도 저장하지 않는다 |
+| 서명은 맞지만 JSON이 아님 | 400 | 아무것도 저장하지 않는다 |
+| 상태와 무관한 이벤트 종류 | 200 | 무시 |
+| 모집 메일 이력에 없는 메일 | 200 | 무시 |
+| 같은 `svix-id` 재전송 | 200 | 이벤트를 다시 저장하지 않고 상태 갱신만 다시 시도한다 |
+| 늦게 도착한 이전 이벤트 | 200 | 이벤트는 저장하되, 더 최근 이벤트로 바뀐 상태를 되돌리지 않는다 |
+| DB 조회·저장·갱신 실패 | 500 | Resend가 재시도한다 |
+
+서명은 `timingSafeEqual`로 상수 시간 비교한다.
+
+### 16.5 연결 확인
+
+1. 운영진 화면에서 테스트용 본인 지원서에 결과 메일을 재발송한다.
+2. Resend 대시보드 → Webhooks → 해당 엔드포인트의 최근 전송이 200인지 본다.
+3. `/admin/applications/<지원서 id>`의 메일 이력이 "발송 요청"(`requested`)에서 "수신 서버 전달 완료"(`delivered`)로 바뀌는지 본다.

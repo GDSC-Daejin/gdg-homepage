@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { EmptyState } from "@/components/EmptyState";
 import { Input } from "@/components/Input";
@@ -98,21 +99,29 @@ export function ApplicationsView({
         title="지원서 심사"
         description={`${season} 리크루팅 · 지원자의 답변을 읽고 합격/불합격을 결정해요`}
         action={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-500">
-            <svg
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.75}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-3.5 w-3.5"
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/admin/applications/conversions"
+              className="inline-flex items-center rounded-full border border-primary px-3 py-1 text-xs font-medium text-primary hover:bg-primary-soft"
             >
-              <circle cx="10" cy="10" r="7.5" />
-              <circle cx="10" cy="10" r="2.5" />
-            </svg>
-            GDGOC DJU 운영진 · 시즌별 지원서 심사
-          </span>
+              합격자 가입 전환
+            </Link>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-500">
+              <svg
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-3.5 w-3.5"
+              >
+                <circle cx="10" cy="10" r="7.5" />
+                <circle cx="10" cy="10" r="2.5" />
+              </svg>
+              GDGOC DJU 운영진 · 시즌별 지원서 심사
+            </span>
+          </div>
         }
       />
 
