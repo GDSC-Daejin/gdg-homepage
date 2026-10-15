@@ -1,0 +1,6 @@
+[mcp_servers.gdg_dju_jev]
+command = "node"
+args = ["tools/jev-mcp/index.mjs"]
+cwd = ".."
+env_vars = ["TYPESAFE_API_KEY", "TYPESAFE_BASE_URL", "TYPESAFE_MODEL"]
+startup_timeout_sec = 20
