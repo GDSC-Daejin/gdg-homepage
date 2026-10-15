@@ -3,7 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import { rejectionMessage, remainingBallsMessage, resultMessage, shouldAnnounceCatch, throwMessage, type ThrowOutcome } from "@/lib/pokedex/messages";
 import { listWorkspaceMembers, postMessage } from "@/lib/slack/api";
 import { verifySlackSignature } from "@/lib/slack/verify";
-import { claimSlackEvent, shouldProcess, type EventStore } from "./helpers";
+import { claimSlackEvent, shouldProcess, type EventStore, type MentionEvent } from "./helpers";
+import { handleMention } from "./mention";
 
 type ReactionEvent = { type?: string; user?: string; item_user?: string; reaction?: string; item?: { ts?: string } };
 type PokedexResult = {
@@ -68,13 +69,17 @@ export async function POST(request: Request) {
   const valid = verifySlackSignature({ rawBody, timestamp: request.headers.get("x-slack-request-timestamp"), signature: request.headers.get("x-slack-signature"), signingSecret });
   if (!valid) return Response.json({ error: "invalid_signature" }, { status: 401 });
 
-  let payload: { type?: string; challenge?: string; event_id?: string; event?: ReactionEvent };
+  let payload: { type?: string; challenge?: string; event_id?: string; event?: ReactionEvent & MentionEvent };
   try {
     payload = JSON.parse(rawBody);
   } catch {
     return Response.json({ error: "invalid_json" }, { status: 400 });
   }
   if (payload.type === "url_verification") return Response.json({ challenge: payload.challenge });
-  if (payload.event && payload.event_id) after(() => handleReaction(payload.event!, payload.event_id!).catch(() => undefined));
+  const { event, event_id: eventId } = payload;
+  if (event && eventId) {
+    if (event.type === "reaction_added") after(() => handleReaction(event, eventId).catch(() => undefined));
+    else if (event.type === "app_mention") after(() => handleMention(event, eventId).catch(() => undefined));
+  }
   return Response.json({ ok: true });
 }

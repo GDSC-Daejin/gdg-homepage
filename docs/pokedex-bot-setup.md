@@ -8,7 +8,7 @@ POKEDEX_SLACK_BOT_TOKEN=xoxb-...
 POKEDEX_SLACK_SIGNING_SECRET=...
 ```
 
-3. 배포 후 도감봇 Slack 앱의 **Event Subscriptions**를 활성화하고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/pokedex/events`로 설정한다. Bot Events에는 `reaction_added`를 추가한다. **Slash Commands**에는 `/몬스터볼`을 만들고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/pokedex/command`로 설정한다. **Interactivity & Shortcuts**의 Request URL은 `https://gdg-homepage.vercel.app/api/slack/pokedex/actions`로 설정한다. Bot Token Scopes에 `commands`를 추가한 뒤 앱을 다시 설치한다.
+3. 배포 후 도감봇 Slack 앱의 **Event Subscriptions**를 활성화하고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/pokedex/events`로 설정한다. Bot Events에는 `reaction_added`와 `app_mention`을 추가한다. **Slash Commands**에는 `/몬스터볼`을 만들고 Request URL을 `https://gdg-homepage.vercel.app/api/slack/pokedex/command`로 설정한다. **Interactivity & Shortcuts**의 Request URL은 `https://gdg-homepage.vercel.app/api/slack/pokedex/actions`로 설정한다. Bot Token Scopes에 `commands`, `app_mentions:read`를 추가하고(`chat:write`가 없으면 그것도 추가), 앱을 다시 설치한다. `app_mention`과 `app_mentions:read`를 추가해야 `@도감봇 샤미드 포획률 알려줘`처럼 멘션으로 포켓몬의 희귀도·포획률·출현 가중치를 물을 수 있다. 재설치 전에는 멘션 이벤트가 들어오지 않아 봇이 답하지 않는다.
 4. Supabase SQL Editor에서 `0057_pokedex.sql`을 적용한다.
 5. 기존 `cron_secret` Vault 시크릿을 사용해 다음 두 스케줄을 등록한다. 배포 도메인은 실제 서비스 주소로 바꾼다.
 

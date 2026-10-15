@@ -17,6 +17,7 @@ import "./ranking/ranking.css";
 import type { DuelMember, DuelTurn, OwnedBattlePokemon, PokemonDuel } from "@/lib/pokedex/duel";
 import type { BattleType } from "@/lib/pokedex/battle-effects";
 import type { RankingLeagueState } from "@/lib/pokedex/ranking-league";
+import { RARITY_PROBABILITY, catchRatePercent } from "@/lib/pokedex/probability";
 import { isRankingLeagueOpen, RANKING_LEAGUE_PREOPEN } from "@/lib/pokedex/ranking-open";
 
 type Pokemon = { id: string; pokedex_no: number; name_ko: string; image_path: string; rarity: Rarity; spawn_weight: number; catch_rate: number };
@@ -34,13 +35,16 @@ const DEMO_POKEMON: Pokemon[] = [
   { id: "demo-133", pokedex_no: 133, name_ko: "이브이", image_path: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png", rarity: "rare", spawn_weight: 25, catch_rate: 0.48 },
 ];
 
-const RARITY_INFO: Record<Rarity, { label: string; weight: number; catchRate: number; tone: "neutral" | "primary" | "warning" | "danger" }> = {
-  common: { label: "일반", weight: 100, catchRate: 70, tone: "neutral" },
-  uncommon: { label: "흔치않음", weight: 55, catchRate: 60, tone: "primary" },
-  rare: { label: "희귀", weight: 25, catchRate: 48, tone: "warning" },
-  very_rare: { label: "매우 희귀", weight: 12, catchRate: 36, tone: "danger" },
-  legendary: { label: "전설/환상", weight: 8, catchRate: 28, tone: "danger" },
+const RARITY_TONE: Record<Rarity, "neutral" | "primary" | "warning" | "danger"> = {
+  common: "neutral",
+  uncommon: "primary",
+  rare: "warning",
+  very_rare: "danger",
+  legendary: "danger",
 };
+const RARITY_INFO = Object.fromEntries(
+  (Object.keys(RARITY_PROBABILITY) as Rarity[]).map((rarity) => [rarity, { ...RARITY_PROBABILITY[rarity], tone: RARITY_TONE[rarity] }]),
+) as Record<Rarity, (typeof RARITY_PROBABILITY)[Rarity] & { tone: "neutral" | "primary" | "warning" | "danger" }>;
 
 function RankingLeagueComingSoon() {
   return <section>
@@ -151,7 +155,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
           {visiblePokemon.length === 0 ? <p className="px-5 py-4 text-sm text-gray-500">검색한 포켓몬이 없어요.</p> : <table className="w-full text-sm"><thead><tr className="border-b border-gray-200 text-left text-gray-500"><th className="px-5 py-3 font-medium">번호</th><th className="px-5 py-3 font-medium">포켓몬</th><th className="px-5 py-3 font-medium">희귀도</th><th className="px-5 py-3 text-right font-medium">출현 가중치</th><th className="px-5 py-3 text-right font-medium">기본 몬스터볼 포획률</th></tr></thead><tbody>{visiblePokemon.map((entry) => {
             const info = RARITY_INFO[entry.rarity];
             const caught = (countByPokemon.get(entry.id) ?? 0) > 0;
-            return <tr key={entry.id} className="border-b border-gray-100 last:border-0"><td className="px-5 py-3 font-mono text-gray-500">{String(entry.pokedex_no).padStart(3, "0")}</td><td className="px-5 py-3"><Link href={`/pokedex/${entry.pokedex_no}`} className="flex items-center gap-3 font-medium text-gray-900 hover:text-primary"><img src={entry.image_path} alt={caught ? entry.name_ko : "미획득 포켓몬"} loading="lazy" decoding="async" className={`h-9 w-9 object-contain ${caught ? "" : "grayscale brightness-0 opacity-45"}`} /><span>{entry.name_ko}</span></Link></td><td className="px-5 py-3"><Badge tone={info.tone}>{info.label}</Badge></td><td className="px-5 py-3 text-right font-mono text-gray-700">{entry.spawn_weight}</td><td className="px-5 py-3 text-right font-mono text-gray-700">{Math.round(entry.catch_rate * 100)}%</td></tr>;
+            return <tr key={entry.id} className="border-b border-gray-100 last:border-0"><td className="px-5 py-3 font-mono text-gray-500">{String(entry.pokedex_no).padStart(3, "0")}</td><td className="px-5 py-3"><Link href={`/pokedex/${entry.pokedex_no}`} className="flex items-center gap-3 font-medium text-gray-900 hover:text-primary"><img src={entry.image_path} alt={caught ? entry.name_ko : "미획득 포켓몬"} loading="lazy" decoding="async" className={`h-9 w-9 object-contain ${caught ? "" : "grayscale brightness-0 opacity-45"}`} /><span>{entry.name_ko}</span></Link></td><td className="px-5 py-3"><Badge tone={info.tone}>{info.label}</Badge></td><td className="px-5 py-3 text-right font-mono text-gray-700">{entry.spawn_weight}</td><td className="px-5 py-3 text-right font-mono text-gray-700">{catchRatePercent(entry.catch_rate)}%</td></tr>;
           })}</tbody></table>}
         </Card>
       </>}
