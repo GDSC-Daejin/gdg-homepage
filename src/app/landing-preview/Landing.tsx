@@ -10,7 +10,7 @@ const NAV_ITEMS = [
 ];
 
 const TOUR_NAV_ITEMS = [
-  { label: "사용자", href: "/tour/" },
+  { label: "사용자", href: "/tour/home" },
   { label: "대시보드", href: "/tour/admin" },
   { label: "이벤트", href: "/tour/admin/events" },
   { label: "회원", href: "/tour/admin/members" },
@@ -89,7 +89,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
           ))}
         </nav>
         {tour ? (
-          <Link href="/tour/" className="nb-nav-cta">사용자 화면 보기</Link>
+          <Link href="/tour/home" className="nb-nav-cta">사용자 화면 보기</Link>
         ) : (
           <GoogleLoginButton className="nb-nav-cta" />
         )}
@@ -160,7 +160,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
             </p>
             <div className="nb-cta-row">
               {tour ? <>
-                <Link href="/tour/" className="nb-btn nb-btn--fill">
+                <Link href="/tour/home" className="nb-btn nb-btn--fill">
                   사용자 화면 미리보기 <span aria-hidden>↗</span>
                 </Link>
                 <Link href="/tour/admin" className="nb-btn nb-btn--line">
@@ -304,7 +304,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
           <p className="nb-final-sub">{tour ? "모든 화면은 읽기 전용 예시 데이터입니다." : "지원서 작성은 5분이면 충분해요."}</p>
           <div className="nb-cta-row nb-cta-row--center">
             {tour ? (
-              <Link href="/tour/" className="nb-btn nb-btn--fill nb-btn--big">
+              <Link href="/tour/home" className="nb-btn nb-btn--fill nb-btn--big">
                 사용자 화면 미리보기 <span aria-hidden>↗</span>
               </Link>
             ) : <>

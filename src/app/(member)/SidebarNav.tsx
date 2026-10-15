@@ -76,7 +76,8 @@ const baseGroups: NavGroup[] = [
   },
 ];
 
-function itemActive(item: NavItem, pathname: string) {
+function itemActive(item: NavItem, browserPathname: string) {
+  const pathname = browserPathname === "/tour/home" ? "/" : browserPathname.replace(/^\/tour(?=\/)/, "");
   return item.href === "/"
     ? pathname === "/"
     : item.matchPrefixes?.some((prefix) => pathname.startsWith(prefix)) ?? pathname.startsWith(item.href);

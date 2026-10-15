@@ -41,7 +41,25 @@ describe("proxy", () => {
   it("사용자 둘러보기에서는 포켓몬 주소를 사용자 홈으로 돌린다", async () => {
     const response = await proxy(new NextRequest("https://gdg.example.com/tour/pokedex"));
 
-    expect(response.headers.get("location")).toBe("https://gdg.example.com/tour/");
+    expect(response.headers.get("location")).toBe("https://gdg.example.com/tour/home");
+  });
+
+  it("둘러보기 회원 홈(/tour/home)을 멤버 더미 프로필의 대시보드로 연다", async () => {
+    const response = await proxy(new NextRequest("https://gdg.example.com/tour/home"));
+
+    expect(response.headers.get("x-middleware-rewrite")).toBe("https://gdg.example.com/dashboard");
+    expect(response.headers.get("x-middleware-request-x-gdg-demo-profile")).toBe("member");
+    expect(response.headers.get("x-middleware-request-x-gdg-demo-mode")).toBe("1");
+  });
+
+  it("둘러보기에서 누른 홈 링크는 /tour/home으로 돌린다", async () => {
+    const response = await proxy(
+      new NextRequest("https://gdg.example.com/", {
+        headers: { referer: "https://gdg.example.com/tour/events" },
+      }),
+    );
+
+    expect(response.headers.get("location")).toBe("https://gdg.example.com/tour/home");
   });
 
   it.each(["analytics", "dev"])("둘러보기의 %s 화면을 더미 데이터로 연다", async (segment) => {
