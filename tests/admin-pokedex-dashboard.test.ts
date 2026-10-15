@@ -3,11 +3,13 @@ import { beforeAll, describe, expect, it } from "vitest";
 
 let tabs = "";
 let page = "";
+let dev = "";
 
 beforeAll(async () => {
-  [tabs, page] = await Promise.all([
+  [tabs, page, dev] = await Promise.all([
     readFile("src/app/admin/OverviewTabs.tsx", "utf8"),
     readFile("src/app/admin/pokedex/page.tsx", "utf8").catch(() => ""),
+    readFile("src/app/admin/dev/page.tsx", "utf8").catch(() => ""),
   ]);
 });
 
@@ -17,6 +19,12 @@ describe("어드민 포켓몬 도감 대시보드", () => {
     expect(page).toContain('tab === "development"');
     expect(page).toContain("개발");
     expect(page).toContain("<DuelPreview />");
+  });
+
+  it("개발 화면의 랭킹전 시뮬레이터를 포켓몬 검수 흐름에 둔다", () => {
+    expect(dev).toContain('href: "/ranking-preview"');
+    expect(dev).toContain("랭킹전 시뮬레이터");
+    expect(dev).toContain("포켓몬");
   });
 
   it("개발 탭에서 새 랭킹전 화면으로 이동한다", async () => {

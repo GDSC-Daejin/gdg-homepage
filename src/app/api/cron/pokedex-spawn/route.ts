@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
     botToken,
     blocks: [
       { type: "section", text: { type: "mrkdwn", text } },
+      { type: "actions", elements: [{ type: "button", text: { type: "plain_text", text: "도감 확인" }, action_id: "pokedex_ownership_check", value: due.id }] },
       { type: "image", image_url: pokemon.image_path, alt_text: `야생의 ${pokemon.name_ko}` },
     ],
   });

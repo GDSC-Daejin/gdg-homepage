@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoMode } from "@/lib/demo";
@@ -11,11 +12,11 @@ import { PageHeader } from "@/components/PageHeader";
 import { PokedexBattleTab } from "./PokedexBattleTab";
 import { RankingLeagueTab } from "./RankingLeagueTab";
 import "../../wds.css";
-import "../../ranking-preview/ranking-preview.css";
+import "./ranking/ranking.css";
 import type { DuelMember, DuelTurn, OwnedBattlePokemon, PokemonDuel } from "@/lib/pokedex/duel";
 import type { BattleType } from "@/lib/pokedex/battle-effects";
 import type { RankingLeagueState } from "@/lib/pokedex/ranking-league";
-import { RANKING_LEAGUE_OPEN, RANKING_LEAGUE_PREOPEN } from "@/lib/pokedex/ranking-open";
+import { isRankingLeagueOpen, RANKING_LEAGUE_PREOPEN } from "@/lib/pokedex/ranking-open";
 
 type Pokemon = { id: string; pokedex_no: number; name_ko: string; image_path: string; rarity: Rarity; spawn_weight: number; catch_rate: number };
 type Rarity = "common" | "uncommon" | "rare" | "very_rare" | "legendary";
@@ -61,8 +62,11 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
   const profile = await requireProfile();
   const params = await searchParams;
   const requestedTab = params.tab;
+  if (requestedTab === "ranking") redirect("/ranking");
   const query = typeof params.q === "string" ? params.q.trim() : "";
   const tab = requestedTab === "probabilities" ? "probabilities" : requestedTab === "duels" ? "duels" : requestedTab === "ranking" ? "ranking" : "collection";
+  const rankingOpen = isRankingLeagueOpen();
+  if (tab === "ranking" && rankingOpen) redirect("/pokedex/ranking");
   let pokemon = DEMO_POKEMON;
   let ballCount = 2;
   let caughtIds = ["demo-7"];
@@ -72,7 +76,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
   let rankingState: RankingLeagueState | null = null;
   const shouldLoadCollectionData = tab === "collection" || tab === "probabilities";
   const shouldLoadDuelData = tab === "duels";
-  const shouldLoadRankingData = tab === "ranking" && (RANKING_LEAGUE_OPEN || RANKING_LEAGUE_PREOPEN);
+  const shouldLoadRankingData = tab === "ranking" && (rankingOpen || RANKING_LEAGUE_PREOPEN);
 
   if ((shouldLoadCollectionData || shouldLoadDuelData || shouldLoadRankingData) && !(await isDemoMode())) {
     const supabase = await createClient();
@@ -118,7 +122,6 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
       <nav aria-label="포켓몬 도감" className="mb-6 flex gap-1 border-b border-gray-200">
         <Link href="/pokedex" aria-current={tab === "collection" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "collection" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>내 도감</Link>
         <Link href="/pokedex?tab=probabilities" aria-current={tab === "probabilities" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "probabilities" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>확률표</Link>
-        <Link href="/pokedex?tab=ranking" aria-current={tab === "ranking" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "ranking" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>랭킹전</Link>
       </nav>
       {tab === "collection" ? <>
         <div className="mb-6 grid gap-3 sm:grid-cols-2">

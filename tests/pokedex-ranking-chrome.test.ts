@@ -25,9 +25,9 @@ describe("랭킹전 내비게이션", () => {
     expect(activeRankingTab("/pokedex?tab=ranking")).toBeUndefined();
   });
 
-  it("오픈 전에는 도감 탭의 사전 안내로 돌려보낸다", async () => {
+  it("오픈 전에는 독립 랭킹전 페이지로 돌려보낸다", async () => {
     const layout = await readFile("src/app/(member)/pokedex/ranking/layout.tsx", "utf8");
-    expect(layout).toContain("if (!RANKING_LEAGUE_OPEN) redirect(\"/pokedex?tab=ranking\")");
+    expect(layout).toContain("if (!isRankingLeagueOpen()) redirect(\"/ranking\")");
   });
 
   it("랭킹전 화면은 라이트·다크 두 벌의 토큰을 갖는다", async () => {

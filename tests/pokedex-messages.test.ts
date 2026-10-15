@@ -29,6 +29,14 @@ describe("도감봇 메시지", () => {
     expect(module.rejectionMessage("U1", "Jayden", "no_ball")).toBe("<@U1>의 남은 몬스터볼이 없어요!");
   });
 
+  it("내 도감에는 보유 여부와 최고 전투력만 보여준다", async () => {
+    const module = await import("@/lib/pokedex/messages");
+
+    expect(module.ownershipMessage("꼬부기", [])).toBe("꼬부기: 아직 보유하지 않았어요.");
+    expect(module.ownershipMessage("꼬부기", [421, 542])).toBe("꼬부기: 보유 중 · 최고 전투력 542");
+    expect(module.ownershipMessage("꼬부기", [null])).toBe("꼬부기: 보유 중 · 전투력 기록 없음");
+  });
+
   it("rare 이상만 채널에 축하하고 흔한 포켓몬은 스레드에 남긴다", async () => {
     const module = await import("@/lib/pokedex/messages");
 

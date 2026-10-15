@@ -36,6 +36,11 @@ const sections: { title: string; links: { href: string; label: string; descripti
         label: "새 랭킹전 — 기록",
         description: "전투 기록 화면 미리보기",
       },
+      {
+        href: "/ranking-preview",
+        label: "랭킹전 시뮬레이터",
+        description: "예시 데이터로 덱 편성·공격·기록 흐름을 검수",
+      },
     ],
   },
   {
@@ -45,11 +50,6 @@ const sections: { title: string; links: { href: string; label: string; descripti
         href: "/landing-preview",
         label: "랜딩 미리보기",
         description: "로그인 전 첫 화면",
-      },
-      {
-        href: "/ranking-preview",
-        label: "랭킹 미리보기",
-        description: "예시 데이터로 그린 랭킹 화면",
       },
     ],
   },

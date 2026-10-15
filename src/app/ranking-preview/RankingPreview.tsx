@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { activateRankingDefense, rerollRankingOpponents, saveRankingPreset, startRankingBattle } from "@/actions/pokedex-ranking";
+import { activateRankingDefense, joinRankingLeague, rerollRankingOpponents, saveRankingPreset, startRankingBattle } from "@/actions/pokedex-ranking";
 import { Modal } from "@/components/Modal";
 import { RankingBattleAnimation } from "@/app/(member)/pokedex/RankingBattleAnimation";
 import { Button } from "@/components/wds/Button";
@@ -109,6 +109,7 @@ export function RankingPreview({
 }) {
   const data = state ?? PREVIEW_STATE;
   const isPreview = !state;
+  const entry = data.entry ?? { rating: RANKING_START_RATING, matches: 0, attacks: 0, attacksToday: 0, wins: 0, activeDefenseSlot: null, activeAttackSlot: null, defenseEffectiveOn: null, rerolled: false, rank: null };
   const profileId = profile?.id ?? PREVIEW_PROFILE_ID;
   const memberLabel = profile ? displayName(profile.name, profile.nickname) : "나 (아리)";
   const ownedPokemon = isPreview ? OWNED_POKEMON : data.ownedPokemon;
@@ -118,11 +119,11 @@ export function RankingPreview({
   const [presets, setPresets] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(data.presets.map((preset) => [presetKey(preset.kind, preset.slot), preset.members.map((member) => member.throwId)])),
   );
-  const [slots, setSlots] = useState<Record<DeckKind, number>>({ defense: data.entry?.activeDefenseSlot ?? 1, attack: data.entry?.activeAttackSlot ?? 1 });
+  const [slots, setSlots] = useState<Record<DeckKind, number>>({ defense: entry.activeDefenseSlot ?? 1, attack: entry.activeAttackSlot ?? 1 });
   const [editing, setEditing] = useState<DeckKind>("defense");
-  const [activeDefenseSlot, setActiveDefenseSlot] = useState<number | null>(data.entry?.activeDefenseSlot ?? null);
+  const [activeDefenseSlot, setActiveDefenseSlot] = useState<number | null>(entry.activeDefenseSlot);
   const [saved, setSaved] = useState<string>();
-  const [attacksUsed, setAttacksUsed] = useState(data.entry?.attacksToday ?? 0);
+  const [attacksUsed, setAttacksUsed] = useState(entry.attacksToday);
   const [rerolled, setRerolled] = useState(false);
   const [opponents, setOpponents] = useState<RankingLeagueState["opponents"]>(data.opponents);
   const [log, setLog] = useState<RankingBattleSummary[]>(data.battles);
@@ -140,22 +141,15 @@ export function RankingPreview({
   const season = useMemo(() => seasonProgress(data.season, isPreview ? TODAY : Date.now()), [data.season, isPreview]);
   const seasonLabel = preopen ? `프리시즌 D-${PRESEASON_DAYS}` : `시즌 D-${season.daysLeft}`;
   const opensOn = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", timeZone: "Asia/Seoul" }).format(new Date(Date.now() + PRESEASON_DAYS * 86_400_000));
-  if (!isPreview && !data.entry) {
-    return (
-      <div className="rp">
-        <header className="rp-topbar"><div className="rp-inner"><span className="rp-brand">랭킹전</span></div></header>
-        <main className="rp-inner rp-page"><div className="rp-card"><span className="rp-cardtitle">{memberLabel}님의 랭킹전 준비</span><p className="rp-cardsub">서로 다른 포켓몬 6종을 모으면 덱을 설정할 수 있어요.</p></div></main>
-      </div>
-    );
-  }
-  const rating = (data.entry?.rating ?? RANKING_START_RATING) + session.delta;
+  const rating = entry.rating + session.delta;
   const attacksLeft = RANKING_ATTACKS_PER_DAY - attacksUsed;
-  const wins = (data.entry?.wins ?? 0) + session.wins;
-  const matches = (data.entry?.matches ?? 0) + session.matches;
-  const myRank = data.entry?.rank ?? null;
+  const wins = entry.wins + session.wins;
+  const matches = entry.matches + session.matches;
+  const myRank = entry.rank;
+  const rankLabel = myRank === null ? "순위 집계 전" : `${myRank}위`;
   const record = rankingRecord(log, profileId);
   const defense = recentDefense(log, profileId, isPreview ? TODAY : Date.now());
-  const reward = rewardProgress({ ...data.entry!, matches, wins });
+  const reward = rewardProgress({ ...entry, matches, wins });
   const podiumGap = gapToPodium(data.leaderboard, rating, myRank);
   const earned = rating - RANKING_START_RATING;
 
@@ -216,6 +210,10 @@ export function RankingPreview({
       return;
     }
     startTransition(async () => {
+      if (!data.entry) {
+        const joined = await joinRankingLeague();
+        if (joined.error) { setSaved(joined.error); return; }
+      }
       const result = await saveRankingPreset(editing, slots[editing], editingDeck);
       if (result.error) { setSaved(result.error); return; }
       if (editing === "defense") {
@@ -258,7 +256,7 @@ export function RankingPreview({
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="rp-mutedark">{seasonLabel}</span>
             <span className="rp-scorechip">
-              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--rp-dark-primary)" }}>{myRank}위</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "var(--rp-dark-primary)" }}>{rankLabel}</span>
               <span className="rp-num" style={{ fontSize: 12, fontWeight: 700, color: "var(--rp-on-dark)" }}>{rating.toLocaleString()}점</span>
             </span>
           </div>
@@ -281,7 +279,7 @@ export function RankingPreview({
                     <span style={{ fontSize: 15, fontWeight: 700, color: dark(0.5) }}>점</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 4, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 20, fontWeight: 800, color: "var(--rp-dark-primary)", letterSpacing: "-0.03em" }}>{myRank}위</span>
+                    <span style={{ fontSize: 20, fontWeight: 800, color: "var(--rp-dark-primary)", letterSpacing: "-0.03em" }}>{rankLabel}</span>
                     <span style={{ width: 3, height: 3, borderRadius: 999, background: dark(0.3) }} />
                     <span style={{ fontSize: 12, color: dark(0.55) }}>{wins}승 {matches - wins}패</span>
                   </div>
@@ -401,9 +399,9 @@ export function RankingPreview({
               </div>
               <div className="rp-grid2">
                 <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 14, borderRadius: 12, border: "1px solid var(--wds-line-alternative)" }}>
-                  <PokemonImage src={ace.imagePath} size={44} alt={ace.name} />
+                  {ace ? <PokemonImage src={ace.imagePath} size={44} alt={ace.name} /> : <span aria-hidden style={{ width: 44, height: 44, borderRadius: 12, background: "var(--wds-fill-alternative)" }} />}
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700 }}>지금 {rating.toLocaleString()}점 · {myRank}위</span>
+                    <span style={{ fontSize: 13, fontWeight: 700 }}>지금 {rating.toLocaleString()}점 · {rankLabel}</span>
                     <span className="rp-num" style={{ fontSize: 11.5, color: "var(--wds-label-alternative)" }}>
                       시즌 시작({RANKING_START_RATING.toLocaleString()}점) 대비 {signedScore(earned)}점 · {podiumGap === null ? "3위 안에 있어요" : `3위까지 ${podiumGap}점`}
                     </span>

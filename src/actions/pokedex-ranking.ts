@@ -10,6 +10,7 @@ import type { RankingBattleDetail } from "@/lib/pokedex/ranking-league";
 
 function refresh() {
   revalidatePath("/pokedex");
+  revalidatePath("/ranking");
 }
 
 async function rankingClient() {

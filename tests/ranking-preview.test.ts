@@ -78,4 +78,10 @@ describe("랭킹전 프리뷰", () => {
     expect(preview).toContain('className="rp-brand">랭킹전</span>');
     expect(preview).not.toContain('className="rp-brand">도감 랭킹전</span>');
   });
+
+  it("참가 레코드가 없어도 실제 회원 화면은 프리뷰와 같은 전체 레이아웃을 유지한다", async () => {
+    const preview = await readFile("src/app/ranking-preview/RankingPreview.tsx", "utf8");
+
+    expect(preview).not.toContain("if (!isPreview && !data.entry)");
+  });
 });

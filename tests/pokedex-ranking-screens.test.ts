@@ -39,6 +39,23 @@ describe("랭킹전 4화면", () => {
     }
   });
 
+  it("참가 전 회원에게는 실제 보유 포켓몬과 참가 조건을 보여준다", async () => {
+    const screen = await read("RankingScreen.tsx");
+    expect(screen).toContain("state.ownedPokemon");
+    expect(screen).toContain("state.eligible");
+    expect(screen).toContain("랭킹전 참가하기");
+    expect(screen).toContain("같은 포켓몬은 한 종으로 계산돼요");
+  });
+
+  it("참가 전에도 홈·공격·내 덱·기록을 각 목적에 맞게 구분한다", async () => {
+    const screen = await read("RankingScreen.tsx");
+    for (const page of ["home", "attack", "deck"]) expect(screen).toContain(`page === "${page}"`);
+    expect(screen).toContain('className="rk-hero"');
+    expect(screen).toContain("오늘의 상대");
+    expect(screen).toContain("내 덱");
+    expect(screen).toContain("전투 기록");
+  });
+
   it("기록 화면은 공격·방어를 나눠 보여주고 걸러낼 수 있다", async () => {
     const screen = await read("LogScreen.tsx");
     expect(screen).toContain("item.role === \"attacker\"");

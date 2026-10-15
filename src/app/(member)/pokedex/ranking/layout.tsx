@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import "./ranking.css";
-import { RANKING_LEAGUE_OPEN, getRankingState } from "@/lib/pokedex/ranking-open";
+import { getRankingState, isRankingLeagueOpen } from "@/lib/pokedex/ranking-open";
 import { seasonProgress } from "@/lib/pokedex/ranking-stats";
 import { RankingBottomNav, RankingTopBar } from "./RankingChrome";
 
@@ -12,7 +12,7 @@ export const metadata = { title: "도감 랭킹전", robots: { index: false, fol
  */
 export default async function RankingLayout({ children }: { children: React.ReactNode }) {
   // 오픈 전에는 도감 탭의 사전 안내로 돌려보낸다.
-  if (!RANKING_LEAGUE_OPEN) redirect("/pokedex?tab=ranking");
+  if (!isRankingLeagueOpen()) redirect("/ranking");
 
   const state = await getRankingState();
   const season = state ? seasonProgress(state.season, Date.now()) : null;

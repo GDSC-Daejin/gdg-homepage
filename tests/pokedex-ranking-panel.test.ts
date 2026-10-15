@@ -4,11 +4,11 @@ import { shouldShowRankingPokemon, toggleRankingPresetMember } from "@/app/(memb
 import { latestFunction } from "./migration-sql";
 
 describe("도감 랭킹전 화면", () => {
-  it("코인과 선공 안내 중에는 포켓몬을 숨긴다", () => {
-    expect(shouldShowRankingPokemon("coin", false)).toBe(false);
-    expect(shouldShowRankingPokemon("firstTurn", false)).toBe(false);
-    expect(shouldShowRankingPokemon("throw", false)).toBe(false);
-    expect(shouldShowRankingPokemon("release", false)).toBe(true);
+  it("선공 안내와 교대 중에는 포켓몬을 숨긴다", () => {
+    expect(shouldShowRankingPokemon("intro", false)).toBe(false);
+    expect(shouldShowRankingPokemon("sendout", true)).toBe(false);
+    expect(shouldShowRankingPokemon("sendout", false)).toBe(true);
+    expect(shouldShowRankingPokemon("impact", false)).toBe(true);
   });
 
   it("프리셋 카드는 세 마리까지만 선택하고 다시 누르면 해제한다", () => {
@@ -36,6 +36,12 @@ describe("도감 랭킹전 화면", () => {
     expect(state).toContain("'userId', user_id");
     expect(state).toContain("'role', case when b.attacker_id = v_user then 'attacker' else 'defender' end");
     expect(state).toContain("'opponentNickname'");
+  });
+
+  it("오늘의 상대가 비어 있으면 상태 조회에서 즉시 최대 3명을 배정한다", async () => {
+    const state = await latestFunction("pokedex_rank_state");
+
+    expect(state).toContain("perform pokedex_rank_allocate_for(v_season, v_today, v_user);");
   });
 
   it("시즌 랭킹에는 랭킹전에 참가하지 않은 활성 회원도 기본 점수로 포함한다", async () => {
@@ -92,16 +98,17 @@ describe("도감 랭킹전 화면", () => {
     expect(panel).toContain("attackerTeam: state.presets.find");
   });
 
-  it("턴별 전투 로그를 3:3 연출로 재생한다", async () => {
+  it("턴별 전투 로그를 PixiJS 3:3 장면으로 재생한다", async () => {
     const animation = await readFile("src/app/(member)/pokedex/RankingBattleAnimation.tsx", "utf8").catch(() => "");
     expect(animation).toContain("RankingBattleAnimation");
-    expect(animation).toContain("PixelBattleEffect");
+    expect(animation).toContain("PixiRankingBattleScene");
+    expect(animation).toContain("buildRankingBattleSteps");
   });
 
-  it("랭킹전 연출은 순차 반격과 쓰러진 포켓몬 회수를 재생한다", async () => {
+  it("랭킹전 연출은 차징과 쓰러진 포켓몬 회수를 재생한다", async () => {
     const animation = await readFile("src/app/(member)/pokedex/RankingBattleAnimation.tsx", "utf8").catch(() => "");
-    expect(animation).toContain('"defenderAttack"');
-    expect(animation).toContain('"recallOut"');
+    expect(animation).toContain('phase: "charge"');
+    expect(animation).toContain('phase: "recall"');
   });
 
   it("쓰러진 방어 포켓몬의 반격 연출을 생략한다", async () => {
@@ -109,28 +116,8 @@ describe("도감 랭킹전 화면", () => {
     expect(animation).toContain("entry.defenderDamage > 0");
   });
 
-  it("회수 완료 뒤 같은 몬스터볼을 유지한 채 교대한다", async () => {
+  it("전투 재생 제어를 제공한다", async () => {
     const animation = await readFile("src/app/(member)/pokedex/RankingBattleAnimation.tsx", "utf8").catch(() => "");
-    expect(animation).toContain('"recallDone"');
-    expect(animation).toContain("recallBallVisible");
-    expect(animation).not.toContain("groundedBall");
-  });
-
-  it("회수 빔이 끝날 때까지 쓰러진 포켓몬을 다시 표시하지 않는다", async () => {
-    const animation = await readFile("src/app/(member)/pokedex/RankingBattleAnimation.tsx", "utf8").catch(() => "");
-    expect(animation).toContain("attackerRecalled");
-    expect(animation).toContain("defenderRecalled");
-    expect(animation).toContain("delay += 900");
-  });
-
-  it("교대 몬스터볼 투척 중에는 다음 포켓몬 이미지를 렌더하지 않는다", async () => {
-    const animation = await readFile("src/app/(member)/pokedex/RankingBattleAnimation.tsx", "utf8").catch(() => "");
-    expect(animation).toContain("showAttacker");
-    expect(animation).toContain("showDefender");
-  });
-
-  it("교대 몬스터볼은 비행 애니메이션이 끝난 뒤 포켓몬을 내보낸다", async () => {
-    const animation = await readFile("src/app/(member)/pokedex/RankingBattleAnimation.tsx", "utf8").catch(() => "");
-    expect(animation).toContain('setPhase("sendoutThrow"); }, delay));\n        delay += 900;');
+    for (const label of ["일시정지", "다시 보기", "배속", "결과 보기"]) expect(animation).toContain(label);
   });
 });

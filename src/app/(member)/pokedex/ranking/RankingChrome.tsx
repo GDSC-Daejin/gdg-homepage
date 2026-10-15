@@ -43,7 +43,7 @@ function tabsFor(basePath: string) {
 }
 
 function useCurrent(basePath: string) {
-  return activeRankingTab(usePathname().replace(basePath, "/pokedex/ranking"));
+  return activeRankingTab((usePathname() ?? "/pokedex/ranking").replace(basePath, "/pokedex/ranking"));
 }
 
 export function RankingTopBar({ rank, rating, daysLeft, basePath = "/pokedex/ranking" }: { rank: number | null; rating: number | null; daysLeft: number | null; basePath?: string }) {

@@ -50,6 +50,14 @@ export function ballCountMessage(slackUserId: string, remainingBalls: number) {
   return `<@${slackUserId}>의 남은 몬스터볼은 ${remainingBalls}개입니다.`;
 }
 
+export function ownershipMessage(name: string, combatPowers: Array<number | null>) {
+  if (combatPowers.length === 0) return `${name}: 아직 보유하지 않았어요.`;
+  const highestPower = Math.max(...combatPowers.filter((power): power is number => power !== null));
+  return Number.isFinite(highestPower)
+    ? `${name}: 보유 중 · 최고 전투력 ${highestPower}`
+    : `${name}: 보유 중 · 전투력 기록 없음`;
+}
+
 export function ownershipRankingMessage(rankings: PokemonOwnerRanking[]) {
   if (rankings.length === 0) return "🏆 오늘의 포켓몬 도감 랭킹\n아직 포획한 포켓몬이 없어요.";
   return `🏆 오늘의 포켓몬 도감 랭킹\n${rankings.map((ranking, index) => `${index + 1}위 <@${ranking.slackUserId}> · ${ranking.speciesCount}종 보유`).join("\n")}`;
