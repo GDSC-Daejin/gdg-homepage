@@ -27,4 +27,13 @@ describe("출석 코드 시도 제한 마이그레이션", () => {
     expect(migration).toContain("gen_random_bytes(6)");
     expect(migration).toContain("upper(substr(");
   });
+
+  it("pgcrypto 확장 스키마에서도 코드를 발급한다", async () => {
+    const migration = await readFile(
+      "supabase/migrations/0111_fix_attendance_code_generation.sql",
+      "utf8",
+    );
+
+    expect(migration).toContain("extensions.gen_random_bytes(6)");
+  });
 });
