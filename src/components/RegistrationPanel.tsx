@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/demo";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { RegistrationActions } from "@/components/RegistrationActions";
@@ -12,24 +13,17 @@ interface RegistrationPanelProps {
 }
 
 export async function RegistrationPanel({ eventId, profile, code }: RegistrationPanelProps) {
-  const supabase = await createClient();
-  const [{ data: registration }, { data: attendance }] = await Promise.all([
-    supabase
-      .from("event_registrations")
-      .select("status")
-      .eq("event_id", eventId)
-      .eq("user_id", profile.id)
-      .maybeSingle<{ status: RegistrationStatus }>(),
-    supabase
-      .from("attendances")
-      .select("event_id")
-      .eq("event_id", eventId)
-      .eq("user_id", profile.id)
-      .maybeSingle<{ event_id: string }>(),
-  ]);
+  const demo = await isDemoMode();
+  const supabase = demo ? null : await createClient();
+  const [{ data: registration }, { data: attendance }] = supabase
+    ? await Promise.all([
+      supabase.from("event_registrations").select("status").eq("event_id", eventId).eq("user_id", profile.id).maybeSingle<{ status: RegistrationStatus }>(),
+      supabase.from("attendances").select("event_id").eq("event_id", eventId).eq("user_id", profile.id).maybeSingle<{ event_id: string }>(),
+    ])
+    : [{ data: { status: "confirmed" as RegistrationStatus } }, { data: null }];
 
   let waitlistPosition: number | null = null;
-  if (registration?.status === "waitlisted") {
+  if (registration?.status === "waitlisted" && supabase) {
     const { data } = await supabase.rpc("my_waitlist_position", {
       p_event_id: eventId,
     });

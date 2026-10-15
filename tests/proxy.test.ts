@@ -31,6 +31,19 @@ describe("proxy", () => {
     expect(response.headers.get("location")).toBe("https://gdg.example.com/tour/admin");
   });
 
+  it("둘러보기에서 일반 사용자 화면은 멤버 더미 프로필로 연다", async () => {
+    const response = await proxy(new NextRequest("https://gdg.example.com/tour/events"));
+
+    expect(response.headers.get("x-middleware-rewrite")).toBe("https://gdg.example.com/events");
+    expect(response.headers.get("x-middleware-request-x-gdg-demo-profile")).toBe("member");
+  });
+
+  it("사용자 둘러보기에서는 포켓몬 주소를 사용자 홈으로 돌린다", async () => {
+    const response = await proxy(new NextRequest("https://gdg.example.com/tour/pokedex"));
+
+    expect(response.headers.get("location")).toBe("https://gdg.example.com/tour/");
+  });
+
   it.each(["analytics", "dev"])("둘러보기의 %s 화면을 더미 데이터로 연다", async (segment) => {
     const request = new NextRequest(`https://gdg.example.com/tour/admin/${segment}`);
 

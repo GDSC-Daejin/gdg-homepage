@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import "../wds.css";
 import { getProfile, assertApproved } from "@/lib/auth";
 import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
+import { isDemoMode } from "@/lib/demo";
 import { MemberShell } from "../(member)/MemberShell";
 import { HomeDashboard, HomeDashboardSkeleton } from "../(member)/HomeDashboard";
 import Landing from "../landing-preview/Landing";
@@ -18,7 +19,7 @@ export default async function DashboardPage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const cookieStore = await cookies();
-  if (!hasAuthCookie(cookieStore.getAll())) return <Landing />;
+  if (!(await isDemoMode()) && !hasAuthCookie(cookieStore.getAll())) return <Landing />;
 
   return (
     <Suspense fallback={<HomeLoading />}>

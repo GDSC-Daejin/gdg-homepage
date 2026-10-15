@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCommunity } from "@/lib/community";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_EVENT_CONFIRMED_COUNTS, DEMO_EVENTS, DEMO_MEMBERS } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -45,13 +47,11 @@ export default async function MemberEventDetailPage({
   const { id } = await params;
   const { code } = await searchParams;
 
-  const supabase = await createClient();
-  const { data: event } = await supabase
-    .from("events")
-    .select("*, place:places(lat, lng)")
-    .eq("id", id)
-    .single();
-
+  const demo = await isDemoMode();
+  const supabase = demo ? null : await createClient();
+  const { data: event } = supabase
+    ? await supabase.from("events").select("*, place:places(lat, lng)").eq("id", id).single()
+    : { data: DEMO_EVENTS.find((entry) => entry.id === id) ? { ...DEMO_EVENTS.find((entry) => entry.id === id), place: null } : null };
   if (!event) notFound();
   const e = event as Event & { place: { lat: number | null; lng: number | null } | null };
   const descriptionParts = e.description.trim().split("💻");
@@ -61,30 +61,31 @@ export default async function MemberEventDetailPage({
       : null;
   const introduction = descriptionParts.join("💻").trim();
 
-  const community = await getCommunity();
-  const countRows = await community.events.confirmedCounts([e.id]);
-  const confirmed = countRows?.[e.id] ?? 0;
+  const confirmed = demo
+    ? DEMO_EVENT_CONFIRMED_COUNTS[e.id] ?? 0
+    : (await (await getCommunity()).events.confirmedCounts([e.id]))?.[e.id] ?? 0;
 
-  const { data: registrantRows, error: registrantsError } = await supabase.rpc(
-    "event_registrants",
-    { p_event_id: e.id },
-  );
-  const registrants = (registrantRows ?? []) as {
+  let registrants: {
     user_id: string;
     name: string;
     nickname: string;
     status: RegistrationStatus;
-  }[];
+  }[] = [];
+  let registrantsRpcError: { message: string } | null = null;
+  if (demo) {
+    registrants = DEMO_MEMBERS.slice(2, 5).map((member) => ({ user_id: member.id, name: member.name, nickname: member.nickname, status: "confirmed" }));
+  } else if (supabase) {
+    const { data: registrantRows, error: registrantsError } = await supabase.rpc("event_registrants", { p_event_id: e.id });
+    registrants = (registrantRows ?? []) as typeof registrants;
+    registrantsRpcError = registrantsError;
+  }
   const registrantsBlocked =
-    !!registrantsError && registrantsError.message.includes("NOT_MEMBER");
-  const registrantsFailed = !!registrantsError && !registrantsBlocked;
+    !!registrantsRpcError && registrantsRpcError.message.includes("NOT_MEMBER");
+  const registrantsFailed = !!registrantsRpcError && !registrantsBlocked;
 
-  const { data: postRows } = await supabase
-    .from("posts")
-    .select("id, board, title, created_at")
-    .eq("event_id", e.id)
-    .order("created_at", { ascending: false })
-    .limit(10);
+  const { data: postRows } = supabase
+    ? await supabase.from("posts").select("id, board, title, created_at").eq("event_id", e.id).order("created_at", { ascending: false }).limit(10)
+    : { data: null };
   const relatedPosts = (postRows as
     | { id: string; board: BoardType; title: string; created_at: string }[]
     | null) ?? [];

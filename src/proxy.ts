@@ -1,11 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { DEMO_MODE_HEADER } from "@/lib/demo";
+import { DEMO_MODE_HEADER, DEMO_PROFILE_HEADER } from "@/lib/demo";
 import { hasAuthCookie } from "@/lib/supabase/has-auth-cookie";
 
 const TOUR_PATHS = [
+  /^\/$/,
   /^\/tour\/landing$/,
   /^\/admin(?:\/(?:analytics|applications|attendance|bots|budget|dev|events|groups|inquiries|interview-questions|interviews|members|notices|places|points|settings|surveys)(?:\/.*)?)?$/,
+  /^\/(?:attend|board|events|inquiries|materials|meetings|notices|profile|qna|surveys)(?:\/.*)?$/,
   /^\/schedule(?:\/.*)?$/,
 ];
 
@@ -17,6 +19,7 @@ export async function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.delete("x-gdg-user-id");
   requestHeaders.delete(DEMO_MODE_HEADER);
+  requestHeaders.delete(DEMO_PROFILE_HEADER);
   const pathname = request.nextUrl.pathname;
 
   if (pathname.startsWith("/tour/")) {
@@ -25,11 +28,12 @@ export async function proxy(request: NextRequest) {
       return new NextResponse(null, { status: 403 });
     }
     requestHeaders.set(DEMO_MODE_HEADER, "1");
+    requestHeaders.set(DEMO_PROFILE_HEADER, destination.startsWith("/admin") ? "admin" : "member");
     if (destination === "/landing") {
       return NextResponse.next({ request: { headers: requestHeaders } });
     }
     if (!isTourPath(destination)) {
-      return NextResponse.redirect(new URL("/tour/admin", request.url));
+      return NextResponse.redirect(new URL(destination.startsWith("/pokedex") ? "/tour/" : "/tour/admin", request.url));
     }
     const url = request.nextUrl.clone();
     url.pathname = destination;

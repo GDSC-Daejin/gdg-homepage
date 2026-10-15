@@ -1,5 +1,12 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/demo";
+import {
+  DEMO_BADGES,
+  DEMO_EVENTS,
+  DEMO_MEMBER_ATTENDANCE,
+  DEMO_POINT_LOGS,
+} from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -54,51 +61,45 @@ const TYPE_TONES: Record<EventType, "primary" | "success" | "warning" | "danger"
 
 export default async function ProfilePage() {
   const profile = await requireProfile();
+  const demo = await isDemoMode();
+  let registrations: RegistrationHistoryItem[] | null;
+  let attendances: AttendanceHistoryItem[] | null;
+  let pointLogs: PointLog[] | null;
+  let myBadges: MyBadgeItem[] | null;
+  let allBadges: BadgeType[] | null;
+  let ownedPokemonRows: OwnedPokemonRow[] | null;
 
-  const supabase = await createClient();
-  const [
-    { data: registrations },
-    { data: attendances },
-    { data: pointLogs },
-    { data: myBadges },
-    { data: allBadges },
-    { data: ownedPokemonRows },
-  ] = await Promise.all([
-    supabase
-      .from("event_registrations")
-      .select("id, status, event:events(id, title, starts_at)")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .returns<RegistrationHistoryItem[]>(),
-    supabase
-      .from("attendances")
-      .select("event_id, checked_at, event:events(id, title, type, starts_at)")
-      .eq("user_id", profile.id)
-      .order("checked_at", { ascending: false })
-      .returns<AttendanceHistoryItem[]>(),
-    supabase
-      .from("point_logs")
-      .select("*")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .returns<PointLog[]>(),
-    supabase
-      .from("user_badges")
-      .select("id, badge:badges(id)")
-      .eq("user_id", profile.id)
-      .returns<MyBadgeItem[]>(),
-    supabase
-      .from("badges")
-      .select("*")
-      .order("name", { ascending: true })
-      .returns<BadgeType[]>(),
-    supabase
-      .from("pokemon_throws")
-      .select("pokemon:pokemon_catalog(id, name_ko)")
-      .eq("user_id", profile.id)
-      .eq("outcome", "caught")
-      .returns<OwnedPokemonRow[]>(),
-  ]);
+  if (demo) {
+    registrations = DEMO_EVENTS.slice(0, 2).map((event, index) => ({
+      id: `demo-registration-${event.id}`,
+      status: index ? "waitlisted" : "confirmed",
+      event: { id: event.id, title: event.title, starts_at: event.starts_at },
+    }));
+    attendances = (DEMO_MEMBER_ATTENDANCE[profile.id] ?? []).flatMap((attendance) => {
+      const event = DEMO_EVENTS.find((entry) => entry.id === attendance.events?.id);
+      return event ? [{ event_id: event.id, checked_at: attendance.checked_at, event: { id: event.id, title: event.title, type: event.type, starts_at: event.starts_at } }] : [];
+    });
+    pointLogs = DEMO_POINT_LOGS.filter((log) => log.user_id === profile.id);
+    myBadges = DEMO_BADGES.slice(0, 2).map((badge) => ({ id: `demo-user-badge-${badge.id}`, badge: { id: badge.id } }));
+    allBadges = DEMO_BADGES;
+    ownedPokemonRows = [];
+  } else {
+    const supabase = await createClient();
+    const [registrationsResult, attendancesResult, pointLogsResult, myBadgesResult, allBadgesResult, ownedPokemonRowsResult] = await Promise.all([
+      supabase.from("event_registrations").select("id, status, event:events(id, title, starts_at)").eq("user_id", profile.id).order("created_at", { ascending: false }).returns<RegistrationHistoryItem[]>(),
+      supabase.from("attendances").select("event_id, checked_at, event:events(id, title, type, starts_at)").eq("user_id", profile.id).order("checked_at", { ascending: false }).returns<AttendanceHistoryItem[]>(),
+      supabase.from("point_logs").select("*").eq("user_id", profile.id).order("created_at", { ascending: false }).returns<PointLog[]>(),
+      supabase.from("user_badges").select("id, badge:badges(id)").eq("user_id", profile.id).returns<MyBadgeItem[]>(),
+      supabase.from("badges").select("*").order("name", { ascending: true }).returns<BadgeType[]>(),
+      supabase.from("pokemon_throws").select("pokemon:pokemon_catalog(id, name_ko)").eq("user_id", profile.id).eq("outcome", "caught").returns<OwnedPokemonRow[]>(),
+    ]);
+    registrations = registrationsResult.data;
+    attendances = attendancesResult.data;
+    pointLogs = pointLogsResult.data;
+    myBadges = myBadgesResult.data;
+    allBadges = allBadgesResult.data;
+    ownedPokemonRows = ownedPokemonRowsResult.data;
+  }
 
   const attendedEventIds = new Set((attendances ?? []).map((a) => a.event_id));
   const attendanceHistory = (attendances ?? []).filter((a) => a.event);
@@ -120,7 +121,7 @@ export default async function ProfilePage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[400px_1fr] lg:items-start">
         <div className="lg:sticky lg:top-8">
-          <ProfileForm profile={profile} ownedPokemon={ownedPokemon} />
+          <ProfileForm profile={profile} ownedPokemon={ownedPokemon} hidePokedex={demo} />
         </div>
 
         <div className="flex flex-col gap-8">

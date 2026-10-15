@@ -103,27 +103,49 @@ button.nb-btn {
   }
 }
 
-/* ── 히어로 ── */
+/* ── 히어로: 전체 폭 + 가운데 정렬 (레퍼런스: 사진 위에 큰 제목) ── */
 .nb-hero {
   position: relative;
-  padding: clamp(64px, 12vh, 130px) clamp(20px, 5vw, 56px) clamp(48px, 8vh, 90px);
-  max-width: 1200px;
-  margin: 0 auto;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: min(84dvh, 820px);
+  padding: clamp(72px, 12vh, 140px) clamp(20px, 5vw, 56px);
+  text-align: center;
+  overflow: hidden;
 }
-.nb-hero > *:not(.nb-orb) {
+.nb-hero-inner {
   position: relative;
   z-index: 1;
+  max-width: 1000px;
 }
-
-/* 오브 클러스터: 히어로 오른쪽 여백에 배치. 로그인 페이지 login-orb 이식 */
-.nb-orb {
+/* 사진이 들어올 레이어. 사진이 없을 땐 오브가 분위기를 만든다 */
+.nb-hero-media {
   position: absolute;
-  top: clamp(110px, 18vh, 200px);
-  right: clamp(-24px, 0vw, 12px);
-  width: min(42vw, 460px);
-  aspect-ratio: 420 / 360;
+  inset: 0;
   z-index: 0;
   pointer-events: none;
+}
+.nb-hero-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(11, 12, 16, 0.86) 0%, rgba(11, 12, 16, 0.55) 55%, rgba(11, 12, 16, 0.9) 100%);
+}
+.nb-hero-media img {
+  object-fit: cover;
+}
+
+/* 오브 클러스터: 히어로 뒤 배경. 로그인 페이지 login-orb 이식 */
+.nb-orb {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(72vw, 700px);
+  aspect-ratio: 420 / 360;
+  translate: -50% -50%;
+  opacity: 0.45;
 }
 .nb-orb-ball {
   position: absolute;
@@ -146,12 +168,6 @@ button.nb-btn {
   0%, 100% { transform: translate(0, 0) rotate(0deg); }
   50% { transform: translate(-18px, -16px) rotate(-9deg); }
 }
-/* 좁은 화면에선 텍스트와 겹치므로 숨김 */
-@media (max-width: 960px) {
-  .nb-orb {
-    display: none;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
   .nb-orb-ball {
     animation: none !important;
@@ -166,7 +182,7 @@ button.nb-btn {
   letter-spacing: 0.08em;
   color: var(--nb-mute);
   text-transform: uppercase;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 .nb-tour-notice {
   display: inline-flex;
@@ -186,7 +202,7 @@ button.nb-btn {
   background: #34a853;
 }
 .nb-display {
-  font-size: clamp(56px, 11vw, 148px);
+  font-size: clamp(44px, 8.5vw, 112px);
   line-height: 1.12;
   font-weight: 800;
   letter-spacing: -0.045em;
@@ -207,17 +223,20 @@ button.nb-btn {
 }
 .nb-hero-foot {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 28px;
-  margin-top: clamp(32px, 5vh, 56px);
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  margin-top: clamp(24px, 4vh, 40px);
 }
 .nb-lede {
   font-size: clamp(15.5px, 1.6vw, 18px);
   line-height: 1.65;
-  color: var(--nb-mute);
+  color: rgba(242, 243, 245, 0.78);
   max-width: 46ch;
+  margin: 0;
+}
+.nb-hero-foot .nb-cta-row {
+  justify-content: center;
 }
 
 /* ── 버튼 ── */
@@ -271,11 +290,11 @@ button.nb-btn {
   font-size: 16.5px;
 }
 
-/* ── 티커 ── */
+/* ── 띠: 레퍼런스의 로고 띠 자리. 밝은 배경으로 히어로와 대비 ── */
 .nb-ticker {
-  border-block: 1px solid var(--nb-line);
   overflow: hidden;
-  padding: 16px 0;
+  padding: 22px 0;
+  background: #f4f5f7;
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
 }
@@ -295,7 +314,7 @@ button.nb-btn {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: 0.14em;
-  color: var(--nb-mute);
+  color: #5c6370;
   white-space: nowrap;
   text-transform: uppercase;
 }
@@ -381,29 +400,39 @@ button.nb-btn {
   margin: 0;
 }
 
-/* ── 벤토 ── */
-.nb-bento {
+/* ── 활동 카드: 위는 사진 자리, 아래는 글 ── */
+.nb-cards {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
-.nb-cell {
-  position: relative;
+.nb-card {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  padding: 28px;
   border: 1px solid var(--nb-line);
   border-radius: 20px;
   background: var(--nb-surface);
   transition: border-color var(--duration-base) var(--ease-out-quart);
 }
-.nb-cell:hover {
+.nb-card:hover {
   border-color: rgba(255, 255, 255, 0.22);
 }
-.nb-cell--wide {
-  grid-column: span 2;
-  display: flex;
-  flex-direction: column;
-  min-height: 240px;
+/* 사진이 생기면 <Image fill sizes="(max-width: 720px) 100vw, 33vw" alt="" /> 를 넣는다 */
+.nb-card-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: linear-gradient(145deg, var(--media-from), var(--media-to));
+}
+.nb-card-media img {
+  object-fit: cover;
+}
+.nb-card-media--blue { --media-from: rgba(66, 133, 244, 0.38); --media-to: rgba(66, 133, 244, 0.06); }
+.nb-card-media--red { --media-from: rgba(234, 67, 53, 0.38); --media-to: rgba(234, 67, 53, 0.06); }
+.nb-card-media--yellow { --media-from: rgba(251, 188, 4, 0.34); --media-to: rgba(251, 188, 4, 0.05); }
+.nb-card-body {
+  padding: 24px 24px 28px;
 }
 .nb-cell-tag {
   font-size: 12.5px;
@@ -421,19 +450,17 @@ button.nb-btn {
   font-size: 15px;
   line-height: 1.6;
   color: var(--nb-mute);
-  max-width: 52ch;
   margin: 0;
 }
-/* 넓은 셀 배경: 이퀄라이저풍 바 아트 */
+/* 첫 카드 사진 자리: 이퀄라이저풍 바 아트 */
 .nb-cell-art--session {
   position: absolute;
-  right: 28px;
-  bottom: 0;
+  inset: auto 24px 0;
   display: flex;
   align-items: flex-end;
+  justify-content: center;
   gap: 8px;
-  height: 55%;
-  opacity: 0.85;
+  height: 62%;
 }
 .nb-cell-art--session i {
   width: 14px;
@@ -444,15 +471,12 @@ button.nb-btn {
 .nb-cell-art--session i:nth-child(4n + 2) { height: 78%; background: linear-gradient(180deg, #ea4335, rgba(234, 67, 53, 0.15)); }
 .nb-cell-art--session i:nth-child(4n + 3) { height: 58%; background: linear-gradient(180deg, #fbbc04, rgba(251, 188, 4, 0.15)); }
 .nb-cell-art--session i:nth-child(4n + 4) { height: 92%; background: linear-gradient(180deg, #34a853, rgba(52, 168, 83, 0.15)); }
-@media (max-width: 720px) {
-  .nb-bento {
+@media (max-width: 900px) {
+  .nb-cards {
     grid-template-columns: 1fr;
   }
-  .nb-cell--wide {
-    grid-column: auto;
-  }
-  .nb-cell-art--session {
-    display: none;
+  .nb-card-media {
+    aspect-ratio: 16 / 9;
   }
 }
 

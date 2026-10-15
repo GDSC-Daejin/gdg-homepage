@@ -20,7 +20,7 @@ const roleLabel: Record<string, string> = {
   applicant: "지원자",
 };
 
-export function MemberShell({
+export async function MemberShell({
   profile,
   children,
   // 홈처럼 넓게 쓰는 화면만 폭을 늘린다. 나머지는 읽기 폭 1100 유지.
@@ -30,6 +30,8 @@ export function MemberShell({
   children: React.ReactNode;
   contentClassName?: string;
 }) {
+  const demo = await isDemoMode();
+
   return (
     <ResponsiveShell
       sidebar={
@@ -41,7 +43,7 @@ export function MemberShell({
             <p className="text-xs text-gray-500">동아리 관리 시스템</p>
           </div>
         </Link>
-        <SidebarNav isAdmin={isStaff(profile)} />
+        <SidebarNav isAdmin={isStaff(profile)} hidePokedex={demo} />
         <div className="mt-auto flex flex-col gap-3 pt-6">
           <ThemeToggle />
           <div className="flex items-center gap-2 rounded-md px-1 py-2">
@@ -82,7 +84,7 @@ export function MemberShell({
         </div>
         </>
       }
-      bottomNavigation={<MemberBottomNav />}
+      bottomNavigation={<MemberBottomNav hidePokedex={demo} />}
     >
       <div className={`mx-auto w-full ${contentClassName}`}>{children}</div>
     </ResponsiveShell>

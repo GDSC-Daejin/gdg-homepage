@@ -10,6 +10,16 @@ import {
 } from "@/lib/format";
 import { sumPointsInMonth } from "@/lib/points";
 import { formatEventSchedule } from "@/lib/event-schedule";
+import { isDemoMode } from "@/lib/demo";
+import {
+  DEMO_EVENT_CONFIRMED_COUNTS,
+  DEMO_EVENTS,
+  DEMO_GROUP_MEMBERS,
+  DEMO_GROUPS,
+  DEMO_NOTICES,
+  DEMO_POINT_LOGS,
+  DEMO_SURVEYS,
+} from "@/lib/demoData";
 import type { Event, EventType, Group, Notice } from "@/lib/types";
 import styles from "./home.module.css";
 
@@ -94,61 +104,57 @@ export async function HomeDashboard({
   nickname: string;
   profileId: string;
 }) {
-  const supabase = await createClient();
+  const demo = await isDemoMode();
+  let list: Event[];
+  let myGroups: Pick<Group, "id" | "type" | "title" | "status">[];
+  let counts: Record<string, number>;
+  let respondedIds: Set<string>;
+  let openSurveys: { id: string; title: string }[] | undefined;
+  let logs: { amount: number; created_at: string }[];
+  let notices: Pick<Notice, "id" | "title" | "published_at">[];
 
-  // 서로 의존 없는 쿼리는 한 번에 병렬 실행 (서버 워터폴 제거)
-  const [
-    { data: noticeRows },
-    { data: openSurveys },
-    { data: myResponses },
-    { data: pointLogs },
-    { data: groupMembers },
-    { data: events },
-  ] = await Promise.all([
-    supabase
-      .from("notices")
-      .select("id, title, published_at")
-      .eq("published", true)
-      .order("published_at", { ascending: false })
-      .limit(3),
-    supabase
-      .from("surveys")
-      .select("id, title")
-      .eq("is_open", true)
-      .order("created_at", { ascending: false }),
-    supabase.from("survey_responses").select("survey_id").eq("user_id", profileId),
-    supabase.from("point_logs").select("amount, created_at").eq("user_id", profileId),
-    supabase.from("group_members").select("group_id").eq("user_id", profileId),
-    supabase
-      .from("events")
-      .select("id, type, title, starts_at, ends_at, event_date, location, capacity")
-      .order("starts_at", { ascending: false }),
-  ]);
-
-  const list = (events ?? []) as Event[];
-  const groupIds = (groupMembers ?? []).map((member) => member.group_id);
-
-  // 위 결과에 의존하는 두 쿼리도 서로 병렬 (groups ⇐ groupMembers, counts ⇐ events)
-  const [groupsRes, countsRes] = await Promise.all([
-    groupIds.length
-      ? supabase.from("groups").select("id, type, title, status").in("id", groupIds)
-      : Promise.resolve({ data: [] }),
-    list.length
-      ? supabase.rpc("event_confirmed_counts", { p_event_ids: list.map((e) => e.id) })
-      : Promise.resolve({ data: [] }),
-  ]);
-
-  const myGroups = (groupsRes.data ?? []) as Pick<Group, "id" | "type" | "title" | "status">[];
-
-  const counts: Record<string, number> = {};
-  for (const row of (countsRes.data ?? []) as { event_id: string; confirmed: number }[]) {
-    counts[row.event_id] = Number(row.confirmed);
+  if (demo) {
+    list = DEMO_EVENTS;
+    myGroups = DEMO_GROUPS.filter((group) => DEMO_GROUP_MEMBERS.some((member) => member.user_id === profileId && member.group_id === group.id));
+    counts = { ...DEMO_EVENT_CONFIRMED_COUNTS };
+    respondedIds = new Set(["demo-s1"]);
+    openSurveys = DEMO_SURVEYS.filter((survey) => survey.is_open);
+    logs = DEMO_POINT_LOGS.filter((log) => log.user_id === profileId);
+    notices = DEMO_NOTICES.filter((notice) => notice.published).slice(0, 3);
+  } else {
+    const supabase = await createClient();
+    const [
+      { data: noticeRows },
+      { data: queriedOpenSurveys },
+      { data: myResponses },
+      { data: pointLogs },
+      { data: groupMembers },
+      { data: events },
+    ] = await Promise.all([
+      supabase.from("notices").select("id, title, published_at").eq("published", true).order("published_at", { ascending: false }).limit(3),
+      supabase.from("surveys").select("id, title").eq("is_open", true).order("created_at", { ascending: false }),
+      supabase.from("survey_responses").select("survey_id").eq("user_id", profileId),
+      supabase.from("point_logs").select("amount, created_at").eq("user_id", profileId),
+      supabase.from("group_members").select("group_id").eq("user_id", profileId),
+      supabase.from("events").select("id, type, title, starts_at, ends_at, event_date, location, capacity").order("starts_at", { ascending: false }),
+    ]);
+    list = (events ?? []) as Event[];
+    const groupIds = (groupMembers ?? []).map((member) => member.group_id);
+    const [groupsRes, countsRes] = await Promise.all([
+      groupIds.length ? supabase.from("groups").select("id, type, title, status").in("id", groupIds) : Promise.resolve({ data: [] }),
+      list.length ? supabase.rpc("event_confirmed_counts", { p_event_ids: list.map((event) => event.id) }) : Promise.resolve({ data: [] }),
+    ]);
+    myGroups = (groupsRes.data ?? []) as Pick<Group, "id" | "type" | "title" | "status">[];
+    counts = {};
+    for (const row of (countsRes.data ?? []) as { event_id: string; confirmed: number }[]) counts[row.event_id] = Number(row.confirmed);
+    respondedIds = new Set((myResponses ?? []).map((response) => response.survey_id));
+    openSurveys = queriedOpenSurveys ?? undefined;
+    logs = (pointLogs ?? []) as { amount: number; created_at: string }[];
+    notices = (noticeRows ?? []) as Pick<Notice, "id" | "title" | "published_at">[];
   }
 
-  const respondedIds = new Set((myResponses ?? []).map((response) => response.survey_id));
   const latestSurvey = (openSurveys ?? [])[0];
 
-  const logs = (pointLogs ?? []) as { amount: number; created_at: string }[];
   const monthPoints = sumPointsInMonth(logs, monthKst(new Date().toISOString()));
   const totalPoints = logs.reduce((sum, log) => sum + log.amount, 0);
 
@@ -171,8 +177,6 @@ export async function HomeDashboard({
     { value: "all", label: "전체" },
     ...pastMonths.map((m) => ({ value: m, label: formatMonthLabel(m) })),
   ];
-
-  const notices = (noticeRows ?? []) as Pick<Notice, "id" | "title" | "published_at">[];
 
   const hero = upcoming[0];
   const heroConfirmed = hero ? (counts[hero.id] ?? 0) : 0;

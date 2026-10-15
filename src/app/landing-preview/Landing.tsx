@@ -10,6 +10,7 @@ const NAV_ITEMS = [
 ];
 
 const TOUR_NAV_ITEMS = [
+  { label: "사용자", href: "/tour/" },
   { label: "대시보드", href: "/tour/admin" },
   { label: "이벤트", href: "/tour/admin/events" },
   { label: "회원", href: "/tour/admin/members" },
@@ -88,7 +89,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
           ))}
         </nav>
         {tour ? (
-          <Link href="/tour/admin" className="nb-nav-cta">관리 화면 보기</Link>
+          <Link href="/tour/" className="nb-nav-cta">사용자 화면 보기</Link>
         ) : (
           <GoogleLoginButton className="nb-nav-cta" />
         )}
@@ -97,23 +98,27 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
       <main>
         {/* ── 히어로 ─────────────────────────── */}
         <section className="nb-hero">
-          <div className="nb-orb" aria-hidden>
-            {ORBS.map((o, i) => (
-              <div
-                key={i}
-                className="nb-orb-ball"
-                style={{
-                  top: o.top,
-                  bottom: o.bottom,
-                  left: o.left,
-                  width: o.size,
-                  background: `radial-gradient(circle at 34% 26%, ${o.grad})`,
-                  boxShadow: o.shadow,
-                  animation: o.anim,
-                }}
-              />
-            ))}
+          {/* 사진이 생기면 이 레이어에 <Image fill priority sizes="100vw" alt="" /> 를 넣는다 */}
+          <div className="nb-hero-media" aria-hidden>
+            <div className="nb-orb">
+              {ORBS.map((o, i) => (
+                <div
+                  key={i}
+                  className="nb-orb-ball"
+                  style={{
+                    top: o.top,
+                    bottom: o.bottom,
+                    left: o.left,
+                    width: o.size,
+                    background: `radial-gradient(circle at 34% 26%, ${o.grad})`,
+                    boxShadow: o.shadow,
+                    animation: o.anim,
+                  }}
+                />
+              ))}
+            </div>
           </div>
+          <div className="nb-hero-inner">
           {tour && (
             <p className="nb-tour-notice">
               서비스 미리보기 · 화면 속 회원, 일정, 수치는 모두 예시 데이터입니다.
@@ -121,7 +126,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
           )}
           <p className="nb-kicker">
             <span className="nb-kicker-pulse" aria-hidden />
-            {tour ? "GDGOC DJU 관리 서비스 미리보기" : "2026 신규 멤버 모집 중 — 대진대학교"}
+            {tour ? "GDGOC DJU 서비스 미리보기" : "2026 신규 멤버 모집 중 — 대진대학교"}
           </p>
           <h1 className="nb-display" aria-label={tour ? "편하게, 둘러보세요." : "배우고, 만들고, 배포한다."}>
             {tour ? <>
@@ -147,7 +152,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
           </h1>
           <div className="nb-hero-foot">
             <p className="nb-lede">
-              {tour ? "회원 관리, 이벤트 운영, 설문 결과를 예시 데이터로 살펴볼 수 있습니다." : <>
+              {tour ? "사용자와 관리 화면을 예시 데이터로 살펴볼 수 있습니다." : <>
                 구글 기술로 함께 성장하는 학생 개발자 커뮤니티.
                 <br />
                 혼자 끝내지 못했던 프로젝트, 여기서는 배포까지 갑니다.
@@ -155,11 +160,11 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
             </p>
             <div className="nb-cta-row">
               {tour ? <>
-                <Link href="/tour/admin" className="nb-btn nb-btn--fill">
-                  관리 화면 미리보기 <span aria-hidden>↗</span>
+                <Link href="/tour/" className="nb-btn nb-btn--fill">
+                  사용자 화면 미리보기 <span aria-hidden>↗</span>
                 </Link>
-                <Link href="/tour/schedule" className="nb-btn nb-btn--line">
-                  스케줄 보기
+                <Link href="/tour/admin" className="nb-btn nb-btn--line">
+                  관리 화면 보기
                 </Link>
               </> : <>
                 <Link href="/apply" className="nb-btn nb-btn--fill">
@@ -170,6 +175,7 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
                 </Link>
               </>}
             </div>
+          </div>
           </div>
         </section>
 
@@ -210,37 +216,36 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
             <span className="nb-index">01</span>
             <h2 className="nb-h2">한 학기가 이렇게 흘러갑니다</h2>
           </div>
-          <div className="nb-bento">
-            <article className="nb-cell nb-cell--wide">
-              <span className="nb-cell-tag" style={{ color: "#8ab4f8" }}>
-                매주 목요일
-              </span>
-              <h3 className="nb-cell-title">정기세션</h3>
-              <p className="nb-cell-desc">
-                최신 구글 기술과 개발 트렌드를 발표와 핸즈온으로. 발표자도
-                청중도 모두 멤버 — 무대는 누구에게나 열려 있어요.
-              </p>
-              <div className="nb-cell-art nb-cell-art--session" aria-hidden>
-                <i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i />
+          <div className="nb-cards">
+            <article className="nb-card">
+              <div className="nb-card-media nb-card-media--blue" aria-hidden>
+                <div className="nb-cell-art--session">
+                  <i /><i /><i /><i /><i /><i /><i /><i />
+                </div>
+              </div>
+              <div className="nb-card-body">
+                <span className="nb-cell-tag" style={{ color: "#8ab4f8" }}>매주 목요일</span>
+                <h3 className="nb-cell-title">정기세션</h3>
+                <p className="nb-cell-desc">
+                  최신 구글 기술과 개발 트렌드를 발표와 핸즈온으로. 발표자도 청중도 모두 멤버 — 무대는 누구에게나 열려 있어요.
+                </p>
               </div>
             </article>
-            <article className="nb-cell">
-              <span className="nb-cell-tag" style={{ color: "#f28b82" }}>
-                소규모 팀
-              </span>
-              <h3 className="nb-cell-title">스터디 · 코드리뷰</h3>
-              <p className="nb-cell-desc">
-                관심 분야별 팀에서 코드리뷰를 주고받으며 꾸준히.
-              </p>
+            <article className="nb-card">
+              <div className="nb-card-media nb-card-media--red" aria-hidden />
+              <div className="nb-card-body">
+                <span className="nb-cell-tag" style={{ color: "#f28b82" }}>소규모 팀</span>
+                <h3 className="nb-cell-title">스터디 · 코드리뷰</h3>
+                <p className="nb-cell-desc">관심 분야별 팀에서 코드리뷰를 주고받으며 꾸준히.</p>
+              </div>
             </article>
-            <article className="nb-cell">
-              <span className="nb-cell-tag" style={{ color: "#fdd663" }}>
-                학기 말
-              </span>
-              <h3 className="nb-cell-title">해커톤 · 데모 데이</h3>
-              <p className="nb-cell-desc">
-                첫 커밋부터 배포까지, 만든 것을 세상에 보여주는 날.
-              </p>
+            <article className="nb-card">
+              <div className="nb-card-media nb-card-media--yellow" aria-hidden />
+              <div className="nb-card-body">
+                <span className="nb-cell-tag" style={{ color: "#fdd663" }}>학기 말</span>
+                <h3 className="nb-cell-title">해커톤 · 데모 데이</h3>
+                <p className="nb-cell-desc">첫 커밋부터 배포까지, 만든 것을 세상에 보여주는 날.</p>
+              </div>
             </article>
           </div>
         </section>
@@ -299,8 +304,8 @@ export default function Landing({ tour = false }: { tour?: boolean }) {
           <p className="nb-final-sub">{tour ? "모든 화면은 읽기 전용 예시 데이터입니다." : "지원서 작성은 5분이면 충분해요."}</p>
           <div className="nb-cta-row nb-cta-row--center">
             {tour ? (
-              <Link href="/tour/admin" className="nb-btn nb-btn--fill nb-btn--big">
-                관리 화면 미리보기 <span aria-hidden>↗</span>
+              <Link href="/tour/" className="nb-btn nb-btn--fill nb-btn--big">
+                사용자 화면 미리보기 <span aria-hidden>↗</span>
               </Link>
             ) : <>
               <Link href="/apply" className="nb-btn nb-btn--fill nb-btn--big">

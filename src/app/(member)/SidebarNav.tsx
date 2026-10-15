@@ -37,6 +37,7 @@ const icons: Record<string, string> = {
   inquiries: "M21 12a8 8 0 1 1-3.3-6.5M21 4v5h-5",
   profile: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0",
   pokedex: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3.1 12h6.15M14.75 12h6.15M12 14.75a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5Z",
+  ranking: "M7 21v-9m5 9V3m5 18v-5",
   squirtle: "M7 20v-3.5a5 5 0 0 1 10 0V20M5 10a7 7 0 1 1 14 0c0 3-1.5 5-3.5 6.5M9 10h.01M15 10h.01",
   store: "M4 9h16l-1 11H5L4 9Zm2-5h12l2 5H4l2-5ZM9 13v3m6-3v3",
   meetingPoll: "M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm3 4h3v3H8V8Zm5 3h3v3h-3v-3Zm-5 4h3v3H8v-3Z",
@@ -63,6 +64,7 @@ const baseGroups: NavGroup[] = [
       { href: "/events", label: "이벤트", icon: "events" },
       { href: "/schedule", label: "스케줄", icon: "meetingPoll" },
       { href: "/pokedex", label: "포켓몬", icon: "pokedex" },
+      { href: "/ranking", label: "랭킹전", icon: "ranking" },
       { href: "/squirtle", label: "꼬북봇", icon: "squirtle" },
       { href: "/store", label: "프렌들리숍", icon: "store" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
@@ -72,12 +74,6 @@ const baseGroups: NavGroup[] = [
     title: "계정",
     items: [{ href: "/profile", label: "프로필", icon: "profile" }],
   },
-];
-
-const bottomItems = [
-  ...baseGroups[0].items,
-  ...baseGroups[1].items.slice(0, 3),
-  ...baseGroups[2].items,
 ];
 
 function itemActive(item: NavItem, pathname: string) {
@@ -90,15 +86,18 @@ function setScheduleShellCookie() {
   document.cookie = "schedule-shell=member; Path=/schedule; SameSite=Lax";
 }
 
-export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
+export function SidebarNav({ isAdmin, hidePokedex = false }: { isAdmin: boolean; hidePokedex?: boolean }) {
   const pathname = usePathname();
 
-  const groups: NavGroup[] = isAdmin
+  const groups: NavGroup[] = (isAdmin
     ? [
         ...baseGroups,
         { title: "관리", items: [{ href: "/admin", label: "어드민", icon: "admin" }] },
       ]
-    : baseGroups;
+    : baseGroups).map((group) => ({
+      ...group,
+      items: hidePokedex ? group.items.filter((item) => item.href !== "/pokedex") : group.items,
+    }));
 
   return (
     <nav className="flex flex-col gap-5">
@@ -132,8 +131,13 @@ export function SidebarNav({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
-export function MemberBottomNav() {
+export function MemberBottomNav({ hidePokedex = false }: { hidePokedex?: boolean }) {
   const pathname = usePathname();
+  const bottomItems = [
+    ...baseGroups[0].items,
+    ...baseGroups[1].items.slice(0, 3),
+    ...baseGroups[2].items,
+  ].filter((item) => !hidePokedex || item.href !== "/pokedex");
 
   return (
     <nav

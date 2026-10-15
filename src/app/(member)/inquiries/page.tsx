@@ -1,5 +1,7 @@
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_INQUIRIES } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -24,13 +26,10 @@ const STATUS_TONE: Record<InquiryStatus, "warning" | "success"> = {
 export default async function InquiriesPage() {
   const profile = await requireProfile();
 
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("inquiries")
-    .select("*")
-    .eq("user_id", profile.id)
-    .order("created_at", { ascending: false });
-  const inquiries = (data as Inquiry[] | null) ?? [];
+  const demo = await isDemoMode();
+  const inquiries = demo
+    ? DEMO_INQUIRIES.filter((inquiry) => inquiry.user_id === profile.id)
+    : ((await (await createClient()).from("inquiries").select("*").eq("user_id", profile.id).order("created_at", { ascending: false })).data as Inquiry[] | null) ?? [];
 
   return (
     <div className="flex flex-col gap-8">

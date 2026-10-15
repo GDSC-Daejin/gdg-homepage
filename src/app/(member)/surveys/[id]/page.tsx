@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_SURVEY_RESPONSES, DEMO_SURVEYS } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -17,23 +19,20 @@ export default async function SurveyDetailPage({
   const profile = await requireProfile();
   const { id } = await params;
 
-  const supabase = await createClient();
-  const { data: survey } = await supabase
-    .from("surveys")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (!survey) notFound();
-  const s = survey as Survey;
-
-  const { data: existingData } = await supabase
-    .from("survey_responses")
-    .select("*")
-    .eq("survey_id", id)
-    .eq("user_id", profile.id)
-    .maybeSingle();
-  const existing = existingData as SurveyResponse | null;
+  const demo = await isDemoMode();
+  let s: Survey | null;
+  let existing: SurveyResponse | null;
+  if (demo) {
+    s = DEMO_SURVEYS.find((survey) => survey.id === id) ?? null;
+    existing = (DEMO_SURVEY_RESPONSES[id] ?? []).find((response) => response.user_id === profile.id) ?? null;
+  } else {
+    const supabase = await createClient();
+    const { data: survey } = await supabase.from("surveys").select("*").eq("id", id).single();
+    s = survey as Survey | null;
+    const { data } = await supabase.from("survey_responses").select("*").eq("survey_id", id).eq("user_id", profile.id).maybeSingle();
+    existing = data as SurveyResponse | null;
+  }
+  if (!s) notFound();
 
   return (
     <div className="flex flex-col gap-6">

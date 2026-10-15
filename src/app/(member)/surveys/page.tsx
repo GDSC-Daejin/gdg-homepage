@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoMode } from "@/lib/demo";
+import { DEMO_SURVEY_RESPONSES, DEMO_SURVEYS } from "@/lib/demoData";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
@@ -16,28 +18,32 @@ interface PastResponseItem {
 export default async function SurveysPage() {
   const profile = await requireProfile();
 
-  const supabase = await createClient();
-  const [{ data: surveys }, { data: myResponses }] = await Promise.all([
-    supabase
-      .from("surveys")
-      .select("*")
-      .eq("is_open", true)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("survey_responses")
-      .select("survey:surveys(id, title, is_open)")
-      .eq("user_id", profile.id)
-      .order("created_at", { ascending: false })
-      .returns<PastResponseItem[]>(),
-  ]);
-  const list = (surveys ?? []) as Survey[];
+  const demo = await isDemoMode();
+  let list: Survey[];
+  let myResponses: PastResponseItem[];
+  if (demo) {
+    list = DEMO_SURVEYS.filter((survey) => survey.is_open);
+    myResponses = Object.entries(DEMO_SURVEY_RESPONSES).flatMap(([surveyId, responses]) =>
+      responses.some((response) => response.user_id === profile.id)
+        ? [{ survey: DEMO_SURVEYS.find((survey) => survey.id === surveyId) ?? null }]
+        : [],
+    );
+  } else {
+    const supabase = await createClient();
+    const [{ data: surveys }, { data }] = await Promise.all([
+      supabase.from("surveys").select("*").eq("is_open", true).order("created_at", { ascending: false }),
+      supabase.from("survey_responses").select("survey:surveys(id, title, is_open)").eq("user_id", profile.id).order("created_at", { ascending: false }).returns<PastResponseItem[]>(),
+    ]);
+    list = (surveys ?? []) as Survey[];
+    myResponses = data ?? [];
+  }
 
   const respondedIds = new Set(
-    (myResponses ?? [])
+    myResponses
       .map((r) => r.survey?.id)
       .filter((v): v is string => !!v),
   );
-  const pastClosed = (myResponses ?? [])
+  const pastClosed = myResponses
     .map((r) => r.survey)
     .filter((s): s is NonNullable<PastResponseItem["survey"]> => !!s && !s.is_open);
 
