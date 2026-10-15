@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "linear": {
+    "linear-gdg": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp"
     }

@@ -51,6 +51,6 @@ MUST는 조건에 해당하면 필수다. DEFAULT는 특별한 이유가 없으�
 
 ## 프로젝트별 절차
 
-- 이슈 트래커는 Linear `gdg-dju` 워크스페이스의 `GDG` 팀(https://linear.app/gdg-dju/team/GDG/overview)이다. 접근은 `.mcp.json`의 `linear` MCP 서버를 쓴다. 이슈는 [docs/linear-issue-templates.md](docs/linear-issue-templates.md)의 템플릿으로, PR 본문은 [.github/pull_request_template.md](.github/pull_request_template.md)로 쓴다.
+- 이슈 트래커는 Linear `gdg-dju` 워크스페이스의 `GDG` 팀(https://linear.app/gdg-dju/team/GDG/overview)이다. 접근은 `.mcp.json`의 `linear-gdg` MCP 서버를 쓴다(다른 프로젝트의 `linear` 연결과 워크스페이스가 다르므로 이름을 나눴다). 이슈는 [docs/linear-issue-templates.md](docs/linear-issue-templates.md)의 템플릿으로, PR 본문은 [.github/pull_request_template.md](.github/pull_request_template.md)로 쓴다.
 - 테스트 포켓몬 수동 출현 요청은 docs/pokedex-bot-setup.md의 해당 절차를 따른다.
 - 커밋·push·merge·배포는 사용자의 승인 없이 수행하지 않는다.
