@@ -9,6 +9,7 @@ import { Card } from "@/components/Card";
 import { EmptyState } from "@/components/EmptyState";
 import { Input } from "@/components/Input";
 import { PageHeader } from "@/components/PageHeader";
+import { PokedexTabs } from "./PokedexTabs";
 import { PokedexBattleTab } from "./PokedexBattleTab";
 import { RankingLeagueTab } from "./RankingLeagueTab";
 import "../../wds.css";
@@ -119,10 +120,7 @@ export default async function PokedexPage({ searchParams }: { searchParams: Prom
   return (
     <div>
       <PageHeader title="포켓몬 도감" description="슬랙에서 몬스터볼을 던져 포켓몬을 모아보세요." />
-      <nav aria-label="포켓몬 도감" className="mb-6 flex gap-1 border-b border-gray-200">
-        <Link href="/pokedex" aria-current={tab === "collection" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "collection" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>내 도감</Link>
-        <Link href="/pokedex?tab=probabilities" aria-current={tab === "probabilities" ? "page" : undefined} className={`rounded-t-md px-3 py-2 text-sm font-medium transition-colors ${tab === "probabilities" ? "bg-primary-soft text-primary" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}>확률표</Link>
-      </nav>
+      <PokedexTabs active={tab === "probabilities" ? "probabilities" : "collection"} />
       {tab === "collection" ? <>
         <div className="mb-6 grid gap-3 sm:grid-cols-2">
           <Card className="p-4">
