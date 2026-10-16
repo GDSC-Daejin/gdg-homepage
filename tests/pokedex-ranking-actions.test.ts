@@ -7,7 +7,7 @@ describe("도감 랭킹전 액션", () => {
     expect(actions).toContain("pokedex_rank_join");
     expect(actions).toContain("pokedex_rank_save_preset");
     expect(actions).toContain("pokedex_rank_start_battle");
-    expect(actions).toContain('revalidatePath("/pokedex")');
+    expect(actions).toContain('revalidatePath("/pokedex", "layout")'); // /pokedex/ranking/* 하위 화면까지
     expect(actions).toContain('revalidatePath("/ranking")');
   });
 });

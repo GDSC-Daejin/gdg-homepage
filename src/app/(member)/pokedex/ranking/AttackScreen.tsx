@@ -89,7 +89,7 @@ export function AttackScreen({ profileId, state }: { profileId: string; state: R
       {state.opponents.length === 0 ? (
         <div className="rk-card">
           <span className="rk-cardtitle">배정된 상대가 없어요</span>
-          <p className="rk-cardsub">참전자가 늘어나거나 다음 06:00 갱신을 기다려주세요.</p>
+          <p className="rk-cardsub">방어 덱을 켠 다른 참가자가 아직 없거나 오늘 배정이 다 찼어요. 방어 덱은 켠 다음 날 06:00부터 상대에게 보여요. 다음 06:00 갱신을 기다려주세요.</p>
         </div>
       ) : (
         <div className="rk-grid3">

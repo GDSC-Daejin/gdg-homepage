@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
 
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: allocations, error } = await supabase.rpc("pokedex_rank_refresh_daily");
-  if (error) return NextResponse.json({ error: "랭킹전 상대를 배정하지 못했어요" }, { status: 500 });
+  if (error) {
+    console.error("[pokedex-ranking-daily] 상대 배정 실패", { code: error.code, message: error.message });
+    return NextResponse.json({ error: "랭킹전 상대를 배정하지 못했어요" }, { status: 500 });
+  }
   return NextResponse.json({ allocations: allocations ?? 0 });
 }

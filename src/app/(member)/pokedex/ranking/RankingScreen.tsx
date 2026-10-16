@@ -81,8 +81,8 @@ export function RankingScreen({ page, profileId, state, readOnly = false }: { pa
     return (
       <main className="rk-inner rk-page">
         <div className="rk-card">
-          <span className="rk-cardtitle">랭킹전을 준비하고 있어요</span>
-          <p className="rk-cardsub">데모에서는 랭킹전을 이용할 수 없어요.</p>
+          <span className="rk-cardtitle">랭킹전 정보를 불러오지 못했어요</span>
+          <p className="rk-cardsub">잠시 뒤 새로고침해 주세요. 계속되면 운영진에게 알려주세요. 둘러보기(데모)에서는 랭킹전을 이용할 수 없어요.</p>
         </div>
       </main>
     );

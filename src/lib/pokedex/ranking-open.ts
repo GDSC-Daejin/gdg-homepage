@@ -19,6 +19,8 @@ export const getRankingState = cache(async (): Promise<RankingLeagueState | null
   if (!isRankingLeagueOpen()) return null;
   if (await isDemoMode()) return null;
   const supabase = await createClient();
-  const { data } = await supabase.rpc("pokedex_rank_state");
+  const { data, error } = await supabase.rpc("pokedex_rank_state");
+  // 화면은 null이면 "불러오지 못했어요"를 보여준다. 원인은 서버 로그에서 찾을 수 있게 코드만 남긴다.
+  if (error) console.error("[pokedex-ranking] 상태 조회 실패", { code: error.code, message: error.message });
   return (data as RankingLeagueState | null) ?? null;
 });

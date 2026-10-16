@@ -13,11 +13,11 @@ describe("마이그레이션 함수 조회", () => {
   });
 
   it("함수 하나의 본문만 잘라낸다", async () => {
-    const today = await latestFunction("pokedex_rank_kst_today");
+    const gameDay = await latestFunction("pokedex_rank_game_day");
 
-    expect(today.startsWith("create function public.pokedex_rank_kst_today(")).toBe(true);
-    expect(today.endsWith("$$;")).toBe(true);
-    expect(today).not.toContain("pokedex_rank_type_multiplier"); // 바로 뒤 함수까지 삼키지 않는다
+    expect(gameDay.startsWith("create function public.pokedex_rank_game_day(")).toBe(true);
+    expect(gameDay.endsWith("$$;")).toBe(true);
+    expect(gameDay).not.toContain("pokedex_rank_kst_today"); // 바로 뒤 함수까지 삼키지 않는다
   });
 
   it("없는 함수는 조용히 빈 문자열이 되지 않고 실패한다", async () => {

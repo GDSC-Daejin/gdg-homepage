@@ -48,6 +48,8 @@ interface NavItem {
   label: string;
   icon: keyof typeof icons;
   matchPrefixes?: string[];
+  /** matchPrefixes에 걸리지만 다른 메뉴가 맡는 하위 경로. */
+  excludePrefixes?: string[];
 }
 
 interface NavGroup {
@@ -62,8 +64,8 @@ const baseGroups: NavGroup[] = [
     items: [
       { href: "/events", label: "이벤트", icon: "events" },
       { href: "/schedule", label: "스케줄", icon: "meetingPoll" },
-      { href: "/pokedex", label: "포켓몬", icon: "pokedex", matchPrefixes: ["/pokedex", "/store"] },
-      { href: "/ranking", label: "랭킹전", icon: "ranking" },
+      { href: "/pokedex", label: "포켓몬", icon: "pokedex", matchPrefixes: ["/pokedex", "/store"], excludePrefixes: ["/pokedex/ranking"] },
+      { href: "/pokedex/ranking", label: "랭킹전", icon: "ranking" },
       { href: "/squirtle", label: "꼬북봇", icon: "squirtle" },
       { href: "/inquiries", label: "문의", icon: "inquiries" },
     ],
@@ -76,6 +78,7 @@ const baseGroups: NavGroup[] = [
 
 function itemActive(item: NavItem, browserPathname: string) {
   const pathname = browserPathname === "/tour/home" ? "/" : browserPathname.replace(/^\/tour(?=\/)/, "");
+  if (item.excludePrefixes?.some((prefix) => pathname.startsWith(prefix))) return false;
   return item.href === "/"
     ? pathname === "/"
     : item.matchPrefixes?.some((prefix) => pathname.startsWith(prefix)) ?? pathname.startsWith(item.href);

@@ -20,6 +20,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   RANKING_NOT_JOINED: "먼저 랭킹전에 참가해주세요",
   INVALID_RANKING_TEAM: "서로 다른 포켓몬 3마리와 전설/환상 1마리 이하로 덱을 구성해주세요",
   RANKING_REROLL_UNAVAILABLE: "리롤은 첫 공격 전 하루 한 번만 할 수 있어요",
+  RANKING_REROLL_NO_CANDIDATES: "지금은 새로 배정할 상대가 없어 리롤하지 않았어요. 기존 상대는 그대로예요",
   RANKING_BATTLE_UNAVAILABLE: "지금은 이 상대에게 결투할 수 없어요",
   NOT_BOOKED: "예약된 면접이 없어요",
   CANCEL_DEADLINE: "면접 24시간 전부터는 취소할 수 없어요",
