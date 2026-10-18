@@ -7,6 +7,7 @@ import type {
   EventType,
   Application,
   Notice,
+  NoticeTemplate,
   Survey,
   SurveyPreset,
   SurveyResponse,
@@ -195,6 +196,10 @@ export const DEMO_ATTENDANCE_ROWS: {
   { member: DEMO_MEMBERS[3], confirmed: 5, attended: 4, rate: 0.8 },
   { member: DEMO_MEMBERS[4], confirmed: 4, attended: 3, rate: 0.75 },
   { member: DEMO_MEMBERS[5], confirmed: 5, attended: 2, rate: 0.4 },
+];
+
+export const DEMO_NOTICE_TEMPLATES: NoticeTemplate[] = [
+  { id: "demo-nt1", name: "정기 세션", title: "[N]월 정기 세션 안내", body: "📍 장소: 공학관 301호\n🎒 준비물: 노트북, 충전기\n\n이번 달 정기 세션을 안내드려요.", created_at: "2026-07-01T00:00:00.000Z" },
 ];
 
 export const DEMO_NOTICES: Notice[] = [

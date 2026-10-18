@@ -96,6 +96,12 @@ export const noticeSchema = z.object({
   body: z.string(),
 });
 
+export const noticeTemplateSchema = z.object({
+  name: z.string().trim().min(1, "템플릿 이름을 입력해주세요").max(40, "템플릿 이름은 40자까지 쓸 수 있어요"),
+  title: z.string().trim(),
+  body: z.string().trim(),
+});
+
 export const interviewQuestionSchema = z.object({
   position: z.enum(["frontend", "backend", "designer", "beginner", "pm", "marketer", "vibecoder"]).nullable(),
   body: z.string().min(1, "질문을 입력해주세요"),

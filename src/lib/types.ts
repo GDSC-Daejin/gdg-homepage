@@ -265,6 +265,15 @@ export interface Notice {
   created_at: string;
 }
 
+/** 공지 템플릿. body는 공지와 같은 머리말 형식(장소·준비물, 일정 없음). */
+export interface NoticeTemplate {
+  id: string;
+  name: string;
+  title: string;
+  body: string;
+  created_at: string;
+}
+
 export interface InterviewQuestion {
   id: string;
   position: Position | null;

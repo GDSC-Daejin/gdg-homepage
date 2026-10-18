@@ -5,7 +5,9 @@ import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { getCommunity } from "@/lib/community";
 import { isDemoMode } from "@/lib/demo";
-import { noticeSchema } from "@/lib/schemas";
+import { noticeSchema, noticeTemplateSchema } from "@/lib/schemas";
+import { createClient } from "@/lib/supabase/server";
+import { toKoreanError } from "@/lib/errors";
 import { postSlack } from "@/lib/slack";
 import type { ActionResult } from "@/lib/types";
 
@@ -58,6 +60,32 @@ export async function updateNotice(
   revalidatePath(`/admin/notices/${id}`);
   revalidatePath(`/notices/${id}`);
   revalidatePath("/notices");
+  return {};
+}
+
+export async function saveNoticeTemplate(formData: FormData): Promise<ActionResult> {
+  const profile = await requireAdmin();
+  if (await isDemoMode()) return { error: "미리보기 모드에서는 템플릿을 저장할 수 없어요" };
+
+  const parsed = noticeTemplateSchema.safeParse({
+    name: formData.get("name"),
+    title: formData.get("title") ?? "",
+    body: formData.get("body") ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요" };
+  }
+  if (!parsed.data.title && !parsed.data.body) {
+    return { error: "저장할 내용이 없어요. 제목이나 본문을 먼저 써 주세요" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("notice_templates")
+    .insert({ ...parsed.data, created_by: profile.id });
+  if (error) return { error: toKoreanError(error) };
+
+  revalidatePath("/admin/notices/new");
   return {};
 }
 

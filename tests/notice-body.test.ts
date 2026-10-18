@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { composeNoticeBody, parseNoticeBody } from "@/lib/notice-body";
+import {
+  composeNoticeBody,
+  joinSupplies,
+  parseNoticeBody,
+  splitSupplies,
+  suggestSupplies,
+} from "@/lib/notice-body";
 
 describe("notice-body", () => {
   it("일정·장소·준비물을 본문 앞 머리말로 붙인다", () => {
@@ -51,5 +57,24 @@ describe("notice-body", () => {
       supplies: "",
       body: raw,
     });
+  });
+
+  it("준비물 문자열을 칩 목록으로 나누고 다시 합친다", () => {
+    expect(splitSupplies(" 노트북, 충전기,, 노트북 ,")).toEqual(["노트북", "충전기"]);
+    expect(splitSupplies("")).toEqual([]);
+    expect(joinSupplies(["노트북", "충전기"])).toBe("노트북, 충전기");
+  });
+
+  it("지난 공지에서 많이 쓴 준비물부터 추천하고 기본값으로 채운다", () => {
+    const bodies = [
+      "🎒 준비물: 학생증, 노트북\n\n본문",
+      "🎒 준비물: 노트북\n\n본문",
+      "준비물 없는 공지",
+    ];
+    expect(suggestSupplies(bodies, ["충전기", "노트북"], 3)).toEqual([
+      "노트북",
+      "학생증",
+      "충전기",
+    ]);
   });
 });
