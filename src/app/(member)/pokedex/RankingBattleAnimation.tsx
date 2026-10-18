@@ -4,8 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/Button";
 import type { CSSProperties } from "react";
 import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pokedex/ranking-league";
-import { BattleCoin } from "./BattleCoin";
-import { PixiRankingBattleScene, type RankingScenePhase } from "./PixiRankingBattleScene";
+import { PixiRankingBattleScene, TOSS_MS, type RankingScenePhase } from "./PixiRankingBattleScene";
 import { battleEffect } from "@/lib/pokedex/battle-effects";
 import { healthColor, healthPercent, impactProfile, impactTier } from "./ranking-battle-fx";
 import { createBattleAudio, readSoundPreference, soundForStep, writeSoundPreference, type BattleAudio } from "./ranking-battle-sound";
@@ -18,7 +17,7 @@ export function shouldShowRankingPokemon(phase: RankingScenePhase, changed: bool
 }
 
 export function buildRankingBattleSteps(battle: RankingBattleDetail): Step[] {
-  const steps: Step[] = battle.firstTurnUserId ? [{ turn: 0, phase: "intro", actor: null, duration: 1_300 }] : [];
+  const steps: Step[] = battle.firstTurnUserId ? [{ turn: 0, phase: "intro", actor: null, duration: 2_300 }] : [];
   battle.battleLog.forEach((entry, turn) => {
     const previous = battle.battleLog[turn - 1];
     if (previous && (previous.attackerIndex !== entry.attackerIndex || previous.defenderIndex !== entry.defenderIndex)) steps.push({ turn, phase: "sendout", actor: null, duration: 950 });
@@ -44,14 +43,14 @@ function BattleLog({ battle, profileId }: { battle: RankingBattleDetail; profile
   </>;
 }
 
-function RankingBattleStatus({ pokemon, health, fromHealth, side, winner }: { pokemon: RankingPokemon; health: number; fromHealth: number; side: "left" | "right"; winner: boolean }) {
+function RankingBattleStatus({ pokemon, health, fromHealth, side, winner }: { pokemon: RankingPokemon; health: number; fromHealth: number; side: "enemy" | "player"; winner: boolean }) {
   const maximum = 1_000 + pokemon.combatPower;
   const percentage = healthPercent(health, maximum);
   const from = healthPercent(fromHealth, maximum);
   const draining = from !== percentage;
   // 피해를 받으면 체력 바가 부드럽게 줄고, 잔상 바가 한 박자 늦게 따라온다.
   const bar = { "--hp-from": `${from}%`, "--hp-to": `${percentage}%`, "--hp-color": healthColor(percentage) } as CSSProperties;
-  return <div className={`${styles.battleStatus} ${side === "left" ? styles.statusLeft : styles.statusRight} ${winner ? styles.statusWinner : ""}`}><div className={styles.statusHeading}><strong>{pokemon.name}</strong><span>전투력 {pokemon.combatPower}</span></div><div className={styles.healthRow}><b>HP:</b><div className={styles.healthTrack} role="progressbar" aria-label={`${pokemon.name} 체력`} aria-valuemin={0} aria-valuemax={maximum} aria-valuenow={health}><span key={`ghost-${fromHealth}-${health}`} className={`${styles.healthGhost} ${draining ? styles.healthDrainGhost : ""}`} style={bar} /><span key={`fill-${fromHealth}-${health}`} className={`${styles.healthFill} ${draining ? styles.healthDrain : ""}`} style={bar} /></div></div></div>;
+  return <div className={`${styles.battleStatus} ${side === "enemy" ? styles.statusLeft : styles.statusPlayer} ${winner ? styles.statusWinner : ""}`}><div className={styles.statusHeading}><strong>{pokemon.name}</strong><span>전투력 {pokemon.combatPower}</span></div><div className={styles.healthRow}><b>HP:</b><div className={styles.healthTrack} role="progressbar" aria-label={`${pokemon.name} 체력`} aria-valuemin={0} aria-valuemax={maximum} aria-valuenow={health}><span key={`ghost-${fromHealth}-${health}`} className={`${styles.healthGhost} ${draining ? styles.healthDrainGhost : ""}`} style={bar} /><span key={`fill-${fromHealth}-${health}`} className={`${styles.healthFill} ${draining ? styles.healthDrain : ""}`} style={bar} /></div></div></div>;
 }
 
 /** 이전 턴과 비교해 이번 턴에 새로 나온 포켓몬 이름 */
@@ -167,13 +166,13 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
 
   return <div className="text-center">
     <p className="text-sm font-semibold text-primary">랭킹전 시작!</p>
-    <div className={`${styles.battleArena} relative mt-7 min-h-72 ${impact && tier === "strong" ? styles.screenShake : ""} ${paused ? styles.fxPaused : ""}`} style={fxStyle}>
-      {animated && <PixiRankingBattleScene attacker={attacker} defender={defender} phase={step.phase} actor={step.actor} duration={step.duration} multiplier={multiplier} winner={winnerSide} stepKey={stepKey} replayKey={replayKey} speed={speed} paused={paused} onUnavailable={() => { setSceneAvailable(false); setStepIndex(steps.length - 1); }} />}
-      {step.phase === "intro" && battle.firstTurnUserId && <div className={`${styles.coinToss} absolute inset-0 z-30`}><BattleCoin heads={battle.firstTurnUserId === battle.attackerId} className={styles.coinFlip} /></div>}
+    <div className={`${styles.battleArena} ${styles.rankingStage} relative mt-7 ${impact && tier === "strong" ? styles.screenShake : ""} ${paused ? styles.fxPaused : ""}`} style={fxStyle}>
+      {animated && <PixiRankingBattleScene arenaSeed={battle.id} firstTurn={battle.firstTurnUserId ? battle.firstTurnUserId === battle.attackerId ? "attacker" : "defender" : null} attacker={attacker} defender={defender} phase={step.phase} actor={step.actor} duration={step.duration} multiplier={multiplier} winner={winnerSide} stepKey={stepKey} replayKey={replayKey} speed={speed} paused={paused} onUnavailable={() => { setSceneAvailable(false); setStepIndex(steps.length - 1); }} />}
+      {step.phase === "intro" && battle.firstTurnUserId && animated && <span aria-hidden className={styles.firstTurnBanner} style={{ "--toss-delay": `${TOSS_MS * 0.45 / speed}ms` } as CSSProperties}>{battle.firstTurnUserId === battle.attackerId ? "공격 파티" : "방어 파티"} 선공!</span>}
       {impact && damage > 0 && <span key={stepKey} aria-hidden className={`${styles.damagePop} ${step.actor === "attacker" ? styles.damageOnRight : styles.damageOnLeft} ${tier === "strong" ? styles.damageStrong : tier === "weak" ? styles.damageWeak : ""}`}>-{damage}</span>}
       {complete && animated && <span aria-hidden className={`${styles.winBanner} ${winnerSide === "attacker" ? styles.winLeft : styles.winRight}`}>WIN!</span>}
-      <RankingBattleStatus pokemon={attacker} health={attackerHealth} fromHealth={attackerFrom} side="left" winner={complete && winnerSide === "attacker"} />
-      <RankingBattleStatus pokemon={defender} health={defenderHealth} fromHealth={defenderFrom} side="right" winner={complete && winnerSide === "defender"} />
+      <RankingBattleStatus pokemon={defender} health={defenderHealth} fromHealth={defenderFrom} side="enemy" winner={complete && winnerSide === "defender"} />
+      <RankingBattleStatus pokemon={attacker} health={attackerHealth} fromHealth={attackerFrom} side="player" winner={complete && winnerSide === "attacker"} />
     </div>
     <div className={styles.battleMessage} aria-live="polite"><p>{message}</p></div>
     <div className="mt-5 flex flex-wrap justify-center gap-2" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}><Button type="button" variant="secondary" size="sm" onClick={() => setPaused((value) => !value)} disabled={complete}>{paused ? "계속" : "일시정지"}</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); setStepIndex(0); setPaused(false); setSkipped(false); setReplayKey((key) => key + 1); }} disabled={reduced}>다시 보기</Button><Button type="button" variant="ghost" size="sm" onClick={() => setSpeed((value) => value === 1 ? 2 : 1)} disabled={complete}>{speed}배속</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); setStepIndex(steps.length - 1); setSkipped(true); }} disabled={complete}>결과 보기</Button><Button type="button" variant="ghost" size="sm" aria-pressed={soundOn} onClick={() => { const next = !soundOn; if (!next) audioRef.current?.stopAll(); setSoundOn(next); writeSoundPreference(next); }}>효과음<span aria-hidden className="ml-1">{soundOn ? "켬" : "끔"}</span></Button></div>

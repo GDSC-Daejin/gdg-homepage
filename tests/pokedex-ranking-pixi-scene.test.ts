@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { buildRankingBattleSteps } from "@/app/(member)/pokedex/RankingBattleAnimation";
 import { healthColor, impactProfile, sceneQuality } from "@/app/(member)/pokedex/ranking-battle-fx";
-import { BATTLE_EFFECT_SHEETS, battleSpriteCandidates, effectCell } from "@/app/(member)/pokedex/ranking-battle-assets";
+import { BATTLE_EFFECT_SHEETS, battleArena, battleSpriteCandidates, effectCell, POKEBALL_SPRITES } from "@/app/(member)/pokedex/ranking-battle-assets";
 import { soundForStep, soundRecipe } from "@/app/(member)/pokedex/ranking-battle-sound";
 import { battleEffect, type BattleMotion, type BattleType } from "@/lib/pokedex/battle-effects";
 import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pokedex/ranking-league";
@@ -129,7 +129,21 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(policy).toContain("PokeAPI/sprites");
   });
 
+  it("16:9 무대에 PokéRogue 배경·발판·몬스터볼을 외부 URL로 쓰고, 선공은 볼 던지기로 보여준다", async () => {
+    const first = battleArena("battle-1");
+    expect(first).toEqual(battleArena("battle-1"));
+    for (const url of [first.background, first.attackerBase, first.defenderBase, ...Object.values(POKEBALL_SPRITES)]) expect(url).toMatch(/^https:\/\/raw\.githubusercontent\.com\/pagefaultgames\/pokerogue-assets\/beta\/images\//);
+    const [animation, scene, styles] = await Promise.all([read("src/app/(member)/pokedex/RankingBattleAnimation.tsx"), read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx"), read("src/app/(member)/pokedex/DuelPanel.module.css")]);
+    expect(styles).toMatch(/\.rankingStage \{[^}]*aspect-ratio: 16 \/ 9/);
+    expect(animation).toContain("arenaSeed={battle.id}");
+    expect(scene).toContain("TOSS_MS");
+    expect(scene).toContain("holdForToss");
+    // 선공 연출과 등장이 intro 단계 안에 들어가야 첫 공격과 겹치지 않는다.
+    expect(buildRankingBattleSteps(battle())[0].duration).toBeGreaterThanOrEqual(1_150 + 820);
+  });
+
   it("효과음은 단계마다 정해지고, 결과 보기로 건너뛰면 울리지 않는다", async () => {
+    expect(soundForStep("intro", "bolt", "normal", false)).toEqual({ kind: "toss" });
     expect(soundForStep("attack", "bolt", "normal", false)).toEqual({ kind: "attack", motion: "bolt" });
     expect(soundForStep("impact", "flame", "strong", false)).toEqual({ kind: "hit", tier: "strong" });
     expect(soundForStep("recall", "flame", "normal", false)).toEqual({ kind: "faint" });

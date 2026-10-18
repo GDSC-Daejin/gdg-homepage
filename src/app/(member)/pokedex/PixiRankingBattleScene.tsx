@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { RankingPokemon } from "@/lib/pokedex/ranking-league";
 import { battleEffect, type BattleMotion, type BattlePalette } from "@/lib/pokedex/battle-effects";
-import { BATTLE_EFFECT_SHEETS, battleSpriteCandidates, effectCell, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
+import { BATTLE_EFFECT_SHEETS, battleArena, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
 import { clamp01, easeInCubic, easeOutBack, easeOutCubic, impactProfile, lerp, sceneQuality, segment, type ImpactProfile } from "./ranking-battle-fx";
 
 export type RankingScenePhase = "intro" | "sendout" | "charge" | "attack" | "impact" | "recall" | "result";
@@ -12,6 +12,10 @@ type Pixi = typeof import("pixi.js");
 
 const ENTRANCE_MS = 820;
 const BALL_OPEN = 0.46;
+/** 선공 결정: 양쪽 몬스터볼이 맞부딪친 뒤 선공 쪽 볼이 떠오르는 시간(장면 시간 ms) */
+export const TOSS_MS = 1_150;
+const TOSS_CLASH = 0.42;
+type BallState = keyof typeof POKEBALL_SPRITES;
 
 type Particle = {
   x: number; y: number; vx: number; vy: number; gravity: number; drag: number;
@@ -46,6 +50,13 @@ type Scene = {
   projectile: import("pixi.js").Sprite;
   effect: import("pixi.js").Sprite;
   sheets: Map<string, SheetFrames | null>;
+  arena: { background: import("pixi.js").Sprite; attackerBase: import("pixi.js").Sprite; defenderBase: import("pixi.js").Sprite };
+  balls: import("pixi.js").Sprite[];
+  ballIndex: number;
+  ballTextures: Partial<Record<BallState, import("pixi.js").Texture>>;
+  firstTurn: SideKey | null;
+  introEntered: boolean;
+  tossBurst: boolean;
   sides: Record<SideKey, Side>;
   pool: Particle[];
   typeTextures: Map<string, import("pixi.js").Texture | null>;
@@ -66,7 +77,11 @@ type Scene = {
   bolt: { at: number; points: number[] };
 };
 
-export function PixiRankingBattleScene({ attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable }: {
+export function PixiRankingBattleScene({ arenaSeed, firstTurn, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable }: {
+  /** 배경 선택용 값(전투 id). 같은 기록은 같은 배경을 쓴다. */
+  arenaSeed: string;
+  /** 저장된 선공. 있으면 intro 단계에서 볼 던지기 선공 연출을 한다. */
+  firstTurn: SideKey | null;
   attacker: RankingPokemon;
   defender: RankingPokemon;
   phase: RankingScenePhase;
@@ -86,8 +101,8 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<Scene | null>(null);
-  const latest = useRef({ attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable });
-  latest.current = { attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable };
+  const latest = useRef({ arenaSeed, firstTurn, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable });
+  latest.current = { arenaSeed, firstTurn, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -128,17 +143,22 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
           return created;
         };
         const sides = { attacker: side(attackerVisual, props.attacker.throwId), defender: side(defenderVisual, props.defender.throwId) };
-        // 위쪽(방어) 포켓몬을 먼저 그려 아래쪽(공격) 포켓몬이 앞에 오게 한다.
-        world.addChild(back, sides.defender.sprite, sides.defender.flash, sides.attacker.sprite, sides.attacker.flash, shapes, projectile, effect, particles);
+        const arena = { background: new pixi.Sprite(), attackerBase: new pixi.Sprite(), defenderBase: new pixi.Sprite() };
+        for (const sprite of Object.values(arena)) sprite.visible = false;
+        const balls = Array.from({ length: 4 }, () => { const ball = new pixi.Sprite(); ball.anchor.set(0.5); ball.visible = false; return ball; });
+        // 배경 → 발판 → 그림자 → 위쪽(방어) 포켓몬 → 아래쪽(공격) 포켓몬 순으로 그린다.
+        world.addChild(arena.background, arena.defenderBase, arena.attackerBase, back, sides.defender.sprite, sides.defender.flash, sides.attacker.sprite, sides.attacker.flash, shapes, ...balls, projectile, effect, particles);
         app.stage.addChild(world, overlay);
 
         const scene: Scene = {
-          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), sides, pool: [], typeTextures: new Map(), quality,
+          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), arena, balls, ballIndex: 0, ballTextures: {}, firstTurn: props.firstTurn, introEntered: false, tossBurst: false, sides, pool: [], typeTextures: new Map(), quality,
           phase: props.phase, actor: props.actor, duration: props.duration, multiplier: props.multiplier, winner: props.winner,
           types: { attacker: props.attacker.battleType, defender: props.defender.battleType },
           stepKey: props.stepKey, elapsed: 0, clock: 0, speed: props.speed, paused: props.paused, burstDone: false, emitDebt: 0, bolt: { at: -1, points: [] },
         };
         sceneRef.current = scene;
+        loadArena(scene, props.arenaSeed);
+        if (props.phase === "intro" && props.firstTurn) holdForToss(scene);
         for (const type of new Set([props.attacker.battleType, props.defender.battleType])) loadTypeAssets(scene, type);
         app.ticker.add((ticker) => { if (!scene.paused) update(scene, Math.min(ticker.deltaMS, 50)); });
         if (props.paused) update(scene, 0);
@@ -175,6 +195,8 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
       loadVisual(scene.pixi, pokemon.imagePath, key).then((visual) => {
         if (cancelled || sceneRef.current !== scene || side.key !== pokemon.throwId) return;
         applyVisual(side, visual);
+        // 선공 볼 던지기 중이면 등장은 던지기가 끝난 뒤에 한다.
+        if (scene.phase === "intro" && scene.firstTurn && !scene.introEntered) return;
         startEntrance(side);
       }, () => { if (!cancelled) latest.current.onUnavailable(); });
     }
@@ -186,15 +208,18 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
     if (!scene || scene.stepKey === stepKey) return;
     // 회수 단계가 끝나면 쓰러진 쪽은 다음 등장 전까지 숨긴다.
     if (scene.phase === "recall" && scene.actor) scene.sides[scene.actor].hidden = true;
-    Object.assign(scene, { phase, actor, duration, multiplier, winner, stepKey, elapsed: 0, burstDone: false, emitDebt: 0 });
+    Object.assign(scene, { phase, actor, duration, multiplier, winner, stepKey, elapsed: 0, burstDone: false, emitDebt: 0, tossBurst: false });
   }, [actor, duration, multiplier, phase, stepKey, winner]);
 
   useEffect(() => {
     const scene = sceneRef.current;
     if (!scene || !replayKey) return;
     scene.pool.length = 0;
-    startEntrance(scene.sides.attacker);
-    startEntrance(scene.sides.defender);
+    if (latest.current.phase === "intro" && scene.firstTurn) holdForToss(scene);
+    else {
+      startEntrance(scene.sides.attacker);
+      startEntrance(scene.sides.defender);
+    }
   }, [replayKey]);
 
   useEffect(() => {
@@ -215,6 +240,54 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
 function setPaused(scene: Scene, paused: boolean) {
   scene.paused = paused;
   scene.app.ticker.maxFPS = paused ? 10 : 0;
+}
+
+/** 선공 연출이 끝날 때까지 양측을 숨긴다. */
+function holdForToss(scene: Scene) {
+  scene.introEntered = false;
+  for (const side of Object.values(scene.sides)) {
+    side.entrance = null;
+    side.hidden = true;
+  }
+}
+
+function loadArena(scene: Scene, seed: string) {
+  const arena = battleArena(seed);
+  const load = (url: string, sprite: import("pixi.js").Sprite) => scene.pixi.Assets.load(url).then((texture: import("pixi.js").Texture) => {
+    texture.source.scaleMode = "nearest";
+    sprite.texture = texture;
+    sprite.visible = true;
+  }, () => {
+    // 배경을 못 불러오면 CSS 기본 전투장 그림이 그대로 보인다.
+  });
+  void load(arena.background, scene.arena.background);
+  void load(arena.attackerBase, scene.arena.attackerBase);
+  void load(arena.defenderBase, scene.arena.defenderBase);
+  for (const [state, url] of Object.entries(POKEBALL_SPRITES) as [BallState, string][]) {
+    scene.pixi.Assets.load(url).then((texture: import("pixi.js").Texture) => {
+      texture.source.scaleMode = "nearest";
+      scene.ballTextures[state] = texture;
+    }, () => {
+      // 볼 스프라이트가 없으면 Graphics로 그린 볼을 쓴다.
+    });
+  }
+}
+
+/** 몬스터볼 한 개를 그린다. 스프라이트가 없으면 Graphics 볼로 대체한다. */
+function placeBall(scene: Scene, x: number, y: number, rotation: number, state: BallState, scale: number, alpha = 1) {
+  const texture = scene.ballTextures[state] ?? (state !== "closed" ? scene.ballTextures.closed : undefined);
+  const sprite = scene.balls[scene.ballIndex];
+  if (!texture || !sprite) {
+    if (alpha > 0.2) drawBall(scene.shapes, x, y, 5 * scale, rotation);
+    return;
+  }
+  scene.ballIndex++;
+  sprite.texture = texture;
+  sprite.visible = true;
+  sprite.position.set(x, y);
+  sprite.rotation = rotation;
+  sprite.scale.set(scale);
+  sprite.alpha = alpha;
 }
 
 function startEntrance(side: Side) {
@@ -329,12 +402,26 @@ function update(scene: Scene, rawDelta: number) {
   const width = app.screen.width;
   const height = app.screen.height;
   const delta = rawDelta * scene.speed;
-  const size = Math.min(112, height * 0.4, width * 0.3);
+  // 320×180 필드를 무대에 꽉 차게(cover) 맞춘다. 무대는 16:9라 보통 잘리는 부분이 없다.
+  const fieldScale = Math.max(width / FIELD.width, height / FIELD.height);
+  const fieldX = (width - FIELD.width * fieldScale) / 2;
+  const fieldY = (height - FIELD.height * fieldScale) / 2;
+  const size = fieldScale * 64;
   const home: Record<SideKey, { x: number; y: number }> = {
-    attacker: { x: width * 0.25, y: height * 0.64 + size * 0.32 },
-    defender: { x: width * 0.75, y: height * 0.42 + size * 0.32 },
+    attacker: { x: fieldX + FIELD_SPOTS.attacker.x * fieldScale, y: fieldY + FIELD_SPOTS.attacker.y * fieldScale },
+    defender: { x: fieldX + FIELD_SPOTS.defender.x * fieldScale, y: fieldY + FIELD_SPOTS.defender.y * fieldScale },
   };
-  const center = (key: SideKey) => ({ x: home[key].x, y: home[key].y - size * 0.34 });
+  const center = (key: SideKey) => ({ x: home[key].x, y: home[key].y - size * (key === "attacker" ? 0.5 : 0.4) });
+  const ballScale = fieldScale * 1.25;
+  const trainer: Record<SideKey, { x: number; y: number }> = { attacker: { x: -0.04 * width, y: 0.96 * height }, defender: { x: 1.04 * width, y: 0.18 * height } };
+  scene.arena.background.position.set(fieldX, fieldY);
+  scene.arena.background.scale.set(fieldScale);
+  for (const base of [scene.arena.attackerBase, scene.arena.defenderBase]) {
+    base.position.set(fieldX, fieldY + (FIELD.height - FIELD.baseHeight) * fieldScale);
+    base.scale.set(fieldScale);
+  }
+  scene.ballIndex = 0;
+  for (const ball of scene.balls) ball.visible = false;
   const { phase, actor } = scene;
   const source: SideKey = actor === "defender" ? "defender" : "attacker";
   const targetKey: SideKey = source === "attacker" ? "defender" : "attacker";
@@ -382,18 +469,58 @@ function update(scene: Scene, rawDelta: number) {
     offsets[key].sx -= breath * 0.012;
   });
 
+  // 선공 결정: 두 트레이너의 몬스터볼이 맞부딪치고, 선공 쪽 볼이 금빛으로 떠오른다.
+  if (phase === "intro" && scene.firstTurn && !scene.introEntered) {
+    const t = clamp01(scene.elapsed / TOSS_MS);
+    const meet = { x: width * 0.5, y: height * 0.42 };
+    const first = scene.firstTurn;
+    if (t < TOSS_CLASH) {
+      const p = easeOutCubic(t / TOSS_CLASH);
+      for (const key of ["attacker", "defender"] as const) {
+        const from = trainer[key];
+        const x = lerp(from.x, meet.x + (key === "attacker" ? -1 : 1) * ballScale * 6, p);
+        const y = lerp(from.y, meet.y, p) - Math.sin(p * Math.PI) * height * 0.18;
+        placeBall(scene, x, y, t * 30 * (key === "attacker" ? 1 : -1), "closed", ballScale);
+      }
+    } else {
+      if (!scene.tossBurst) {
+        scene.tossBurst = true;
+        emit(scene, 22, () => { const a = random(0, Math.PI * 2); const v = random(90, 240); return { x: meet.x, y: meet.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, gravity: 0, drag: 3.5, maxLife: random(260, 480), size: random(2, 5), color: pick(["#ffffff", "#fef08a", "#facc15"]), shape: pick(["star", "pixel"] as const), spin: random(-8, 8) }; });
+      }
+      const p = segment(t, TOSS_CLASH, 1);
+      const flash = 1 - segment(p, 0, 0.25);
+      if (flash > 0) shapes.star(meet.x, meet.y, 8, size * (0.2 + (1 - flash) * 0.35), size * 0.08, p * 3).fill({ color: 0xffffff, alpha: flash });
+      const loser: SideKey = first === "attacker" ? "defender" : "attacker";
+      const away = loser === "attacker" ? -1 : 1;
+      // 진 쪽 볼은 튕겨 나가 떨어지고, 선공 쪽 볼은 떠올라 반짝인다.
+      placeBall(scene, meet.x + away * p * width * 0.22, meet.y - Math.sin(p * Math.PI) * height * 0.12 + p * p * height * 0.45, p * 14 * away, "closed", ballScale, 1 - segment(p, 0.5, 1));
+      const rise = easeOutBack(segment(p, 0, 0.45));
+      const winX = meet.x + (first === "attacker" ? -1 : 1) * ballScale * 4 * (1 - rise);
+      const winY = meet.y - rise * height * 0.12 + Math.sin(scene.elapsed / 90) * 2;
+      const glow = 0.5 + Math.sin(scene.elapsed / 70) * 0.5;
+      shapes.circle(winX, winY, ballScale * (14 + glow * 4)).fill({ color: 0xfacc15, alpha: 0.18 + glow * 0.12 }).stroke({ width: 2, color: 0xfde68a, alpha: 0.9 });
+      placeBall(scene, winX, winY, 0, p > 0.75 ? "opening" : "closed", ballScale * 1.25);
+      stream(scene, delta, 22, () => ({ x: winX + random(-ballScale * 12, ballScale * 12), y: winY + random(-ballScale * 10, ballScale * 10), vx: random(-10, 10), vy: random(-50, -20), gravity: 0, drag: 0.5, maxLife: random(400, 700), size: random(2, 4), color: pick(["#facc15", "#fef08a", "#ffffff"]), shape: "star", spin: random(-3, 3) }));
+    }
+    if (scene.elapsed >= TOSS_MS) {
+      scene.introEntered = true;
+      startEntrance(sides.attacker);
+      startEntrance(sides.defender);
+    }
+  }
+
   // 등장: 몬스터볼 투척 → 섬광 → 포켓몬
   (["attacker", "defender"] as const).forEach((key) => {
     const side = sides[key];
     if (side.entrance === null) return;
     const t = clamp01(side.entrance / ENTRANCE_MS);
     const target = center(key);
-    const start = key === "attacker" ? { x: -24, y: height * 0.92 } : { x: width + 24, y: height * 0.08 };
+    const start = trainer[key];
     if (t < BALL_OPEN) {
       const p = easeOutCubic(t / BALL_OPEN);
       const x = lerp(start.x, target.x, p);
       const y = lerp(start.y, target.y, p) - Math.sin(p * Math.PI) * height * 0.22;
-      drawBall(shapes, x, y, 10, t * 26 * (key === "attacker" ? 1 : -1));
+      placeBall(scene, x, y, t * 26 * (key === "attacker" ? 1 : -1), "closed", ballScale);
       offsets[key].alpha = 0;
     } else {
       if (!side.entranceBurst) {
@@ -401,6 +528,7 @@ function update(scene: Scene, rawDelta: number) {
         emit(scene, 18, () => { const a = random(0, Math.PI * 2); const s = random(80, 200); return { x: target.x, y: target.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, gravity: 0, drag: 3.5, maxLife: random(300, 520), size: random(2, 4), color: pick(["#ffffff", "#dbeafe", "#fef9c3"]), shape: pick(["pixel", "star"] as const), spin: random(-6, 6) }; });
       }
       const open = segment(t, BALL_OPEN, BALL_OPEN + 0.22);
+      if (open < 1) placeBall(scene, target.x, target.y - size * 0.1, 0, open < 0.35 ? "opening" : "open", ballScale, 1 - open);
       shapes.circle(target.x, target.y, 8 + open * size * 0.7).fill({ color: 0xffffff, alpha: (1 - open) * 0.85 });
       const grow = easeOutBack(segment(t, BALL_OPEN, 0.9));
       offsets[key].sx *= grow;
@@ -483,9 +611,9 @@ function update(scene: Scene, rawDelta: number) {
     offsets[actor].sx *= 1 - fade * 0.6;
     if (fade > 0) {
       const at = center(actor);
-      const ball = actor === "attacker" ? { x: width * 0.06, y: height * 0.86 } : { x: width * 0.94, y: height * 0.12 };
+      const ball = actor === "attacker" ? { x: width * 0.06, y: height * 0.86 } : { x: width * 0.94, y: height * 0.2 };
       shapes.moveTo(ball.x, ball.y).lineTo(at.x, at.y + size * 0.2).stroke({ width: 3, color: 0xff5a5f, alpha: (1 - fade) * 0.9 });
-      drawBall(shapes, ball.x, ball.y, 9, 0);
+      placeBall(scene, ball.x, ball.y, 0, fade < 0.85 ? "open" : "closed", ballScale);
     }
   }
 
@@ -511,7 +639,9 @@ function update(scene: Scene, rawDelta: number) {
     const visible = !side.hidden || side.entrance !== null || (phase === "recall" && actor === key);
     const alpha = visible ? offset.alpha : 0;
     // 꼭 맞게 잘린 GIF는 픽셀 배율을, 여백 있는 96px PNG는 폭 기준 배율을 쓴다.
-    side.baseScale = side.frames ? Math.min(size / 96 * 1.5, size * 1.3 / Math.max(side.sprite.texture.height, 1)) : size / Math.max(side.sprite.texture.width, 1);
+    // GIF는 필드 픽셀 배율 그대로(가까운 공격 측을 조금 크게), 여백 있는 96px PNG는 조금 더 키운다. 너무 큰 포켓몬은 상한을 둔다.
+    const depth = key === "attacker" ? 1.1 : 1;
+    side.baseScale = Math.min(fieldScale * depth * (side.frames ? 1 : 1.35), size * 1.9 / Math.max(side.sprite.texture.height, 1));
     const facing = side.candidate.flip ? -1 : 1;
     const x = home[key].x + offset.x;
     const y = home[key].y + offset.y;

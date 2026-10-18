@@ -32,7 +32,8 @@ describe("도감 전투 선공", () => {
     expect(duel).toContain("firstTurnUserId");
     expect(ranking).toContain("firstTurnUserId");
     expect(duel).toContain("BattleCoin");
-    expect(ranking).toContain("BattleCoin");
+    // 랭킹전은 동전 대신 Pixi 장면에서 몬스터볼 던지기로 선공을 보여준다.
+    expect(ranking).toContain("firstTurn={battle.firstTurnUserId ?");
     expect(duel).toContain('setIntro("firstTurn")');
     // 랭킹전은 단계(step) 재생: 저장된 선공이 있으면 동전(intro)부터, 이후 공격마다 차징·공격·명중을 한 번씩 재생한다.
     expect(buildRankingBattleSteps(battle("d")).map((step) => `${step.phase}:${step.actor ?? "-"}`)).toEqual([
@@ -42,8 +43,7 @@ describe("도감 전투 선공", () => {
       "result:-",
     ]);
     expect(buildRankingBattleSteps(battle(null))[0].phase).toBe("charge");
-    expect(ranking).toContain('step.phase === "intro" && battle.firstTurnUserId && <div className={`${styles.coinToss}');
-    expect(ranking).toContain("<BattleCoin heads={battle.firstTurnUserId === battle.attackerId}");
+    expect(ranking).toContain('step.phase === "intro" && battle.firstTurnUserId && animated && <span aria-hidden className={styles.firstTurnBanner}');
     expect(styles).toContain(".firstTurn");
     expect(styles).toContain("will-change: transform");
     expect(styles).toContain("prefers-reduced-motion: reduce");
@@ -75,7 +75,7 @@ describe("도감 전투 선공", () => {
     expect(component).toContain("gravity");
     expect(component).toContain("rotateX");
     expect(duel).toContain("<BattleCoin");
-    expect(ranking).toContain("<BattleCoin");
+    expect(ranking).not.toContain("<BattleCoin");
     expect(duel).not.toContain('if (turn < 0) return <div className="text-center"><div className={styles.coinToss}');
   });
 });

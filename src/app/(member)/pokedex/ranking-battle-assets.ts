@@ -5,7 +5,8 @@ import type { BattleMotion } from "@/lib/pokedex/battle-effects";
 
 const POKEAPI_SPRITES = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon";
 const POKEAPI_PNG = /^https:\/\/raw\.githubusercontent\.com\/PokeAPI\/sprites\/master\/sprites\/pokemon\/(\d+)\.png$/;
-const POKEROGUE_ANIMS = "https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/battle_anims";
+const POKEROGUE_IMAGES = "https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images";
+const POKEROGUE_ANIMS = `${POKEROGUE_IMAGES}/battle_anims`;
 
 export type SpriteCandidate = {
   url: string;
@@ -56,3 +57,25 @@ export const BATTLE_EFFECT_SHEETS: Record<BattleMotion, { projectile?: EffectShe
 export function effectCell(frame: number) {
   return { x: frame % EFFECT_COLUMNS * EFFECT_CELL, y: Math.floor(frame / EFFECT_COLUMNS) * EFFECT_CELL, width: EFFECT_CELL, height: EFFECT_CELL };
 }
+
+/** PokéRogue 전투장은 320×180 필드에 배경(bg)과 발판(a: 플레이어, b: 상대, 320×132, 아래 정렬)을 겹친다. */
+export const FIELD = { width: 320, height: 180, baseHeight: 132 } as const;
+/** 발판 이미지를 보고 잡은 포켓몬 발 위치(필드 좌표) */
+export const FIELD_SPOTS = { attacker: { x: 102, y: 170 }, defender: { x: 216, y: 118 } } as const;
+
+const ARENAS = ["plains", "grass", "tall_grass", "meadow", "forest", "lake", "beach", "town", "mountain"] as const;
+
+/** 같은 전투 기록은 항상 같은 배경을 고른다. */
+export function battleArena(seed: string) {
+  let hash = 0;
+  for (const character of seed) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  const name = ARENAS[hash % ARENAS.length];
+  return { name, background: `${POKEROGUE_IMAGES}/arenas/${name}_bg.png`, attackerBase: `${POKEROGUE_IMAGES}/arenas/${name}_a.png`, defenderBase: `${POKEROGUE_IMAGES}/arenas/${name}_b.png` };
+}
+
+/** 몬스터볼 12×16 스프라이트: 닫힘 → 열리는 중 → 열림 */
+export const POKEBALL_SPRITES = {
+  closed: `${POKEROGUE_IMAGES}/pokeball/pb.png`,
+  opening: `${POKEROGUE_IMAGES}/pokeball/pb_opening.png`,
+  open: `${POKEROGUE_IMAGES}/pokeball/pb_open.png`,
+} as const;

@@ -14,6 +14,8 @@
 
 ## 3. 재생 정책
 
+- 전투장은 16:9 무대다. 상대 정보는 왼쪽 위, 내 정보는 오른쪽 아래에 둔다.
+- 선공은 양쪽 몬스터볼이 맞부딪친 뒤 선공 쪽 볼이 떠오르는 연출과 "OO 파티 선공!" 문구로 보여준다.
 - 전투는 선공 안내, 포켓몬 등장, 차징, 공격, 명중, HP 반영, 쓰러짐·교대, 결과 순으로 재생한다.
 - 공격마다 피해 수치와 타입 상성 문구를 표시한다. 타입 보정 1.2는 `효과가 굉장했다!`, 0.8은 `효과가 별로였다…`로 안내한다.
 - 사용자는 일시정지, 다시 보기, 2배속, 결과 보기(건너뛰기), 효과음 켜기/끄기를 사용할 수 있다.
@@ -36,8 +38,11 @@
 | --- | --- | --- |
 | 포켓몬 정적 이미지(기존) | `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{번호}.png` | PokeAPI/sprites 저장소. 뒷모습은 `.../back/{번호}.png` |
 | 포켓몬 애니메이션 | `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/{번호}.gif`, `.../showdown/back/{번호}.gif` | 공격 측은 뒷모습, 방어 측은 앞모습 |
+| 전투 배경·발판 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/arenas/{배경}_bg.png`, `..._a.png`(내 발판), `..._b.png`(상대 발판) | 320×180 필드. 전투 id로 배경 9종 중 하나를 고정 선택한다 |
+| 몬스터볼 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokeball/pb.png`, `pb_opening.png`, `pb_open.png` | 등장·회수·선공 볼 던지기에 사용 |
 | 타입 이펙트 시트 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/battle_anims/{파일명}.png` | 96px 셀 5열 격자. 사용할 셀은 이미지를 보고 직접 골랐다 |
 
+- 외부 배경을 불러오지 못하면 기존 전투장 그림(`public/pokedex/effects/battle-arena.webp`)이 CSS 배경으로 보이고, 몬스터볼은 Graphics로 그린다.
 - 위 주소는 모두 `access-control-allow-origin: *`로 WebGL 텍스처 로드가 가능함을 확인했다. 주소 목록은 `src/app/(member)/pokedex/ranking-battle-assets.ts`에 둔다.
 - 스프라이트·이펙트 그림의 캐릭터와 디자인 권리는 Pokémon/Nintendo/Creatures/GAME FREAK에 있다. PokeAPI/sprites와 PokéRogue 에셋 저장소는 이를 모아 둔 공개 저장소이며, 정식 라이선스가 아니다. 비공개 동아리 회원 화면에서만 쓰고, 공개 배포·수익화로 범위가 바뀌면 자체·라이선스 에셋으로 교체한다([조사 문서](../research/pokemon-webgame-stack-research-2026-08-03.md)의 IP 경계 참고).
 - PokéRogue의 battle-anims 데이터(AGPL)와 Pokémon Showdown 클라이언트 코드는 복사하지 않는다. 볼 투척 → 등장, 차징 → 발사 → 히트스톱 → 넉백, HP 감소 속도 같은 연출 타이밍과 구성만 참고한다.

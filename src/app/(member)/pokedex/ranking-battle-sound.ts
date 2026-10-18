@@ -3,6 +3,7 @@ import type { BattleMotion } from "@/lib/pokedex/battle-effects";
 import type { ImpactTier } from "./ranking-battle-fx";
 
 export type BattleSound =
+  | { kind: "toss" }
   | { kind: "charge" }
   | { kind: "attack"; motion: BattleMotion }
   | { kind: "hit"; tier: ImpactTier }
@@ -37,6 +38,11 @@ export function soundRecipe(sound: BattleSound): { tones: Tone[]; noises: Noise[
   const tone = (type: OscillatorType, from: number, to: number, at: number, length: number, volume: number): Tone => ({ type, from, to, at, length, volume });
   const noise = (at: number, length: number, volume: number, filter: BiquadFilterType, from: number, to: number): Noise => ({ at, length, volume, filter, from, to });
   switch (sound.kind) {
+    // 선공 결정: 볼이 날아가는 소리 → 맞부딪치는 소리 → 반짝임 → 등장(약 1.15초)
+    case "toss": return {
+      tones: [tone("triangle", 2_100, 1_800, 0.48, 0.09, 0.22), tone("sine", 3_200, 3_000, 0.48, 0.12, 0.1), tone("triangle", 1_319, 1_319, 0.62, 0.1, 0.12), tone("triangle", 1_760, 1_760, 0.72, 0.16, 0.12), tone("square", 520, 1_320, 1.17, 0.14, 0.1), tone("sine", 1_320, 1_760, 1.31, 0.12, 0.1)],
+      noises: [noise(0, 0.42, 0.2, "highpass", 1_200, 3_500), noise(0.48, 0.06, 0.35, "bandpass", 3_000, 2_000)],
+    };
     case "charge": return { tones: [tone("sine", 280, 880, 0, 0.26, 0.18)], noises: [] };
     case "sendout": return { tones: [tone("square", 520, 1_320, 0.02, 0.14, 0.12), tone("sine", 1_320, 1_760, 0.16, 0.12, 0.12)], noises: [noise(0, 0.06, 0.35, "highpass", 2_000, 4_000)] };
     case "faint": return { tones: [tone("square", 660, 140, 0, 0.62, 0.14)], noises: [] };
@@ -149,7 +155,8 @@ export function createBattleAudio() {
 
 /** 재생 단계에 맞는 효과음. 결과 보기로 건너뛴 결과에는 소리를 내지 않는다. */
 export function soundForStep(phase: string, motion: BattleMotion, tier: ImpactTier, skipped: boolean): BattleSound | null {
-  if (phase === "intro" || phase === "sendout") return { kind: "sendout" };
+  if (phase === "intro") return { kind: "toss" };
+  if (phase === "sendout") return { kind: "sendout" };
   if (phase === "charge") return { kind: "charge" };
   if (phase === "attack") return { kind: "attack", motion };
   if (phase === "impact") return { kind: "hit", tier };
