@@ -123,6 +123,8 @@ export function RankingPreview({
   const [editing, setEditing] = useState<DeckKind>("defense");
   const [activeDefenseSlot, setActiveDefenseSlot] = useState<number | null>(entry.activeDefenseSlot);
   const [saved, setSaved] = useState<string>();
+  // 공격·리롤 실패 문구. 덱 탭의 저장 배지(saved)와 달리 공격 탭에서 보여준다.
+  const [attackError, setAttackError] = useState<string>();
   const [attacksUsed, setAttacksUsed] = useState(entry.attacksToday);
   const [rerolled, setRerolled] = useState(false);
   const [opponents, setOpponents] = useState<RankingLeagueState["opponents"]>(data.opponents);
@@ -168,10 +170,15 @@ export function RankingPreview({
     const read = PREVIEW_EXTRA.opponentReads.find((item) => item.allocationId === allocationId);
     if (!opponent || attacksLeft <= 0) return;
     if (!isPreview) {
+      setAttackError(undefined);
       startTransition(async () => {
-        const result = await startRankingBattle(allocationId, slots.attack);
-        if (result.error) setSaved(result.error);
-        if (result.battle) setBattle(result.battle);
+        try {
+          const result = await startRankingBattle(allocationId, slots.attack);
+          if (result.error) setAttackError(result.error);
+          if (result.battle) setBattle(result.battle);
+        } catch {
+          setAttackError("공격을 시작하지 못했어요. 잠시 후 다시 시도해주세요.");
+        }
         router.refresh();
       });
       return;
@@ -228,10 +235,15 @@ export function RankingPreview({
 
   function reroll() {
     if (isPreview) { setRerolled(true); setOpponents(REROLLED_OPPONENTS); return; }
+    setAttackError(undefined);
     startTransition(async () => {
-      const result = await rerollRankingOpponents();
-      if (result.error) setSaved(result.error);
-      else setRerolled(true);
+      try {
+        const result = await rerollRankingOpponents();
+        if (result.error) setAttackError(result.error);
+        else setRerolled(true);
+      } catch {
+        setAttackError("상대를 다시 뽑지 못했어요. 잠시 후 다시 시도해주세요.");
+      }
       router.refresh();
     });
   }
@@ -584,6 +596,8 @@ export function RankingPreview({
               );
             })}
           </div>
+
+          {attackError && <p role="alert" style={{ margin: 0, padding: "12px 16px", borderRadius: 12, background: "var(--wds-status-negative-bg, #fef2f2)", color: "var(--wds-status-negative, #dc2626)", fontSize: 13.5, fontWeight: 600 }}>{attackError}</p>}
 
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 18px", borderRadius: 12, background: "var(--wds-fill-alternative)" }}>
             <span style={{ fontSize: 13, color: "var(--wds-label-neutral)", lineHeight: 1.55 }}>

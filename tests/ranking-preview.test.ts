@@ -10,6 +10,14 @@ describe("랭킹전 프리뷰", () => {
     expect(preview).toContain("pickerRef.current?.scrollIntoView");
   });
 
+  it("공격·리롤 실패 문구를 공격 탭에서 보여준다", async () => {
+    const preview = await readFile("src/app/ranking-preview/RankingPreview.tsx", "utf8");
+
+    expect(preview).toContain("if (result.error) setAttackError(result.error);");
+    expect(preview).toContain('{attackError && <p role="alert"');
+    expect(preview).not.toContain("if (result.error) setSaved(result.error);\n        if (result.battle)");
+  });
+
   it("덱 카드 자체를 누르면 편집 대상으로 바꾼다", async () => {
     const preview = await readFile("src/app/ranking-preview/RankingPreview.tsx", "utf8");
 
@@ -83,5 +91,14 @@ describe("랭킹전 프리뷰", () => {
     const preview = await readFile("src/app/ranking-preview/RankingPreview.tsx", "utf8");
 
     expect(preview).not.toContain("if (!isPreview && !data.entry)");
+  });
+});
+
+describe("랭킹전 이미지 CSP", () => {
+  it("포켓몬·전투장 외부 이미지와 PixiJS 텍스처 로드를 허용한다", async () => {
+    const config = await readFile("next.config.ts", "utf8");
+    expect(config).toMatch(/img-src[^"]*https:\/\/raw\.githubusercontent\.com/);
+    expect(config).toMatch(/connect-src[^"]*https:\/\/raw\.githubusercontent\.com/);
+    expect(config).toContain("worker-src 'self' blob:");
   });
 });

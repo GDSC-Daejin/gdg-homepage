@@ -58,18 +58,11 @@ describe("랭킹전 베타 수정", () => {
   });
 
   it("보조 함수는 PostgREST에서 직접 부를 수 없다", async () => {
-    const sql = await readFile("supabase/migrations/0124_pokedex_ranking_beta_fixes.sql", "utf8");
+    const sql = await readFile("supabase/migrations/0126_pokedex_ranking_beta_fixes.sql", "utf8");
 
     expect(sql).toContain("revoke execute on function public.pokedex_rank_game_day(timestamptz) from public, anon, authenticated;");
     expect(sql).toContain("revoke execute on function public.pokedex_rank_kst_today() from public, anon, authenticated;");
     expect(sql).toContain("revoke execute on function public.pokedex_rank_allocate_for(uuid, date, uuid) from public, anon, authenticated;");
-  });
-
-  it("공격 결과에 팀이 없으면 상세를 다시 읽어 재생 화면을 지킨다", async () => {
-    const actions = await readFile("src/actions/pokedex-ranking.ts", "utf8");
-
-    expect(actions).toContain("Array.isArray(battle.attackerTeam) && Array.isArray(battle.defenderTeam)");
-    expect(actions).toContain("return getRankingBattleDetail(battle.id);");
   });
 
   it("사이드바 랭킹전은 /pokedex/ranking으로 가고, 예전 /ranking 주소는 오픈 뒤 그쪽으로 보낸다", async () => {

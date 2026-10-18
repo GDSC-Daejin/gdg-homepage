@@ -71,10 +71,12 @@ export async function startRankingBattle(allocationId: string, attackPresetSlot:
   const { data, error } = await supabase.rpc("pokedex_rank_start_battle", { p_allocation: allocationId, p_attack_slot: attackPresetSlot });
   if (error || !data) return { error: toKoreanError(error) };
   refresh();
-  const battle = data as RankingBattleDetail;
-  // 0124 이전 RPC는 팀 없이 결과만 돌려준다. 재생 화면은 양측 팀이 있어야 그려지므로 상세를 다시 읽는다.
-  if (Array.isArray(battle.attackerTeam) && Array.isArray(battle.defenderTeam)) return { battle };
-  return getRankingBattleDetail(battle.id);
+  // 시작 RPC는 결과 요약(id·승자·로그)만 돌려준다. 재생에 필요한 양측 팀은 상세 RPC로 다시 읽는다.
+  const battleId = (data as { id?: unknown }).id;
+  if (typeof battleId !== "string") return { error: "전투 결과를 불러오지 못했어요. 기록 탭에서 확인해주세요." };
+  const detail = await supabase.rpc("pokedex_rank_battle_detail", { p_battle: battleId });
+  if (detail.error || !detail.data) return { error: "전투는 기록됐지만 결과를 불러오지 못했어요. 기록 탭에서 확인해주세요." };
+  return { battle: detail.data as RankingBattleDetail };
 }
 
 export async function getRankingBattleDetail(battleId: string): Promise<ActionResult & { battle?: RankingBattleDetail }> {
