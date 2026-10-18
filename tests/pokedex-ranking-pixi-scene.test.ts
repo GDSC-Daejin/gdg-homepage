@@ -2,8 +2,8 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { buildRankingBattleSteps } from "@/app/(member)/pokedex/RankingBattleAnimation";
 import { healthColor, impactProfile, sceneQuality } from "@/app/(member)/pokedex/ranking-battle-fx";
-import { BATTLE_EFFECT_SHEETS, battleArena, battleSpriteCandidates, effectCell, POKEBALL_SPRITES } from "@/app/(member)/pokedex/ranking-battle-assets";
-import { soundForStep, soundRecipe } from "@/app/(member)/pokedex/ranking-battle-sound";
+import { BATTLE_BGM, BATTLE_EFFECT_SHEETS, BATTLE_SOUND_SAMPLES, battleArena, battleSpriteCandidates, effectCell, POKEBALL_PARTICLES, POKEBALL_SPRITES } from "@/app/(member)/pokedex/ranking-battle-assets";
+import { sampleCues, soundForStep, soundRecipe } from "@/app/(member)/pokedex/ranking-battle-sound";
 import { battleEffect, type BattleMotion, type BattleType } from "@/lib/pokedex/battle-effects";
 import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pokedex/ranking-league";
 
@@ -140,6 +140,28 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(scene).toContain("holdForToss");
     // 선공 연출과 등장이 intro 단계 안에 들어가야 첫 공격과 겹치지 않는다.
     expect(buildRankingBattleSteps(battle())[0].duration).toBeGreaterThanOrEqual(1_150 + 820);
+  });
+
+  it("이미지 로딩이 늦어도 포켓몬이 숨은 채로 남지 않는다", async () => {
+    const [scene, animation] = await Promise.all([read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx"), read("src/app/(member)/pokedex/RankingBattleAnimation.tsx")]);
+    // 선공 연출이 intro 안에 끝나지 못하면 다음 단계로 넘어갈 때 바로 등장시킨다.
+    expect(scene).toContain('if (scene.phase === "intro" && !scene.introEntered) enterBoth(scene);');
+    // 교대할 팀 이미지를 장면이 열릴 때 미리 받아 둔다.
+    expect(scene).toContain("for (const pokemon of props.teams[key]) void loadVisual(");
+    expect(animation).toContain("teams={{ attacker: battle.attackerTeam, defender: battle.defenderTeam }}");
+  });
+
+  it("볼 방출 파티클·효과음 샘플·배경음악을 외부 URL로 쓰고 실패하면 대체한다", async () => {
+    const [scene, sound, animation, config] = await Promise.all([read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx"), read("src/app/(member)/pokedex/ranking-battle-sound.ts"), read("src/app/(member)/pokedex/RankingBattleAnimation.tsx"), read("next.config.ts")]);
+    for (const url of [POKEBALL_PARTICLES, BATTLE_BGM, ...Object.values(BATTLE_SOUND_SAMPLES)]) expect(url).toMatch(/^https:\/\/raw\.githubusercontent\.com\/pagefaultgames\/pokerogue-assets\/beta\//);
+    expect(scene).toContain("if (!emitSparks(");
+    expect(sampleCues({ kind: "sendout" })).toEqual([{ sample: "throw", at: 0 }, { sample: "release", at: 0.38 }]);
+    expect(sampleCues({ kind: "attack", motion: "bolt" })).toBeNull();
+    expect(sound).toContain("cues.every((cue) => samples.has(cue.sample))");
+    expect(animation).toContain("aria-pressed={musicOn}");
+    expect(animation).toContain("writeSoundPreference(next, MUSIC_STORAGE_KEY)");
+    expect(animation).toContain("music.close()");
+    expect(config).toContain("media-src 'self' https://raw.githubusercontent.com");
   });
 
   it("효과음은 단계마다 정해지고, 결과 보기로 건너뛰면 울리지 않는다", async () => {

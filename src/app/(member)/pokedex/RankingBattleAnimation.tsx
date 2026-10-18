@@ -7,7 +7,7 @@ import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pok
 import { PixiRankingBattleScene, TOSS_MS, type RankingScenePhase } from "./PixiRankingBattleScene";
 import { battleEffect } from "@/lib/pokedex/battle-effects";
 import { healthColor, healthPercent, impactProfile, impactTier } from "./ranking-battle-fx";
-import { createBattleAudio, readSoundPreference, soundForStep, writeSoundPreference, type BattleAudio } from "./ranking-battle-sound";
+import { createBattleAudio, createBattleMusic, MUSIC_STORAGE_KEY, readSoundPreference, soundForStep, writeSoundPreference, type BattleAudio, type BattleMusic } from "./ranking-battle-sound";
 import styles from "./DuelPanel.module.css";
 
 type Step = { turn: number; phase: RankingScenePhase; actor: "attacker" | "defender" | null; duration: number };
@@ -79,6 +79,9 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
   const [replayKey, setReplayKey] = useState(0);
   const [skipped, setSkipped] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
+  const [musicOn, setMusicOn] = useState(true);
+  const musicRef = useRef<BattleMusic | null>(null);
+  const musicWantedRef = useRef(false);
   const progressRef = useRef({ key: "", elapsed: 0 });
   const audioRef = useRef<BattleAudio | null>(null);
   const step = steps[stepIndex] ?? steps.at(-1)!;
@@ -91,16 +94,21 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
   useEffect(() => {
     setReduced(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
     setSoundOn(readSoundPreference());
+    setMusicOn(readSoundPreference(MUSIC_STORAGE_KEY));
   }, []);
 
   // 효과음: 모달을 연 클릭처럼 이미 사용자 입력이 있었을 때만 AudioContext를 만든다. 닫히면 정리한다.
   useEffect(() => {
     const audio = createBattleAudio();
+    const music = createBattleMusic();
     audioRef.current = audio;
+    musicRef.current = music;
     if (navigator.userActivation?.hasBeenActive) audio.unlock();
     return () => {
       audio.close();
       audioRef.current = null;
+      music.close();
+      musicRef.current = null;
     };
   }, []);
 
@@ -143,8 +151,21 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
     else audioRef.current?.resume();
   }, [paused]);
 
+  // 배경음악: 재생 중일 때만 틀고, 일시정지면 멈추고, 결과(건너뛰기 포함)에서는 처음으로 되감는다.
+  const musicWanted = musicOn && sceneAvailable && !reduced && !paused && !complete;
+  musicWantedRef.current = musicWanted;
+  useEffect(() => {
+    const music = musicRef.current;
+    if (!music) return;
+    if (musicWanted && readSoundPreference(MUSIC_STORAGE_KEY) && !window.matchMedia("(prefers-reduced-motion: reduce)").matches && navigator.userActivation?.hasBeenActive) music.play();
+    else if (complete) music.stop();
+    else music.pause();
+  }, [complete, musicWanted]);
+
   function unlockAudio() {
     audioRef.current?.unlock();
+    // 자동 재생이 막혔던 경우에도 버튼을 누르는 순간(사용자 입력) 다시 틀어 본다.
+    if (musicWantedRef.current) musicRef.current?.play();
   }
 
   if (!turn || !attacker || !defender) return <BattleLog battle={battle} profileId={profileId} />;
@@ -167,7 +188,7 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
   return <div className="text-center">
     <p className="text-sm font-semibold text-primary">랭킹전 시작!</p>
     <div className={`${styles.battleArena} ${styles.rankingStage} relative mt-7 ${impact && tier === "strong" ? styles.screenShake : ""} ${paused ? styles.fxPaused : ""}`} style={fxStyle}>
-      {animated && <PixiRankingBattleScene arenaSeed={battle.id} firstTurn={battle.firstTurnUserId ? battle.firstTurnUserId === battle.attackerId ? "attacker" : "defender" : null} attacker={attacker} defender={defender} phase={step.phase} actor={step.actor} duration={step.duration} multiplier={multiplier} winner={winnerSide} stepKey={stepKey} replayKey={replayKey} speed={speed} paused={paused} onUnavailable={() => { setSceneAvailable(false); setStepIndex(steps.length - 1); }} />}
+      {animated && <PixiRankingBattleScene arenaSeed={battle.id} firstTurn={battle.firstTurnUserId ? battle.firstTurnUserId === battle.attackerId ? "attacker" : "defender" : null} teams={{ attacker: battle.attackerTeam, defender: battle.defenderTeam }} attacker={attacker} defender={defender} phase={step.phase} actor={step.actor} duration={step.duration} multiplier={multiplier} winner={winnerSide} stepKey={stepKey} replayKey={replayKey} speed={speed} paused={paused} onUnavailable={() => { setSceneAvailable(false); setStepIndex(steps.length - 1); }} />}
       {step.phase === "intro" && battle.firstTurnUserId && animated && <span aria-hidden className={styles.firstTurnBanner} style={{ "--toss-delay": `${TOSS_MS * 0.45 / speed}ms` } as CSSProperties}>{battle.firstTurnUserId === battle.attackerId ? "공격 파티" : "방어 파티"} 선공!</span>}
       {impact && damage > 0 && <span key={stepKey} aria-hidden className={`${styles.damagePop} ${step.actor === "attacker" ? styles.damageOnRight : styles.damageOnLeft} ${tier === "strong" ? styles.damageStrong : tier === "weak" ? styles.damageWeak : ""}`}>-{damage}</span>}
       {complete && animated && <span aria-hidden className={`${styles.winBanner} ${winnerSide === "attacker" ? styles.winLeft : styles.winRight}`}>WIN!</span>}
@@ -175,7 +196,7 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
       <RankingBattleStatus pokemon={attacker} health={attackerHealth} fromHealth={attackerFrom} side="player" winner={complete && winnerSide === "attacker"} />
     </div>
     <div className={styles.battleMessage} aria-live="polite"><p>{message}</p></div>
-    <div className="mt-5 flex flex-wrap justify-center gap-2" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}><Button type="button" variant="secondary" size="sm" onClick={() => setPaused((value) => !value)} disabled={complete}>{paused ? "계속" : "일시정지"}</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); setStepIndex(0); setPaused(false); setSkipped(false); setReplayKey((key) => key + 1); }} disabled={reduced}>다시 보기</Button><Button type="button" variant="ghost" size="sm" onClick={() => setSpeed((value) => value === 1 ? 2 : 1)} disabled={complete}>{speed}배속</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); setStepIndex(steps.length - 1); setSkipped(true); }} disabled={complete}>결과 보기</Button><Button type="button" variant="ghost" size="sm" aria-pressed={soundOn} onClick={() => { const next = !soundOn; if (!next) audioRef.current?.stopAll(); setSoundOn(next); writeSoundPreference(next); }}>효과음<span aria-hidden className="ml-1">{soundOn ? "켬" : "끔"}</span></Button></div>
+    <div className="mt-5 flex flex-wrap justify-center gap-2" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}><Button type="button" variant="secondary" size="sm" onClick={() => setPaused((value) => !value)} disabled={complete}>{paused ? "계속" : "일시정지"}</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); musicRef.current?.stop(); if (musicOn && sceneAvailable) musicRef.current?.play(); setStepIndex(0); setPaused(false); setSkipped(false); setReplayKey((key) => key + 1); }} disabled={reduced}>다시 보기</Button><Button type="button" variant="ghost" size="sm" onClick={() => setSpeed((value) => value === 1 ? 2 : 1)} disabled={complete}>{speed}배속</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); setStepIndex(steps.length - 1); setSkipped(true); }} disabled={complete}>결과 보기</Button><Button type="button" variant="ghost" size="sm" aria-pressed={soundOn} onClick={() => { const next = !soundOn; if (!next) audioRef.current?.stopAll(); setSoundOn(next); writeSoundPreference(next); }}>효과음<span aria-hidden className="ml-1">{soundOn ? "켬" : "끔"}</span></Button><Button type="button" variant="ghost" size="sm" aria-pressed={musicOn} onClick={() => { const next = !musicOn; setMusicOn(next); writeSoundPreference(next, MUSIC_STORAGE_KEY); }}>배경음악<span aria-hidden className="ml-1">{musicOn ? "켬" : "끔"}</span></Button></div>
     {(complete || !sceneAvailable) && <div className={`mt-8 text-left ${animated && !skipped ? styles.resultReveal : ""}`}><BattleLog battle={battle} profileId={profileId} /></div>}
   </div>;
 }
