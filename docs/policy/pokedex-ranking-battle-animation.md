@@ -26,7 +26,7 @@
 - 기존 픽셀풍, 타입별 효과 색상, 몬스터볼 자산을 유지한다. 타입 색·연출 계열은 `src/lib/pokedex/battle-effects.ts` 한 곳에서 정의한다.
 - 포켓몬 스프라이트와 이펙트 이미지는 아래 외부 출처의 URL을 런타임에만 불러온다. 이미지·오디오 파일을 저장소(`public/` 포함)에 커밋하지 않는다. 저장소가 공개라 커밋하면 재배포가 되기 때문이다.
 - 외부 이미지를 불러오지 못하면 정적 PNG와 Pixi Graphics·파티클 연출로 대체하고, 전투 재생은 멈추지 않는다.
-- 효과음은 아래 외부 샘플(몬스터볼·명중·기절·차징)을 쓰고, 불러오지 못하거나 해당 샘플이 없는 소리(계열별 공격·승리)는 Web Audio API로 코드에서 합성한다. 전투 배경음악도 외부 URL로 재생한다. 오디오 파일은 저장소에 커밋하지 않는다.
+- 효과음은 모두 아래 외부 샘플(몬스터볼·타입별 공격·명중·기절·차징·승리)을 쓰고, 불러오지 못한 소리만 Web Audio API로 코드에서 합성한다. 전투 배경음악도 외부 URL로 재생한다. 오디오 파일은 저장소에 커밋하지 않는다.
 - 효과음과 배경음악은 각각 기본값 켜짐이고, 전투 모달의 토글로 따로 끌 수 있으며 선택은 브라우저에 저장한다.
 - 셰이더와 새 캐릭터 일러스트는 추가하지 않는다.
 - PixiJS는 전투 모달을 열 때만 불러온다. 랭킹 홈·공격·덱·기록 화면의 초기 번들에는 포함하지 않는다.
@@ -41,10 +41,11 @@
 | 포켓몬 애니메이션 | `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/{번호}.gif`, `.../showdown/back/{번호}.gif` | 공격 측은 뒷모습, 방어 측은 앞모습 |
 | 전투 배경·발판 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/arenas/{배경}_bg.png`, `..._a.png`(내 발판), `..._b.png`(상대 발판) | 320×180 필드. 전투 id로 배경 9종 중 하나를 고정 선택한다 |
 | 몬스터볼 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokeball/pb.png`, `pb_opening.png`, `pb_open.png` | 등장·회수·선공 볼 던지기에 사용 |
-| 몬스터볼 방출 파티클 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/effects/pb_particles.json`(+ `.png`) | 볼이 열릴 때·선공 볼이 부딪칠 때 원형으로 퍼지는 별·빛 조각. 아틀라스 JSON은 런타임에 읽기만 한다 |
-| 효과음 샘플 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/se/{pb_throw,pb_rel,hit,hit_strong,hit_weak,faint,charge}.wav` | 저장소 REUSE.toml 기준 원작 게임에서 가져온 소리 |
+| 몬스터볼 방출 파티클 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/effects/pb_particles.png` | 볼이 열릴 때·선공 볼이 부딪칠 때 원형으로 퍼지는 별·빛 조각. 같은 이름의 아틀라스 JSON은 저장소 REUSE에서 AGPL로 분류돼 쓰지 않고, PNG의 불투명 픽셀 덩어리를 직접 잘라 쓴다 |
+| 효과음 샘플 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/se/{pb_throw,pb_rel,hit,hit_strong,hit_weak,faint,charge,level_up_fanfare}.wav` | 저장소 REUSE.toml 기준 원작 게임에서 가져온 소리. 승리음은 level_up_fanfare |
+| 타입별 공격음 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/battle_anims/{파일}` | 타입마다 대표 기술 소리 1개(예: 불꽃 Ember, 전기 Electricity1). `PRSFX-` 접두 파일은 Pokémon Reborn 팀 제작(LicenseRef-POKEMON-REBORN), 나머지는 원작 유래. 목록은 `ranking-battle-assets.ts` |
 | 전투 배경음악 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/bgm/battle_trainer.mp3` | 약 2.6MB. 모달을 열고 배경음악이 켜져 있을 때만 받는다. 루프 지점 데이터(AGPL)는 쓰지 않고 파일 전체를 반복한다 |
-| 타입 이펙트 시트 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/battle_anims/{파일명}.png` | 96px 셀 5열 격자. 사용할 셀은 이미지를 보고 직접 골랐다 |
+| 타입 이펙트 시트 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/battle_anims/{파일명}.png` | 96px 셀 5열 격자. 계열 기본값과 타입별 시트(얼음·독·바위·땅·강철·격투·드래곤·비행·고스트·에스퍼·페어리·벌레)를 쓴다. 사용할 셀은 이미지를 보고 직접 골랐다. 저장소 REUSE에 별도 표기가 없다 |
 
 - 외부 배경을 불러오지 못하면 기존 전투장 그림(`public/pokedex/effects/battle-arena.webp`)이 CSS 배경으로 보이고, 몬스터볼은 Graphics로 그린다.
 - 위 주소는 모두 `access-control-allow-origin: *`로 WebGL 텍스처 로드가 가능함을 확인했다. 주소 목록은 `src/app/(member)/pokedex/ranking-battle-assets.ts`에 둔다.
@@ -53,7 +54,7 @@
 
 ## 6. 효과음
 
-- 공격(계열별), 명중(상성에 따라 강·보통·약), 기절, 등장(볼 던지기·열림), 결과 소리를 낸다. 샘플이 있는 소리는 샘플을, 나머지는 합성음을 쓴다.
+- 공격(타입별), 명중(상성에 따라 강·보통·약), 기절, 등장(볼 던지기·열림), 결과 소리를 낸다. 공격음은 명중음과 겹치지 않게 0.9초에서 줄이고, 이번 전투에 나오는 타입의 공격음만 받는다.
 - 배경음악은 재생 중에만 틀고, 일시정지하면 멈추며, 결과(건너뛰기 포함)에서는 처음으로 되감는다. 자동 재생이 막히면 무음으로 진행하고 다음 버튼 입력 때 다시 시도한다.
 - AudioContext는 사용자 입력 이후에만 만든다. 일시정지하면 소리도 멈추고, 2배속이면 소리 길이도 짧아진다. 결과 보기(건너뛰기)와 `prefers-reduced-motion`에서는 재생하지 않고, 모달을 닫으면 정리한다.
 - 토글은 `aria-pressed`를 가진 버튼으로 두고, 선택은 localStorage에 저장한다. 저장소 접근에 실패하면 기본값(켜짐)을 쓴다.

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { RankingPokemon } from "@/lib/pokedex/ranking-league";
 import { battleEffect, type BattleMotion, type BattlePalette } from "@/lib/pokedex/battle-effects";
-import { BATTLE_EFFECT_SHEETS, battleArena, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, POKEBALL_PARTICLES, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
+import { battleArena, effectSheetsFor, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, particleBoxes, POKEBALL_PARTICLES, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
 import { clamp01, easeInCubic, easeOutBack, easeOutCubic, impactProfile, lerp, sceneQuality, segment, type ImpactProfile } from "./ranking-battle-fx";
 
 export type RankingScenePhase = "intro" | "sendout" | "charge" | "attack" | "impact" | "recall" | "result";
@@ -120,6 +120,9 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
     async function mount() {
       try {
         const [pixi] = await Promise.all([import("pixi.js"), import("pixi.js/gif")]);
+        // 배경·발판·볼은 포켓몬 이미지를 기다리는 동안 미리 받아 둔다(장면이 열리자마자 보이도록).
+        const arenaUrls = battleArena(latest.current.arenaSeed);
+        void pixi.Assets.load([arenaUrls.background, arenaUrls.attackerBase, arenaUrls.defenderBase, ...Object.values(POKEBALL_SPRITES)]).catch(() => undefined);
         const quality = sceneQuality(target.clientWidth, window.devicePixelRatio);
         app = new pixi.Application();
         await app.init({ resizeTo: target, backgroundAlpha: 0, antialias: false, autoDensity: true, resolution: quality.resolution, preference: "webgl" });
@@ -166,7 +169,10 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
         sceneRef.current = scene;
         loadArena(scene, props.arenaSeed);
         // 교대할 포켓몬 이미지를 미리 받아 둔다(Assets 캐시). 실패해도 교대 시점에 다시 시도한다.
-        for (const key of ["attacker", "defender"] as const) for (const pokemon of props.teams[key]) void loadVisual(pixi, pokemon.imagePath, key).catch(() => undefined);
+        for (const key of ["attacker", "defender"] as const) for (const pokemon of props.teams[key]) {
+          void loadVisual(pixi, pokemon.imagePath, key).catch(() => undefined);
+          loadTypeAssets(scene, pokemon.battleType);
+        }
         if (props.phase === "intro" && props.firstTurn) holdForToss(scene);
         for (const type of new Set([props.attacker.battleType, props.defender.battleType])) loadTypeAssets(scene, type);
         app.ticker.add((ticker) => { if (!scene.paused) update(scene, Math.min(ticker.deltaMS, 50)); });
@@ -280,19 +286,23 @@ function loadArena(scene: Scene, seed: string) {
   void load(arena.background, scene.arena.background);
   void load(arena.attackerBase, scene.arena.attackerBase);
   void load(arena.defenderBase, scene.arena.defenderBase);
-  // PokéRogue 아틀라스는 Phaser(TexturePacker 다중 텍스처) 형식이라 Pixi Spritesheet로 바로 읽히지 않는다. 프레임 좌표만 읽어 잘라 쓴다.
-  void fetch(POKEBALL_PARTICLES)
-    .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
-    .then(async (atlas: { textures?: { image: string; frames: { frame: { x: number; y: number; w: number; h: number } }[] }[] }) => {
-      const page = atlas.textures?.[0];
-      if (!page?.frames?.length) return;
-      const base: import("pixi.js").Texture = await scene.pixi.Assets.load(new URL(page.image, POKEBALL_PARTICLES).href);
-      base.source.scaleMode = "nearest";
-      scene.sparks.textures = page.frames.map(({ frame }) => new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(frame.x, frame.y, frame.w, frame.h) }));
-    })
-    .catch(() => {
-      // 아틀라스가 없으면 Graphics 파티클만 쓴다.
-    });
+  // 파티클 이미지를 받아 불투명 픽셀 덩어리마다 한 조각으로 자른다(AGPL 아틀라스 JSON은 쓰지 않는다).
+  scene.pixi.Assets.load(POKEBALL_PARTICLES).then((base: import("pixi.js").Texture) => {
+    const image = base.source.resource as CanvasImageSource | undefined;
+    if (!image) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = base.source.width;
+    canvas.height = base.source.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return;
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const boxes = particleBoxes((x, y) => pixels[(y * canvas.width + x) * 4 + 3], canvas.width, canvas.height);
+    base.source.scaleMode = "nearest";
+    scene.sparks.textures = boxes.map((box) => new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(box.x, box.y, box.w, box.h) }));
+  }, () => {
+    // 이미지가 없으면 Graphics 파티클만 쓴다.
+  });
   for (const [state, url] of Object.entries(POKEBALL_SPRITES) as [BallState, string][]) {
     scene.pixi.Assets.load(url).then((texture: import("pixi.js").Texture) => {
       texture.source.scaleMode = "nearest";
@@ -392,16 +402,19 @@ function applyVisual(side: Side, visual: Visual) {
   }
 }
 
+/** 같은 시트를 투사체·명중이 다른 셀로 쓰므로 URL과 셀 목록을 함께 키로 쓴다. */
+const sheetKey = (sheet: EffectSheet) => `${sheet.url}#${sheet.frames.join(",")}`;
+
 function loadSheet(scene: Scene, sheet: EffectSheet | undefined) {
-  if (!sheet || scene.sheets.has(sheet.url)) return;
-  scene.sheets.set(sheet.url, null);
+  if (!sheet || scene.sheets.has(sheetKey(sheet))) return;
+  scene.sheets.set(sheetKey(sheet), null);
   scene.pixi.Assets.load(sheet.url).then((base: import("pixi.js").Texture) => {
     base.source.scaleMode = "nearest";
     const frames = sheet.frames.map((frame) => {
       const cell = effectCell(frame);
       return new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(cell.x, cell.y, cell.width, cell.height) });
     });
-    scene.sheets.set(sheet.url, frames);
+    scene.sheets.set(sheetKey(sheet), frames);
   }, () => {
     // 외부 이펙트 시트는 장식이므로 실패하면 Graphics 연출만 쓴다.
   });
@@ -409,7 +422,7 @@ function loadSheet(scene: Scene, sheet: EffectSheet | undefined) {
 
 /** 시트가 준비됐으면 경과 시간에 맞는 프레임을 돌려준다. */
 function sheetFrame(scene: Scene, sheet: EffectSheet | undefined, time: number, loop: boolean) {
-  const frames = sheet ? scene.sheets.get(sheet.url) : null;
+  const frames = sheet ? scene.sheets.get(sheetKey(sheet)) : null;
   if (!sheet || !frames?.length) return null;
   const index = Math.floor(time / sheet.frameMs);
   if (!loop && index >= frames.length) return null;
@@ -418,7 +431,7 @@ function sheetFrame(scene: Scene, sheet: EffectSheet | undefined, time: number, 
 
 function loadTypeAssets(scene: Scene, type: string) {
   const effect = battleEffect(type);
-  const sheets = BATTLE_EFFECT_SHEETS[effect.motion];
+  const sheets = effectSheetsFor(type);
   loadSheet(scene, sheets.projectile);
   loadSheet(scene, sheets.impact);
   const path = effect.spritePath;
@@ -595,9 +608,6 @@ function update(scene: Scene, rawDelta: number) {
       }
       const open = segment(t, BALL_OPEN, BALL_OPEN + 0.22);
       if (open < 1) placeBall(scene, target.x, target.y - size * 0.1, 0, open < 0.35 ? "opening" : "open", ballScale, 1 - open);
-      // 열린 볼에서 위로 솟는 빛줄기
-      const beam = 1 - segment(t, BALL_OPEN, BALL_OPEN + 0.3);
-      if (beam > 0) shapes.rect(target.x - size * 0.08 * beam, target.y - size * 1.2, size * 0.16 * beam, size * 1.1).fill({ color: 0xffffff, alpha: beam * 0.55 });
       shapes.circle(target.x, target.y, 8 + open * size * 0.7).fill({ color: 0xffffff, alpha: (1 - open) * 0.85 });
       const grow = easeOutBack(segment(t, BALL_OPEN, 0.9));
       offsets[key].sx *= grow;
@@ -629,7 +639,7 @@ function update(scene: Scene, rawDelta: number) {
     const lunge = Math.sin(clamp01(progress * 1.6) * Math.PI);
     offsets[source].x += direction * lunge * (effect.motion === "strike" ? size * 0.55 : 12);
     offsets[source].y -= lunge * (effect.motion === "strike" ? 10 : 3);
-    drawProjectile(scene, delta, effect.motion, palette, effect.spritePath, from, to, p, direction, size);
+    drawProjectile(scene, delta, effect.motion, palette, effect.spritePath, effectSheetsFor(scene.types[source]).projectile, from, to, p, direction, size);
   }
 
   // 피격: 히트스톱 → 흰색 플래시 → 넉백·카메라 흔들림
@@ -655,9 +665,10 @@ function update(scene: Scene, rawDelta: number) {
       offsets[targetKey].x += ip < 0.35 ? (Math.random() - 0.5) * 6 * profile.burst : 0;
       offsets[targetKey].flash = ip < 0.4 ? (Math.floor(ip * 20) % 2 ? 0.85 : 0.1) : 0;
       offsets[targetKey].sx *= 1 - Math.sin(segment(ip, 0, 0.3) * Math.PI) * 0.08;
-      drawImpact(shapes, effect.motion, palette, to.x, to.y, ip, size, profile);
-      const impactSheet = BATTLE_EFFECT_SHEETS[effect.motion].impact;
+      const impactSheet = effectSheetsFor(scene.types[source]).impact;
       const frame = sheetFrame(scene, impactSheet, impactLocal, false) ?? (impactSheet?.frames.length === 1 && ip < 0.5 ? sheetFrame(scene, impactSheet, 0, false) : null);
+      // PokéRogue 명중 시트가 있으면 그것만 보이고, 없을 때만 Graphics 고리·섬광을 그린다.
+      if (!frame && !(impactSheet && scene.sheets.get(sheetKey(impactSheet)))) drawImpact(shapes, effect.motion, palette, to.x, to.y, ip, size, profile);
       if (frame) {
         const pop = impactSheet?.frames.length === 1 ? easeOutBack(segment(ip, 0, 0.25)) * (1 - segment(ip, 0.35, 0.5)) : 1;
         placeProjectile(scene.effect, frame, to.x, to.y, direction, size * 1.4 * Math.sqrt(profile.burst) * pop);
@@ -679,9 +690,7 @@ function update(scene: Scene, rawDelta: number) {
     offsets[actor].flashTint = 0xff5a5f;
     offsets[actor].sx *= 1 - fade * 0.6;
     if (fade > 0) {
-      const at = center(actor);
       const ball = actor === "attacker" ? { x: width * 0.06, y: height * 0.86 } : { x: width * 0.94, y: height * 0.2 };
-      shapes.moveTo(ball.x, ball.y).lineTo(at.x, at.y + size * 0.2).stroke({ width: 3, color: 0xff5a5f, alpha: (1 - fade) * 0.9 });
       placeBall(scene, ball.x, ball.y, 0, fade < 0.85 ? "open" : "closed", ballScale);
     }
   }
@@ -748,7 +757,7 @@ function update(scene: Scene, rawDelta: number) {
   world.scale.set(1 + punch);
 }
 
-function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palette: BattlePalette, spritePath: string, from: { x: number; y: number }, to: { x: number; y: number }, p: number, direction: number, size: number) {
+function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palette: BattlePalette, spritePath: string, projectileSheet: EffectSheet | undefined, from: { x: number; y: number }, to: { x: number; y: number }, p: number, direction: number, size: number) {
   const { shapes, projectile } = scene;
   const texture = scene.typeTextures.get(spritePath);
   const x = lerp(from.x, to.x, p);
@@ -819,7 +828,7 @@ function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palet
     stream(scene, delta, 70, () => ({ x: x + random(-6, 6), y: y + random(-6, 6), vx: -direction * random(10, 40), vy: random(-20, 20), gravity: 120, drag: 1, maxLife: random(260, 460), size: random(2, 4), color: pick([palette[1], palette[2], palette[3]]), shape: "dot", spin: 0 }));
   }
 
-  const sheetTexture = sheetFrame(scene, BATTLE_EFFECT_SHEETS[motion].projectile, scene.elapsed, true);
+  const sheetTexture = sheetFrame(scene, projectileSheet, scene.elapsed, true);
   if (sheetTexture) placeProjectile(projectile, sheetTexture, x, y, direction, size * 1.1);
   else if (texture) placeProjectile(projectile, texture, x, y, motion === "splash" && spritePath.includes("water") ? -direction : direction, motion === "strike" ? 38 : 46);
   else if (motion !== "wave") {

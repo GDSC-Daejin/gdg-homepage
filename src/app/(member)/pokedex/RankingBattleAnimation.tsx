@@ -119,6 +119,11 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
     setSkipped(false);
   }, [battle.id, reduced, steps.length]);
 
+  // 이번 전투에 나오는 타입의 공격음만 미리 받는다.
+  useEffect(() => {
+    audioRef.current?.prepare([...battle.attackerTeam, ...battle.defenderTeam].map((pokemon) => pokemon.battleType));
+  }, [battle]);
+
   // 단계 타이머는 항상 하나만 돈다. 일시정지·배속 변경 때는 남은 시간을 이어서 쓴다.
   useEffect(() => {
     if (reduced || paused || complete) return;
@@ -140,7 +145,7 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
     const side = step.actor === "defender" ? "defender" : "attacker";
     const pokemon = side === "attacker" ? battle.attackerTeam[entry?.attackerIndex ?? 0] : battle.defenderTeam[entry?.defenderIndex ?? 0];
     const tier = impactTier(side === "attacker" ? entry?.attackerTypeMultiplier ?? 1 : entry?.defenderTypeMultiplier ?? 1);
-    const sound = soundForStep(step.phase, battleEffect(pokemon?.battleType ?? "normal").motion, tier, skipped);
+    const sound = soundForStep(step.phase, battleEffect(pokemon?.battleType ?? "normal").motion, tier, skipped, pokemon?.battleType ?? "normal");
     if (sound) audio.play(sound, speed);
   // 단계가 바뀔 때 한 번만 울린다. 토글·배속 변경으로 현재 단계 소리를 다시 내지 않는다.
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -187,7 +192,7 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
 
   return <div className="text-center">
     <p className="text-sm font-semibold text-primary">랭킹전 시작!</p>
-    <div className={`${styles.battleArena} ${styles.rankingStage} relative mt-7 ${impact && tier === "strong" ? styles.screenShake : ""} ${paused ? styles.fxPaused : ""}`} style={fxStyle}>
+    <div className={`${styles.battleArena} ${styles.rankingStage} ${animated ? "" : styles.rankingStageFallback} relative mt-7 ${impact && tier === "strong" ? styles.screenShake : ""} ${paused ? styles.fxPaused : ""}`} style={fxStyle}>
       {animated && <PixiRankingBattleScene arenaSeed={battle.id} firstTurn={battle.firstTurnUserId ? battle.firstTurnUserId === battle.attackerId ? "attacker" : "defender" : null} teams={{ attacker: battle.attackerTeam, defender: battle.defenderTeam }} attacker={attacker} defender={defender} phase={step.phase} actor={step.actor} duration={step.duration} multiplier={multiplier} winner={winnerSide} stepKey={stepKey} replayKey={replayKey} speed={speed} paused={paused} onUnavailable={() => { setSceneAvailable(false); setStepIndex(steps.length - 1); }} />}
       {step.phase === "intro" && battle.firstTurnUserId && animated && <span aria-hidden className={styles.firstTurnBanner} style={{ "--toss-delay": `${TOSS_MS * 0.45 / speed}ms` } as CSSProperties}>{battle.firstTurnUserId === battle.attackerId ? "공격 파티" : "방어 파티"} 선공!</span>}
       {impact && damage > 0 && <span key={stepKey} aria-hidden className={`${styles.damagePop} ${step.actor === "attacker" ? styles.damageOnRight : styles.damageOnLeft} ${tier === "strong" ? styles.damageStrong : tier === "weak" ? styles.damageWeak : ""}`}>-{damage}</span>}
