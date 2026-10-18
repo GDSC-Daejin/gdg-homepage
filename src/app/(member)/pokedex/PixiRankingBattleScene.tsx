@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { RankingPokemon } from "@/lib/pokedex/ranking-league";
 import { battleEffect, type BattleMotion, type BattlePalette } from "@/lib/pokedex/battle-effects";
-import { BATTLE_EFFECT_SHEETS, battleArena, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
+import { BATTLE_EFFECT_SHEETS, battleArena, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, POKEBALL_PARTICLES, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
 import { clamp01, easeInCubic, easeOutBack, easeOutCubic, impactProfile, lerp, sceneQuality, segment, type ImpactProfile } from "./ranking-battle-fx";
 
 export type RankingScenePhase = "intro" | "sendout" | "charge" | "attack" | "impact" | "recall" | "result";
@@ -25,6 +25,9 @@ type Particle = {
 type GifFrame = { texture: import("pixi.js").Texture; start: number; end: number };
 type Visual = { texture: import("pixi.js").Texture; frames: GifFrame[] | null; candidate: SpriteCandidate };
 type SheetFrames = import("pixi.js").Texture[];
+
+/** 몬스터볼 방출 파티클(PokéRogue 아틀라스 스프라이트) */
+type Spark = { sprite: import("pixi.js").Sprite; x: number; y: number; vx: number; vy: number; life: number; maxLife: number; spin: number; scale: number };
 
 type Side = {
   sprite: import("pixi.js").Sprite;
@@ -52,6 +55,7 @@ type Scene = {
   sheets: Map<string, SheetFrames | null>;
   arena: { background: import("pixi.js").Sprite; attackerBase: import("pixi.js").Sprite; defenderBase: import("pixi.js").Sprite };
   balls: import("pixi.js").Sprite[];
+  sparks: { textures: import("pixi.js").Texture[]; pool: import("pixi.js").Sprite[]; items: Spark[] };
   ballIndex: number;
   ballTextures: Partial<Record<BallState, import("pixi.js").Texture>>;
   firstTurn: SideKey | null;
@@ -148,12 +152,13 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
         const arena = { background: new pixi.Sprite(), attackerBase: new pixi.Sprite(), defenderBase: new pixi.Sprite() };
         for (const sprite of Object.values(arena)) sprite.visible = false;
         const balls = Array.from({ length: 4 }, () => { const ball = new pixi.Sprite(); ball.anchor.set(0.5); ball.visible = false; return ball; });
+        const sparkPool = Array.from({ length: quality.compact ? 24 : 48 }, () => { const spark = new pixi.Sprite(); spark.anchor.set(0.5); spark.visible = false; spark.blendMode = "add"; return spark; });
         // 배경 → 발판 → 그림자 → 위쪽(방어) 포켓몬 → 아래쪽(공격) 포켓몬 순으로 그린다.
-        world.addChild(arena.background, arena.defenderBase, arena.attackerBase, back, sides.defender.sprite, sides.defender.flash, sides.attacker.sprite, sides.attacker.flash, shapes, ...balls, projectile, effect, particles);
+        world.addChild(arena.background, arena.defenderBase, arena.attackerBase, back, sides.defender.sprite, sides.defender.flash, sides.attacker.sprite, sides.attacker.flash, shapes, ...balls, ...sparkPool, projectile, effect, particles);
         app.stage.addChild(world, overlay);
 
         const scene: Scene = {
-          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), arena, balls, ballIndex: 0, ballTextures: {}, firstTurn: props.firstTurn, introEntered: false, tossBurst: false, sides, pool: [], typeTextures: new Map(), quality,
+          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), arena, balls, sparks: { textures: [], pool: sparkPool, items: [] }, ballIndex: 0, ballTextures: {}, firstTurn: props.firstTurn, introEntered: false, tossBurst: false, sides, pool: [], typeTextures: new Map(), quality,
           phase: props.phase, actor: props.actor, duration: props.duration, multiplier: props.multiplier, winner: props.winner,
           types: { attacker: props.attacker.battleType, defender: props.defender.battleType },
           stepKey: props.stepKey, elapsed: 0, clock: 0, speed: props.speed, paused: props.paused, burstDone: false, emitDebt: 0, bolt: { at: -1, points: [] },
@@ -222,6 +227,8 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
     const scene = sceneRef.current;
     if (!scene || !replayKey) return;
     scene.pool.length = 0;
+    for (const item of scene.sparks.items) item.sprite.visible = false;
+    scene.sparks.items = [];
     if (latest.current.phase === "intro" && scene.firstTurn) holdForToss(scene);
     else enterBoth(scene);
   }, [replayKey]);
@@ -273,6 +280,19 @@ function loadArena(scene: Scene, seed: string) {
   void load(arena.background, scene.arena.background);
   void load(arena.attackerBase, scene.arena.attackerBase);
   void load(arena.defenderBase, scene.arena.defenderBase);
+  // PokéRogue 아틀라스는 Phaser(TexturePacker 다중 텍스처) 형식이라 Pixi Spritesheet로 바로 읽히지 않는다. 프레임 좌표만 읽어 잘라 쓴다.
+  void fetch(POKEBALL_PARTICLES)
+    .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
+    .then(async (atlas: { textures?: { image: string; frames: { frame: { x: number; y: number; w: number; h: number } }[] }[] }) => {
+      const page = atlas.textures?.[0];
+      if (!page?.frames?.length) return;
+      const base: import("pixi.js").Texture = await scene.pixi.Assets.load(new URL(page.image, POKEBALL_PARTICLES).href);
+      base.source.scaleMode = "nearest";
+      scene.sparks.textures = page.frames.map(({ frame }) => new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(frame.x, frame.y, frame.w, frame.h) }));
+    })
+    .catch(() => {
+      // 아틀라스가 없으면 Graphics 파티클만 쓴다.
+    });
   for (const [state, url] of Object.entries(POKEBALL_SPRITES) as [BallState, string][]) {
     scene.pixi.Assets.load(url).then((texture: import("pixi.js").Texture) => {
       texture.source.scaleMode = "nearest";
@@ -281,6 +301,46 @@ function loadArena(scene: Scene, seed: string) {
       // 볼 스프라이트가 없으면 Graphics로 그린 볼을 쓴다.
     });
   }
+}
+
+/**
+ * 볼이 열릴 때 PokéRogue 방출 파티클을 원형으로 뿌린다. 아틀라스가 없으면 false를 돌려 Graphics 파티클로 대체한다.
+ */
+function emitSparks(scene: Scene, x: number, y: number, count: number, speed: number, scale: number) {
+  const { textures, pool, items } = scene.sparks;
+  if (!textures.length) return false;
+  const total = Math.round(count * (scene.quality.compact ? 0.6 : 1));
+  for (let index = 0; index < total; index++) {
+    const sprite = pool.find((item) => !item.visible);
+    if (!sprite) break;
+    const angle = index / total * Math.PI * 2 + random(-0.2, 0.2);
+    const velocity = speed * random(0.6, 1.15);
+    sprite.texture = pick(textures);
+    sprite.visible = true;
+    items.push({ sprite, x, y, vx: Math.cos(angle) * velocity, vy: Math.sin(angle) * velocity - speed * 0.15, life: 0, maxLife: random(420, 720), spin: random(-5, 5), scale: scale * random(0.8, 1.3) });
+  }
+  return true;
+}
+
+function updateSparks(scene: Scene, delta: number) {
+  const seconds = delta / 1_000;
+  scene.sparks.items = scene.sparks.items.filter((item) => {
+    item.life += delta;
+    const t = item.life / item.maxLife;
+    if (t >= 1) {
+      item.sprite.visible = false;
+      return false;
+    }
+    item.vx *= Math.max(0, 1 - 2.4 * seconds);
+    item.vy = item.vy * Math.max(0, 1 - 2.4 * seconds) + 40 * seconds;
+    item.x += item.vx * seconds;
+    item.y += item.vy * seconds;
+    item.sprite.position.set(item.x, item.y);
+    item.sprite.rotation += item.spin * seconds;
+    item.sprite.scale.set(item.scale * (1 - t * 0.4));
+    item.sprite.alpha = t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3;
+    return true;
+  });
 }
 
 /** 몬스터볼 한 개를 그린다. 스프라이트가 없으면 Graphics 볼로 대체한다. */
@@ -495,7 +555,7 @@ function update(scene: Scene, rawDelta: number) {
     } else {
       if (!scene.tossBurst) {
         scene.tossBurst = true;
-        emit(scene, 22, () => { const a = random(0, Math.PI * 2); const v = random(90, 240); return { x: meet.x, y: meet.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, gravity: 0, drag: 3.5, maxLife: random(260, 480), size: random(2, 5), color: pick(["#ffffff", "#fef08a", "#facc15"]), shape: pick(["star", "pixel"] as const), spin: random(-8, 8) }; });
+        if (!emitSparks(scene, meet.x, meet.y, 22, size * 3, fieldScale * 1.5)) emit(scene, 22, () => { const a = random(0, Math.PI * 2); const v = random(90, 240); return { x: meet.x, y: meet.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, gravity: 0, drag: 3.5, maxLife: random(260, 480), size: random(2, 5), color: pick(["#ffffff", "#fef08a", "#facc15"]), shape: pick(["star", "pixel"] as const), spin: random(-8, 8) }; });
       }
       const p = segment(t, TOSS_CLASH, 1);
       const flash = 1 - segment(p, 0, 0.25);
@@ -531,10 +591,13 @@ function update(scene: Scene, rawDelta: number) {
     } else {
       if (!side.entranceBurst) {
         side.entranceBurst = true;
-        emit(scene, 18, () => { const a = random(0, Math.PI * 2); const s = random(80, 200); return { x: target.x, y: target.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, gravity: 0, drag: 3.5, maxLife: random(300, 520), size: random(2, 4), color: pick(["#ffffff", "#dbeafe", "#fef9c3"]), shape: pick(["pixel", "star"] as const), spin: random(-6, 6) }; });
+        if (!emitSparks(scene, target.x, target.y - size * 0.1, 18, size * 2.6, fieldScale * 1.4)) emit(scene, 18, () => { const a = random(0, Math.PI * 2); const s = random(80, 200); return { x: target.x, y: target.y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, gravity: 0, drag: 3.5, maxLife: random(300, 520), size: random(2, 4), color: pick(["#ffffff", "#dbeafe", "#fef9c3"]), shape: pick(["pixel", "star"] as const), spin: random(-6, 6) }; });
       }
       const open = segment(t, BALL_OPEN, BALL_OPEN + 0.22);
       if (open < 1) placeBall(scene, target.x, target.y - size * 0.1, 0, open < 0.35 ? "opening" : "open", ballScale, 1 - open);
+      // 열린 볼에서 위로 솟는 빛줄기
+      const beam = 1 - segment(t, BALL_OPEN, BALL_OPEN + 0.3);
+      if (beam > 0) shapes.rect(target.x - size * 0.08 * beam, target.y - size * 1.2, size * 0.16 * beam, size * 1.1).fill({ color: 0xffffff, alpha: beam * 0.55 });
       shapes.circle(target.x, target.y, 8 + open * size * 0.7).fill({ color: 0xffffff, alpha: (1 - open) * 0.85 });
       const grow = easeOutBack(segment(t, BALL_OPEN, 0.9));
       offsets[key].sx *= grow;
@@ -676,6 +739,8 @@ function update(scene: Scene, rawDelta: number) {
     drawParticle(particles, particle);
     return true;
   });
+
+  updateSparks(scene, hitstop ? 0 : delta);
 
   // 카메라
   world.pivot.set(width / 2, height / 2);

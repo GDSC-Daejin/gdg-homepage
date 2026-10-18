@@ -10,6 +10,8 @@ const cspReportOnly = [
   "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://raw.githubusercontent.com",
   "connect-src 'self' https://*.supabase.co https://api.resend.com https://www.google-analytics.com https://www.googletagmanager.com https://raw.githubusercontent.com",
   "worker-src 'self' blob:",
+  // 랭킹전 배경음악·효과음(PokéRogue 에셋 저장소)
+  "media-src 'self' https://raw.githubusercontent.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
 ].join("; ");

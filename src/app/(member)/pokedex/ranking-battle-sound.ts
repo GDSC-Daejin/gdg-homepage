@@ -1,6 +1,9 @@
-// 랭킹전 효과음. 파일 없이 Web Audio로 합성한다(브라우저 전용).
+// 랭킹전 효과음·배경음악(브라우저 전용). 볼·명중·기절은 PokéRogue 샘플을 쓰고, 없으면 Web Audio 합성음으로 대체한다.
 import type { BattleMotion } from "@/lib/pokedex/battle-effects";
+import { BATTLE_BGM, BATTLE_SOUND_SAMPLES } from "./ranking-battle-assets";
 import type { ImpactTier } from "./ranking-battle-fx";
+
+type SampleName = keyof typeof BATTLE_SOUND_SAMPLES;
 
 export type BattleSound =
   | { kind: "toss" }
@@ -12,21 +15,34 @@ export type BattleSound =
   | { kind: "victory" };
 
 export const SOUND_STORAGE_KEY = "pokedex-ranking-battle-sound";
+export const MUSIC_STORAGE_KEY = "pokedex-ranking-battle-music";
 
 /** 저장된 선택을 읽는다. 저장소 접근이 막히면 기본값(켜짐)을 쓴다. */
-export function readSoundPreference() {
+export function readSoundPreference(key: string = SOUND_STORAGE_KEY) {
   try {
-    return window.localStorage.getItem(SOUND_STORAGE_KEY) !== "off";
+    return window.localStorage.getItem(key) !== "off";
   } catch {
     return true;
   }
 }
 
-export function writeSoundPreference(enabled: boolean) {
+export function writeSoundPreference(enabled: boolean, key: string = SOUND_STORAGE_KEY) {
   try {
-    window.localStorage.setItem(SOUND_STORAGE_KEY, enabled ? "on" : "off");
+    window.localStorage.setItem(key, enabled ? "on" : "off");
   } catch {
     // 저장하지 못해도 이번 화면에서는 선택이 유지된다.
+  }
+}
+
+/** 샘플로 낼 소리와 시각(1배속 기준 초). null이면 합성음을 쓴다. 볼 연출 타이밍(선공 1.15초, 볼 열림 0.38초)에 맞춘다. */
+export function sampleCues(sound: BattleSound): { sample: SampleName; at: number }[] | null {
+  switch (sound.kind) {
+    case "toss": return [{ sample: "throw", at: 0 }, { sample: "hitWeak", at: 0.48 }, { sample: "throw", at: 1.15 }, { sample: "release", at: 1.53 }];
+    case "sendout": return [{ sample: "throw", at: 0 }, { sample: "release", at: 0.38 }];
+    case "hit": return [{ sample: sound.tier === "strong" ? "hitStrong" : sound.tier === "weak" ? "hitWeak" : "hit", at: 0 }];
+    case "faint": return [{ sample: "faint", at: 0 }];
+    case "charge": return [{ sample: "charge", at: 0 }];
+    default: return null;
   }
 }
 
@@ -74,6 +90,19 @@ export function createBattleAudio() {
   let bus: GainNode | null = null;
   let noiseBuffer: AudioBuffer | null = null;
   let closed = false;
+  const samples = new Map<SampleName, AudioBuffer>();
+
+  function loadSamples(audio: AudioContext) {
+    for (const [name, url] of Object.entries(BATTLE_SOUND_SAMPLES) as [SampleName, string][]) {
+      void fetch(url)
+        .then((response) => response.ok ? response.arrayBuffer() : Promise.reject(new Error(String(response.status))))
+        .then((data) => audio.decodeAudioData(data))
+        .then((buffer) => { samples.set(name, buffer); })
+        .catch(() => {
+          // 샘플을 못 받으면 그 소리는 합성음으로 낸다.
+        });
+    }
+  }
 
   function unlock() {
     if (closed || typeof window === "undefined" || !("AudioContext" in window)) return null;
@@ -87,6 +116,7 @@ export function createBattleAudio() {
       noiseBuffer = context.createBuffer(1, Math.ceil(context.sampleRate * 0.5), context.sampleRate);
       const data = noiseBuffer.getChannelData(0);
       for (let index = 0; index < data.length; index++) data[index] = Math.random() * 2 - 1;
+      loadSamples(context);
     }
     if (context.state === "suspended") void context.resume().catch(() => undefined);
     return context;
@@ -95,6 +125,20 @@ export function createBattleAudio() {
   function play(sound: BattleSound, speed: number) {
     if (!context || !bus || !noiseBuffer || context.state === "closed") return;
     const now = context.currentTime + 0.01;
+    const cues = sampleCues(sound);
+    if (cues && cues.every((cue) => samples.has(cue.sample))) {
+      for (const cue of cues) {
+        const source = context.createBufferSource();
+        const gain = context.createGain();
+        source.buffer = samples.get(cue.sample)!;
+        // 2배속이면 샘플도 빠르게(짧게) 낸다.
+        source.playbackRate.value = speed;
+        gain.gain.value = 0.9;
+        source.connect(gain).connect(bus);
+        source.start(now + cue.at / speed);
+      }
+      return;
+    }
     const recipe = soundRecipe(sound);
     for (const item of recipe.tones) {
       const start = now + item.at / speed;
@@ -163,4 +207,47 @@ export function soundForStep(phase: string, motion: BattleMotion, tier: ImpactTi
   if (phase === "recall") return { kind: "faint" };
   if (phase === "result") return skipped ? null : { kind: "victory" };
   return null;
+}
+
+export type BattleMusic = ReturnType<typeof createBattleMusic>;
+
+/**
+ * 전투 배경음악. 처음 재생할 때 <audio>를 만들어 스트리밍하고, 실패(자동 재생 차단·네트워크)하면 조용히 무음으로 진행한다.
+ */
+export function createBattleMusic(url: string = BATTLE_BGM) {
+  let audio: HTMLAudioElement | null = null;
+  let closed = false;
+  const element = () => {
+    if (!audio) {
+      audio = new Audio(url);
+      audio.loop = true;
+      audio.volume = 0.3;
+      audio.preload = "auto";
+    }
+    return audio;
+  };
+  return {
+    play() {
+      if (closed || typeof window === "undefined") return;
+      const music = element();
+      if (!music.paused) return;
+      void music.play().catch(() => undefined);
+    },
+    pause() { audio?.pause(); },
+    /** 처음부터 다시 틀 수 있게 멈춘다(결과·건너뛰기·다시 보기). */
+    stop() {
+      if (!audio) return;
+      audio.pause();
+      audio.currentTime = 0;
+    },
+    get playing() { return Boolean(audio && !audio.paused); },
+    close() {
+      closed = true;
+      if (!audio) return;
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      audio = null;
+    },
+  };
 }

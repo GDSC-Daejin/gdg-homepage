@@ -7,6 +7,7 @@ const POKEAPI_SPRITES = "https://raw.githubusercontent.com/PokeAPI/sprites/maste
 const POKEAPI_PNG = /^https:\/\/raw\.githubusercontent\.com\/PokeAPI\/sprites\/master\/sprites\/pokemon\/(\d+)\.png$/;
 const POKEROGUE_IMAGES = "https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images";
 const POKEROGUE_ANIMS = `${POKEROGUE_IMAGES}/battle_anims`;
+const POKEROGUE_AUDIO = "https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio";
 
 export type SpriteCandidate = {
   url: string;
@@ -79,3 +80,20 @@ export const POKEBALL_SPRITES = {
   opening: `${POKEROGUE_IMAGES}/pokeball/pb_opening.png`,
   open: `${POKEROGUE_IMAGES}/pokeball/pb_open.png`,
 } as const;
+
+/** 몬스터볼 방출 파티클 아틀라스(JSON + PNG). JSON은 런타임에 읽기만 한다. */
+export const POKEBALL_PARTICLES = `${POKEROGUE_IMAGES}/effects/pb_particles.json`;
+
+/** 효과음 샘플(WAV). 불러오지 못하면 Web Audio 합성음으로 대체한다. */
+export const BATTLE_SOUND_SAMPLES = {
+  throw: `${POKEROGUE_AUDIO}/se/pb_throw.wav`,
+  release: `${POKEROGUE_AUDIO}/se/pb_rel.wav`,
+  hit: `${POKEROGUE_AUDIO}/se/hit.wav`,
+  hitStrong: `${POKEROGUE_AUDIO}/se/hit_strong.wav`,
+  hitWeak: `${POKEROGUE_AUDIO}/se/hit_weak.wav`,
+  faint: `${POKEROGUE_AUDIO}/se/faint.wav`,
+  charge: `${POKEROGUE_AUDIO}/se/charge.wav`,
+} as const;
+
+/** 전투 배경음악(MP3, 약 2.6MB). 모달을 열고 배경음악이 켜져 있을 때만 받는다. */
+export const BATTLE_BGM = `${POKEROGUE_AUDIO}/bgm/battle_trainer.mp3`;
