@@ -2,7 +2,9 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { buildRankingBattleSteps } from "@/app/(member)/pokedex/RankingBattleAnimation";
 import { healthColor, impactProfile, sceneQuality } from "@/app/(member)/pokedex/ranking-battle-fx";
-import { battleEffect, type BattleType } from "@/lib/pokedex/battle-effects";
+import { BATTLE_EFFECT_SHEETS, battleSpriteCandidates, effectCell } from "@/app/(member)/pokedex/ranking-battle-assets";
+import { soundForStep, soundRecipe } from "@/app/(member)/pokedex/ranking-battle-sound";
+import { battleEffect, type BattleMotion, type BattleType } from "@/lib/pokedex/battle-effects";
 import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pokedex/ranking-league";
 
 const read = (path: string) => readFile(path, "utf8");
@@ -15,8 +17,8 @@ describe("랭킹전 PixiJS 전투장", () => {
       read("src/app/(member)/pokedex/RankingBattleAnimation.tsx"),
     ]);
 
-    expect(scene).toContain('await import("pixi.js")');
-    expect(scene).not.toMatch(/^import .*from "pixi\.js"/m);
+    expect(scene).toContain('await Promise.all([import("pixi.js"), import("pixi.js/gif")])');
+    expect(scene).not.toMatch(/^import [^t].*from "pixi\.js/m);
     expect(scene).toContain("onUnavailable");
     expect(animation).toContain("sceneAvailable");
     expect(animation).toContain("prefers-reduced-motion: reduce");
@@ -94,6 +96,56 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(healthColor(80)).toBe("#22c55e");
     expect(healthColor(40)).toBe("#facc15");
     expect(healthColor(10)).toBe("#ef4444");
+  });
+
+  it("PokeAPI 스프라이트는 애니메이션 GIF를 먼저 시도하고 원래 이미지로 대체한다", () => {
+    const front = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png";
+    expect(battleSpriteCandidates(front, "defender").map((item) => item.url)).toEqual([
+      "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/25.gif",
+      front,
+    ]);
+    const attacker = battleSpriteCandidates(front, "attacker");
+    expect(attacker.map((item) => item.url)).toEqual([
+      "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/back/25.gif",
+      "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/25.png",
+      front,
+    ]);
+    // 뒷모습이 없어 앞모습으로 내려가면 상대를 보도록 뒤집는다.
+    expect(attacker.at(-1)!.flip).toBe(true);
+    expect(battleSpriteCandidates("/local/sprite.png", "attacker")).toEqual([{ url: "/local/sprite.png", animated: false, flip: true, anchorY: 0.82 }]);
+  });
+
+  it("외부 이펙트는 URL로만 참조하고 저장소에 파일을 두지 않는다", async () => {
+    const motions: BattleMotion[] = ["flame", "splash", "bolt", "leaf", "strike", "wave"];
+    for (const motion of motions) {
+      for (const sheet of Object.values(BATTLE_EFFECT_SHEETS[motion])) {
+        expect(sheet.url).toMatch(/^https:\/\/raw\.githubusercontent\.com\/pagefaultgames\/pokerogue-assets\//);
+        expect(sheet.frames.length).toBeGreaterThan(0);
+      }
+    }
+    expect(effectCell(7)).toEqual({ x: 192, y: 96, width: 96, height: 96 });
+    const policy = await read("docs/policy/pokedex-ranking-battle-animation.md");
+    expect(policy).toContain("pokerogue-assets");
+    expect(policy).toContain("PokeAPI/sprites");
+  });
+
+  it("효과음은 단계마다 정해지고, 결과 보기로 건너뛰면 울리지 않는다", async () => {
+    expect(soundForStep("attack", "bolt", "normal", false)).toEqual({ kind: "attack", motion: "bolt" });
+    expect(soundForStep("impact", "flame", "strong", false)).toEqual({ kind: "hit", tier: "strong" });
+    expect(soundForStep("recall", "flame", "normal", false)).toEqual({ kind: "faint" });
+    expect(soundForStep("result", "flame", "normal", false)).toEqual({ kind: "victory" });
+    expect(soundForStep("result", "flame", "normal", true)).toBeNull();
+    const strong = soundRecipe({ kind: "hit", tier: "strong" });
+    const weak = soundRecipe({ kind: "hit", tier: "weak" });
+    expect(Math.max(...strong.tones.map((tone) => tone.volume))).toBeGreaterThan(Math.max(...weak.tones.map((tone) => tone.volume)));
+
+    const [animation, sound] = await Promise.all([read("src/app/(member)/pokedex/RankingBattleAnimation.tsx"), read("src/app/(member)/pokedex/ranking-battle-sound.ts")]);
+    expect(animation).toContain("aria-pressed={soundOn}");
+    expect(animation).toContain("writeSoundPreference(next)");
+    expect(animation).toContain("navigator.userActivation?.hasBeenActive");
+    expect(animation).toContain("audio.close()");
+    expect(sound).toContain("localStorage");
+    expect(sound).not.toMatch(/\.(mp3|ogg|wav)/);
   });
 
   it("연출 단계는 저장된 전투 로그 순서를 그대로 따른다", () => {

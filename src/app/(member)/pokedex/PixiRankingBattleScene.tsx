@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { RankingPokemon } from "@/lib/pokedex/ranking-league";
 import { battleEffect, type BattleMotion, type BattlePalette } from "@/lib/pokedex/battle-effects";
+import { BATTLE_EFFECT_SHEETS, battleSpriteCandidates, effectCell, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
 import { clamp01, easeInCubic, easeOutBack, easeOutCubic, impactProfile, lerp, sceneQuality, segment, type ImpactProfile } from "./ranking-battle-fx";
 
 export type RankingScenePhase = "intro" | "sendout" | "charge" | "attack" | "impact" | "recall" | "result";
@@ -17,15 +18,21 @@ type Particle = {
   life: number; maxLife: number; size: number; color: string; shape: "dot" | "pixel" | "diamond" | "spark" | "star"; spin: number; angle: number;
 };
 
+type GifFrame = { texture: import("pixi.js").Texture; start: number; end: number };
+type Visual = { texture: import("pixi.js").Texture; frames: GifFrame[] | null; candidate: SpriteCandidate };
+type SheetFrames = import("pixi.js").Texture[];
+
 type Side = {
   sprite: import("pixi.js").Sprite;
   flash: import("pixi.js").Sprite;
+  frames: GifFrame[] | null;
+  frameTime: number;
+  candidate: SpriteCandidate;
   key: string | null;
   entrance: number | null;
   entranceBurst: boolean;
   hidden: boolean;
   baseScale: number;
-  facing: 1 | -1;
 };
 
 type Scene = {
@@ -37,6 +44,8 @@ type Scene = {
   particles: import("pixi.js").Graphics;
   overlay: import("pixi.js").Graphics;
   projectile: import("pixi.js").Sprite;
+  effect: import("pixi.js").Sprite;
+  sheets: Map<string, SheetFrames | null>;
   sides: Record<SideKey, Side>;
   pool: Particle[];
   typeTextures: Map<string, import("pixi.js").Texture | null>;
@@ -89,7 +98,7 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
 
     async function mount() {
       try {
-        const pixi = await import("pixi.js");
+        const [pixi] = await Promise.all([import("pixi.js"), import("pixi.js/gif")]);
         const quality = sceneQuality(target.clientWidth, window.devicePixelRatio);
         app = new pixi.Application();
         await app.init({ resizeTo: target, backgroundAlpha: 0, antialias: false, autoDensity: true, resolution: quality.resolution, preference: "webgl" });
@@ -97,7 +106,7 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
         target.replaceChildren(app.canvas);
 
         const props = latest.current;
-        const [attackerTexture, defenderTexture] = await Promise.all([pixi.Assets.load(props.attacker.imagePath), pixi.Assets.load(props.defender.imagePath)]);
+        const [attackerVisual, defenderVisual] = await Promise.all([loadVisual(pixi, props.attacker.imagePath, "attacker"), loadVisual(pixi, props.defender.imagePath, "defender")]);
         if (cancelled) return;
 
         const world = new pixi.Container();
@@ -108,28 +117,29 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
         const projectile = new pixi.Sprite();
         projectile.anchor.set(0.5);
         projectile.visible = false;
-        const side = (texture: import("pixi.js").Texture, facing: 1 | -1, key: string): Side => {
-          const sprite = new pixi.Sprite(texture);
-          const flash = new pixi.Sprite(texture);
-          for (const item of [sprite, flash]) item.anchor.set(0.5, 0.82);
-          flash.blendMode = "add";
-          flash.alpha = 0;
-          texture.source.scaleMode = "nearest";
-          return { sprite, flash, key, entrance: 0, entranceBurst: false, hidden: false, baseScale: 1, facing };
+        const effect = new pixi.Sprite();
+        effect.anchor.set(0.5);
+        effect.visible = false;
+        const side = (visual: Visual, key: string): Side => {
+          const created: Side = { sprite: new pixi.Sprite(), flash: new pixi.Sprite(), frames: null, frameTime: 0, candidate: visual.candidate, key, entrance: 0, entranceBurst: false, hidden: false, baseScale: 1 };
+          created.flash.blendMode = "add";
+          created.flash.alpha = 0;
+          applyVisual(created, visual);
+          return created;
         };
-        const sides = { attacker: side(attackerTexture, -1, props.attacker.throwId), defender: side(defenderTexture, 1, props.defender.throwId) };
+        const sides = { attacker: side(attackerVisual, props.attacker.throwId), defender: side(defenderVisual, props.defender.throwId) };
         // 위쪽(방어) 포켓몬을 먼저 그려 아래쪽(공격) 포켓몬이 앞에 오게 한다.
-        world.addChild(back, sides.defender.sprite, sides.defender.flash, sides.attacker.sprite, sides.attacker.flash, shapes, projectile, particles);
+        world.addChild(back, sides.defender.sprite, sides.defender.flash, sides.attacker.sprite, sides.attacker.flash, shapes, projectile, effect, particles);
         app.stage.addChild(world, overlay);
 
         const scene: Scene = {
-          pixi, app, world, back, shapes, particles, overlay, projectile, sides, pool: [], typeTextures: new Map(), quality,
+          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), sides, pool: [], typeTextures: new Map(), quality,
           phase: props.phase, actor: props.actor, duration: props.duration, multiplier: props.multiplier, winner: props.winner,
           types: { attacker: props.attacker.battleType, defender: props.defender.battleType },
           stepKey: props.stepKey, elapsed: 0, clock: 0, speed: props.speed, paused: props.paused, burstDone: false, emitDebt: 0, bolt: { at: -1, points: [] },
         };
         sceneRef.current = scene;
-        for (const type of new Set([props.attacker.battleType, props.defender.battleType])) loadTypeTexture(scene, type);
+        for (const type of new Set([props.attacker.battleType, props.defender.battleType])) loadTypeAssets(scene, type);
         app.ticker.add((ticker) => { if (!scene.paused) update(scene, Math.min(ticker.deltaMS, 50)); });
         if (props.paused) update(scene, 0);
         setPaused(scene, props.paused);
@@ -158,15 +168,13 @@ export function PixiRankingBattleScene({ attacker, defender, phase, actor, durat
     for (const [key, pokemon] of [["attacker", attacker], ["defender", defender]] as const) {
       const side = scene.sides[key];
       scene.types[key] = pokemon.battleType;
-      loadTypeTexture(scene, pokemon.battleType);
+      loadTypeAssets(scene, pokemon.battleType);
       if (side.key === pokemon.throwId) continue;
       side.key = pokemon.throwId;
       side.hidden = true;
-      scene.pixi.Assets.load(pokemon.imagePath).then((texture: import("pixi.js").Texture) => {
+      loadVisual(scene.pixi, pokemon.imagePath, key).then((visual) => {
         if (cancelled || sceneRef.current !== scene || side.key !== pokemon.throwId) return;
-        texture.source.scaleMode = "nearest";
-        side.sprite.texture = texture;
-        side.flash.texture = texture;
+        applyVisual(side, visual);
         startEntrance(side);
       }, () => { if (!cancelled) latest.current.onUnavailable(); });
     }
@@ -215,8 +223,62 @@ function startEntrance(side: Side) {
   side.hidden = false;
 }
 
-function loadTypeTexture(scene: Scene, type: string) {
-  const path = battleEffect(type).spritePath;
+/** 외부 스프라이트를 우선순위대로 시도하고, 모두 실패하면 예외를 던진다(호출부가 DOM 로그로 전환). */
+async function loadVisual(pixi: Pixi, imagePath: string, side: SideKey): Promise<Visual> {
+  for (const candidate of battleSpriteCandidates(imagePath, side)) {
+    try {
+      const asset = await pixi.Assets.load(candidate.url);
+      const frames = candidate.animated && Array.isArray(asset?.frames) && asset.frames.length ? asset.frames as GifFrame[] : null;
+      const texture = frames ? frames[0].texture : asset as import("pixi.js").Texture;
+      for (const item of frames?.map((frame) => frame.texture) ?? [texture]) item.source.scaleMode = "nearest";
+      return { texture, frames, candidate };
+    } catch {
+      // 다음 후보로 내려간다.
+    }
+  }
+  throw new Error("pokemon sprite unavailable");
+}
+
+function applyVisual(side: Side, visual: Visual) {
+  side.frames = visual.frames;
+  side.frameTime = 0;
+  side.candidate = visual.candidate;
+  for (const sprite of [side.sprite, side.flash]) {
+    sprite.texture = visual.texture;
+    sprite.anchor.set(0.5, visual.candidate.anchorY);
+  }
+}
+
+function loadSheet(scene: Scene, sheet: EffectSheet | undefined) {
+  if (!sheet || scene.sheets.has(sheet.url)) return;
+  scene.sheets.set(sheet.url, null);
+  scene.pixi.Assets.load(sheet.url).then((base: import("pixi.js").Texture) => {
+    base.source.scaleMode = "nearest";
+    const frames = sheet.frames.map((frame) => {
+      const cell = effectCell(frame);
+      return new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(cell.x, cell.y, cell.width, cell.height) });
+    });
+    scene.sheets.set(sheet.url, frames);
+  }, () => {
+    // 외부 이펙트 시트는 장식이므로 실패하면 Graphics 연출만 쓴다.
+  });
+}
+
+/** 시트가 준비됐으면 경과 시간에 맞는 프레임을 돌려준다. */
+function sheetFrame(scene: Scene, sheet: EffectSheet | undefined, time: number, loop: boolean) {
+  const frames = sheet ? scene.sheets.get(sheet.url) : null;
+  if (!sheet || !frames?.length) return null;
+  const index = Math.floor(time / sheet.frameMs);
+  if (!loop && index >= frames.length) return null;
+  return frames[index % frames.length];
+}
+
+function loadTypeAssets(scene: Scene, type: string) {
+  const effect = battleEffect(type);
+  const sheets = BATTLE_EFFECT_SHEETS[effect.motion];
+  loadSheet(scene, sheets.projectile);
+  loadSheet(scene, sheets.impact);
+  const path = effect.spritePath;
   if (scene.typeTextures.has(path)) return;
   scene.typeTextures.set(path, null);
   scene.pixi.Assets.load(path).then((texture: import("pixi.js").Texture) => {
@@ -287,13 +349,23 @@ function update(scene: Scene, rawDelta: number) {
   // 히트스톱 동안에는 대기 모션과 파티클도 멈춘다.
   scene.elapsed += delta;
   if (!hitstop) scene.clock += delta;
-  for (const side of Object.values(sides)) if (side.entrance !== null) side.entrance += delta;
+  for (const side of Object.values(sides)) {
+    if (side.entrance !== null) side.entrance += delta;
+    // 애니메이션 GIF는 장면 시계로 프레임을 넘겨 일시정지·히트스톱·배속을 함께 따른다.
+    if (side.frames && !hitstop) {
+      side.frameTime = (side.frameTime + delta) % Math.max(side.frames.at(-1)!.end, 1);
+      const frame = side.frames.find((item) => side.frameTime >= item.start && side.frameTime < item.end) ?? side.frames[0];
+      side.sprite.texture = frame.texture;
+      side.flash.texture = frame.texture;
+    }
+  }
 
   back.clear();
   shapes.clear();
   particles.clear();
   overlay.clear();
   projectile.visible = false;
+  scene.effect.visible = false;
 
   const offsets: Record<SideKey, { x: number; y: number; sx: number; sy: number; alpha: number; flash: number; tint: number; flashTint: number }> = {
     attacker: { x: 0, y: 0, sx: 1, sy: 1, alpha: 1, flash: 0, tint: 0xffffff, flashTint: 0xffffff },
@@ -303,8 +375,9 @@ function update(scene: Scene, rawDelta: number) {
   // 대기: 가벼운 호흡과 바운스
   (["attacker", "defender"] as const).forEach((key, index) => {
     if ((phase === "recall" && actor === key) || (phase === "result" && scene.winner !== key)) return;
-    const breath = Math.sin(scene.clock / 520 + index * 1.7);
-    offsets[key].y -= Math.abs(Math.sin(scene.clock / 430 + index * 2.1)) * 2.5;
+    // 약 1.8초 주기, 2~3px 상하 움직임
+    const breath = Math.sin(scene.clock / 290 + index * 1.7);
+    offsets[key].y -= (breath + 1) * 1.25;
     offsets[key].sy += breath * 0.025;
     offsets[key].sx -= breath * 0.012;
   });
@@ -386,6 +459,12 @@ function update(scene: Scene, rawDelta: number) {
       offsets[targetKey].flash = ip < 0.4 ? (Math.floor(ip * 20) % 2 ? 0.85 : 0.1) : 0;
       offsets[targetKey].sx *= 1 - Math.sin(segment(ip, 0, 0.3) * Math.PI) * 0.08;
       drawImpact(shapes, effect.motion, palette, to.x, to.y, ip, size, profile);
+      const impactSheet = BATTLE_EFFECT_SHEETS[effect.motion].impact;
+      const frame = sheetFrame(scene, impactSheet, impactLocal, false) ?? (impactSheet?.frames.length === 1 && ip < 0.5 ? sheetFrame(scene, impactSheet, 0, false) : null);
+      if (frame) {
+        const pop = impactSheet?.frames.length === 1 ? easeOutBack(segment(ip, 0, 0.25)) * (1 - segment(ip, 0.35, 0.5)) : 1;
+        placeProjectile(scene.effect, frame, to.x, to.y, direction, size * 1.4 * Math.sqrt(profile.burst) * pop);
+      }
       shake = profile.shake * (1 - segment(ip, 0, 0.55)) ** 2;
       punch = profile.tier === "strong" ? 0.035 * (1 - segment(ip, 0, 0.4)) : 0;
     }
@@ -431,12 +510,14 @@ function update(scene: Scene, rawDelta: number) {
     const offset = offsets[key];
     const visible = !side.hidden || side.entrance !== null || (phase === "recall" && actor === key);
     const alpha = visible ? offset.alpha : 0;
-    side.baseScale = size / Math.max(side.sprite.texture.width, 1);
+    // 꼭 맞게 잘린 GIF는 픽셀 배율을, 여백 있는 96px PNG는 폭 기준 배율을 쓴다.
+    side.baseScale = side.frames ? Math.min(size / 96 * 1.5, size * 1.3 / Math.max(side.sprite.texture.height, 1)) : size / Math.max(side.sprite.texture.width, 1);
+    const facing = side.candidate.flip ? -1 : 1;
     const x = home[key].x + offset.x;
     const y = home[key].y + offset.y;
     for (const sprite of [side.sprite, side.flash]) {
       sprite.position.set(x, y);
-      sprite.scale.set(side.facing * side.baseScale * offset.sx, side.baseScale * offset.sy);
+      sprite.scale.set(facing * side.baseScale * offset.sx, side.baseScale * offset.sy);
     }
     side.sprite.alpha = alpha;
     side.sprite.tint = offset.tint;
@@ -537,7 +618,9 @@ function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palet
     stream(scene, delta, 70, () => ({ x: x + random(-6, 6), y: y + random(-6, 6), vx: -direction * random(10, 40), vy: random(-20, 20), gravity: 120, drag: 1, maxLife: random(260, 460), size: random(2, 4), color: pick([palette[1], palette[2], palette[3]]), shape: "dot", spin: 0 }));
   }
 
-  if (texture) placeProjectile(projectile, texture, x, y, motion === "splash" && spritePath.includes("water") ? -direction : direction, motion === "strike" ? 38 : 46);
+  const sheetTexture = sheetFrame(scene, BATTLE_EFFECT_SHEETS[motion].projectile, scene.elapsed, true);
+  if (sheetTexture) placeProjectile(projectile, sheetTexture, x, y, direction, size * 1.1);
+  else if (texture) placeProjectile(projectile, texture, x, y, motion === "splash" && spritePath.includes("water") ? -direction : direction, motion === "strike" ? 38 : 46);
   else if (motion !== "wave") {
     shapes.circle(x, y, 16).fill({ color: palette[1], alpha: 0.35 });
     shapes.circle(x, y, 10).fill({ color: palette[1] });

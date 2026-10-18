@@ -22,9 +22,9 @@ export function impactTier(multiplier: number): ImpactTier {
 
 export function impactProfile(multiplier: number): ImpactProfile {
   const tier = impactTier(multiplier);
-  if (tier === "strong") return { tier, hitstop: 120, shake: 8, knockback: 26, burst: 1.6, screenFlash: 0.45 };
+  if (tier === "strong") return { tier, hitstop: 120, shake: 8, knockback: 15, burst: 1.6, screenFlash: 0.22 };
   if (tier === "weak") return { tier, hitstop: 40, shake: 0, knockback: 8, burst: 0.5, screenFlash: 0 };
-  return { tier, hitstop: 80, shake: 3, knockback: 16, burst: 1, screenFlash: 0 };
+  return { tier, hitstop: 80, shake: 3, knockback: 12, burst: 1, screenFlash: 0 };
 }
 
 /** 좁은 화면은 해상도와 파티클 수를 낮춰 프레임을 지킨다. */
