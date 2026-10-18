@@ -54,7 +54,7 @@
 - 외부 배경을 불러오지 못하면 기존 전투장 그림(`public/pokedex/effects/battle-arena.webp`)이 CSS 배경으로 보이고, 몬스터볼은 Graphics로 그린다.
 - 위 주소는 모두 `access-control-allow-origin: *`로 WebGL 텍스처 로드가 가능함을 확인했다. 주소 목록은 `src/app/(member)/pokedex/ranking-battle-assets.ts`에 둔다.
 - 스프라이트·이펙트 그림의 캐릭터와 디자인 권리는 Pokémon/Nintendo/Creatures/GAME FREAK에 있다. PokeAPI/sprites와 PokéRogue 에셋 저장소는 이를 모아 둔 공개 저장소이며, 정식 라이선스가 아니다. 비공개 동아리 회원 화면에서만 쓰고, 공개 배포·수익화로 범위가 바뀌면 자체·라이선스 에셋으로 교체한다([조사 문서](../research/pokemon-webgame-stack-research-2026-08-03.md)의 IP 경계 참고).
-- 기술 연출: 공격마다 그 타입의 PokéRogue 기술 하나를 무작위로 골라, PokéRogue battle-anims JSON을 런타임에 받아 그대로 재생한다(시전자·대상 움직임, 이펙트 셀, 효과음 시점). 배경 변경 이벤트는 재생하지 않는다. 고른 기술 이름은 메시지 박스에 텍스트로 보여준다. 기술을 못 받으면 기존 타입별 이펙트 시트·Graphics 연출로 대체한다.
+- 기술 연출: 다시 보기마다 공격 단계별로 그 타입의 PokéRogue 기술 하나를 무작위로 고르고, PokéRogue battle-anims JSON을 런타임에 받아 PokéRogue와 같은 규칙(프레임당 50ms, 대상·시전자·보간·화면 기준점, 상대 전용 변형)으로 재생한다. 공격 단계 길이는 기술 길이에 맞춘다. 배경 변경 이벤트는 재생하지 않는다. 고른 기술 이름은 메시지 박스에 텍스트로 보여준다. 기술을 못 받으면 기존 타입별 이펙트 시트·Graphics 연출로 대체한다.
 - 정보창·체력바: PokéRogue UI 이미지(pbinfo_enemy_mini, pbinfo_player, overlay_hp)를 React 정보창의 배경으로 쓰고, 이름·전투력·체력 수치·progressbar 속성은 DOM으로 유지한다.
 - **라이선스 결정(2026-10-18, 사용자 결정)**: battle-anims JSON은 PokéRogue 저장소 REUSE에서 AGPL-3.0-only "코드"로 분류되고, UI 이미지(pbinfo·overlay_hp)는 별도 표기가 없어 PokéRogue 자체 제작(AGPL) 자산일 가능성이 크다. 이 저장소에는 라이선스가 없으므로 AGPL 의무(이 앱 소스를 AGPL로 제공)와 충돌할 수 있다는 위험을 알고도, 원작과 같은 연출을 위해 런타임 로드를 택했다. 파일은 저장소에 복사하지 않는다. 공개 배포·외부 공유로 범위가 바뀌면 이 결정을 다시 검토한다.
 - Pokémon Showdown 클라이언트 코드는 복사하지 않는다. 몬스터볼 파티클 아틀라스 JSON(AGPL)은 쓰지 않고 PNG를 직접 자른다.

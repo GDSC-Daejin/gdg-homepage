@@ -166,30 +166,45 @@ export const BATTLE_BGM = `${POKEROGUE_AUDIO}/bgm/battle_trainer.mp3`;
  * 타입별로 무작위로 고를 PokéRogue 기술(battle-anims JSON 이름). 공격 단계 안에 끝나도록 36프레임 이하인 공격 기술만 골랐다.
  * 기술 JSON은 PokéRogue 저장소에서 AGPL-3.0으로 분류된다. 런타임에만 불러오고 저장소에는 복사하지 않는다.
  */
-export const MOVE_POOLS: Record<BattleType, readonly string[]> = {
-  normal: ["tackle", "scratch", "quick-attack", "body-slam", "headbutt", "pound", "slash", "hyper-fang"],
-  fire: ["ember", "flamethrower", "flame-wheel", "fire-punch", "fire-fang", "heat-wave", "flame-charge"],
-  water: ["water-gun", "bubble", "bubble-beam", "hydro-pump", "aqua-tail", "water-pulse", "aqua-jet"],
-  electric: ["thunder-shock", "thunderbolt", "thunder-punch", "spark", "shock-wave", "discharge", "thunder-fang"],
-  grass: ["vine-whip", "razor-leaf", "magical-leaf", "leaf-blade", "seed-bomb", "bullet-seed", "absorb"],
-  ice: ["ice-beam", "ice-punch", "powder-snow", "ice-shard", "aurora-beam", "icy-wind", "ice-fang", "blizzard"],
-  fighting: ["karate-chop", "low-kick", "double-kick", "mach-punch", "brick-break", "cross-chop", "rock-smash", "focus-punch"],
-  poison: ["poison-sting", "sludge", "sludge-bomb", "poison-jab", "acid", "smog", "poison-fang"],
-  ground: ["mud-slap", "mud-shot", "bone-club", "bonemerang", "bulldoze", "drill-run"],
-  flying: ["gust", "wing-attack", "peck", "aerial-ace", "air-slash", "drill-peck", "air-cutter", "pluck"],
-  psychic: ["confusion", "psybeam", "psychic", "psycho-cut", "zen-headbutt", "psyshock"],
-  bug: ["bug-bite", "x-scissor", "signal-beam", "bug-buzz", "fury-cutter", "pin-missile", "twineedle", "leech-life"],
-  rock: ["rock-throw", "rock-slide", "power-gem", "ancient-power", "rock-blast", "stone-edge", "head-smash"],
-  ghost: ["lick", "shadow-claw", "shadow-punch", "night-shade", "shadow-sneak", "astonish", "hex"],
-  dragon: ["dragon-breath", "dragon-claw", "twister", "dragon-rage", "outrage", "dragon-tail", "dual-chop"],
-  fairy: ["fairy-wind", "draining-kiss", "disarming-voice"],
-  steel: ["metal-claw", "iron-tail", "iron-head", "bullet-punch", "steel-wing", "magnet-bomb", "mirror-shot"],
+export const MOVE_POOLS: Record<BattleType, readonly (readonly [move: string, frames: number])[]> = {
+  normal: [["tackle", 6], ["scratch", 7], ["quick-attack", 13], ["body-slam", 14], ["headbutt", 15], ["pound", 8], ["slash", 14], ["hyper-fang", 14]],
+  fire: [["ember", 14], ["flamethrower", 18], ["flame-wheel", 24], ["fire-punch", 14], ["fire-fang", 16], ["heat-wave", 29], ["flame-charge", 33]],
+  water: [["water-gun", 16], ["bubble", 29], ["bubble-beam", 30], ["hydro-pump", 27], ["aqua-tail", 16], ["water-pulse", 22], ["aqua-jet", 17]],
+  electric: [["thunder-shock", 19], ["thunderbolt", 26], ["thunder-punch", 24], ["spark", 22], ["shock-wave", 31], ["discharge", 35], ["thunder-fang", 14]],
+  grass: [["vine-whip", 13], ["razor-leaf", 29], ["magical-leaf", 28], ["leaf-blade", 24], ["seed-bomb", 17], ["bullet-seed", 14], ["absorb", 19]],
+  ice: [["ice-beam", 27], ["ice-punch", 17], ["powder-snow", 19], ["ice-shard", 19], ["aurora-beam", 29], ["icy-wind", 17], ["ice-fang", 12], ["blizzard", 30]],
+  fighting: [["karate-chop", 14], ["low-kick", 13], ["double-kick", 5], ["mach-punch", 10], ["brick-break", 34], ["cross-chop", 19], ["rock-smash", 17], ["focus-punch", 28]],
+  poison: [["poison-sting", 25], ["sludge", 21], ["sludge-bomb", 29], ["poison-jab", 18], ["acid", 19], ["smog", 17], ["poison-fang", 21]],
+  ground: [["mud-slap", 17], ["mud-shot", 29], ["bone-club", 20], ["bonemerang", 15], ["bulldoze", 19], ["drill-run", 35]],
+  flying: [["gust", 25], ["wing-attack", 13], ["peck", 9], ["aerial-ace", 13], ["air-slash", 24], ["drill-peck", 22], ["air-cutter", 14], ["pluck", 14]],
+  psychic: [["confusion", 28], ["psybeam", 24], ["psychic", 24], ["psycho-cut", 19], ["zen-headbutt", 15], ["psyshock", 24]],
+  bug: [["bug-bite", 20], ["x-scissor", 34], ["signal-beam", 20], ["bug-buzz", 33], ["fury-cutter", 7], ["pin-missile", 15], ["twineedle", 22], ["leech-life", 21]],
+  rock: [["rock-throw", 24], ["rock-slide", 32], ["power-gem", 19], ["ancient-power", 33], ["rock-blast", 9], ["stone-edge", 34], ["head-smash", 13]],
+  ghost: [["lick", 14], ["shadow-claw", 11], ["shadow-punch", 16], ["night-shade", 23], ["shadow-sneak", 32], ["astonish", 11], ["hex", 27]],
+  dragon: [["dragon-breath", 14], ["dragon-claw", 17], ["twister", 29], ["dragon-rage", 22], ["outrage", 27], ["dragon-tail", 19], ["dual-chop", 9]],
+  fairy: [["fairy-wind", 34], ["draining-kiss", 17], ["disarming-voice", 17]],
+  steel: [["metal-claw", 14], ["iron-tail", 20], ["iron-head", 15], ["bullet-punch", 9], ["steel-wing", 23], ["magnet-bomb", 21], ["mirror-shot", 19]],
 };
 
 const POKEROGUE_ROOT = "https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta";
 
+/** PokéRogue는 기술 애니메이션 한 프레임을 50ms(60fps 기준 3프레임)로 재생한다. */
+export const MOVE_FRAME_MS = 50;
+
 export function movePool(type: string): readonly string[] {
-  return MOVE_POOLS[(Object.hasOwn(MOVE_POOLS, type) ? type : "normal") as BattleType];
+  return MOVE_POOLS[(Object.hasOwn(MOVE_POOLS, type) ? type : "normal") as BattleType].map(([move]) => move);
+}
+
+/** 기술 재생 길이(ms). 공격 단계 길이를 이 값에 맞춘다. */
+export function moveDurationMs(move: string) {
+  for (const pool of Object.values(MOVE_POOLS)) for (const [name, frames] of pool) if (name === move) return frames * MOVE_FRAME_MS;
+  return 0;
+}
+
+/** 공격마다 그 타입의 기술 하나를 무작위로 고른다(random은 테스트에서 바꿀 수 있다). */
+export function randomMove(type: string, random: () => number = Math.random) {
+  const pool = movePool(type);
+  return pool[Math.min(pool.length - 1, Math.floor(random() * pool.length))];
 }
 
 export const moveAnimUrl = (move: string) => `${POKEROGUE_ROOT}/battle-anims/${encodeURIComponent(move)}.json`;

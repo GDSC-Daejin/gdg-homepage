@@ -3,8 +3,8 @@
 import { useEffect, useRef } from "react";
 import type { RankingPokemon } from "@/lib/pokedex/ranking-league";
 import { battleEffect, type BattleMotion, type BattlePalette } from "@/lib/pokedex/battle-effects";
-import { attackSoundUrl, battleArena, effectSheetsFor, moveAnimUrl, moveGraphicUrl, movePool, moveSoundUrl, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, particleBoxes, POKEBALL_PARTICLES, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
-import { ANIM_TARGET, ANIM_USER, mapAnimPoint, moveFrameMs, parseMoveAnim, type MoveAnim } from "./ranking-move-anim";
+import { attackSoundUrl, battleArena, effectSheetsFor, MOVE_FRAME_MS, moveAnimUrl, moveGraphicUrl, moveSoundUrl, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, particleBoxes, POKEBALL_PARTICLES, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
+import { parseMoveAnim, placeMoveElement, type MoveAnim, type MoveAnimSet } from "./ranking-move-anim";
 import { clamp01, easeInCubic, easeOutBack, easeOutCubic, impactProfile, lerp, sceneQuality, segment, type ImpactProfile } from "./ranking-battle-fx";
 
 export type RankingScenePhase = "intro" | "sendout" | "charge" | "attack" | "impact" | "recall" | "result";
@@ -31,8 +31,10 @@ type SheetFrames = import("pixi.js").Texture[];
 type Spark = { sprite: import("pixi.js").Sprite; x: number; y: number; vx: number; vy: number; life: number; maxLife: number; spin: number; scale: number };
 
 /** 불러온 PokéRogue 기술: 원본 JSON과 이펙트 시트, 잘라 둔 셀 */
-type MoveEntry = { anim: MoveAnim; base: import("pixi.js").Texture; cells: Map<number, import("pixi.js").Texture | null> };
-type ActiveMove = { name: string; entry: MoveEntry; clock: number; frameMs: number; fired: Set<number>; source: SideKey };
+type Sheet = { base: import("pixi.js").Texture; cells: Map<number, import("pixi.js").Texture | null> };
+type MoveEntry = { set: MoveAnimSet; main: Sheet; opponent: Sheet | null };
+/** 재생 중인 기술. 상대 전용 변형을 쓰면 PokéRogue처럼 애니메이션의 시전자·대상 자리를 맞바꾼다. */
+type ActiveMove = { name: string; anim: MoveAnim; sheet: Sheet; clock: number; fired: Set<number>; animUser: SideKey; animTarget: SideKey };
 export type SceneSound = { preload: (url: string) => void; play: (url: string, volume: number) => void };
 
 type Side = {
@@ -90,7 +92,7 @@ type Scene = {
   bolt: { at: number; points: number[] };
 };
 
-export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable, sound, onMove }: {
+export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable, sound, move, preloadMoves }: {
   /** 배경 선택용 값(전투 id). 같은 기록은 같은 배경을 쓴다. */
   arenaSeed: string;
   /** 저장된 선공. 있으면 intro 단계에서 볼 던지기 선공 연출을 한다. */
@@ -115,13 +117,15 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
   onUnavailable: () => void;
   /** 기술 효과음 재생(효과음 꺼짐·일시정지 판단은 호출하는 쪽이 한다) */
   sound?: SceneSound;
-  /** 공격 단계에서 고른 기술(없으면 null)을 알려 텍스트 상태로 보여주게 한다. */
-  onMove?: (stepKey: string, move: string | null) => void;
+  /** 이번 공격 단계에서 재생할 PokéRogue 기술(React가 매 재생마다 무작위로 고른다) */
+  move?: string | null;
+  /** 이번 재생에서 쓸 기술들(미리 받아 둔다) */
+  preloadMoves?: readonly string[];
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<Scene | null>(null);
-  const latest = useRef({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable, sound, onMove });
-  latest.current = { arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable, sound, onMove };
+  const latest = useRef({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable, sound, move, preloadMoves });
+  latest.current = { arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable, sound, move, preloadMoves };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -182,11 +186,11 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
         };
         sceneRef.current = scene;
         loadArena(scene, props.arenaSeed);
+        if (latest.current.preloadMoves) loadMoves(scene, latest.current.preloadMoves, scene.sound);
         // 교대할 포켓몬 이미지를 미리 받아 둔다(Assets 캐시). 실패해도 교대 시점에 다시 시도한다.
         for (const key of ["attacker", "defender"] as const) for (const pokemon of props.teams[key]) {
           void loadVisual(pixi, pokemon.imagePath, key).catch(() => undefined);
           loadTypeAssets(scene, pokemon.battleType);
-          loadMovePool(scene, pokemon.battleType, scene.sound);
         }
         if (props.phase === "intro" && props.firstTurn) holdForToss(scene);
         for (const type of new Set([props.attacker.battleType, props.defender.battleType])) loadTypeAssets(scene, type);
@@ -244,8 +248,7 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
     Object.assign(scene, { phase, actor, duration, multiplier, winner, stepKey, elapsed: 0, burstDone: false, emitDebt: 0, tossBurst: false });
     // 공격 단계마다 그 타입의 PokéRogue 기술 하나를 무작위로 골라 공격·명중 구간 동안 재생한다.
     if (phase === "attack" && actor) {
-      scene.move = pickMove(scene, actor, duration);
-      latest.current.onMove?.(stepKey, scene.move?.name ?? null);
+      scene.move = startMove(scene, actor, latest.current.move ?? null);
       if (!scene.move) latest.current.sound?.play(attackSoundUrl(scene.types[actor]), 0.9);
     } else if (phase !== "impact") scene.move = null;
   }, [actor, duration, multiplier, phase, stepKey, winner]);
@@ -264,6 +267,12 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
     const scene = sceneRef.current;
     if (scene) scene.speed = speed;
   }, [speed]);
+
+  // 이번 재생에서 쓸 기술을 미리 받는다(다시 보기마다 새로 고른 기술이 온다).
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (scene && preloadMoves) loadMoves(scene, preloadMoves, scene.sound);
+  }, [preloadMoves]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -286,90 +295,93 @@ function enterBoth(scene: Scene) {
   startEntrance(scene.sides.defender);
 }
 
-/** 타입의 기술 목록을 받아 둔다. 실패한 기술은 고르지 않는다. */
-function loadMovePool(scene: Scene, type: string, sound: () => SceneSound | undefined) {
-  for (const name of movePool(type)) {
+/** 기술 JSON과 이펙트 시트를 받아 둔다. 실패한 기술은 기본 연출로 대체된다. */
+function loadMoves(scene: Scene, names: readonly string[], sound: () => SceneSound | undefined) {
+  const sheet = async (graphic: string): Promise<Sheet> => {
+    const base: import("pixi.js").Texture = await scene.pixi.Assets.load(moveGraphicUrl(graphic));
+    base.source.scaleMode = "nearest";
+    return { base, cells: new Map() };
+  };
+  for (const name of names) {
     if (scene.moves.has(name)) continue;
     scene.moves.set(name, null);
     void fetch(moveAnimUrl(name))
       .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
       .then(async (raw: unknown) => {
-        const anim = parseMoveAnim(raw, false);
-        if (!anim?.graphic) return;
-        const base: import("pixi.js").Texture = await scene.pixi.Assets.load(moveGraphicUrl(anim.graphic));
-        base.source.scaleMode = "nearest";
-        scene.moves.set(name, { anim, base, cells: new Map() });
-        for (const effect of anim.sounds) sound()?.preload(moveSoundUrl(effect.resource));
+        const set = parseMoveAnim(raw);
+        if (!set?.main.graphic) return;
+        const main = await sheet(set.main.graphic);
+        const opponent = set.opponent?.graphic ? await sheet(set.opponent.graphic).catch(() => null) : null;
+        scene.moves.set(name, { set, main, opponent });
+        for (const effect of [...set.main.sounds, ...(set.opponent?.sounds ?? [])]) sound()?.preload(moveSoundUrl(effect.resource));
       })
       .catch(() => {
-        // 이 기술은 건너뛰고 같은 타입의 다른 기술이나 기본 연출을 쓴다.
+        // 이 기술은 기본 연출로 대체한다.
       });
   }
 }
 
-function pickMove(scene: Scene, source: SideKey, duration: number): ActiveMove | null {
-  const ready = movePool(scene.types[source]).flatMap((name) => { const entry = scene.moves.get(name); return entry ? [{ name, entry }] : []; });
-  if (!ready.length) return null;
-  const { name, entry } = pick(ready);
-  // 기술이 공격 단계 끝(명중 직전)쯤 끝나도록 프레임 간격을 맞춘다.
-  return { name, entry, clock: 0, frameMs: moveFrameMs(entry.anim.frames.length, duration + 150), fired: new Set(), source };
+function startMove(scene: Scene, actor: SideKey, name: string | null): ActiveMove | null {
+  const entry = name ? scene.moves.get(name) : null;
+  if (!name || !entry) return null;
+  const other: SideKey = actor === "attacker" ? "defender" : "attacker";
+  // 위쪽(상대) 포켓몬이 쓰고 상대 전용 변형이 있으면, 그 변형은 실제 대상(아래쪽)을 애니메이션의 '시전자' 자리로 그린다.
+  if (actor === "defender" && entry.set.opponent && entry.opponent) return { name, anim: entry.set.opponent, sheet: entry.opponent, clock: 0, fired: new Set(), animUser: other, animTarget: actor };
+  return { name, anim: entry.set.main, sheet: entry.main, clock: 0, fired: new Set(), animUser: actor, animTarget: other };
 }
 
-function moveCell(scene: Scene, entry: MoveEntry, frame: number) {
-  if (entry.cells.has(frame)) return entry.cells.get(frame) ?? null;
+function moveCell(scene: Scene, sheet: Sheet, frame: number) {
+  if (sheet.cells.has(frame)) return sheet.cells.get(frame) ?? null;
   const cell = effectCell(frame);
-  const fits = cell.x + cell.width <= entry.base.source.width && cell.y + cell.height <= entry.base.source.height;
-  const texture = fits ? new scene.pixi.Texture({ source: entry.base.source, frame: new scene.pixi.Rectangle(cell.x, cell.y, cell.width, cell.height) }) : null;
-  entry.cells.set(frame, texture);
+  const fits = cell.x + cell.width <= sheet.base.source.width && cell.y + cell.height <= sheet.base.source.height;
+  const texture = fits ? new scene.pixi.Texture({ source: sheet.base.source, frame: new scene.pixi.Rectangle(cell.x, cell.y, cell.width, cell.height) }) : null;
+  sheet.cells.set(frame, texture);
   return texture;
 }
 
 type Offsets = Record<SideKey, { x: number; y: number; alpha: number }>;
 
 /**
- * 진행 중인 기술의 현재 프레임을 그린다. 시전자·대상 움직임은 offsets에 더하고, 이펙트 셀은 스프라이트로 놓는다.
+ * 진행 중인 기술의 현재 프레임을 PokéRogue와 같은 규칙으로 그린다(프레임당 50ms).
+ * 시전자·대상 요소는 포켓몬을 그 위치로 옮기고(offsets), 이펙트 셀은 스프라이트로 놓는다.
  */
-function drawMove(scene: Scene, delta: number, hitstop: boolean, offsets: Offsets, center: (key: SideKey) => { x: number; y: number }, fieldScale: number, sound: SceneSound | undefined) {
+function drawMove(scene: Scene, delta: number, hitstop: boolean, offsets: Offsets, center: (key: SideKey) => { x: number; y: number }, field: { x: number; y: number; scale: number }, sound: SceneSound | undefined) {
   for (const sprite of scene.moveSprites) sprite.visible = false;
   const move = scene.move;
   if (!move) return;
   if (!hitstop) move.clock += delta;
-  const index = Math.floor(move.clock / move.frameMs);
-  move.entry.anim.sounds.forEach((effect, order) => {
+  const index = Math.floor(move.clock / MOVE_FRAME_MS);
+  move.anim.sounds.forEach((effect, order) => {
     if (effect.frame > index || move.fired.has(order)) return;
     move.fired.add(order);
     sound?.play(moveSoundUrl(effect.resource), effect.volume);
   });
-  const frame = move.entry.anim.frames[index];
+  const frame = move.anim.frames[index];
   if (!frame) return;
-  const target: SideKey = move.source === "attacker" ? "defender" : "attacker";
-  const user = center(move.source);
-  const foe = center(target);
-  // 위쪽(상대) 포켓몬이 시전하면 좌표 변환으로 위치가 뒤집히므로 그림도 좌우로 뒤집는다.
-  const flip = move.source === "defender" ? -1 : 1;
+  const user = center(move.animUser);
+  const target = center(move.animTarget);
   let used = 0;
   for (const element of frame) {
     if (element.target === 0 || element.target === 1) {
-      const key = element.target === 0 ? move.source : target;
-      const base = element.target === 0 ? ANIM_USER : ANIM_TARGET;
-      const now = mapAnimPoint(element.x, element.y, user, foe);
-      const rest = mapAnimPoint(base.x, base.y, user, foe);
+      const key = element.target === 0 ? move.animUser : move.animTarget;
+      const rest = placeMoveElement({ ...element, x: element.target === 0 ? 0 : 128, y: element.target === 0 ? 0 : -64 }, user, target, field);
+      const now = placeMoveElement(element, user, target, field);
       offsets[key].x += now.x - rest.x;
       offsets[key].y += now.y - rest.y;
       offsets[key].alpha *= element.visible ? element.opacity / 255 : 0;
       continue;
     }
     if (!element.visible || element.opacity <= 0) continue;
-    const texture = moveCell(scene, move.entry, element.graphicFrame);
+    const texture = moveCell(scene, move.sheet, element.graphicFrame);
     const sprite = scene.moveSprites[used];
     if (!texture || !sprite) continue;
     used++;
-    const at = mapAnimPoint(element.x, element.y, user, foe);
+    const at = placeMoveElement(element, user, target, field);
     sprite.texture = texture;
     sprite.visible = true;
     sprite.position.set(at.x, at.y);
-    sprite.scale.set(fieldScale * element.zoomX / 100 * flip * (element.mirror ? -1 : 1), fieldScale * element.zoomY / 100);
-    sprite.rotation = element.angle * Math.PI / 180 * flip;
+    sprite.scale.set(field.scale * element.zoomX / 100 * (element.mirror ? -1 : 1) * (at.flip ? -1 : 1), field.scale * element.zoomY / 100);
+    sprite.rotation = -element.angle * Math.PI / 180;
     sprite.alpha = element.opacity / 255;
     sprite.blendMode = element.blendType === 1 ? "add" : "normal";
   }
@@ -814,7 +826,7 @@ function update(scene: Scene, rawDelta: number) {
     stream(scene, delta, 16, () => ({ x: at.x + random(-size * 0.5, size * 0.5), y: at.y + random(-size * 0.2, size * 0.4), vx: random(-12, 12), vy: random(-70, -30), gravity: 0, drag: 0.5, maxLife: random(700, 1_100), size: random(3, 5), color: pick(["#facc15", "#fef08a", "#ffffff"]), shape: "star", spin: random(-3, 3) }));
   }
 
-  drawMove(scene, delta, hitstop, offsets, center, fieldScale, scene.sound());
+  drawMove(scene, delta, hitstop, offsets, center, { x: fieldX, y: fieldY, scale: fieldScale }, scene.sound());
 
   // 포켓몬과 바닥 그림자
   (["attacker", "defender"] as const).forEach((key) => {
