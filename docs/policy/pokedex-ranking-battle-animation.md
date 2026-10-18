@@ -14,7 +14,7 @@
 
 ## 3. 재생 정책
 
-- 전투장은 16:9 무대다. 상대 정보는 왼쪽 위, 내 정보는 오른쪽 아래에 둔다.
+- 전투장은 PokéRogue 화면과 같은 16:9(320×180 필드) 무대다. 장면 전체를 320×180 렌더 텍스처에 그린 뒤 최근접 보간으로 확대해 원작과 같은 픽셀 밀도로 보여준다. 포켓몬 발 위치·정보창 위치·아래 48픽셀 메시지창 배치는 원작과 같고, 내 포켓몬 발은 메시지창에 가려진다. 메시지(aria-live)·정보창은 DOM 오버레이다.
 - 선공은 양쪽 몬스터볼이 맞부딪친 뒤 선공 쪽 볼이 떠오르는 연출과 "OO 파티 선공!" 문구로 보여준다.
 - 전투는 선공 안내, 포켓몬 등장, 차징, 공격, 명중, HP 반영, 쓰러짐·교대, 결과 순으로 재생한다.
 - 공격마다 피해 수치와 타입 상성 문구를 표시한다. 타입 보정 1.2는 `효과가 굉장했다!`, 0.8은 `효과가 별로였다…`로 안내한다.
@@ -38,6 +38,8 @@
 | 용도 | URL 패턴 | 비고 |
 | --- | --- | --- |
 | 포켓몬 정적 이미지(기존) | `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{번호}.png` | PokeAPI/sprites 저장소. 뒷모습은 `.../back/{번호}.png` |
+| 포켓몬 스프라이트(우선) | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokemon/{번호}.json`(+`.png`), 공격 측은 `.../pokemon/back/{번호}.json` | PokéRogue 스프라이트 아틀라스, 10fps. 아틀라스 JSON은 AGPL(REUSE) — 사용자 결정으로 런타임 사용 |
+| 메시지창 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/ui/bg.png` | 첫 줄(320×48)만 쓴다 |
 | 포켓몬 애니메이션 | `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/{번호}.gif`, `.../showdown/back/{번호}.gif` | 공격 측은 뒷모습, 방어 측은 앞모습 |
 | 전투 배경·발판 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/arenas/{배경}_bg.png`, `..._a.png`(내 발판), `..._b.png`(상대 발판) | 320×180 필드. 전투 id로 배경 9종 중 하나를 고정 선택한다 |
 | 몬스터볼 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokeball/pb.png`, `pb_opening.png`, `pb_open.png` | 등장·회수·선공 볼 던지기에 사용 |
@@ -54,7 +56,7 @@
 - 외부 배경을 불러오지 못하면 기존 전투장 그림(`public/pokedex/effects/battle-arena.webp`)이 CSS 배경으로 보이고, 몬스터볼은 Graphics로 그린다.
 - 위 주소는 모두 `access-control-allow-origin: *`로 WebGL 텍스처 로드가 가능함을 확인했다. 주소 목록은 `src/app/(member)/pokedex/ranking-battle-assets.ts`에 둔다.
 - 스프라이트·이펙트 그림의 캐릭터와 디자인 권리는 Pokémon/Nintendo/Creatures/GAME FREAK에 있다. PokeAPI/sprites와 PokéRogue 에셋 저장소는 이를 모아 둔 공개 저장소이며, 정식 라이선스가 아니다. 비공개 동아리 회원 화면에서만 쓰고, 공개 배포·수익화로 범위가 바뀌면 자체·라이선스 에셋으로 교체한다([조사 문서](../research/pokemon-webgame-stack-research-2026-08-03.md)의 IP 경계 참고).
-- 기술 연출: 다시 보기마다 공격 단계별로 그 타입의 PokéRogue 기술 하나를 무작위로 고르고, PokéRogue battle-anims JSON을 런타임에 받아 PokéRogue와 같은 규칙(프레임당 50ms, 대상·시전자·보간·화면 기준점, 상대 전용 변형)으로 재생한다. 공격 단계 길이는 기술 길이에 맞춘다. 배경 변경 이벤트는 재생하지 않는다. 고른 기술 이름은 메시지 박스에 텍스트로 보여준다. 기술을 못 받으면 기존 타입별 이펙트 시트·Graphics 연출로 대체한다.
+- 기술 연출: 다시 보기마다 공격 단계별로 그 타입의 PokéRogue 기술 하나를 무작위로 고르고, PokéRogue battle-anims JSON을 런타임에 받아 PokéRogue와 같은 규칙(프레임당 50ms, 대상·시전자·보간·화면 기준점, 상대 전용 변형)으로 재생한다. 공격 단계 길이는 기술 길이에 맞춘다. 배경 이벤트(타일 배경·스크롤·투명도), 포켓몬 색조, 그리는 순서(priority)도 원작대로 재생하고, 프레임 사이 위치·크기·투명도·회전은 보간해 부드럽게 보이게 한다(차이 합성 모드는 일반 합성으로 대신한다). 고른 기술 이름은 메시지 박스에 텍스트로 보여준다. 기술을 못 받으면 기존 타입별 이펙트 시트·Graphics 연출로 대체한다.
 - 정보창·체력바: PokéRogue UI 이미지(pbinfo_enemy_mini, pbinfo_player, overlay_hp)를 React 정보창의 배경으로 쓰고, 이름·전투력·체력 수치·progressbar 속성은 DOM으로 유지한다.
 - **라이선스 결정(2026-10-18, 사용자 결정)**: battle-anims JSON은 PokéRogue 저장소 REUSE에서 AGPL-3.0-only "코드"로 분류되고, UI 이미지(pbinfo·overlay_hp)는 별도 표기가 없어 PokéRogue 자체 제작(AGPL) 자산일 가능성이 크다. 이 저장소에는 라이선스가 없으므로 AGPL 의무(이 앱 소스를 AGPL로 제공)와 충돌할 수 있다는 위험을 알고도, 원작과 같은 연출을 위해 런타임 로드를 택했다. 파일은 저장소에 복사하지 않는다. 공개 배포·외부 공유로 범위가 바뀌면 이 결정을 다시 검토한다.
 - Pokémon Showdown 클라이언트 코드는 복사하지 않는다. 몬스터볼 파티클 아틀라스 JSON(AGPL)은 쓰지 않고 PNG를 직접 자른다.

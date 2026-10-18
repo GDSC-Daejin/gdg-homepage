@@ -18,12 +18,20 @@ export type MoveElement = {
   blendType: number;
   angle: number;
   mirror: boolean;
+  /** 0: 포켓몬 앞, 1: 맨 앞, 2: 기준 포켓몬 뒤(배경이 있으면 배경 바로 위), 3: 기준 포켓몬 바로 앞 */
+  priority: number;
+  /** 포켓몬 색조 [더할 R, G, B(-255~255), 회색 정도(0~255)] */
+  tone: readonly [number, number, number, number];
 };
+
+/** 배경 이벤트: add는 타일 배경을 새로 깔고, update는 위치·투명도를 duration 프레임 동안 바꾼다. */
+export type MoveBgEvent = { frame: number; kind: "add" | "update"; resource: string; bgX: number; bgY: number; opacity: number; duration: number };
 
 export type MoveAnim = {
   graphic: string;
   frames: MoveElement[][];
-  sounds: { frame: number; resource: string; volume: number }[];
+  sounds: { frame: number; resource: string; volume: number; pitch: number }[];
+  backgrounds: MoveBgEvent[];
 };
 
 /** 기본 변형과, 위쪽(상대) 포켓몬이 쓸 때의 전용 변형(있을 때만) */
@@ -54,20 +62,27 @@ function parseVariant(raw: unknown): MoveAnim | null {
       blendType: finite(element.blendType, 0),
       angle: finite(element.angle, 0),
       mirror: element.mirror === true,
+      priority: finite(element.priority, 1),
+      tone: Array.isArray(element.tone) ? [finite(element.tone[0], 0), finite(element.tone[1], 0), finite(element.tone[2], 0), finite(element.tone[3], 0)] as const : [0, 0, 0, 0] as const,
     }];
   }) : []);
   const sounds: MoveAnim["sounds"] = [];
+  const backgrounds: MoveBgEvent[] = [];
   if (source.frameTimedEvents && typeof source.frameTimedEvents === "object") {
-    for (const [frame, events] of Object.entries(source.frameTimedEvents as Record<string, unknown>)) {
+    for (const [key, events] of Object.entries(source.frameTimedEvents as Record<string, unknown>)) {
       if (!Array.isArray(events)) continue;
+      const frame = Math.max(0, Math.floor(Number(key) || 0));
       for (const event of events) {
         const value = event as Record<string, unknown>;
-        if (value?.eventType !== "AnimTimedSoundEvent" || typeof value.resourceName !== "string") continue;
-        sounds.push({ frame: Math.max(0, Math.floor(Number(frame) || 0)), resource: value.resourceName, volume: Math.max(0, Math.min(1, finite(value.volume, 100) / 100)) });
+        if (!value || typeof value.resourceName !== "string") continue;
+        if (value.eventType === "AnimTimedSoundEvent" && value.resourceName) sounds.push({ frame, resource: value.resourceName, volume: Math.max(0, Math.min(1, finite(value.volume, 100) / 100)), pitch: Math.max(0.25, Math.min(4, finite(value.pitch, 100) / 100)) });
+        if (value.eventType === "AnimTimedAddBgEvent" || value.eventType === "AnimTimedUpdateBgEvent") {
+          backgrounds.push({ frame, kind: value.eventType === "AnimTimedAddBgEvent" ? "add" : "update", resource: value.resourceName, bgX: finite(value.bgX, 0), bgY: finite(value.bgY, 0), opacity: Math.max(0, Math.min(255, finite(value.opacity, 0))), duration: Math.max(0, finite(value.duration, 0)) });
+        }
       }
     }
   }
-  return { graphic: typeof source.graphic === "string" ? source.graphic : "", frames, sounds };
+  return { graphic: typeof source.graphic === "string" ? source.graphic : "", frames, sounds, backgrounds };
 }
 
 /** 기술 JSON을 해석한다. 배열이면 [0]이 기본, [1]이 상대 시전용이다. 형식이 맞지 않으면 null. */
@@ -100,3 +115,33 @@ export function placeMoveElement(element: Pick<MoveElement, "x" | "y" | "focus" 
   }
   return { x: field.x + fx * field.scale, y: field.y + fy * field.scale, flip: false };
 }
+
+const lerp = (from: number, to: number, t: number) => from + (to - from) * t;
+
+/**
+ * 프레임 사이를 부드럽게 잇는다. PokéRogue처럼 같은 종류(시전자·대상·이펙트) 안에서 순서가 같은 요소끼리 짝짓고,
+ * 위치·확대·투명도·회전만 보간한다(셀 번호·색조는 현재 프레임 값을 쓴다).
+ */
+export function interpolateFrame(current: MoveElement[], next: MoveElement[] | undefined, t: number): MoveElement[] {
+  if (!next || t <= 0) return current;
+  const counters = new Map<number, number>();
+  const nextByKind = new Map<number, MoveElement[]>();
+  for (const element of next) nextByKind.set(element.target, [...(nextByKind.get(element.target) ?? []), element]);
+  return current.map((element) => {
+    const order = counters.get(element.target) ?? 0;
+    counters.set(element.target, order + 1);
+    const pair = nextByKind.get(element.target)?.[order];
+    if (!pair || pair.focus !== element.focus || !pair.visible || !element.visible) return element;
+    return { ...element, x: lerp(element.x, pair.x, t), y: lerp(element.y, pair.y, t), zoomX: lerp(element.zoomX, pair.zoomX, t), zoomY: lerp(element.zoomY, pair.zoomY, t), opacity: lerp(element.opacity, pair.opacity, t), angle: lerp(element.angle, pair.angle, t) };
+  });
+}
+
+/** PokéRogue 색조 셰이더와 같은 계산(회색 섞기 후 RGB 더하기)을 ColorMatrixFilter 행렬(4×5, 오프셋 0~1)로 만든다. */
+export function toneMatrix(tone: readonly [number, number, number, number]) {
+  const gray = Math.max(0, Math.min(1, tone[3] / 255));
+  const luma = [0.299, 0.587, 0.114];
+  const row = (channel: number, offset: number) => [0, 1, 2].map((index) => (1 - gray) * (index === channel ? 1 : 0) + gray * luma[index]).concat([0, offset]);
+  return [...row(0, tone[0] / 255), ...row(1, tone[1] / 255), ...row(2, tone[2] / 255), 0, 0, 0, 1, 0];
+}
+
+export const hasTone = (tone: readonly number[]) => tone.some((value) => value !== 0);

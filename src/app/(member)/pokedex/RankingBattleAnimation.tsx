@@ -205,8 +205,8 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
   speedRef.current = speed;
   const sceneSound = useMemo(() => ({
     preload: (url: string) => audioRef.current?.preloadUrl(url),
-    play: (url: string, volume: number) => {
-      if (soundAllowedRef.current && readSoundPreference()) audioRef.current?.playUrl(url, volume, speedRef.current);
+    play: (url: string, volume: number, rate = 1) => {
+      if (soundAllowedRef.current && readSoundPreference()) audioRef.current?.playUrl(url, volume, speedRef.current * rate);
     },
   }), []);
 
@@ -240,10 +240,10 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
       {step.phase === "intro" && battle.firstTurnUserId && animated && <span aria-hidden className={styles.firstTurnBanner} style={{ "--toss-delay": `${TOSS_MS * 0.45 / speed}ms` } as CSSProperties}>{battle.firstTurnUserId === battle.attackerId ? "공격 파티" : "방어 파티"} 선공!</span>}
       {impact && damage > 0 && <span key={stepKey} aria-hidden className={`${styles.damagePop} ${step.actor === "attacker" ? styles.damageOnRight : styles.damageOnLeft} ${tier === "strong" ? styles.damageStrong : tier === "weak" ? styles.damageWeak : ""}`}>-{damage}</span>}
       {complete && animated && <span aria-hidden className={`${styles.winBanner} ${winnerSide === "attacker" ? styles.winLeft : styles.winRight}`}>WIN!</span>}
+      <div className={styles.pbMessage} aria-live="polite"><p>{message}</p></div>
       <RankingBattleStatus pokemon={defender} health={defenderHealth} fromHealth={defenderFrom} side="enemy" winner={complete && winnerSide === "defender"} />
       <RankingBattleStatus pokemon={attacker} health={attackerHealth} fromHealth={attackerFrom} side="player" winner={complete && winnerSide === "attacker"} />
     </div>
-    <div className={styles.battleMessage} aria-live="polite"><p>{message}</p></div>
     <div className="mt-5 flex flex-wrap justify-center gap-2" onPointerDownCapture={unlockAudio} onKeyDownCapture={unlockAudio}><Button type="button" variant="secondary" size="sm" onClick={() => setPaused((value) => !value)} disabled={complete}>{paused ? "계속" : "일시정지"}</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); musicRef.current?.stop(); if (musicOn && sceneAvailable) musicRef.current?.play(); setStepIndex(0); setPaused(false); setSkipped(false); setReplayKey((key) => key + 1); }} disabled={reduced}>다시 보기</Button><Button type="button" variant="ghost" size="sm" onClick={() => setSpeed((value) => value === 1 ? 2 : 1)} disabled={complete}>{speed}배속</Button><Button type="button" variant="ghost" size="sm" onClick={() => { audioRef.current?.stopAll(); setStepIndex(steps.length - 1); setSkipped(true); }} disabled={complete}>결과 보기</Button><Button type="button" variant="ghost" size="sm" aria-pressed={soundOn} onClick={() => { const next = !soundOn; if (!next) audioRef.current?.stopAll(); setSoundOn(next); writeSoundPreference(next); }}>효과음<span aria-hidden className="ml-1">{soundOn ? "켬" : "끔"}</span></Button><Button type="button" variant="ghost" size="sm" aria-pressed={musicOn} onClick={() => { const next = !musicOn; setMusicOn(next); writeSoundPreference(next, MUSIC_STORAGE_KEY); }}>배경음악<span aria-hidden className="ml-1">{musicOn ? "켬" : "끔"}</span></Button></div>
     {(complete || !sceneAvailable) && <div className={`mt-8 text-left ${animated && !skipped ? styles.resultReveal : ""}`}><BattleLog battle={battle} profileId={profileId} /></div>}
   </div>;

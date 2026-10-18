@@ -76,7 +76,7 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(animation).toContain("stepKey={stepKey}");
     expect(animation).toContain("paused={paused}");
     expect(animation).toContain("speed={speed}");
-    expect(scene).toContain("if (!scene.paused) update(scene");
+    expect(scene).toContain("if (!scene.paused) renderField(scene");
   });
 
   it("체력 바 접근성 속성과 피해 숫자 팝업을 유지한다", async () => {
@@ -98,14 +98,17 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(healthColor(10)).toBe("#ef4444");
   });
 
-  it("PokeAPI 스프라이트는 애니메이션 GIF를 먼저 시도하고 원래 이미지로 대체한다", () => {
+  it("PokéRogue 스프라이트를 먼저 쓰고, 애니메이션 GIF·원래 이미지로 대체한다", () => {
     const front = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png";
     expect(battleSpriteCandidates(front, "defender").map((item) => item.url)).toEqual([
+      "https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokemon/25.png",
       "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/25.gif",
       front,
     ]);
+    expect(battleSpriteCandidates(front, "defender")[0].atlas).toBe("https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokemon/25.json");
     const attacker = battleSpriteCandidates(front, "attacker");
-    expect(attacker.map((item) => item.url)).toEqual([
+    expect(attacker[0].atlas).toBe("https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokemon/back/25.json");
+    expect(attacker.slice(1).map((item) => item.url)).toEqual([
       "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/back/25.gif",
       "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/25.png",
       front,

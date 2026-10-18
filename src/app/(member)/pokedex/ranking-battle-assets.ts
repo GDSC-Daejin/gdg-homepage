@@ -13,28 +13,36 @@ export type SpriteCandidate = {
   url: string;
   /** 애니메이션 GIF면 프레임을 직접 넘긴다. */
   animated: boolean;
+  /** PokéRogue 스프라이트 아틀라스(JSON 주소). url은 같은 이름의 PNG다. */
+  atlas?: string;
   /** 원본 스프라이트가 바라보는 방향을 장면 방향에 맞추기 위한 좌우 반전 */
   flip: boolean;
   /** 발 위치(세로 기준점). 여백 있는 96px PNG와 꼭 맞게 잘린 GIF가 다르다. */
   anchorY: number;
 };
 
+/** PokéRogue 포켓몬 스프라이트는 프레임 이름 순서대로 10fps로 재생한다. */
+export const POKEMON_SPRITE_FRAME_MS = 100;
+
 /**
- * 공격 측(왼쪽 아래)은 뒷모습, 방어 측(오른쪽 위)은 앞모습을 우선 쓰고,
- * 실패하면 원래 이미지(imagePath)로 내려간다. PokeAPI 형식이 아니면 원래 이미지만 쓴다.
+ * 공격 측(왼쪽 아래)은 뒷모습, 방어 측(오른쪽 위)은 앞모습을 쓴다.
+ * PokéRogue 스프라이트(원작과 같은 픽셀 크기) → PokeAPI 애니메이션 GIF → 정적 PNG → 원래 이미지 순으로 내려간다.
  */
 export function battleSpriteCandidates(imagePath: string, side: "attacker" | "defender"): SpriteCandidate[] {
   const original: SpriteCandidate = { url: imagePath, animated: false, flip: side === "attacker", anchorY: 0.82 };
   const match = POKEAPI_PNG.exec(imagePath);
   if (!match) return [original];
   const no = match[1];
+  const folder = side === "attacker" ? "pokemon/back" : "pokemon";
+  const pokerogue: SpriteCandidate = { url: `${POKEROGUE_IMAGES}/${folder}/${no}.png`, atlas: `${POKEROGUE_IMAGES}/${folder}/${no}.json`, animated: true, flip: false, anchorY: 1 };
   return side === "attacker"
     ? [
+        pokerogue,
         { url: `${POKEAPI_SPRITES}/other/showdown/back/${no}.gif`, animated: true, flip: false, anchorY: 0.98 },
         { url: `${POKEAPI_SPRITES}/back/${no}.png`, animated: false, flip: false, anchorY: 0.86 },
         original,
       ]
-    : [{ url: `${POKEAPI_SPRITES}/other/showdown/${no}.gif`, animated: true, flip: false, anchorY: 0.98 }, original];
+    : [pokerogue, { url: `${POKEAPI_SPRITES}/other/showdown/${no}.gif`, animated: true, flip: false, anchorY: 0.98 }, original];
 }
 
 export type EffectSheet = { url: string; frames: readonly number[]; frameMs: number };
@@ -94,10 +102,13 @@ export function effectCell(frame: number) {
   return { x: frame % EFFECT_COLUMNS * EFFECT_CELL, y: Math.floor(frame / EFFECT_COLUMNS) * EFFECT_CELL, width: EFFECT_CELL, height: EFFECT_CELL };
 }
 
-/** PokéRogue 전투장은 320×180 필드에 배경(bg)과 발판(a: 플레이어, b: 상대, 320×132, 아래 정렬)을 겹친다. */
-export const FIELD = { width: 320, height: 180, baseHeight: 132 } as const;
-/** 발판 이미지를 보고 잡은 포켓몬 발 위치(필드 좌표) */
-export const FIELD_SPOTS = { attacker: { x: 102, y: 170 }, defender: { x: 216, y: 118 } } as const;
+/**
+ * PokéRogue 전투 화면: 320×180 필드에 배경(bg)과 발판(a: 플레이어, b: 상대, 320×132)을 왼쪽 위에 맞춰 겹치고,
+ * 아래 48픽셀은 메시지창이 덮는다. 장면을 이 크기로 그린 뒤 최근접 보간으로 확대해 원작과 같은 픽셀 밀도로 보여준다.
+ */
+export const FIELD = { width: 320, height: 180, messageHeight: 48 } as const;
+/** 포켓몬 발 위치(필드 좌표). PokéRogue 기본 자리와 같다(내 포켓몬은 발이 메시지창에 가려진다). */
+export const FIELD_SPOTS = { attacker: { x: 106, y: 148 }, defender: { x: 236, y: 84 } } as const;
 
 const ARENAS = ["plains", "grass", "tall_grass", "meadow", "forest", "lake", "beach", "town", "mountain"] as const;
 

@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
-import { MOVE_FRAME_MS, MOVE_POOLS, moveAnimUrl, moveDisplayName, moveDurationMs, movePool, moveSoundUrl, randomMove } from "@/app/(member)/pokedex/ranking-battle-assets";
+import { FIELD, FIELD_SPOTS, MOVE_FRAME_MS, MOVE_POOLS, moveAnimUrl, moveDisplayName, moveDurationMs, movePool, moveSoundUrl, randomMove } from "@/app/(member)/pokedex/ranking-battle-assets";
 import { healthBarRow } from "@/app/(member)/pokedex/ranking-battle-fx";
-import { parseMoveAnim, placeMoveElement } from "@/app/(member)/pokedex/ranking-move-anim";
+import { interpolateFrame, parseMoveAnim, placeMoveElement, toneMatrix } from "@/app/(member)/pokedex/ranking-move-anim";
 import { buildRankingBattleSteps, planRankingMoves } from "@/app/(member)/pokedex/RankingBattleAnimation";
 import type { RankingBattleDetail } from "@/lib/pokedex/ranking-league";
 
@@ -32,7 +32,7 @@ describe("랭킹전 PokéRogue 기술 재생", () => {
     expect(anim.frames[0][0]).toMatchObject({ x: 10, y: -5, zoomX: 150, graphicFrame: 36, opacity: 85, blendType: 1, angle: 0, mirror: false, focus: 1 });
     expect(anim.frames[0][1]).toMatchObject({ x: 0, target: 0 });
     expect(anim.frames[1]).toEqual([]);
-    expect(anim.sounds).toEqual([{ frame: 5, resource: "PRSFX- Ember.wav", volume: 0.8 }]);
+    expect(anim.sounds).toEqual([{ frame: 5, resource: "PRSFX- Ember.wav", volume: 0.8, pitch: 1 }]);
     // 배열 형식이면 [0]이 기본, [1]이 상대 시전용 변형이다.
     const set = parseMoveAnim([raw, { graphic: "Other", frames: [[]] }])!;
     expect(set.main.graphic).toBe("PRAS- Fire");
@@ -40,6 +40,24 @@ describe("랭킹전 PokéRogue 기술 재생", () => {
     expect(parseMoveAnim(raw)?.opponent).toBeNull();
     expect(parseMoveAnim({ frames: [] })).toBeNull();
     expect(parseMoveAnim(null)).toBeNull();
+  });
+
+  it("배경 이벤트·색조·그리는 순서를 해석하고, 프레임 사이를 보간한다", () => {
+    const raw = { graphic: "G", frames: [[{ x: 0, y: 0, target: 2, focus: 3, priority: 2, tone: [255, -100, 0, 128] }], [{ x: 10, y: -10, target: 2, focus: 3, opacity: 0 }]], frameTimedEvents: { 0: [{ eventType: "AnimTimedAddBgEvent", resourceName: "PRAS- Aurora BG", bgX: 0, bgY: 0, opacity: 0, duration: 5 }, { eventType: "AnimTimedUpdateBgEvent", resourceName: "", bgX: 400, bgY: 200, opacity: 255, duration: 3 }] } };
+    const anim = parseMoveAnim(raw)!.main;
+    expect(anim.backgrounds).toEqual([
+      { frame: 0, kind: "add", resource: "PRAS- Aurora BG", bgX: 0, bgY: 0, opacity: 0, duration: 5 },
+      { frame: 0, kind: "update", resource: "", bgX: 400, bgY: 200, opacity: 255, duration: 3 },
+    ]);
+    expect(anim.frames[0][0]).toMatchObject({ priority: 2, tone: [255, -100, 0, 128] });
+    const half = interpolateFrame(anim.frames[0], anim.frames[1], 0.5)[0];
+    expect(half).toMatchObject({ x: 5, y: -5, tone: [255, -100, 0, 128] });
+    // 다음 프레임에서 보이지 않는 요소와는 보간하지 않는다(갑자기 사라지는 원작 동작 유지).
+    expect(interpolateFrame(anim.frames[0], [{ ...anim.frames[1][0], visible: false }], 0.5)[0].x).toBe(0);
+    const matrix = toneMatrix([255, 0, -255, 0]);
+    expect(matrix.slice(0, 5)).toEqual([1, 0, 0, 0, 1]);
+    expect(matrix[14]).toBe(-1);
+    expect(toneMatrix([0, 0, 0, 255]).slice(0, 3)).toEqual([0.299, 0.587, 0.114]);
   });
 
   it("PokéRogue와 같은 기준점 규칙으로 화면 위치를 정한다", () => {
@@ -72,7 +90,18 @@ describe("랭킹전 PokéRogue 기술 재생", () => {
     expect(animation).toContain("moveDisplayName(step.move)");
     expect(animation).toContain('if (sound && sound.kind !== "attack") audio.play(sound, speed);');
     expect(scene).toContain("scene.move = startMove(scene, actor, latest.current.move ?? null);");
-    expect(scene).toContain("sound?.play(moveSoundUrl(effect.resource), effect.volume);");
+    expect(scene).toContain("sound?.play(moveSoundUrl(effect.resource), effect.volume, effect.pitch);");
+  });
+
+  it("장면을 320×180 필드로 그려 확대하고, 원작 자리·메시지창 배치를 따른다", async () => {
+    const [scene, animation, styles] = await Promise.all([read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx"), read("src/app/(member)/pokedex/RankingBattleAnimation.tsx"), read("src/app/(member)/pokedex/DuelPanel.module.css")]);
+    expect(FIELD).toEqual({ width: 320, height: 180, messageHeight: 48 });
+    expect(FIELD_SPOTS).toEqual({ attacker: { x: 106, y: 148 }, defender: { x: 236, y: 84 } });
+    expect(scene).toContain("pixi.RenderTexture.create({ width: FIELD.width, height: FIELD.height, resolution: 1 })");
+    expect(scene).toContain('fieldTexture.source.scaleMode = "nearest";');
+    expect(animation).toContain('<div className={styles.pbMessage} aria-live="polite">');
+    expect(styles).toContain("--u: calc(100cqw / 320)");
+    expect(styles).toContain("pokerogue-assets/beta/images/ui/bg.png");
   });
 
   it("정보창은 PokéRogue UI 이미지를 쓰고 progressbar 접근성 속성을 유지한다", async () => {
