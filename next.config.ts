@@ -6,8 +6,10 @@ const cspReportOnly = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com https://www.googletagmanager.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com",
-  "connect-src 'self' https://*.supabase.co https://api.resend.com https://www.google-analytics.com https://www.googletagmanager.com",
+  // raw.githubusercontent.com: 포켓몬 스프라이트(PokeAPI)·전투장 이미지(PokéRogue). 랭킹전 PixiJS는 fetch로 텍스처를 읽고 blob 워커를 쓴다.
+  "img-src 'self' data: blob: https://*.supabase.co https://www.google-analytics.com https://raw.githubusercontent.com",
+  "connect-src 'self' https://*.supabase.co https://api.resend.com https://www.google-analytics.com https://www.googletagmanager.com https://raw.githubusercontent.com",
+  "worker-src 'self' blob:",
   "frame-ancestors 'none'",
   "base-uri 'self'",
 ].join("; ");
