@@ -45,12 +45,19 @@
 | 효과음 샘플 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/se/{pb_throw,pb_rel,hit,hit_strong,hit_weak,faint,charge,level_up_fanfare}.wav` | 저장소 REUSE.toml 기준 원작 게임에서 가져온 소리. 승리음은 level_up_fanfare |
 | 타입별 공격음 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/battle_anims/{파일}` | 타입마다 대표 기술 소리 1개(예: 불꽃 Ember, 전기 Electricity1). `PRSFX-` 접두 파일은 Pokémon Reborn 팀 제작(LicenseRef-POKEMON-REBORN), 나머지는 원작 유래. 목록은 `ranking-battle-assets.ts` |
 | 전투 배경음악 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/bgm/battle_trainer.mp3` | 약 2.6MB. 모달을 열고 배경음악이 켜져 있을 때만 받는다. 루프 지점 데이터(AGPL)는 쓰지 않고 파일 전체를 반복한다 |
+| 기술 애니메이션 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/battle-anims/{기술}.json` | AGPL-3.0-only(REUSE "Considered code"). 타입별 목록은 `ranking-battle-assets.ts`의 `MOVE_POOLS`(36프레임 이하 공격 기술) |
+| 기술 효과음 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/audio/battle_anims/{파일}` | 기술 JSON의 효과음 이벤트가 가리키는 파일. `PRSFX-` 접두는 Pokémon Reborn 팀 제작 |
+| 정보창·체력바 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/ui/{pbinfo_enemy_mini,pbinfo_player,overlay_hp}.png` | REUSE 표기 없음(PokéRogue 자체 제작 추정) |
+| 기술 한국어 이름 | PokeAPI 기술 데이터의 `ko` 이름 | `ranking-battle-assets.ts`에 이름만 둔다 |
 | 타입 이펙트 시트 | `https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/battle_anims/{파일명}.png` | 96px 셀 5열 격자. 계열 기본값과 타입별 시트(얼음·독·바위·땅·강철·격투·드래곤·비행·고스트·에스퍼·페어리·벌레)를 쓴다. 사용할 셀은 이미지를 보고 직접 골랐다. 저장소 REUSE에 별도 표기가 없다 |
 
 - 외부 배경을 불러오지 못하면 기존 전투장 그림(`public/pokedex/effects/battle-arena.webp`)이 CSS 배경으로 보이고, 몬스터볼은 Graphics로 그린다.
 - 위 주소는 모두 `access-control-allow-origin: *`로 WebGL 텍스처 로드가 가능함을 확인했다. 주소 목록은 `src/app/(member)/pokedex/ranking-battle-assets.ts`에 둔다.
 - 스프라이트·이펙트 그림의 캐릭터와 디자인 권리는 Pokémon/Nintendo/Creatures/GAME FREAK에 있다. PokeAPI/sprites와 PokéRogue 에셋 저장소는 이를 모아 둔 공개 저장소이며, 정식 라이선스가 아니다. 비공개 동아리 회원 화면에서만 쓰고, 공개 배포·수익화로 범위가 바뀌면 자체·라이선스 에셋으로 교체한다([조사 문서](../research/pokemon-webgame-stack-research-2026-08-03.md)의 IP 경계 참고).
-- PokéRogue의 battle-anims 데이터(AGPL)와 Pokémon Showdown 클라이언트 코드는 복사하지 않는다. 볼 투척 → 등장, 차징 → 발사 → 히트스톱 → 넉백, HP 감소 속도 같은 연출 타이밍과 구성만 참고한다.
+- 기술 연출: 공격마다 그 타입의 PokéRogue 기술 하나를 무작위로 골라, PokéRogue battle-anims JSON을 런타임에 받아 그대로 재생한다(시전자·대상 움직임, 이펙트 셀, 효과음 시점). 배경 변경 이벤트는 재생하지 않는다. 고른 기술 이름은 메시지 박스에 텍스트로 보여준다. 기술을 못 받으면 기존 타입별 이펙트 시트·Graphics 연출로 대체한다.
+- 정보창·체력바: PokéRogue UI 이미지(pbinfo_enemy_mini, pbinfo_player, overlay_hp)를 React 정보창의 배경으로 쓰고, 이름·전투력·체력 수치·progressbar 속성은 DOM으로 유지한다.
+- **라이선스 결정(2026-10-18, 사용자 결정)**: battle-anims JSON은 PokéRogue 저장소 REUSE에서 AGPL-3.0-only "코드"로 분류되고, UI 이미지(pbinfo·overlay_hp)는 별도 표기가 없어 PokéRogue 자체 제작(AGPL) 자산일 가능성이 크다. 이 저장소에는 라이선스가 없으므로 AGPL 의무(이 앱 소스를 AGPL로 제공)와 충돌할 수 있다는 위험을 알고도, 원작과 같은 연출을 위해 런타임 로드를 택했다. 파일은 저장소에 복사하지 않는다. 공개 배포·외부 공유로 범위가 바뀌면 이 결정을 다시 검토한다.
+- Pokémon Showdown 클라이언트 코드는 복사하지 않는다. 몬스터볼 파티클 아틀라스 JSON(AGPL)은 쓰지 않고 PNG를 직접 자른다.
 
 ## 6. 효과음
 

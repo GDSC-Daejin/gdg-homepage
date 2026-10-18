@@ -39,6 +39,33 @@
 /* Pixi 전투장을 못 쓰는 경우(모션 감소·초기화 실패)에만 예전 전투장 그림을 보여준다. 평소에는 배경이 로드되기 전 잠깐 보이지 않도록 단색 하늘·풀밭으로 둔다. */
 .rankingStageFallback { background: #dceff0 image-set(url("/pokedex/effects/battle-arena.webp") 1x, url("/pokedex/effects/battle-arena@2x.webp") 2x) center / cover no-repeat; }
 .statusPlayer { top: auto; right: 1rem; bottom: 1rem; }
+
+/* 랭킹전 정보창: PokéRogue pbinfo·overlay_hp 이미지(외부 URL, 저장소에 파일 없음). 픽셀 좌표는 원본 이미지 기준이고 --pb 배율로 키운다. */
+.pbBox {
+  --pb: 2;
+  position: absolute;
+  z-index: 12;
+  width: calc(130px * var(--pb));
+  color: #fff;
+  text-align: left;
+  background: #3b3550 0 0 / 100% 100% no-repeat;
+  image-rendering: pixelated;
+  border-radius: calc(3px * var(--pb));
+}
+.pbEnemy { top: .6rem; left: .6rem; height: calc(31px * var(--pb)); background-image: url("https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/ui/pbinfo_enemy_mini.png"); background-color: transparent; }
+.pbPlayer { right: .6rem; bottom: .6rem; height: calc(42px * var(--pb)); background-image: url("https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/ui/pbinfo_player.png"); background-color: transparent; }
+.pbName { position: absolute; top: calc(3px * var(--pb)); right: calc(18px * var(--pb)); left: calc(10px * var(--pb)); display: flex; align-items: baseline; justify-content: space-between; gap: calc(3px * var(--pb)); white-space: nowrap; text-shadow: calc(.5px * var(--pb)) calc(.5px * var(--pb)) 0 #1b1828; }
+.pbPlayer .pbName { top: calc(5px * var(--pb)); left: calc(17px * var(--pb)); right: calc(14px * var(--pb)); }
+.pbName strong { overflow: hidden; font-size: calc(7.5px * var(--pb)); font-weight: 800; text-overflow: ellipsis; }
+.pbName span { font-size: calc(5.5px * var(--pb)); font-weight: 700; opacity: .9; }
+.pbHpLabel { position: absolute; top: calc(18.5px * var(--pb)); left: calc(50px * var(--pb)); color: #e8a400; font-size: calc(4.5px * var(--pb)); font-weight: 900; line-height: 1; }
+.pbPlayer .pbHpLabel { left: calc(60px * var(--pb)); }
+.pbHpSlot { position: absolute; top: calc(20px * var(--pb)); left: calc(59px * var(--pb)); width: calc(48px * var(--pb)); height: calc(2px * var(--pb)); overflow: hidden; }
+.pbPlayer .pbHpSlot { left: calc(69px * var(--pb)); }
+.pbHpFill, .pbHpGhost { position: absolute; top: 0; bottom: 0; left: 0; display: block; width: var(--hp-to, 100%); }
+.pbHpFill { background: url("https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/ui/overlay_hp.png") 0 calc(-2px * var(--pb) * var(--hp-row, 0)) / calc(48px * var(--pb)) calc(6px * var(--pb)) no-repeat, #39ff7b; image-rendering: pixelated; }
+.pbHpGhost { background: #f87171; }
+.pbHpText { position: absolute; top: calc(25px * var(--pb)); right: calc(14px * var(--pb)); font-size: calc(6px * var(--pb)); font-weight: 800; letter-spacing: .02em; text-shadow: calc(.5px * var(--pb)) calc(.5px * var(--pb)) 0 #1b1828; }
 .statusHeading { display: flex; align-items: baseline; justify-content: space-between; gap: .5rem; white-space: nowrap; }
 .statusHeading strong { font-size: .9rem; font-weight: 800; }
 .statusHeading span { font-size: .7rem; font-weight: 700; }
@@ -53,6 +80,7 @@
 .healthDrain { animation: hp-drain calc(.3s / var(--fx-speed, 1)) cubic-bezier(.2, .8, .3, 1) var(--fx-hitstop, 0ms) both; }
 .healthDrainGhost { animation: hp-drain calc(.28s / var(--fx-speed, 1)) ease-in calc(var(--fx-hitstop, 0ms) + .16s / var(--fx-speed, 1)) both; }
 .statusWinner { animation: status-winner 1.2s ease-in-out infinite; }
+.pbBox.statusWinner { animation: pb-winner 1.2s ease-in-out infinite; }
 
 .damagePop {
   pointer-events: none;
@@ -115,6 +143,9 @@
   .battleStatus { width: 9rem; padding: .35rem .4rem; }
   .statusHeading span { display: none; }
   .damagePop { font-size: 1.25rem; }
+  .pbBox { --pb: 1.05; }
+  .pbEnemy { top: .3rem; left: .3rem; }
+  .pbPlayer { right: .3rem; bottom: .3rem; }
   .rankingStage .battleStatus { width: 7.25rem; top: .4rem; padding: .2rem .35rem; border-width: 2px; }
   .rankingStage .statusHeading strong { font-size: .72rem; }
   .rankingStage .healthRow { margin-top: .1rem; }
@@ -285,7 +316,8 @@
 @keyframes damage-pop { 0% { opacity: 0; transform: translateY(6px) scale(.5); } 18% { opacity: 1; transform: translateY(-6px) scale(1.25); } 32% { transform: translateY(-10px) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
 @keyframes win-banner { 0% { opacity: 0; transform: translateY(12px) scale(.4); } 100% { opacity: 1; transform: none; } }
 @keyframes status-winner { 0%, 100% { box-shadow: 4px 4px 0 #778083, inset 0 0 0 2px #fffdf1, inset 0 0 0 3px #bcc1b6, 0 0 0 0 rgba(250, 204, 21, 0); } 50% { box-shadow: 4px 4px 0 #9a6415, inset 0 0 0 2px #fffdf1, inset 0 0 0 3px #facc15, 0 0 0 4px rgba(250, 204, 21, .55); } }
+@keyframes pb-winner { 0%, 100% { filter: drop-shadow(0 0 0 rgba(250, 204, 21, 0)); } 50% { filter: drop-shadow(0 0 6px rgba(250, 204, 21, .9)); } }
 @keyframes result-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .coinFlip, .throwLeft, .throwRight, .recallAbsorb, .recallSparkle, .groundedBallDrop, .beamOutgoing, .beamReturning, .ballRelease, .pokemonReveal, .pokemonFaint, .pokemonCapture, .pokemonRecall, .attackLeft, .attackRight, .hit, .screenShake, .healthFill, .healthDrain, .healthDrainGhost, .damagePop, .winBanner, .statusWinner, .resultReveal, .firstTurnBanner { animation: none; transition: none; }
+  .coinFlip, .throwLeft, .throwRight, .recallAbsorb, .recallSparkle, .groundedBallDrop, .beamOutgoing, .beamReturning, .ballRelease, .pokemonReveal, .pokemonFaint, .pokemonCapture, .pokemonRecall, .attackLeft, .attackRight, .hit, .screenShake, .healthFill, .healthDrain, .healthDrainGhost, .damagePop, .winBanner, .statusWinner, .pbBox.statusWinner, .resultReveal, .firstTurnBanner { animation: none; transition: none; }
 }

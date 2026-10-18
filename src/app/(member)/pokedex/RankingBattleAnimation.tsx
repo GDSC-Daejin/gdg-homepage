@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/Button";
 import type { CSSProperties } from "react";
 import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pokedex/ranking-league";
 import { PixiRankingBattleScene, TOSS_MS, type RankingScenePhase } from "./PixiRankingBattleScene";
 import { battleEffect } from "@/lib/pokedex/battle-effects";
-import { healthColor, healthPercent, impactProfile, impactTier } from "./ranking-battle-fx";
+import { moveDisplayName } from "./ranking-battle-assets";
+import { healthBarRow, healthPercent, impactProfile, impactTier } from "./ranking-battle-fx";
 import { createBattleAudio, createBattleMusic, MUSIC_STORAGE_KEY, readSoundPreference, soundForStep, writeSoundPreference, type BattleAudio, type BattleMusic } from "./ranking-battle-sound";
 import styles from "./DuelPanel.module.css";
 
@@ -25,7 +26,7 @@ export function buildRankingBattleSteps(battle: RankingBattleDetail): Step[] {
     if (!entry.actor && entry.defenderDamage > 0) actors.push("defender");
     actors.forEach((actor) => {
       steps.push({ turn, phase: "charge", actor, duration: 280 });
-      steps.push({ turn, phase: "attack", actor, duration: 420 });
+      steps.push({ turn, phase: "attack", actor, duration: 650 });
       steps.push({ turn, phase: "impact", actor, duration: 600 });
     });
     if (entry.attackerHealth <= 0 || entry.defenderHealth <= 0) steps.push({ turn, phase: "recall", actor: entry.attackerHealth <= 0 ? "attacker" : "defender", duration: 950 });
@@ -43,14 +44,26 @@ function BattleLog({ battle, profileId }: { battle: RankingBattleDetail; profile
   </>;
 }
 
+/**
+ * PokéRogue 전투 정보창(pbinfo)과 체력바 이미지(overlay_hp)를 배경으로 쓰고, 이름·전투력·체력 수치는 DOM 텍스트로 얹는다.
+ * 상대는 왼쪽 위 작은 창, 내 포켓몬은 오른쪽 아래 창에 체력 수치까지 보여준다.
+ */
 function RankingBattleStatus({ pokemon, health, fromHealth, side, winner }: { pokemon: RankingPokemon; health: number; fromHealth: number; side: "enemy" | "player"; winner: boolean }) {
   const maximum = 1_000 + pokemon.combatPower;
   const percentage = healthPercent(health, maximum);
   const from = healthPercent(fromHealth, maximum);
   const draining = from !== percentage;
   // 피해를 받으면 체력 바가 부드럽게 줄고, 잔상 바가 한 박자 늦게 따라온다.
-  const bar = { "--hp-from": `${from}%`, "--hp-to": `${percentage}%`, "--hp-color": healthColor(percentage) } as CSSProperties;
-  return <div className={`${styles.battleStatus} ${side === "enemy" ? styles.statusLeft : styles.statusPlayer} ${winner ? styles.statusWinner : ""}`}><div className={styles.statusHeading}><strong>{pokemon.name}</strong><span>전투력 {pokemon.combatPower}</span></div><div className={styles.healthRow}><b>HP:</b><div className={styles.healthTrack} role="progressbar" aria-label={`${pokemon.name} 체력`} aria-valuemin={0} aria-valuemax={maximum} aria-valuenow={health}><span key={`ghost-${fromHealth}-${health}`} className={`${styles.healthGhost} ${draining ? styles.healthDrainGhost : ""}`} style={bar} /><span key={`fill-${fromHealth}-${health}`} className={`${styles.healthFill} ${draining ? styles.healthDrain : ""}`} style={bar} /></div></div></div>;
+  const bar = { "--hp-from": `${from}%`, "--hp-to": `${percentage}%`, "--hp-row": healthBarRow(percentage) } as CSSProperties;
+  return <div className={`${styles.pbBox} ${side === "enemy" ? styles.pbEnemy : styles.pbPlayer} ${winner ? styles.statusWinner : ""}`}>
+    <div className={styles.pbName}><strong>{pokemon.name}</strong><span>전투력 {pokemon.combatPower}</span></div>
+    <span aria-hidden className={styles.pbHpLabel}>HP</span>
+    <div className={styles.pbHpSlot} role="progressbar" aria-label={`${pokemon.name} 체력`} aria-valuemin={0} aria-valuemax={maximum} aria-valuenow={health}>
+      <span key={`ghost-${fromHealth}-${health}`} className={`${styles.pbHpGhost} ${draining ? styles.healthDrainGhost : ""}`} style={bar} />
+      <span key={`fill-${fromHealth}-${health}`} className={`${styles.pbHpFill} ${draining ? styles.healthDrain : ""}`} style={bar} />
+    </div>
+    {side === "player" && <span className={styles.pbHpText}>{Math.max(0, health)} / {maximum}</span>}
+  </div>;
 }
 
 /** 이전 턴과 비교해 이번 턴에 새로 나온 포켓몬 이름 */
@@ -80,6 +93,8 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
   const [skipped, setSkipped] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [musicOn, setMusicOn] = useState(true);
+  // Pixi 장면이 공격마다 무작위로 고른 PokéRogue 기술(단계 키와 함께 받아 다른 단계 값과 섞이지 않게 한다)
+  const [chosenMove, setChosenMove] = useState<{ key: string; move: string | null }>();
   const musicRef = useRef<BattleMusic | null>(null);
   const musicWantedRef = useRef(false);
   const progressRef = useRef({ key: "", elapsed: 0 });
@@ -146,7 +161,8 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
     const pokemon = side === "attacker" ? battle.attackerTeam[entry?.attackerIndex ?? 0] : battle.defenderTeam[entry?.defenderIndex ?? 0];
     const tier = impactTier(side === "attacker" ? entry?.attackerTypeMultiplier ?? 1 : entry?.defenderTypeMultiplier ?? 1);
     const sound = soundForStep(step.phase, battleEffect(pokemon?.battleType ?? "normal").motion, tier, skipped, pokemon?.battleType ?? "normal");
-    if (sound) audio.play(sound, speed);
+    // 공격음은 Pixi 장면이 고른 PokéRogue 기술의 효과음으로 낸다(아래 sceneSound).
+    if (sound && sound.kind !== "attack") audio.play(sound, speed);
   // 단계가 바뀔 때 한 번만 울린다. 토글·배속 변경으로 현재 단계 소리를 다시 내지 않는다.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepKey]);
@@ -166,6 +182,20 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
     else if (complete) music.stop();
     else music.pause();
   }, [complete, musicWanted]);
+
+  // Pixi 장면이 기술 효과음을 요청하면 효과음 설정·일시정지·모션 감소를 확인하고 낸다.
+  const soundAllowedRef = useRef(false);
+  soundAllowedRef.current = soundOn && !reduced && sceneAvailable && !paused && !skipped;
+  const speedRef = useRef(speed);
+  speedRef.current = speed;
+  const sceneSound = useMemo(() => ({
+    preload: (url: string) => audioRef.current?.preloadUrl(url),
+    play: (url: string, volume: number) => {
+      if (soundAllowedRef.current && readSoundPreference()) audioRef.current?.playUrl(url, volume, speedRef.current);
+    },
+  }), []);
+
+  const handleMove = useCallback((key: string, move: string | null) => setChosenMove({ key, move }), []);
 
   function unlockAudio() {
     audioRef.current?.unlock();
@@ -188,12 +218,12 @@ export function RankingBattleAnimation({ battle, profileId }: { battle: RankingB
   const animated = sceneAvailable && !reduced;
   const tier = impactTier(multiplier);
   const fxStyle = { "--fx-speed": speed, "--fx-hitstop": `${impactProfile(multiplier).hitstop / speed}ms` } as CSSProperties;
-  const message = complete ? (battle.winnerId === battle.attackerId ? "공격 파티의 승리!" : "방어 파티의 승리!") : step.phase === "intro" ? `${battle.firstTurnUserId === battle.attackerId ? "공격 파티" : "방어 파티"} 선공!` : step.phase === "sendout" ? `다음 포켓몬 ${sentOut(battle, step.turn).join(", ")} 등장!` : step.phase === "charge" ? `${attacking.name}의 공격 준비!` : step.phase === "attack" ? `${attacking.name}의 공격!` : step.phase === "impact" ? `${damage} 피해! ${multiplier > 1 ? "효과가 굉장했다!" : multiplier < 1 ? "효과가 별로였다…" : ""}` : `${(step.actor === "attacker" ? attacker : defender).name} 쓰러짐! 몬스터볼로 회수합니다.`;
+  const message = complete ? (battle.winnerId === battle.attackerId ? "공격 파티의 승리!" : "방어 파티의 승리!") : step.phase === "intro" ? `${battle.firstTurnUserId === battle.attackerId ? "공격 파티" : "방어 파티"} 선공!` : step.phase === "sendout" ? `다음 포켓몬 ${sentOut(battle, step.turn).join(", ")} 등장!` : step.phase === "charge" ? `${attacking.name}의 공격 준비!` : step.phase === "attack" ? (chosenMove?.key === stepKey && chosenMove.move ? `${attacking.name}의 ${moveDisplayName(chosenMove.move)}!` : `${attacking.name}의 공격!`) : step.phase === "impact" ? `${damage} 피해! ${multiplier > 1 ? "효과가 굉장했다!" : multiplier < 1 ? "효과가 별로였다…" : ""}` : `${(step.actor === "attacker" ? attacker : defender).name} 쓰러짐! 몬스터볼로 회수합니다.`;
 
   return <div className="text-center">
     <p className="text-sm font-semibold text-primary">랭킹전 시작!</p>
     <div className={`${styles.battleArena} ${styles.rankingStage} ${animated ? "" : styles.rankingStageFallback} relative mt-7 ${impact && tier === "strong" ? styles.screenShake : ""} ${paused ? styles.fxPaused : ""}`} style={fxStyle}>
-      {animated && <PixiRankingBattleScene arenaSeed={battle.id} firstTurn={battle.firstTurnUserId ? battle.firstTurnUserId === battle.attackerId ? "attacker" : "defender" : null} teams={{ attacker: battle.attackerTeam, defender: battle.defenderTeam }} attacker={attacker} defender={defender} phase={step.phase} actor={step.actor} duration={step.duration} multiplier={multiplier} winner={winnerSide} stepKey={stepKey} replayKey={replayKey} speed={speed} paused={paused} onUnavailable={() => { setSceneAvailable(false); setStepIndex(steps.length - 1); }} />}
+      {animated && <PixiRankingBattleScene arenaSeed={battle.id} firstTurn={battle.firstTurnUserId ? battle.firstTurnUserId === battle.attackerId ? "attacker" : "defender" : null} teams={{ attacker: battle.attackerTeam, defender: battle.defenderTeam }} attacker={attacker} defender={defender} phase={step.phase} actor={step.actor} duration={step.duration} multiplier={multiplier} winner={winnerSide} stepKey={stepKey} replayKey={replayKey} speed={speed} paused={paused} onUnavailable={() => { setSceneAvailable(false); setStepIndex(steps.length - 1); }} sound={sceneSound} onMove={handleMove} />}
       {step.phase === "intro" && battle.firstTurnUserId && animated && <span aria-hidden className={styles.firstTurnBanner} style={{ "--toss-delay": `${TOSS_MS * 0.45 / speed}ms` } as CSSProperties}>{battle.firstTurnUserId === battle.attackerId ? "공격 파티" : "방어 파티"} 선공!</span>}
       {impact && damage > 0 && <span key={stepKey} aria-hidden className={`${styles.damagePop} ${step.actor === "attacker" ? styles.damageOnRight : styles.damageOnLeft} ${tier === "strong" ? styles.damageStrong : tier === "weak" ? styles.damageWeak : ""}`}>-{damage}</span>}
       {complete && animated && <span aria-hidden className={`${styles.winBanner} ${winnerSide === "attacker" ? styles.winLeft : styles.winRight}`}>WIN!</span>}

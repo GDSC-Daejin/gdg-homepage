@@ -202,7 +202,7 @@ describe("랭킹전 PixiJS 전투장", () => {
     for (const type of TYPES) expect(effectSheetsFor(type).projectile ?? (battleEffect(type).motion === "bolt" ? "bolt" : undefined)).toBeDefined();
     expect(scene).not.toContain("위로 솟는 빛줄기");
     // PokéRogue 명중 시트가 있으면 Graphics 고리를 겹쳐 그리지 않는다.
-    expect(scene).toContain("if (!frame && !(impactSheet && scene.sheets.get(sheetKey(impactSheet)))) drawImpact(");
+    expect(scene).toContain("if (!moveActive && !frame && !(impactSheet && scene.sheets.get(sheetKey(impactSheet)))) drawImpact(");
     expect(scene).not.toContain("lineTo(at.x, at.y + size * 0.2)");
   });
 
