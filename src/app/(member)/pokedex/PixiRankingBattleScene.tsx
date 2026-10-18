@@ -63,7 +63,6 @@ type Scene = {
   tossBurst: boolean;
   sides: Record<SideKey, Side>;
   pool: Particle[];
-  typeTextures: Map<string, import("pixi.js").Texture | null>;
   quality: ReturnType<typeof sceneQuality>;
   phase: RankingScenePhase;
   actor: SideKey | null;
@@ -161,7 +160,7 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
         app.stage.addChild(world, overlay);
 
         const scene: Scene = {
-          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), arena, balls, sparks: { textures: [], pool: sparkPool, items: [] }, ballIndex: 0, ballTextures: {}, firstTurn: props.firstTurn, introEntered: false, tossBurst: false, sides, pool: [], typeTextures: new Map(), quality,
+          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), arena, balls, sparks: { textures: [], pool: sparkPool, items: [] }, ballIndex: 0, ballTextures: {}, firstTurn: props.firstTurn, introEntered: false, tossBurst: false, sides, pool: [], quality,
           phase: props.phase, actor: props.actor, duration: props.duration, multiplier: props.multiplier, winner: props.winner,
           types: { attacker: props.attacker.battleType, defender: props.defender.battleType },
           stepKey: props.stepKey, elapsed: 0, clock: 0, speed: props.speed, paused: props.paused, burstDone: false, emitDebt: 0, bolt: { at: -1, points: [] },
@@ -429,20 +428,11 @@ function sheetFrame(scene: Scene, sheet: EffectSheet | undefined, time: number, 
   return frames[index % frames.length];
 }
 
+/** 타입의 PokéRogue 투사체·명중 시트를 미리 받는다(자체 타입 아이콘 이미지는 쓰지 않는다). */
 function loadTypeAssets(scene: Scene, type: string) {
-  const effect = battleEffect(type);
   const sheets = effectSheetsFor(type);
   loadSheet(scene, sheets.projectile);
   loadSheet(scene, sheets.impact);
-  const path = effect.spritePath;
-  if (scene.typeTextures.has(path)) return;
-  scene.typeTextures.set(path, null);
-  scene.pixi.Assets.load(path).then((texture: import("pixi.js").Texture) => {
-    texture.source.scaleMode = "nearest";
-    scene.typeTextures.set(path, texture);
-  }, () => {
-    // 타입 이펙트 이미지는 장식이므로 실패하면 도형 연출만 쓴다.
-  });
 }
 
 function emit(scene: Scene, count: number, make: (index: number) => Omit<Particle, "life" | "angle"> & { angle?: number }) {
@@ -639,7 +629,7 @@ function update(scene: Scene, rawDelta: number) {
     const lunge = Math.sin(clamp01(progress * 1.6) * Math.PI);
     offsets[source].x += direction * lunge * (effect.motion === "strike" ? size * 0.55 : 12);
     offsets[source].y -= lunge * (effect.motion === "strike" ? 10 : 3);
-    drawProjectile(scene, delta, effect.motion, palette, effect.spritePath, effectSheetsFor(scene.types[source]).projectile, from, to, p, direction, size);
+    drawProjectile(scene, delta, effect.motion, palette, effectSheetsFor(scene.types[source]).projectile, from, to, p, direction, size);
   }
 
   // 피격: 히트스톱 → 흰색 플래시 → 넉백·카메라 흔들림
@@ -651,8 +641,9 @@ function update(scene: Scene, rawDelta: number) {
     if (hitstop) {
       offsets[targetKey].flash = 1;
       offsets[targetKey].x += direction * 3;
-      const texture = scene.typeTextures.get(effect.spritePath);
-      if (texture) placeProjectile(projectile, texture, to.x - direction * 10, to.y, direction, 40);
+      // 히트스톱 동안 투사체를 대상 앞에 멈춰 둔다.
+      const hold = sheetFrame(scene, effectSheetsFor(scene.types[source]).projectile, 0, true);
+      if (hold) placeProjectile(projectile, hold, to.x - direction * 10, to.y, direction, size * 1.1);
       if (profile.screenFlash) overlay.rect(0, 0, width, height).fill({ color: 0xffffff, alpha: profile.screenFlash });
     } else {
       if (!scene.burstDone) {
@@ -757,9 +748,8 @@ function update(scene: Scene, rawDelta: number) {
   world.scale.set(1 + punch);
 }
 
-function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palette: BattlePalette, spritePath: string, projectileSheet: EffectSheet | undefined, from: { x: number; y: number }, to: { x: number; y: number }, p: number, direction: number, size: number) {
+function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palette: BattlePalette, projectileSheet: EffectSheet | undefined, from: { x: number; y: number }, to: { x: number; y: number }, p: number, direction: number, size: number) {
   const { shapes, projectile } = scene;
-  const texture = scene.typeTextures.get(spritePath);
   const x = lerp(from.x, to.x, p);
   const arc = motion === "flame" ? -Math.sin(p * Math.PI) * size * 0.25 : 0;
   const y = lerp(from.y, to.y, p) + arc;
@@ -830,7 +820,7 @@ function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palet
 
   const sheetTexture = sheetFrame(scene, projectileSheet, scene.elapsed, true);
   if (sheetTexture) placeProjectile(projectile, sheetTexture, x, y, direction, size * 1.1);
-  else if (texture) placeProjectile(projectile, texture, x, y, motion === "splash" && spritePath.includes("water") ? -direction : direction, motion === "strike" ? 38 : 46);
+  // 시트를 아직 못 받았거나 실패하면 도형으로 그린다.
   else if (motion !== "wave") {
     shapes.circle(x, y, 16).fill({ color: palette[1], alpha: 0.35 });
     shapes.circle(x, y, 10).fill({ color: palette[1] });

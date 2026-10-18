@@ -47,11 +47,11 @@ export const EFFECT_CELL = 96;
 export const EFFECT_COLUMNS = 5;
 
 export const BATTLE_EFFECT_SHEETS: Record<BattleMotion, { projectile?: EffectSheet; impact?: EffectSheet }> = {
-  flame: { impact: sheet("PRAS- Fire.png", range(6, 13), 55) },
-  splash: { impact: sheet("PRAS- Water.png", range(31, 39), 50) },
+  flame: { projectile: sheet("PRAS- Fire.png", range(20, 22), 70), impact: sheet("PRAS- Fire.png", range(6, 13), 55) },
+  splash: { projectile: sheet("PRAS- Water.png", range(43, 46), 70), impact: sheet("PRAS- Water.png", range(31, 39), 50) },
   bolt: { impact: sheet("PRAS- Electric.png", range(0, 9), 45) },
   leaf: { projectile: sheet("PRAS- Magical Leaf.png", range(4, 12), 60), impact: sheet("PRAS- Magical Leaf.png", [13, 14, 13, 14], 70) },
-  strike: { impact: sheet("Tackle_B.png", [0], 60) },
+  strike: { projectile: sheet("PRAS- Iron Head.png", [1], 60), impact: sheet("Tackle_B.png", [0], 60) },
   wave: { projectile: sheet("PRAS- Psybeam.png", range(0, 3), 70) },
 };
 

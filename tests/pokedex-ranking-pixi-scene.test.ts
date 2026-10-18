@@ -196,6 +196,10 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(attackSoundUrl("unknown")).toBe(attackSoundUrl("normal"));
     expect(effectSheetsFor("ice").impact?.url).toContain("PRAS-%20Ice.png");
     expect(scene).toContain("effectSheetsFor(scene.types[source])");
+    // 자체 타입 아이콘(이모티콘풍 webp)은 전투장에서 쓰지 않는다.
+    expect(scene).not.toContain("typeTextures");
+    expect(scene).not.toContain("spritePath");
+    for (const type of TYPES) expect(effectSheetsFor(type).projectile ?? (battleEffect(type).motion === "bolt" ? "bolt" : undefined)).toBeDefined();
     expect(scene).not.toContain("위로 솟는 빛줄기");
     // PokéRogue 명중 시트가 있으면 Graphics 고리를 겹쳐 그리지 않는다.
     expect(scene).toContain("if (!frame && !(impactSheet && scene.sheets.get(sheetKey(impactSheet)))) drawImpact(");
