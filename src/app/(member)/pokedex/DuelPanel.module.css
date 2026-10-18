@@ -39,12 +39,59 @@
 .statusHeading span { font-size: .7rem; font-weight: 700; }
 .healthRow { display: flex; align-items: center; gap: .35rem; margin-top: .35rem; }
 .healthRow b { color: #c58e0d; font-size: .82rem; font-weight: 900; text-shadow: 1px 0 #f9d955; }
-.healthTrack { height: .7rem; flex: 1; overflow: hidden; border: 2px solid #27313a; background: #f8fafc; box-shadow: inset 0 0 0 1px #a4acb0; }
-.healthFill { display: block; height: 100%; background: #22c55e; transition: width .25s steps(4, end), background-color .25s steps(4, end); }
+.healthTrack { position: relative; height: .7rem; flex: 1; overflow: hidden; border: 2px solid #27313a; background: #f8fafc; box-shadow: inset 0 0 0 1px #a4acb0; }
+.healthFill, .healthGhost { position: absolute; top: 0; bottom: 0; left: 0; display: block; width: var(--hp-to, 100%); }
+.healthFill { background: var(--hp-color, #22c55e); transition: width .25s steps(4, end), background-color .25s steps(4, end); }
+.healthGhost { background: #f87171; }
+/* 랭킹전: 명중(히트스톱) 뒤 체력이 부드럽게 줄고, 잔상 바가 늦게 따라온다. */
+/* 명중 단계(600ms) 안에 히트스톱 + 체력 감소 + 잔상이 모두 끝나도록 맞춘다. */
+.healthDrain { animation: hp-drain calc(.3s / var(--fx-speed, 1)) cubic-bezier(.2, .8, .3, 1) var(--fx-hitstop, 0ms) both; }
+.healthDrainGhost { animation: hp-drain calc(.28s / var(--fx-speed, 1)) ease-in calc(var(--fx-hitstop, 0ms) + .16s / var(--fx-speed, 1)) both; }
+.statusWinner { animation: status-winner 1.2s ease-in-out infinite; }
+
+.damagePop {
+  pointer-events: none;
+  position: absolute;
+  z-index: 20;
+  translate: -50% 0;
+  color: #fff;
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: .02em;
+  text-shadow: 2px 0 #20242a, -2px 0 #20242a, 0 2px #20242a, 0 -2px #20242a, 3px 3px 0 #20242a;
+  animation: damage-pop calc(.9s / var(--fx-speed, 1)) ease-out var(--fx-hitstop, 0ms) both;
+}
+.damageOnRight { top: 22%; left: 75%; }
+.damageOnLeft { top: 44%; left: 25%; }
+.damageStrong { color: #facc15; font-size: 2.2rem; }
+.damageWeak { color: #cbd5e1; font-size: 1.15rem; }
+.fxPaused .healthDrain, .fxPaused .healthDrainGhost, .fxPaused .damagePop { animation-play-state: paused; }
+
+.winBanner {
+  pointer-events: none;
+  position: absolute;
+  z-index: 20;
+  top: 30%;
+  padding: .2rem .8rem;
+  translate: -50% 0;
+  border: 3px solid #20242a;
+  background: #facc15;
+  box-shadow: 3px 3px 0 #9a6415;
+  color: #20242a;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: .12em;
+  animation: win-banner .6s cubic-bezier(.2, 1.6, .4, 1) both;
+}
+.winLeft { top: 40%; left: 25%; }
+.winRight { top: 14%; left: 75%; }
+.resultReveal { animation: result-reveal .4s ease-out 1.1s both; }
 
 @media (max-width: 640px) {
   .battleStatus { width: 9rem; padding: .35rem .4rem; }
   .statusHeading span { display: none; }
+  .damagePop { font-size: 1.25rem; }
+  .damageStrong { font-size: 1.6rem; }
 }
 
 .battleMessage {
@@ -203,6 +250,11 @@
 @keyframes attack-right { 18% { translate: 4px 0; } 56% { translate: -24px -3px; } 100% { translate: 0; } }
 @keyframes hit { 22%, 66% { translate: -5px 1px; filter: brightness(1.45); } 44%, 82% { translate: 5px -1px; } 100% { translate: 0; } }
 @keyframes screen-shake { 25% { translate: -2px 1px; } 50% { translate: 3px -1px; } 75% { translate: -1px -1px; } 100% { translate: 0; } }
+@keyframes hp-drain { from { width: var(--hp-from); } to { width: var(--hp-to); } }
+@keyframes damage-pop { 0% { opacity: 0; transform: translateY(6px) scale(.5); } 18% { opacity: 1; transform: translateY(-6px) scale(1.25); } 32% { transform: translateY(-10px) scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px) scale(1); } }
+@keyframes win-banner { 0% { opacity: 0; transform: translateY(12px) scale(.4); } 100% { opacity: 1; transform: none; } }
+@keyframes status-winner { 0%, 100% { box-shadow: 4px 4px 0 #778083, inset 0 0 0 2px #fffdf1, inset 0 0 0 3px #bcc1b6, 0 0 0 0 rgba(250, 204, 21, 0); } 50% { box-shadow: 4px 4px 0 #9a6415, inset 0 0 0 2px #fffdf1, inset 0 0 0 3px #facc15, 0 0 0 4px rgba(250, 204, 21, .55); } }
+@keyframes result-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .coinFlip, .throwLeft, .throwRight, .recallAbsorb, .recallSparkle, .groundedBallDrop, .beamOutgoing, .beamReturning, .ballRelease, .pokemonReveal, .pokemonFaint, .pokemonCapture, .pokemonRecall, .attackLeft, .attackRight, .hit, .screenShake, .healthFill { animation: none; transition: none; }
+  .coinFlip, .throwLeft, .throwRight, .recallAbsorb, .recallSparkle, .groundedBallDrop, .beamOutgoing, .beamReturning, .ballRelease, .pokemonReveal, .pokemonFaint, .pokemonCapture, .pokemonRecall, .attackLeft, .attackRight, .hit, .screenShake, .healthFill, .healthDrain, .healthDrainGhost, .damagePop, .winBanner, .statusWinner, .resultReveal { animation: none; transition: none; }
 }
