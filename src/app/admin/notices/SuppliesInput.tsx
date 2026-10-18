@@ -8,6 +8,8 @@ interface SuppliesInputProps {
   label: ReactNode;
   defaultValue?: string;
   suggestions?: string[];
+  /** 칩이 바뀔 때마다 머리말 형식("노트북, 충전기")으로 알려 준다 */
+  onChange?: (value: string) => void;
 }
 
 export function SuppliesInput({
@@ -15,11 +17,17 @@ export function SuppliesInput({
   label,
   defaultValue = "",
   suggestions = [],
+  onChange,
 }: SuppliesInputProps) {
   const inputId = useId();
   const hintId = useId();
-  const [items, setItems] = useState(() => splitSupplies(defaultValue));
+  const [items, setItemsState] = useState(() => splitSupplies(defaultValue));
   const [draft, setDraft] = useState("");
+
+  function setItems(next: string[]) {
+    setItemsState(next);
+    onChange?.(joinSupplies(next));
+  }
 
   function add(text: string) {
     const next = splitSupplies(text).filter((item) => !items.includes(item));

@@ -1,5 +1,4 @@
 import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/Card";
 import { NoticeForm } from "../NoticeForm";
 import type { NoticeSource } from "../NoticeSourcePicker";
 import { listPlaces } from "@/lib/places";
@@ -32,8 +31,10 @@ export default async function NewNoticePage() {
       id: n.id,
       kind: "recent" as const,
       label: n.title,
-      meta: n.published_at ? `${formatKstDate(n.published_at)} 발행` : `${formatKstDate(n.created_at)} 작성 · 미발행`,
-      summary: summarize(n.body),
+      meta: [
+        n.published_at ? `${formatKstDate(n.published_at)} 발행` : `${formatKstDate(n.created_at)} 작성 · 미발행`,
+        summarize(n.body),
+      ].join(" · "),
       title: n.title,
       body: n.body,
     })),
@@ -41,8 +42,7 @@ export default async function NewNoticePage() {
       id: t.id,
       kind: "template" as const,
       label: t.name,
-      meta: `템플릿 · ${formatKstDate(t.created_at)} 저장`,
-      summary: summarize(t.body),
+      meta: [`템플릿 · ${formatKstDate(t.created_at)} 저장`, summarize(t.body)].join(" · "),
       title: t.title,
       body: t.body,
     })),
@@ -63,9 +63,7 @@ export default async function NewNoticePage() {
           </>
         }
       />
-      <Card>
-        <NoticeForm places={places} sources={sources} supplySuggestions={supplySuggestions} />
-      </Card>
+      <NoticeForm places={places} sources={sources} supplySuggestions={supplySuggestions} />
     </div>
   );
 }

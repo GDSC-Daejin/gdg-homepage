@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState, useTransition } from "react";
+import { useId, useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createNotice, saveNoticeTemplate, updateNotice } from "@/actions/notice";
@@ -9,9 +9,11 @@ import { Textarea } from "@/components/Textarea";
 import { Select } from "@/components/Select";
 import { DatePicker } from "@/components/DatePicker";
 import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
 import { Modal } from "@/components/Modal";
 import { composeNoticeBody, parseNoticeBody, type NoticeDetails } from "@/lib/notice-body";
 import type { Notice, Place } from "@/lib/types";
+import { NoticePreview } from "./NoticePreview";
 import { NoticeSourcePicker, type NoticeSource } from "./NoticeSourcePicker";
 import { SuppliesInput } from "./SuppliesInput";
 
@@ -62,6 +64,17 @@ function Spinner() {
   );
 }
 
+/** 새 공지: 폼(최대 40rem) + 오른쪽 미리보기. 수정 화면은 페이지가 감싼 Card 안에 폼만 둔다. */
+function FormLayout({ preview, children }: { preview?: ReactNode; children: ReactNode }) {
+  if (!preview) return <>{children}</>;
+  return (
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,40rem)_minmax(0,1fr)]">
+      <Card className="flex flex-col gap-4">{children}</Card>
+      {preview}
+    </div>
+  );
+}
+
 export function NoticeForm({
   notice,
   places = [],
@@ -83,6 +96,12 @@ export function NoticeForm({
   const [templateError, setTemplateError] = useState<string>();
   const [templateSaved, setTemplateSaved] = useState<string>();
   const [templatePending, startTemplateTransition] = useTransition();
+  // 미리보기용 현재 입력값. 입력칸은 그대로 비제어로 두고 바뀔 때마다 따라 적는다
+  const [values, setValues] = useState(() => ({ title: seed.title, ...seed.details }));
+
+  function updateValue(field: keyof typeof values, value: string) {
+    setValues((prev) => ({ ...prev, [field]: value }));
+  }
 
   const details = seed.details;
   // 풀에서 사라진 장소(삭제 등)도 선택지로 남겨 수정·불러오기 때 값이 날아가지 않게 한다
@@ -92,6 +111,7 @@ export function NoticeForm({
   function reseed(title: string, next: NoticeDetails, from?: NoticeSource) {
     setError(undefined);
     setSeed((prev) => ({ key: prev.key + 1, title, details: next, from }));
+    setValues({ title, ...next });
   }
 
   function pickSource(source: NoticeSource) {
@@ -155,10 +175,28 @@ export function NoticeForm({
 
   return (
     <>
+    <FormLayout
+      preview={
+        sources && (
+          <NoticePreview
+            title={values.title}
+            details={{ schedule: values.schedule, place: values.place, supplies: values.supplies, body: values.body }}
+          />
+        )
+      }
+    >
     {sources && (
       <NoticeSourcePicker sources={sources} pickedId={seed.from?.id} onPick={pickSource} />
     )}
-    <form ref={formRef} action={handleSubmit} className="flex flex-col gap-4">
+    <form
+      ref={formRef}
+      action={handleSubmit}
+      onInput={(e) => {
+        const target = e.target as HTMLInputElement | HTMLTextAreaElement;
+        if (target.name === "title" || target.name === "body") updateValue(target.name, target.value);
+      }}
+      className="flex flex-col gap-4"
+    >
       {notice && (
         <div className="-mx-6 -mt-6 border-b border-gray-100 px-6 pb-4 pt-6">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-gray-900">
@@ -245,6 +283,7 @@ export function NoticeForm({
             </>
           }
           defaultValue={details.schedule}
+          onChange={(value) => updateValue("schedule", value)}
         />
         {seed.from && (
           <p className="text-xs text-primary">불러온 공지의 날짜는 옮기지 않았어요.</p>
@@ -259,6 +298,7 @@ export function NoticeForm({
             </>
           }
           defaultValue={details.place}
+          onChange={(e) => updateValue("place", e.target.value)}
         >
           <option value="">장소 없음</option>
           {places.map((place) => (
@@ -286,6 +326,7 @@ export function NoticeForm({
         }
         defaultValue={details.supplies}
         suggestions={supplySuggestions}
+        onChange={(value) => updateValue("supplies", value)}
       />
       <Textarea
         id={bodyId}
@@ -312,9 +353,9 @@ export function NoticeForm({
           {templateSaved}
         </p>
       )}
-      <div className="mt-2 flex gap-2">
+      <div className={sources ? "mt-2 flex items-center justify-between gap-2" : "mt-2 flex"}>
         {sources && (
-          <Button type="button" variant="secondary" className="shrink-0 gap-1.5" onClick={openTemplateDialog}>
+          <Button type="button" variant="ghost" className="shrink-0 gap-1.5 text-primary" onClick={openTemplateDialog}>
             <svg
               viewBox="0 0 20 20"
               fill="none"
@@ -331,12 +372,18 @@ export function NoticeForm({
             템플릿으로 저장
           </Button>
         )}
-        <Button type="submit" variant="primary" className="w-full gap-1.5" disabled={pending}>
+        <Button
+          type="submit"
+          variant="primary"
+          className={sources ? "gap-1.5 px-6" : "w-full gap-1.5"}
+          disabled={pending}
+        >
           {pending && <Spinner />}
-          {notice ? (pending ? "수정 중..." : "수정") : pending ? "생성 중..." : "생성"}
+          {notice ? (pending ? "수정 중..." : "수정") : pending ? "생성 중..." : "공지 생성"}
         </Button>
       </div>
     </form>
+    </FormLayout>
     {sources && (
       <Modal open={templateOpen} onClose={() => setTemplateOpen(false)} ariaLabel="템플릿으로 저장">
         <form
