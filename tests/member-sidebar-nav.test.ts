@@ -9,14 +9,15 @@ describe("회원 사이드바", () => {
     const nav = await readFile("src/app/(member)/SidebarNav.tsx", "utf8");
     const baseGroups = nav.slice(nav.indexOf("const baseGroups"), nav.indexOf("export function"));
 
-    expect((baseGroups.match(/href:/g) ?? [])).toHaveLength(8);
-    for (const label of ["홈", "이벤트", "스케줄", "포켓몬", "랭킹전", "꼬북봇", "문의", "프로필"]) {
+    expect((baseGroups.match(/href:/g) ?? [])).toHaveLength(7);
+    for (const label of ["홈", "이벤트", "스케줄", "포켓몬", "랭킹전", "문의", "프로필"]) {
       expect(baseGroups).toContain(`label: "${label}"`);
     }
-    for (const label of ["공지", "커뮤니티", "자료실", "설문"]) {
+    for (const label of ["공지", "커뮤니티", "자료실", "설문", "꼬북봇"]) {
       expect(baseGroups).not.toContain(`label: "${label}"`);
     }
     expect(baseGroups).not.toContain('label: "프렌들리숍"');
+    expect(baseGroups).not.toContain('href: "/squirtle"');
     expect(baseGroups).not.toContain('href: "/store"');
     expect(baseGroups).not.toContain('href: "/attend"');
     expect(baseGroups).not.toContain('label: "회의록"');
