@@ -1,14 +1,16 @@
-// 랭킹전 효과음·배경음악(브라우저 전용). 볼·명중·기절은 PokéRogue 샘플을 쓰고, 없으면 Web Audio 합성음으로 대체한다.
+// 랭킹전 효과음·배경음악(브라우저 전용). 모든 소리는 PokéRogue 샘플을 쓰고, 불러오지 못하면 Web Audio 합성음으로 대체한다.
 import type { BattleMotion } from "@/lib/pokedex/battle-effects";
-import { BATTLE_BGM, BATTLE_SOUND_SAMPLES } from "./ranking-battle-assets";
+import { attackSoundUrl, BATTLE_BGM, BATTLE_SOUND_SAMPLES } from "./ranking-battle-assets";
 import type { ImpactTier } from "./ranking-battle-fx";
 
-type SampleName = keyof typeof BATTLE_SOUND_SAMPLES;
+/** 공통 샘플 이름, 또는 타입별 공격음 `attack:<타입>` */
+type SampleName = keyof typeof BATTLE_SOUND_SAMPLES | `attack:${string}`;
+type Cue = { sample: SampleName; at: number; maxLength?: number };
 
 export type BattleSound =
   | { kind: "toss" }
   | { kind: "charge" }
-  | { kind: "attack"; motion: BattleMotion }
+  | { kind: "attack"; motion: BattleMotion; type: string }
   | { kind: "hit"; tier: ImpactTier }
   | { kind: "faint" }
   | { kind: "sendout" }
@@ -35,13 +37,16 @@ export function writeSoundPreference(enabled: boolean, key: string = SOUND_STORA
 }
 
 /** 샘플로 낼 소리와 시각(1배속 기준 초). null이면 합성음을 쓴다. 볼 연출 타이밍(선공 1.15초, 볼 열림 0.38초)에 맞춘다. */
-export function sampleCues(sound: BattleSound): { sample: SampleName; at: number }[] | null {
+export function sampleCues(sound: BattleSound): Cue[] | null {
   switch (sound.kind) {
     case "toss": return [{ sample: "throw", at: 0 }, { sample: "hitWeak", at: 0.48 }, { sample: "throw", at: 1.15 }, { sample: "release", at: 1.53 }];
     case "sendout": return [{ sample: "throw", at: 0 }, { sample: "release", at: 0.38 }];
     case "hit": return [{ sample: sound.tier === "strong" ? "hitStrong" : sound.tier === "weak" ? "hitWeak" : "hit", at: 0 }];
     case "faint": return [{ sample: "faint", at: 0 }];
     case "charge": return [{ sample: "charge", at: 0 }];
+    // 기술 효과음은 길이가 제각각이라 명중음과 겹치지 않게 0.9초에서 줄인다.
+    case "attack": return [{ sample: `attack:${sound.type}`, at: 0, maxLength: 0.9 }];
+    case "victory": return [{ sample: "victory", at: 0 }];
     default: return null;
   }
 }
@@ -91,16 +96,62 @@ export function createBattleAudio() {
   let noiseBuffer: AudioBuffer | null = null;
   let closed = false;
   const samples = new Map<SampleName, AudioBuffer>();
+  const requested = new Set<SampleName>();
+  let types: string[] = [];
+  // 기술 효과음(URL 단위). AudioContext가 생기기 전에 요청된 URL은 모아 뒀다가 받는다.
+  const urlBuffers = new Map<string, AudioBuffer>();
+  const urlRequested = new Set<string>();
+  const urlQueue = new Set<string>();
 
-  function loadSamples(audio: AudioContext) {
-    for (const [name, url] of Object.entries(BATTLE_SOUND_SAMPLES) as [SampleName, string][]) {
-      void fetch(url)
+  function loadUrl(audio: AudioContext, url: string) {
+    if (urlRequested.has(url)) return;
+    urlRequested.add(url);
+    void fetch(url)
+      .then((response) => response.ok ? response.arrayBuffer() : Promise.reject(new Error(String(response.status))))
+      .then((data) => audio.decodeAudioData(data))
+      .then((buffer) => { urlBuffers.set(url, buffer); })
+      .catch(() => {
+        // 못 받은 기술 효과음은 소리 없이 진행한다.
+      });
+  }
+
+  function loadSample(audio: AudioContext, name: SampleName, url: string) {
+    if (requested.has(name)) return;
+    requested.add(name);
+    void fetch(url)
         .then((response) => response.ok ? response.arrayBuffer() : Promise.reject(new Error(String(response.status))))
         .then((data) => audio.decodeAudioData(data))
-        .then((buffer) => { samples.set(name, buffer); })
-        .catch(() => {
-          // 샘플을 못 받으면 그 소리는 합성음으로 낸다.
-        });
+      .then((buffer) => { samples.set(name, buffer); })
+      .catch(() => {
+        // 샘플을 못 받으면 그 소리는 합성음으로 낸다.
+      });
+  }
+
+  function loadSamples(audio: AudioContext) {
+    for (const [name, url] of Object.entries(BATTLE_SOUND_SAMPLES) as [SampleName, string][]) loadSample(audio, name, url);
+    for (const type of types) loadSample(audio, `attack:${type}`, attackSoundUrl(type));
+    for (const url of urlQueue) loadUrl(audio, url);
+    urlQueue.clear();
+  }
+
+  /** 받은 기술 효과음을 바로 낸다. 아직 못 받았으면 받아 두기만 한다(다음 재생부터 소리가 난다). */
+  function playUrl(url: string, volume: number, speed: number) {
+    try {
+      if (!context || !bus || context.state === "closed") return;
+      const buffer = urlBuffers.get(url);
+      if (!buffer) {
+        loadUrl(context, url);
+        return;
+      }
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = buffer;
+      source.playbackRate.value = speed;
+      gain.gain.value = 0.9 * volume;
+      source.connect(gain).connect(bus);
+      source.start();
+    } catch {
+      // 소리 재생 실패는 무시한다.
     }
   }
 
@@ -122,7 +173,16 @@ export function createBattleAudio() {
     return context;
   }
 
+  /** 소리 재생 실패가 전투 화면을 깨뜨리지 않도록 예외를 삼킨다. */
   function play(sound: BattleSound, speed: number) {
+    try {
+      playUnsafe(sound, speed);
+    } catch {
+      // 오디오 장치·브라우저 제약으로 실패하면 이번 소리만 건너뛴다.
+    }
+  }
+
+  function playUnsafe(sound: BattleSound, speed: number) {
     if (!context || !bus || !noiseBuffer || context.state === "closed") return;
     const now = context.currentTime + 0.01;
     const cues = sampleCues(sound);
@@ -133,9 +193,17 @@ export function createBattleAudio() {
         source.buffer = samples.get(cue.sample)!;
         // 2배속이면 샘플도 빠르게(짧게) 낸다.
         source.playbackRate.value = speed;
+        const start = now + cue.at / speed;
         gain.gain.value = 0.9;
         source.connect(gain).connect(bus);
-        source.start(now + cue.at / speed);
+        // stop()은 start() 뒤에만 부를 수 있다.
+        source.start(start);
+        if (cue.maxLength) {
+          const end = start + cue.maxLength / speed;
+          gain.gain.setValueAtTime(0.9, Math.max(start, end - 0.08));
+          gain.gain.linearRampToValueAtTime(0, end);
+          source.stop(end + 0.01);
+        }
       }
       return;
     }
@@ -184,6 +252,16 @@ export function createBattleAudio() {
   return {
     unlock,
     play,
+    /** 이번 전투에 나오는 타입의 공격음만 미리 받는다(이미 열린 경우 바로 받는다). */
+    playUrl,
+    preloadUrl(url: string) {
+      if (context) loadUrl(context, url);
+      else urlQueue.add(url);
+    },
+    prepare(next: string[]) {
+      types = [...new Set(next)];
+      if (context) for (const type of types) loadSample(context, `attack:${type}`, attackSoundUrl(type));
+    },
     stopAll,
     get ready() { return Boolean(context) && context?.state !== "closed"; },
     suspend() { if (context?.state === "running") void context.suspend().catch(() => undefined); },
@@ -198,11 +276,11 @@ export function createBattleAudio() {
 }
 
 /** 재생 단계에 맞는 효과음. 결과 보기로 건너뛴 결과에는 소리를 내지 않는다. */
-export function soundForStep(phase: string, motion: BattleMotion, tier: ImpactTier, skipped: boolean): BattleSound | null {
+export function soundForStep(phase: string, motion: BattleMotion, tier: ImpactTier, skipped: boolean, type = "normal"): BattleSound | null {
   if (phase === "intro") return { kind: "toss" };
   if (phase === "sendout") return { kind: "sendout" };
   if (phase === "charge") return { kind: "charge" };
-  if (phase === "attack") return { kind: "attack", motion };
+  if (phase === "attack") return { kind: "attack", motion, type };
   if (phase === "impact") return { kind: "hit", tier };
   if (phase === "recall") return { kind: "faint" };
   if (phase === "result") return skipped ? null : { kind: "victory" };

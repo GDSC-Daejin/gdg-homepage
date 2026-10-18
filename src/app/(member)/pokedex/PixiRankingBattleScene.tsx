@@ -3,7 +3,8 @@
 import { useEffect, useRef } from "react";
 import type { RankingPokemon } from "@/lib/pokedex/ranking-league";
 import { battleEffect, type BattleMotion, type BattlePalette } from "@/lib/pokedex/battle-effects";
-import { BATTLE_EFFECT_SHEETS, battleArena, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, POKEBALL_PARTICLES, POKEBALL_SPRITES, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
+import { attackSoundUrl, battleArena, effectSheetsFor, MOVE_FRAME_MS, moveAnimUrl, moveGraphicUrl, moveSoundUrl, battleSpriteCandidates, effectCell, FIELD, FIELD_SPOTS, particleBoxes, POKEBALL_PARTICLES, POKEBALL_SPRITES, POKEMON_SPRITE_FRAME_MS, type EffectSheet, type SpriteCandidate } from "./ranking-battle-assets";
+import { hasTone, interpolateFrame, parseMoveAnim, placeMoveElement, toneMatrix, type MoveAnim, type MoveAnimSet } from "./ranking-move-anim";
 import { clamp01, easeInCubic, easeOutBack, easeOutCubic, impactProfile, lerp, sceneQuality, segment, type ImpactProfile } from "./ranking-battle-fx";
 
 export type RankingScenePhase = "intro" | "sendout" | "charge" | "attack" | "impact" | "recall" | "result";
@@ -11,6 +12,8 @@ type SideKey = "attacker" | "defender";
 type Pixi = typeof import("pixi.js");
 
 const ENTRANCE_MS = 820;
+/** 장면 그리는 순서(zIndex) */
+const Z = { background: 0, bases: 1, shadows: 2, moveBackground: 3, defender: 10, attacker: 20, effects: 25, moveTop: 30, particles: 40 } as const;
 const BALL_OPEN = 0.46;
 /** 선공 결정: 양쪽 몬스터볼이 맞부딪친 뒤 선공 쪽 볼이 떠오르는 시간(장면 시간 ms) */
 export const TOSS_MS = 1_150;
@@ -29,6 +32,15 @@ type SheetFrames = import("pixi.js").Texture[];
 /** 몬스터볼 방출 파티클(PokéRogue 아틀라스 스프라이트) */
 type Spark = { sprite: import("pixi.js").Sprite; x: number; y: number; vx: number; vy: number; life: number; maxLife: number; spin: number; scale: number };
 
+/** 불러온 PokéRogue 기술: 원본 JSON과 이펙트 시트, 잘라 둔 셀 */
+type Sheet = { base: import("pixi.js").Texture; cells: Map<number, import("pixi.js").Texture | null> };
+type MoveEntry = { set: MoveAnimSet; main: Sheet; opponent: Sheet | null; backgrounds: Map<string, import("pixi.js").Texture> };
+/** 기술이 깐 타일 배경과 진행 중인 위치·투명도 변화(PokéRogue 배경 이벤트) */
+type MoveBackground = { sprite: import("pixi.js").TilingSprite | import("pixi.js").Sprite; tweens: Partial<Record<"x" | "y" | "alpha", { from: number; to: number; start: number; duration: number }>> };
+/** 재생 중인 기술. 상대 전용 변형을 쓰면 PokéRogue처럼 애니메이션의 시전자·대상 자리를 맞바꾼다. */
+type ActiveMove = { name: string; anim: MoveAnim; sheet: Sheet; entry: MoveEntry; clock: number; fired: Set<number>; firedBackgrounds: Set<number>; animUser: SideKey; animTarget: SideKey };
+export type SceneSound = { preload: (url: string) => void; play: (url: string, volume: number, rate?: number) => void };
+
 type Side = {
   sprite: import("pixi.js").Sprite;
   flash: import("pixi.js").Sprite;
@@ -40,6 +52,10 @@ type Side = {
   entranceBurst: boolean;
   hidden: boolean;
   baseScale: number;
+  /** 기술 애니메이션이 준 색조(프레임마다 갱신) */
+  tone: readonly [number, number, number, number];
+  toneFilter: import("pixi.js").ColorMatrixFilter;
+  toneFilters: import("pixi.js").Filter[];
 };
 
 type Scene = {
@@ -56,6 +72,15 @@ type Scene = {
   arena: { background: import("pixi.js").Sprite; attackerBase: import("pixi.js").Sprite; defenderBase: import("pixi.js").Sprite };
   balls: import("pixi.js").Sprite[];
   sparks: { textures: import("pixi.js").Texture[]; pool: import("pixi.js").Sprite[]; items: Spark[] };
+  moves: Map<string, MoveEntry | null>;
+  moveSprites: import("pixi.js").Sprite[];
+  move: ActiveMove | null;
+  moveBackground: MoveBackground | null;
+  sound: () => SceneSound | undefined;
+  /** 320×180 필드를 그리는 렌더 텍스처와, 그것을 캔버스 크기로 확대해 보여주는 스프라이트 */
+  fieldRoot: import("pixi.js").Container;
+  fieldTexture: import("pixi.js").RenderTexture;
+  screen: import("pixi.js").Sprite;
   ballIndex: number;
   ballTextures: Partial<Record<BallState, import("pixi.js").Texture>>;
   firstTurn: SideKey | null;
@@ -63,7 +88,6 @@ type Scene = {
   tossBurst: boolean;
   sides: Record<SideKey, Side>;
   pool: Particle[];
-  typeTextures: Map<string, import("pixi.js").Texture | null>;
   quality: ReturnType<typeof sceneQuality>;
   phase: RankingScenePhase;
   actor: SideKey | null;
@@ -81,7 +105,7 @@ type Scene = {
   bolt: { at: number; points: number[] };
 };
 
-export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable }: {
+export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable, sound, move, preloadMoves }: {
   /** 배경 선택용 값(전투 id). 같은 기록은 같은 배경을 쓴다. */
   arenaSeed: string;
   /** 저장된 선공. 있으면 intro 단계에서 볼 던지기 선공 연출을 한다. */
@@ -104,11 +128,17 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
   speed: number;
   paused: boolean;
   onUnavailable: () => void;
+  /** 기술 효과음 재생(효과음 꺼짐·일시정지 판단은 호출하는 쪽이 한다) */
+  sound?: SceneSound;
+  /** 이번 공격 단계에서 재생할 PokéRogue 기술(React가 매 재생마다 무작위로 고른다) */
+  move?: string | null;
+  /** 이번 재생에서 쓸 기술들(미리 받아 둔다) */
+  preloadMoves?: readonly string[];
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<Scene | null>(null);
-  const latest = useRef({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable });
-  latest.current = { arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable };
+  const latest = useRef({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable, sound, move, preloadMoves });
+  latest.current = { arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable, sound, move, preloadMoves };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -120,6 +150,9 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
     async function mount() {
       try {
         const [pixi] = await Promise.all([import("pixi.js"), import("pixi.js/gif")]);
+        // 배경·발판·볼은 포켓몬 이미지를 기다리는 동안 미리 받아 둔다(장면이 열리자마자 보이도록).
+        const arenaUrls = battleArena(latest.current.arenaSeed);
+        void pixi.Assets.load([arenaUrls.background, arenaUrls.attackerBase, arenaUrls.defenderBase, ...Object.values(POKEBALL_SPRITES)]).catch(() => undefined);
         const quality = sceneQuality(target.clientWidth, window.devicePixelRatio);
         app = new pixi.Application();
         await app.init({ resizeTo: target, backgroundAlpha: 0, antialias: false, autoDensity: true, resolution: quality.resolution, preference: "webgl" });
@@ -142,7 +175,8 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
         effect.anchor.set(0.5);
         effect.visible = false;
         const side = (visual: Visual, key: string): Side => {
-          const created: Side = { sprite: new pixi.Sprite(), flash: new pixi.Sprite(), frames: null, frameTime: 0, candidate: visual.candidate, key, entrance: 0, entranceBurst: false, hidden: false, baseScale: 1 };
+          const created: Side = { sprite: new pixi.Sprite(), flash: new pixi.Sprite(), frames: null, frameTime: 0, candidate: visual.candidate, key, entrance: 0, entranceBurst: false, hidden: false, baseScale: 1, tone: [0, 0, 0, 0], toneFilter: new pixi.ColorMatrixFilter(), toneFilters: [] };
+          created.toneFilters = [created.toneFilter];
           created.flash.blendMode = "add";
           created.flash.alpha = 0;
           applyVisual(created, visual);
@@ -153,24 +187,46 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
         for (const sprite of Object.values(arena)) sprite.visible = false;
         const balls = Array.from({ length: 4 }, () => { const ball = new pixi.Sprite(); ball.anchor.set(0.5); ball.visible = false; return ball; });
         const sparkPool = Array.from({ length: quality.compact ? 24 : 48 }, () => { const spark = new pixi.Sprite(); spark.anchor.set(0.5); spark.visible = false; spark.blendMode = "add"; return spark; });
-        // 배경 → 발판 → 그림자 → 위쪽(방어) 포켓몬 → 아래쪽(공격) 포켓몬 순으로 그린다.
-        world.addChild(arena.background, arena.defenderBase, arena.attackerBase, back, sides.defender.sprite, sides.defender.flash, sides.attacker.sprite, sides.attacker.flash, shapes, ...balls, ...sparkPool, projectile, effect, particles);
-        app.stage.addChild(world, overlay);
+        const moveSprites = Array.from({ length: 24 }, () => { const sprite = new pixi.Sprite(); sprite.anchor.set(0.5); sprite.visible = false; return sprite; });
+        // 그리는 순서(zIndex): 배경 → 발판 → 그림자 → 기술 배경 → 위쪽(방어) 포켓몬 → 아래쪽(공격) 포켓몬 → 연출. 기술 셀은 우선순위에 따라 끼워 넣는다.
+        world.sortableChildren = true;
+        const layer = (z: number, ...items: import("pixi.js").Container[]) => { for (const item of items) { item.zIndex = z; world.addChild(item); } };
+        layer(Z.background, arena.background);
+        layer(Z.bases, arena.defenderBase, arena.attackerBase);
+        layer(Z.shadows, back);
+        layer(Z.defender, sides.defender.sprite);
+        layer(Z.defender + 0.1, sides.defender.flash);
+        layer(Z.attacker, sides.attacker.sprite);
+        layer(Z.attacker + 0.1, sides.attacker.flash);
+        layer(Z.effects, shapes, ...balls, ...sparkPool, projectile, effect);
+        layer(Z.moveTop, ...moveSprites);
+        layer(Z.particles, particles);
+        // 장면 전체를 320×180 텍스처에 그린 뒤 최근접 보간으로 확대한다(PokéRogue와 같은 픽셀 밀도).
+        const fieldRoot = new pixi.Container();
+        fieldRoot.addChild(world, overlay);
+        const fieldTexture = pixi.RenderTexture.create({ width: FIELD.width, height: FIELD.height, resolution: 1 });
+        fieldTexture.source.scaleMode = "nearest";
+        const screen = new pixi.Sprite(fieldTexture);
+        app.stage.addChild(screen);
 
         const scene: Scene = {
-          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), arena, balls, sparks: { textures: [], pool: sparkPool, items: [] }, ballIndex: 0, ballTextures: {}, firstTurn: props.firstTurn, introEntered: false, tossBurst: false, sides, pool: [], typeTextures: new Map(), quality,
+          pixi, app, world, back, shapes, particles, overlay, projectile, effect, sheets: new Map(), arena, balls, sparks: { textures: [], pool: sparkPool, items: [] }, moves: new Map(), moveSprites, move: null, moveBackground: null, sound: () => latest.current.sound, fieldRoot, fieldTexture, screen, ballIndex: 0, ballTextures: {}, firstTurn: props.firstTurn, introEntered: false, tossBurst: false, sides, pool: [], quality,
           phase: props.phase, actor: props.actor, duration: props.duration, multiplier: props.multiplier, winner: props.winner,
           types: { attacker: props.attacker.battleType, defender: props.defender.battleType },
           stepKey: props.stepKey, elapsed: 0, clock: 0, speed: props.speed, paused: props.paused, burstDone: false, emitDebt: 0, bolt: { at: -1, points: [] },
         };
         sceneRef.current = scene;
         loadArena(scene, props.arenaSeed);
+        if (latest.current.preloadMoves) loadMoves(scene, latest.current.preloadMoves, scene.sound);
         // 교대할 포켓몬 이미지를 미리 받아 둔다(Assets 캐시). 실패해도 교대 시점에 다시 시도한다.
-        for (const key of ["attacker", "defender"] as const) for (const pokemon of props.teams[key]) void loadVisual(pixi, pokemon.imagePath, key).catch(() => undefined);
+        for (const key of ["attacker", "defender"] as const) for (const pokemon of props.teams[key]) {
+          void loadVisual(pixi, pokemon.imagePath, key).catch(() => undefined);
+          loadTypeAssets(scene, pokemon.battleType);
+        }
         if (props.phase === "intro" && props.firstTurn) holdForToss(scene);
         for (const type of new Set([props.attacker.battleType, props.defender.battleType])) loadTypeAssets(scene, type);
-        app.ticker.add((ticker) => { if (!scene.paused) update(scene, Math.min(ticker.deltaMS, 50)); });
-        if (props.paused) update(scene, 0);
+        app.ticker.add((ticker) => { if (!scene.paused) renderField(scene, Math.min(ticker.deltaMS, 50)); });
+        if (props.paused) renderField(scene, 0);
         setPaused(scene, props.paused);
       } catch {
         if (!cancelled) latest.current.onUnavailable();
@@ -221,6 +277,16 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
     // (그대로 두면 introEntered가 영영 false라 양측이 숨은 채 전투가 진행된다)
     if (scene.phase === "intro" && !scene.introEntered) enterBoth(scene);
     Object.assign(scene, { phase, actor, duration, multiplier, winner, stepKey, elapsed: 0, burstDone: false, emitDebt: 0, tossBurst: false });
+    // 공격 단계마다 그 타입의 PokéRogue 기술 하나를 무작위로 골라 공격·명중 구간 동안 재생한다.
+    if (phase === "attack" && actor) {
+      scene.move = startMove(scene, actor, latest.current.move ?? null);
+      if (!scene.move) latest.current.sound?.play(attackSoundUrl(scene.types[actor]), 0.9);
+    } else if (phase !== "impact") scene.move = null;
+    // 기술이 끝나면 기술 배경도 걷는다(PokéRogue도 애니메이션이 끝나면 배경을 지운다).
+    if (!scene.move && scene.moveBackground) {
+      scene.moveBackground.sprite.destroy();
+      scene.moveBackground = null;
+    }
   }, [actor, duration, multiplier, phase, stepKey, winner]);
 
   useEffect(() => {
@@ -237,6 +303,12 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, 
     const scene = sceneRef.current;
     if (scene) scene.speed = speed;
   }, [speed]);
+
+  // 이번 재생에서 쓸 기술을 미리 받는다(다시 보기마다 새로 고른 기술이 온다).
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (scene && preloadMoves) loadMoves(scene, preloadMoves, scene.sound);
+  }, [preloadMoves]);
 
   useEffect(() => {
     const scene = sceneRef.current;
@@ -257,6 +329,157 @@ function enterBoth(scene: Scene) {
   scene.introEntered = true;
   startEntrance(scene.sides.attacker);
   startEntrance(scene.sides.defender);
+}
+
+/** 기술 JSON과 이펙트 시트를 받아 둔다. 실패한 기술은 기본 연출로 대체된다. */
+function loadMoves(scene: Scene, names: readonly string[], sound: () => SceneSound | undefined) {
+  const sheet = async (graphic: string): Promise<Sheet> => {
+    const base: import("pixi.js").Texture = await scene.pixi.Assets.load(moveGraphicUrl(graphic));
+    base.source.scaleMode = "nearest";
+    return { base, cells: new Map() };
+  };
+  for (const name of names) {
+    if (scene.moves.has(name)) continue;
+    scene.moves.set(name, null);
+    void fetch(moveAnimUrl(name))
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
+      .then(async (raw: unknown) => {
+        const set = parseMoveAnim(raw);
+        if (!set?.main.graphic) return;
+        const main = await sheet(set.main.graphic);
+        const opponent = set.opponent?.graphic ? await sheet(set.opponent.graphic).catch(() => null) : null;
+        // 기술이 까는 배경 이미지도 미리 받는다(없으면 검은 배경).
+        const backgrounds = new Map<string, import("pixi.js").Texture>();
+        for (const resource of new Set([...set.main.backgrounds, ...(set.opponent?.backgrounds ?? [])].filter((event) => event.kind === "add" && event.resource).map((event) => event.resource))) {
+          try {
+            const texture: import("pixi.js").Texture = await scene.pixi.Assets.load(moveGraphicUrl(resource));
+            texture.source.scaleMode = "nearest";
+            backgrounds.set(resource, texture);
+          } catch {
+            // 배경을 못 받으면 그 배경만 건너뛴다.
+          }
+        }
+        scene.moves.set(name, { set, main, opponent, backgrounds });
+        for (const effect of [...set.main.sounds, ...(set.opponent?.sounds ?? [])]) sound()?.preload(moveSoundUrl(effect.resource));
+      })
+      .catch(() => {
+        // 이 기술은 기본 연출로 대체한다.
+      });
+  }
+}
+
+function startMove(scene: Scene, actor: SideKey, name: string | null): ActiveMove | null {
+  const entry = name ? scene.moves.get(name) : null;
+  if (!name || !entry) return null;
+  const other: SideKey = actor === "attacker" ? "defender" : "attacker";
+  // 위쪽(상대) 포켓몬이 쓰고 상대 전용 변형이 있으면, 그 변형은 실제 대상(아래쪽)을 애니메이션의 '시전자' 자리로 그린다.
+  if (actor === "defender" && entry.set.opponent && entry.opponent) return { name, anim: entry.set.opponent, sheet: entry.opponent, entry, clock: 0, fired: new Set(), firedBackgrounds: new Set(), animUser: other, animTarget: actor };
+  return { name, anim: entry.set.main, sheet: entry.main, entry, clock: 0, fired: new Set(), firedBackgrounds: new Set(), animUser: actor, animTarget: other };
+}
+
+function moveCell(scene: Scene, sheet: Sheet, frame: number) {
+  if (sheet.cells.has(frame)) return sheet.cells.get(frame) ?? null;
+  const cell = effectCell(frame);
+  const fits = cell.x + cell.width <= sheet.base.source.width && cell.y + cell.height <= sheet.base.source.height;
+  const texture = fits ? new scene.pixi.Texture({ source: sheet.base.source, frame: new scene.pixi.Rectangle(cell.x, cell.y, cell.width, cell.height) }) : null;
+  sheet.cells.set(frame, texture);
+  return texture;
+}
+
+type Offsets = Record<SideKey, { x: number; y: number; alpha: number }>;
+
+/** 기술 배경 이벤트(add/update)를 PokéRogue와 같은 위치·배율·시간으로 적용하고 진행 중인 변화를 갱신한다. */
+function updateMoveBackground(scene: Scene, move: ActiveMove, index: number) {
+  move.anim.backgrounds.forEach((event, order) => {
+    if (event.frame > index || move.firedBackgrounds.has(order)) return;
+    move.firedBackgrounds.add(order);
+    const duration = event.duration * MOVE_FRAME_MS;
+    if (event.kind === "add") {
+      scene.moveBackground?.sprite.destroy();
+      const texture = event.resource ? move.entry.backgrounds.get(event.resource) : undefined;
+      const sprite = texture
+        ? new scene.pixi.TilingSprite({ texture, width: 896, height: 576 })
+        : Object.assign(new scene.pixi.Sprite(scene.pixi.Texture.WHITE), { width: 896, height: 576, tint: 0x000000 });
+      sprite.position.set(event.bgX - 320, event.bgY - 284);
+      sprite.scale.set(1.25);
+      sprite.alpha = event.opacity / 255;
+      sprite.zIndex = Z.moveBackground;
+      scene.world.addChild(sprite);
+      scene.moveBackground = { sprite, tweens: {} };
+      return;
+    }
+    const background = scene.moveBackground;
+    if (!background) return;
+    const start = move.clock;
+    background.tweens.x = { from: background.sprite.x, to: event.bgX * 0.5 - 320, start, duration };
+    background.tweens.y = { from: background.sprite.y, to: event.bgY * 0.5 - 284, start, duration };
+    background.tweens.alpha = { from: background.sprite.alpha, to: event.opacity / 255, start, duration };
+  });
+  const background = scene.moveBackground;
+  if (!background) return;
+  for (const key of ["x", "y", "alpha"] as const) {
+    const tween = background.tweens[key];
+    if (!tween) continue;
+    const t = tween.duration > 0 ? clamp01((move.clock - tween.start) / tween.duration) : 1;
+    background.sprite[key] = lerp(tween.from, tween.to, t);
+  }
+}
+
+/**
+ * 진행 중인 기술의 현재 프레임을 PokéRogue와 같은 규칙으로 그린다(프레임당 50ms, 프레임 사이는 보간).
+ * 시전자·대상 요소는 포켓몬 위치·투명도·색조를 바꾸고, 이펙트 셀은 우선순위에 맞는 깊이에 스프라이트로 놓는다.
+ */
+function drawMove(scene: Scene, delta: number, hitstop: boolean, offsets: Offsets, center: (key: SideKey) => { x: number; y: number }, field: { x: number; y: number; scale: number }, sound: SceneSound | undefined) {
+  for (const sprite of scene.moveSprites) sprite.visible = false;
+  for (const side of Object.values(scene.sides)) side.tone = [0, 0, 0, 0];
+  const move = scene.move;
+  if (!move) return;
+  if (!hitstop) move.clock += delta;
+  const index = Math.floor(move.clock / MOVE_FRAME_MS);
+  move.anim.sounds.forEach((effect, order) => {
+    if (effect.frame > index || move.fired.has(order)) return;
+    move.fired.add(order);
+    sound?.play(moveSoundUrl(effect.resource), effect.volume, effect.pitch);
+  });
+  updateMoveBackground(scene, move, index);
+  const current = move.anim.frames[index];
+  if (!current) return;
+  const frame = interpolateFrame(current, move.anim.frames[index + 1], (move.clock % MOVE_FRAME_MS) / MOVE_FRAME_MS);
+  const user = center(move.animUser);
+  const target = center(move.animTarget);
+  const sideZ = (key: SideKey) => key === "attacker" ? Z.attacker : Z.defender;
+  let used = 0;
+  for (const element of frame) {
+    if (element.target === 0 || element.target === 1) {
+      const key = element.target === 0 ? move.animUser : move.animTarget;
+      const rest = placeMoveElement({ ...element, x: element.target === 0 ? 0 : 128, y: element.target === 0 ? 0 : -64 }, user, target, field);
+      const now = placeMoveElement(element, user, target, field);
+      offsets[key].x += now.x - rest.x;
+      offsets[key].y += now.y - rest.y;
+      offsets[key].alpha *= element.visible ? element.opacity / 255 : 0;
+      scene.sides[key].tone = element.tone;
+      continue;
+    }
+    if (!element.visible || element.opacity <= 0) continue;
+    const texture = moveCell(scene, move.sheet, element.graphicFrame);
+    const sprite = scene.moveSprites[used];
+    if (!texture || !sprite) continue;
+    used++;
+    const at = placeMoveElement(element, user, target, field);
+    sprite.texture = texture;
+    sprite.visible = true;
+    sprite.position.set(at.x, at.y);
+    sprite.scale.set(field.scale * element.zoomX / 100 * (element.mirror ? -1 : 1) * (at.flip ? -1 : 1), field.scale * element.zoomY / 100);
+    sprite.rotation = -element.angle * Math.PI / 180;
+    sprite.alpha = element.opacity / 255;
+    sprite.blendMode = element.blendType === 1 ? "add" : "normal";
+    // 그리는 순서: 0 위쪽 포켓몬 뒤, 2 기준 포켓몬 뒤(배경이 있으면 배경 바로 위), 3 기준 포켓몬 바로 앞, 그 밖은 맨 앞
+    const focusSide = element.focus === 1 ? move.animTarget : element.focus === 2 ? move.animUser : null;
+    sprite.zIndex = element.priority === 0 ? Z.defender - 0.5
+      : element.priority === 2 ? (scene.moveBackground ? Z.moveBackground + 0.5 : focusSide ? sideZ(focusSide) - 0.5 : Z.moveTop)
+        : element.priority === 3 && focusSide ? sideZ(focusSide) + 0.5
+          : Z.moveTop + used * 0.001;
+  }
 }
 
 /** 선공 연출이 끝날 때까지 양측을 숨긴다. */
@@ -280,19 +503,23 @@ function loadArena(scene: Scene, seed: string) {
   void load(arena.background, scene.arena.background);
   void load(arena.attackerBase, scene.arena.attackerBase);
   void load(arena.defenderBase, scene.arena.defenderBase);
-  // PokéRogue 아틀라스는 Phaser(TexturePacker 다중 텍스처) 형식이라 Pixi Spritesheet로 바로 읽히지 않는다. 프레임 좌표만 읽어 잘라 쓴다.
-  void fetch(POKEBALL_PARTICLES)
-    .then((response) => response.ok ? response.json() : Promise.reject(new Error(String(response.status))))
-    .then(async (atlas: { textures?: { image: string; frames: { frame: { x: number; y: number; w: number; h: number } }[] }[] }) => {
-      const page = atlas.textures?.[0];
-      if (!page?.frames?.length) return;
-      const base: import("pixi.js").Texture = await scene.pixi.Assets.load(new URL(page.image, POKEBALL_PARTICLES).href);
-      base.source.scaleMode = "nearest";
-      scene.sparks.textures = page.frames.map(({ frame }) => new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(frame.x, frame.y, frame.w, frame.h) }));
-    })
-    .catch(() => {
-      // 아틀라스가 없으면 Graphics 파티클만 쓴다.
-    });
+  // 파티클 이미지를 받아 불투명 픽셀 덩어리마다 한 조각으로 자른다(AGPL 아틀라스 JSON은 쓰지 않는다).
+  scene.pixi.Assets.load(POKEBALL_PARTICLES).then((base: import("pixi.js").Texture) => {
+    const image = base.source.resource as CanvasImageSource | undefined;
+    if (!image) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = base.source.width;
+    canvas.height = base.source.height;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return;
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    const boxes = particleBoxes((x, y) => pixels[(y * canvas.width + x) * 4 + 3], canvas.width, canvas.height);
+    base.source.scaleMode = "nearest";
+    scene.sparks.textures = boxes.map((box) => new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(box.x, box.y, box.w, box.h) }));
+  }, () => {
+    // 이미지가 없으면 Graphics 파티클만 쓴다.
+  });
   for (const [state, url] of Object.entries(POKEBALL_SPRITES) as [BallState, string][]) {
     scene.pixi.Assets.load(url).then((texture: import("pixi.js").Texture) => {
       texture.source.scaleMode = "nearest";
@@ -367,9 +594,43 @@ function startEntrance(side: Side) {
 }
 
 /** 외부 스프라이트를 우선순위대로 시도하고, 모두 실패하면 예외를 던진다(호출부가 DOM 로그로 전환). */
+/** PokéRogue 스프라이트 아틀라스(트림된 프레임 목록)를 원래 크기 기준 프레임 텍스처로 만든다. 같은 주소는 한 번만 받는다. */
+const atlasCache = new Map<string, Promise<GifFrame[]>>();
+
+function loadAtlas(pixi: Pixi, candidate: SpriteCandidate & { atlas: string }) {
+  const cached = atlasCache.get(candidate.atlas);
+  if (cached) return cached;
+  const promise = (async () => {
+    const response = await fetch(candidate.atlas);
+    if (!response.ok) throw new Error(String(response.status));
+    const atlas = await response.json() as { textures?: { frames?: { filename?: string; frame?: { x: number; y: number; w: number; h: number }; sourceSize?: { w: number; h: number }; spriteSourceSize?: { x: number; y: number; w: number; h: number } }[] }[] };
+    const list = (atlas.textures?.[0]?.frames ?? []).filter((item) => item.frame && item.sourceSize && item.spriteSourceSize).sort((a, b) => String(a.filename).localeCompare(String(b.filename)));
+    if (!list.length) throw new Error("empty atlas");
+    const base: import("pixi.js").Texture = await pixi.Assets.load(candidate.url);
+    base.source.scaleMode = "nearest";
+    return list.map((item, index) => ({
+      texture: new pixi.Texture({
+        source: base.source,
+        frame: new pixi.Rectangle(item.frame!.x, item.frame!.y, item.frame!.w, item.frame!.h),
+        orig: new pixi.Rectangle(0, 0, item.sourceSize!.w, item.sourceSize!.h),
+        trim: new pixi.Rectangle(item.spriteSourceSize!.x, item.spriteSourceSize!.y, item.spriteSourceSize!.w, item.spriteSourceSize!.h),
+      }),
+      start: index * POKEMON_SPRITE_FRAME_MS,
+      end: (index + 1) * POKEMON_SPRITE_FRAME_MS,
+    }));
+  })();
+  atlasCache.set(candidate.atlas, promise);
+  promise.catch(() => atlasCache.delete(candidate.atlas));
+  return promise;
+}
+
 async function loadVisual(pixi: Pixi, imagePath: string, side: SideKey): Promise<Visual> {
   for (const candidate of battleSpriteCandidates(imagePath, side)) {
     try {
+      if (candidate.atlas) {
+        const frames = await loadAtlas(pixi, candidate as SpriteCandidate & { atlas: string });
+        return { texture: frames[0].texture, frames, candidate };
+      }
       const asset = await pixi.Assets.load(candidate.url);
       const frames = candidate.animated && Array.isArray(asset?.frames) && asset.frames.length ? asset.frames as GifFrame[] : null;
       const texture = frames ? frames[0].texture : asset as import("pixi.js").Texture;
@@ -392,16 +653,19 @@ function applyVisual(side: Side, visual: Visual) {
   }
 }
 
+/** 같은 시트를 투사체·명중이 다른 셀로 쓰므로 URL과 셀 목록을 함께 키로 쓴다. */
+const sheetKey = (sheet: EffectSheet) => `${sheet.url}#${sheet.frames.join(",")}`;
+
 function loadSheet(scene: Scene, sheet: EffectSheet | undefined) {
-  if (!sheet || scene.sheets.has(sheet.url)) return;
-  scene.sheets.set(sheet.url, null);
+  if (!sheet || scene.sheets.has(sheetKey(sheet))) return;
+  scene.sheets.set(sheetKey(sheet), null);
   scene.pixi.Assets.load(sheet.url).then((base: import("pixi.js").Texture) => {
     base.source.scaleMode = "nearest";
     const frames = sheet.frames.map((frame) => {
       const cell = effectCell(frame);
       return new scene.pixi.Texture({ source: base.source, frame: new scene.pixi.Rectangle(cell.x, cell.y, cell.width, cell.height) });
     });
-    scene.sheets.set(sheet.url, frames);
+    scene.sheets.set(sheetKey(sheet), frames);
   }, () => {
     // 외부 이펙트 시트는 장식이므로 실패하면 Graphics 연출만 쓴다.
   });
@@ -409,27 +673,18 @@ function loadSheet(scene: Scene, sheet: EffectSheet | undefined) {
 
 /** 시트가 준비됐으면 경과 시간에 맞는 프레임을 돌려준다. */
 function sheetFrame(scene: Scene, sheet: EffectSheet | undefined, time: number, loop: boolean) {
-  const frames = sheet ? scene.sheets.get(sheet.url) : null;
+  const frames = sheet ? scene.sheets.get(sheetKey(sheet)) : null;
   if (!sheet || !frames?.length) return null;
   const index = Math.floor(time / sheet.frameMs);
   if (!loop && index >= frames.length) return null;
   return frames[index % frames.length];
 }
 
+/** 타입의 PokéRogue 투사체·명중 시트를 미리 받는다(자체 타입 아이콘 이미지는 쓰지 않는다). */
 function loadTypeAssets(scene: Scene, type: string) {
-  const effect = battleEffect(type);
-  const sheets = BATTLE_EFFECT_SHEETS[effect.motion];
+  const sheets = effectSheetsFor(type);
   loadSheet(scene, sheets.projectile);
   loadSheet(scene, sheets.impact);
-  const path = effect.spritePath;
-  if (scene.typeTextures.has(path)) return;
-  scene.typeTextures.set(path, null);
-  scene.pixi.Assets.load(path).then((texture: import("pixi.js").Texture) => {
-    texture.source.scaleMode = "nearest";
-    scene.typeTextures.set(path, texture);
-  }, () => {
-    // 타입 이펙트 이미지는 장식이므로 실패하면 도형 연출만 쓴다.
-  });
 }
 
 function emit(scene: Scene, count: number, make: (index: number) => Omit<Particle, "life" | "angle"> & { angle?: number }) {
@@ -467,27 +722,37 @@ function burst(scene: Scene, x: number, y: number, motion: BattleMotion, palette
   if (motion === "wave") emit(scene, count, () => { const a = random(0, Math.PI * 2); const s = random(50, 160) * profile.burst; return { x: x + Math.cos(a) * 12, y: y + Math.sin(a) * 12, vx: Math.cos(a) * s, vy: Math.sin(a) * s, gravity: -30, drag: 1.6, maxLife: random(500, 900), size: random(2.5, 5), color: pick(colors), shape: pick(["dot", "star"] as const), spin: random(-4, 4) }; });
 }
 
+/** 한 프레임을 진행하고 320×180 텍스처에 그린 뒤, 캔버스 크기에 맞춰 확대한다. */
+function renderField(scene: Scene, delta: number) {
+  update(scene, delta);
+  scene.app.renderer.render({ container: scene.fieldRoot, target: scene.fieldTexture, clear: true });
+  scene.screen.scale.set(scene.app.screen.width / FIELD.width, scene.app.screen.height / FIELD.height);
+}
+
 function update(scene: Scene, rawDelta: number) {
   const { app, world, back, shapes, particles, overlay, projectile, sides } = scene;
-  const width = app.screen.width;
-  const height = app.screen.height;
+  // 모든 좌표는 320×180 필드 픽셀 단위다(렌더 텍스처에 그린 뒤 확대).
+  const width = FIELD.width;
+  const height = FIELD.height;
   const delta = rawDelta * scene.speed;
   // 320×180 필드를 무대에 꽉 차게(cover) 맞춘다. 무대는 16:9라 보통 잘리는 부분이 없다.
-  const fieldScale = Math.max(width / FIELD.width, height / FIELD.height);
-  const fieldX = (width - FIELD.width * fieldScale) / 2;
-  const fieldY = (height - FIELD.height * fieldScale) / 2;
+  const fieldScale = 1;
+  const fieldX = 0;
+  const fieldY = 0;
   const size = fieldScale * 64;
   const home: Record<SideKey, { x: number; y: number }> = {
     attacker: { x: fieldX + FIELD_SPOTS.attacker.x * fieldScale, y: fieldY + FIELD_SPOTS.attacker.y * fieldScale },
     defender: { x: fieldX + FIELD_SPOTS.defender.x * fieldScale, y: fieldY + FIELD_SPOTS.defender.y * fieldScale },
   };
-  const center = (key: SideKey) => ({ x: home[key].x, y: home[key].y - size * (key === "attacker" ? 0.5 : 0.4) });
-  const ballScale = fieldScale * 1.25;
+  // PokéRogue처럼 포켓몬 중심 = 발 위치 - 스프라이트 높이의 절반
+  const center = (key: SideKey) => ({ x: home[key].x, y: home[key].y - Math.max(sides[key].sprite.texture.orig.height, 16) / 2 });
+  const ballScale = 1;
   const trainer: Record<SideKey, { x: number; y: number }> = { attacker: { x: -0.04 * width, y: 0.96 * height }, defender: { x: 1.04 * width, y: 0.18 * height } };
   scene.arena.background.position.set(fieldX, fieldY);
   scene.arena.background.scale.set(fieldScale);
   for (const base of [scene.arena.attackerBase, scene.arena.defenderBase]) {
-    base.position.set(fieldX, fieldY + (FIELD.height - FIELD.baseHeight) * fieldScale);
+    // PokéRogue처럼 발판도 필드 왼쪽 위(0,0)에 맞춘다.
+    base.position.set(fieldX, fieldY);
     base.scale.set(fieldScale);
   }
   scene.ballIndex = 0;
@@ -595,9 +860,6 @@ function update(scene: Scene, rawDelta: number) {
       }
       const open = segment(t, BALL_OPEN, BALL_OPEN + 0.22);
       if (open < 1) placeBall(scene, target.x, target.y - size * 0.1, 0, open < 0.35 ? "opening" : "open", ballScale, 1 - open);
-      // 열린 볼에서 위로 솟는 빛줄기
-      const beam = 1 - segment(t, BALL_OPEN, BALL_OPEN + 0.3);
-      if (beam > 0) shapes.rect(target.x - size * 0.08 * beam, target.y - size * 1.2, size * 0.16 * beam, size * 1.1).fill({ color: 0xffffff, alpha: beam * 0.55 });
       shapes.circle(target.x, target.y, 8 + open * size * 0.7).fill({ color: 0xffffff, alpha: (1 - open) * 0.85 });
       const grow = easeOutBack(segment(t, BALL_OPEN, 0.9));
       offsets[key].sx *= grow;
@@ -620,8 +882,10 @@ function update(scene: Scene, rawDelta: number) {
     offsets[source].flashTint = colorNumber(palette[1]);
   }
 
-  // 공격: 계열별 투사체
-  if (phase === "attack" && actor) {
+  const moveActive = Boolean(scene.move) && (phase === "attack" || phase === "impact");
+
+  // 공격: PokéRogue 기술이 없을 때만 계열별 기본 투사체
+  if (phase === "attack" && actor && !moveActive) {
     const from = center(source);
     const to = center(targetKey);
     const direction = to.x > from.x ? 1 : -1;
@@ -629,7 +893,7 @@ function update(scene: Scene, rawDelta: number) {
     const lunge = Math.sin(clamp01(progress * 1.6) * Math.PI);
     offsets[source].x += direction * lunge * (effect.motion === "strike" ? size * 0.55 : 12);
     offsets[source].y -= lunge * (effect.motion === "strike" ? 10 : 3);
-    drawProjectile(scene, delta, effect.motion, palette, effect.spritePath, from, to, p, direction, size);
+    drawProjectile(scene, delta, effect.motion, palette, effectSheetsFor(scene.types[source]).projectile, from, to, p, direction, size);
   }
 
   // 피격: 히트스톱 → 흰색 플래시 → 넉백·카메라 흔들림
@@ -641,13 +905,14 @@ function update(scene: Scene, rawDelta: number) {
     if (hitstop) {
       offsets[targetKey].flash = 1;
       offsets[targetKey].x += direction * 3;
-      const texture = scene.typeTextures.get(effect.spritePath);
-      if (texture) placeProjectile(projectile, texture, to.x - direction * 10, to.y, direction, 40);
+      // 히트스톱 동안 투사체를 대상 앞에 멈춰 둔다(기본 연출일 때만).
+      const hold = moveActive ? null : sheetFrame(scene, effectSheetsFor(scene.types[source]).projectile, 0, true);
+      if (hold) placeProjectile(projectile, hold, to.x - direction * 10, to.y, direction, size * 1.1);
       if (profile.screenFlash) overlay.rect(0, 0, width, height).fill({ color: 0xffffff, alpha: profile.screenFlash });
     } else {
       if (!scene.burstDone) {
         scene.burstDone = true;
-        burst(scene, to.x, to.y, effect.motion, palette, profile, scene.types[source] === "ice");
+        if (!moveActive) burst(scene, to.x, to.y, effect.motion, palette, profile, scene.types[source] === "ice");
       }
       const ip = impactProgress;
       const knock = easeOutCubic(segment(ip, 0, 0.18)) * (1 - segment(ip, 0.3, 1)) * profile.knockback;
@@ -655,14 +920,16 @@ function update(scene: Scene, rawDelta: number) {
       offsets[targetKey].x += ip < 0.35 ? (Math.random() - 0.5) * 6 * profile.burst : 0;
       offsets[targetKey].flash = ip < 0.4 ? (Math.floor(ip * 20) % 2 ? 0.85 : 0.1) : 0;
       offsets[targetKey].sx *= 1 - Math.sin(segment(ip, 0, 0.3) * Math.PI) * 0.08;
-      drawImpact(shapes, effect.motion, palette, to.x, to.y, ip, size, profile);
-      const impactSheet = BATTLE_EFFECT_SHEETS[effect.motion].impact;
-      const frame = sheetFrame(scene, impactSheet, impactLocal, false) ?? (impactSheet?.frames.length === 1 && ip < 0.5 ? sheetFrame(scene, impactSheet, 0, false) : null);
+      const impactSheet = effectSheetsFor(scene.types[source]).impact;
+      const frame = moveActive ? null : sheetFrame(scene, impactSheet, impactLocal, false) ?? (impactSheet?.frames.length === 1 && ip < 0.5 ? sheetFrame(scene, impactSheet, 0, false) : null);
+      // PokéRogue 기술이나 명중 시트가 있으면 그것만 보이고, 없을 때만 Graphics 고리·섬광을 그린다.
+      if (!moveActive && !frame && !(impactSheet && scene.sheets.get(sheetKey(impactSheet)))) drawImpact(shapes, effect.motion, palette, to.x, to.y, ip, size, profile);
       if (frame) {
         const pop = impactSheet?.frames.length === 1 ? easeOutBack(segment(ip, 0, 0.25)) * (1 - segment(ip, 0.35, 0.5)) : 1;
         placeProjectile(scene.effect, frame, to.x, to.y, direction, size * 1.4 * Math.sqrt(profile.burst) * pop);
       }
-      shake = profile.shake * (1 - segment(ip, 0, 0.55)) ** 2;
+      // 흔들림은 필드 픽셀 단위라 화면 기준 값보다 작게 준다.
+      shake = profile.shake * 0.4 * (1 - segment(ip, 0, 0.55)) ** 2;
       punch = profile.tier === "strong" ? 0.035 * (1 - segment(ip, 0, 0.4)) : 0;
     }
   }
@@ -679,9 +946,7 @@ function update(scene: Scene, rawDelta: number) {
     offsets[actor].flashTint = 0xff5a5f;
     offsets[actor].sx *= 1 - fade * 0.6;
     if (fade > 0) {
-      const at = center(actor);
       const ball = actor === "attacker" ? { x: width * 0.06, y: height * 0.86 } : { x: width * 0.94, y: height * 0.2 };
-      shapes.moveTo(ball.x, ball.y).lineTo(at.x, at.y + size * 0.2).stroke({ width: 3, color: 0xff5a5f, alpha: (1 - fade) * 0.9 });
       placeBall(scene, ball.x, ball.y, 0, fade < 0.85 ? "open" : "closed", ballScale);
     }
   }
@@ -701,6 +966,8 @@ function update(scene: Scene, rawDelta: number) {
     stream(scene, delta, 16, () => ({ x: at.x + random(-size * 0.5, size * 0.5), y: at.y + random(-size * 0.2, size * 0.4), vx: random(-12, 12), vy: random(-70, -30), gravity: 0, drag: 0.5, maxLife: random(700, 1_100), size: random(3, 5), color: pick(["#facc15", "#fef08a", "#ffffff"]), shape: "star", spin: random(-3, 3) }));
   }
 
+  drawMove(scene, delta, hitstop, offsets, center, { x: fieldX, y: fieldY, scale: fieldScale }, scene.sound());
+
   // 포켓몬과 바닥 그림자
   (["attacker", "defender"] as const).forEach((key) => {
     const side = sides[key];
@@ -709,8 +976,8 @@ function update(scene: Scene, rawDelta: number) {
     const alpha = visible ? offset.alpha : 0;
     // 꼭 맞게 잘린 GIF는 픽셀 배율을, 여백 있는 96px PNG는 폭 기준 배율을 쓴다.
     // GIF는 필드 픽셀 배율 그대로(가까운 공격 측을 조금 크게), 여백 있는 96px PNG는 조금 더 키운다. 너무 큰 포켓몬은 상한을 둔다.
-    const depth = key === "attacker" ? 1.1 : 1;
-    side.baseScale = Math.min(fieldScale * depth * (side.frames ? 1 : 1.35), size * 1.9 / Math.max(side.sprite.texture.height, 1));
+    // 원작과 같은 픽셀 밀도: 스프라이트는 원래 크기 그대로(1배) 그린다.
+    side.baseScale = 1;
     const facing = side.candidate.flip ? -1 : 1;
     const x = home[key].x + offset.x;
     const y = home[key].y + offset.y;
@@ -720,6 +987,11 @@ function update(scene: Scene, rawDelta: number) {
     }
     side.sprite.alpha = alpha;
     side.sprite.tint = offset.tint;
+    // 기술 애니메이션 색조(PokéRogue 셰이더와 같은 계산)
+    if (hasTone(side.tone)) {
+      side.toneFilter.matrix = toneMatrix(side.tone) as typeof side.toneFilter.matrix;
+      if (side.sprite.filters !== side.toneFilters) side.sprite.filters = side.toneFilters;
+    } else if (side.sprite.filters) side.sprite.filters = null;
     side.flash.alpha = alpha > 0 ? clamp01(offset.flash) : 0;
     side.flash.tint = offset.flashTint;
     const lift = clamp01((home[key].y - y) / 40);
@@ -748,9 +1020,8 @@ function update(scene: Scene, rawDelta: number) {
   world.scale.set(1 + punch);
 }
 
-function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palette: BattlePalette, spritePath: string, from: { x: number; y: number }, to: { x: number; y: number }, p: number, direction: number, size: number) {
+function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palette: BattlePalette, projectileSheet: EffectSheet | undefined, from: { x: number; y: number }, to: { x: number; y: number }, p: number, direction: number, size: number) {
   const { shapes, projectile } = scene;
-  const texture = scene.typeTextures.get(spritePath);
   const x = lerp(from.x, to.x, p);
   const arc = motion === "flame" ? -Math.sin(p * Math.PI) * size * 0.25 : 0;
   const y = lerp(from.y, to.y, p) + arc;
@@ -819,9 +1090,9 @@ function drawProjectile(scene: Scene, delta: number, motion: BattleMotion, palet
     stream(scene, delta, 70, () => ({ x: x + random(-6, 6), y: y + random(-6, 6), vx: -direction * random(10, 40), vy: random(-20, 20), gravity: 120, drag: 1, maxLife: random(260, 460), size: random(2, 4), color: pick([palette[1], palette[2], palette[3]]), shape: "dot", spin: 0 }));
   }
 
-  const sheetTexture = sheetFrame(scene, BATTLE_EFFECT_SHEETS[motion].projectile, scene.elapsed, true);
+  const sheetTexture = sheetFrame(scene, projectileSheet, scene.elapsed, true);
   if (sheetTexture) placeProjectile(projectile, sheetTexture, x, y, direction, size * 1.1);
-  else if (texture) placeProjectile(projectile, texture, x, y, motion === "splash" && spritePath.includes("water") ? -direction : direction, motion === "strike" ? 38 : 46);
+  // 시트를 아직 못 받았거나 실패하면 도형으로 그린다.
   else if (motion !== "wave") {
     shapes.circle(x, y, 16).fill({ color: palette[1], alpha: 0.35 });
     shapes.circle(x, y, 10).fill({ color: palette[1] });

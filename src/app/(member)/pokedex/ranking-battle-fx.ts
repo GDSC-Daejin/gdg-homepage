@@ -57,3 +57,8 @@ export function healthPercent(health: number, maximum: number) {
 export function healthColor(percent: number) {
   return percent > 50 ? "#22c55e" : percent > 20 ? "#facc15" : "#ef4444";
 }
+
+/** PokéRogue 체력바 이미지(overlay_hp)의 줄: 0 초록(>50%), 1 노랑(>20%), 2 빨강 */
+export function healthBarRow(percent: number) {
+  return percent > 50 ? 0 : percent > 20 ? 1 : 2;
+}

@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { buildRankingBattleSteps } from "@/app/(member)/pokedex/RankingBattleAnimation";
 import { healthColor, impactProfile, sceneQuality } from "@/app/(member)/pokedex/ranking-battle-fx";
-import { BATTLE_BGM, BATTLE_EFFECT_SHEETS, BATTLE_SOUND_SAMPLES, battleArena, battleSpriteCandidates, effectCell, POKEBALL_PARTICLES, POKEBALL_SPRITES } from "@/app/(member)/pokedex/ranking-battle-assets";
+import { attackSoundUrl, BATTLE_BGM, BATTLE_EFFECT_SHEETS, BATTLE_SOUND_SAMPLES, battleArena, effectSheetsFor, battleSpriteCandidates, effectCell, particleBoxes, POKEBALL_PARTICLES, POKEBALL_SPRITES } from "@/app/(member)/pokedex/ranking-battle-assets";
 import { sampleCues, soundForStep, soundRecipe } from "@/app/(member)/pokedex/ranking-battle-sound";
 import { battleEffect, type BattleMotion, type BattleType } from "@/lib/pokedex/battle-effects";
 import type { RankingBattleDetail, RankingPokemon, RankingTurn } from "@/lib/pokedex/ranking-league";
@@ -76,7 +76,7 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(animation).toContain("stepKey={stepKey}");
     expect(animation).toContain("paused={paused}");
     expect(animation).toContain("speed={speed}");
-    expect(scene).toContain("if (!scene.paused) update(scene");
+    expect(scene).toContain("if (!scene.paused) renderField(scene");
   });
 
   it("체력 바 접근성 속성과 피해 숫자 팝업을 유지한다", async () => {
@@ -98,14 +98,17 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(healthColor(10)).toBe("#ef4444");
   });
 
-  it("PokeAPI 스프라이트는 애니메이션 GIF를 먼저 시도하고 원래 이미지로 대체한다", () => {
+  it("PokéRogue 스프라이트를 먼저 쓰고, 애니메이션 GIF·원래 이미지로 대체한다", () => {
     const front = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png";
     expect(battleSpriteCandidates(front, "defender").map((item) => item.url)).toEqual([
+      "https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokemon/25.png",
       "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/25.gif",
       front,
     ]);
+    expect(battleSpriteCandidates(front, "defender")[0].atlas).toBe("https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokemon/25.json");
     const attacker = battleSpriteCandidates(front, "attacker");
-    expect(attacker.map((item) => item.url)).toEqual([
+    expect(attacker[0].atlas).toBe("https://raw.githubusercontent.com/pagefaultgames/pokerogue-assets/beta/images/pokemon/back/25.json");
+    expect(attacker.slice(1).map((item) => item.url)).toEqual([
       "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/back/25.gif",
       "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/back/25.png",
       front,
@@ -147,7 +150,8 @@ describe("랭킹전 PixiJS 전투장", () => {
     // 선공 연출이 intro 안에 끝나지 못하면 다음 단계로 넘어갈 때 바로 등장시킨다.
     expect(scene).toContain('if (scene.phase === "intro" && !scene.introEntered) enterBoth(scene);');
     // 교대할 팀 이미지를 장면이 열릴 때 미리 받아 둔다.
-    expect(scene).toContain("for (const pokemon of props.teams[key]) void loadVisual(");
+    expect(scene).toContain("for (const pokemon of props.teams[key]) {");
+    expect(scene).toContain("void loadVisual(pixi, pokemon.imagePath, key)");
     expect(animation).toContain("teams={{ attacker: battle.attackerTeam, defender: battle.defenderTeam }}");
   });
 
@@ -156,17 +160,58 @@ describe("랭킹전 PixiJS 전투장", () => {
     for (const url of [POKEBALL_PARTICLES, BATTLE_BGM, ...Object.values(BATTLE_SOUND_SAMPLES)]) expect(url).toMatch(/^https:\/\/raw\.githubusercontent\.com\/pagefaultgames\/pokerogue-assets\/beta\//);
     expect(scene).toContain("if (!emitSparks(");
     expect(sampleCues({ kind: "sendout" })).toEqual([{ sample: "throw", at: 0 }, { sample: "release", at: 0.38 }]);
-    expect(sampleCues({ kind: "attack", motion: "bolt" })).toBeNull();
+    expect(sampleCues({ kind: "attack", motion: "bolt", type: "electric" })).toEqual([{ sample: "attack:electric", at: 0, maxLength: 0.9 }]);
+    expect(sampleCues({ kind: "victory" })).toEqual([{ sample: "victory", at: 0 }]);
     expect(sound).toContain("cues.every((cue) => samples.has(cue.sample))");
+    // 잘라 내는 공격음은 start() 다음에 stop()을 예약해야 예외가 나지 않는다.
+    expect(sound.indexOf("source.start(start);")).toBeLessThan(sound.indexOf("source.stop(end + 0.01);"));
+    expect(sound).toContain("playUnsafe(sound, speed);");
     expect(animation).toContain("aria-pressed={musicOn}");
     expect(animation).toContain("writeSoundPreference(next, MUSIC_STORAGE_KEY)");
     expect(animation).toContain("music.close()");
     expect(config).toContain("media-src 'self' https://raw.githubusercontent.com");
   });
 
+  it("시작할 때 예전 전투장 그림 대신 단색 배경을 두고, Pixi를 못 쓸 때만 예전 그림을 보여준다", async () => {
+    const [animation, styles, scene] = await Promise.all([read("src/app/(member)/pokedex/RankingBattleAnimation.tsx"), read("src/app/(member)/pokedex/DuelPanel.module.css"), read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx")]);
+    expect(styles).toMatch(/\.rankingStage \{[^}]*linear-gradient/);
+    expect(styles).toMatch(/\.rankingStageFallback \{[^}]*battle-arena\.webp/);
+    expect(animation).toContain('${animated ? "" : styles.rankingStageFallback}');
+    expect(scene).toContain("void pixi.Assets.load([arenaUrls.background");
+  });
+
+  it("볼 파티클은 AGPL 아틀라스 JSON 없이 PNG의 불투명 덩어리로 자른다", async () => {
+    const grid = ["##..#", "##..#", ".....", "...##"];
+    const boxes = particleBoxes((x, y) => grid[y][x] === "#" ? 255 : 0, 5, 4);
+    expect(boxes).toEqual([{ x: 0, y: 0, w: 2, h: 2 }, { x: 4, y: 0, w: 1, h: 2 }, { x: 3, y: 3, w: 2, h: 1 }]);
+    expect(POKEBALL_PARTICLES).toMatch(/pb_particles\.png$/);
+    const [scene, assets] = await Promise.all([read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx"), read("src/app/(member)/pokedex/ranking-battle-assets.ts")]);
+    expect(`${scene}${assets}`).not.toContain("pb_particles.json");
+  });
+
+  it("타입별 공격 이펙트·공격음을 PokéRogue에서 가져오고, 볼 빔 연출은 그리지 않는다", async () => {
+    const scene = await read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx");
+    for (const type of TYPES) {
+      expect(attackSoundUrl(type)).toMatch(/^https:\/\/raw\.githubusercontent\.com\/pagefaultgames\/pokerogue-assets\/beta\/audio\/battle_anims\//);
+      const sheets = effectSheetsFor(type);
+      expect(sheets.projectile ?? sheets.impact).toBeDefined();
+    }
+    expect(attackSoundUrl("unknown")).toBe(attackSoundUrl("normal"));
+    expect(effectSheetsFor("ice").impact?.url).toContain("PRAS-%20Ice.png");
+    expect(scene).toContain("effectSheetsFor(scene.types[source])");
+    // 자체 타입 아이콘(이모티콘풍 webp)은 전투장에서 쓰지 않는다.
+    expect(scene).not.toContain("typeTextures");
+    expect(scene).not.toContain("spritePath");
+    for (const type of TYPES) expect(effectSheetsFor(type).projectile ?? (battleEffect(type).motion === "bolt" ? "bolt" : undefined)).toBeDefined();
+    expect(scene).not.toContain("위로 솟는 빛줄기");
+    // PokéRogue 명중 시트가 있으면 Graphics 고리를 겹쳐 그리지 않는다.
+    expect(scene).toContain("if (!moveActive && !frame && !(impactSheet && scene.sheets.get(sheetKey(impactSheet)))) drawImpact(");
+    expect(scene).not.toContain("lineTo(at.x, at.y + size * 0.2)");
+  });
+
   it("효과음은 단계마다 정해지고, 결과 보기로 건너뛰면 울리지 않는다", async () => {
     expect(soundForStep("intro", "bolt", "normal", false)).toEqual({ kind: "toss" });
-    expect(soundForStep("attack", "bolt", "normal", false)).toEqual({ kind: "attack", motion: "bolt" });
+    expect(soundForStep("attack", "bolt", "normal", false, "electric")).toEqual({ kind: "attack", motion: "bolt", type: "electric" });
     expect(soundForStep("impact", "flame", "strong", false)).toEqual({ kind: "hit", tier: "strong" });
     expect(soundForStep("recall", "flame", "normal", false)).toEqual({ kind: "faint" });
     expect(soundForStep("result", "flame", "normal", false)).toEqual({ kind: "victory" });
