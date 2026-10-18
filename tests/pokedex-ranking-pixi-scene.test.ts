@@ -142,6 +142,15 @@ describe("랭킹전 PixiJS 전투장", () => {
     expect(buildRankingBattleSteps(battle())[0].duration).toBeGreaterThanOrEqual(1_150 + 820);
   });
 
+  it("이미지 로딩이 늦어도 포켓몬이 숨은 채로 남지 않는다", async () => {
+    const [scene, animation] = await Promise.all([read("src/app/(member)/pokedex/PixiRankingBattleScene.tsx"), read("src/app/(member)/pokedex/RankingBattleAnimation.tsx")]);
+    // 선공 연출이 intro 안에 끝나지 못하면 다음 단계로 넘어갈 때 바로 등장시킨다.
+    expect(scene).toContain('if (scene.phase === "intro" && !scene.introEntered) enterBoth(scene);');
+    // 교대할 팀 이미지를 장면이 열릴 때 미리 받아 둔다.
+    expect(scene).toContain("for (const pokemon of props.teams[key]) void loadVisual(");
+    expect(animation).toContain("teams={{ attacker: battle.attackerTeam, defender: battle.defenderTeam }}");
+  });
+
   it("효과음은 단계마다 정해지고, 결과 보기로 건너뛰면 울리지 않는다", async () => {
     expect(soundForStep("intro", "bolt", "normal", false)).toEqual({ kind: "toss" });
     expect(soundForStep("attack", "bolt", "normal", false)).toEqual({ kind: "attack", motion: "bolt" });

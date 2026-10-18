@@ -77,11 +77,13 @@ type Scene = {
   bolt: { at: number; points: number[] };
 };
 
-export function PixiRankingBattleScene({ arenaSeed, firstTurn, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable }: {
+export function PixiRankingBattleScene({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, replayKey, speed, paused, onUnavailable }: {
   /** 배경 선택용 값(전투 id). 같은 기록은 같은 배경을 쓴다. */
   arenaSeed: string;
   /** 저장된 선공. 있으면 intro 단계에서 볼 던지기 선공 연출을 한다. */
   firstTurn: SideKey | null;
+  /** 교대 때 바로 보이도록 미리 불러 둘 양측 팀 전체 */
+  teams: Record<SideKey, RankingPokemon[]>;
   attacker: RankingPokemon;
   defender: RankingPokemon;
   phase: RankingScenePhase;
@@ -101,8 +103,8 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, attacker, defende
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<Scene | null>(null);
-  const latest = useRef({ arenaSeed, firstTurn, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable });
-  latest.current = { arenaSeed, firstTurn, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable };
+  const latest = useRef({ arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable });
+  latest.current = { arenaSeed, firstTurn, teams, attacker, defender, phase, actor, duration, multiplier, winner, stepKey, speed, paused, onUnavailable };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -158,6 +160,8 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, attacker, defende
         };
         sceneRef.current = scene;
         loadArena(scene, props.arenaSeed);
+        // 교대할 포켓몬 이미지를 미리 받아 둔다(Assets 캐시). 실패해도 교대 시점에 다시 시도한다.
+        for (const key of ["attacker", "defender"] as const) for (const pokemon of props.teams[key]) void loadVisual(pixi, pokemon.imagePath, key).catch(() => undefined);
         if (props.phase === "intro" && props.firstTurn) holdForToss(scene);
         for (const type of new Set([props.attacker.battleType, props.defender.battleType])) loadTypeAssets(scene, type);
         app.ticker.add((ticker) => { if (!scene.paused) update(scene, Math.min(ticker.deltaMS, 50)); });
@@ -208,6 +212,9 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, attacker, defende
     if (!scene || scene.stepKey === stepKey) return;
     // 회수 단계가 끝나면 쓰러진 쪽은 다음 등장 전까지 숨긴다.
     if (scene.phase === "recall" && scene.actor) scene.sides[scene.actor].hidden = true;
+    // 이미지 로딩이 늦어 선공 연출이 intro 안에 끝나지 못했으면, 다음 단계로 넘어갈 때 바로 등장시킨다.
+    // (그대로 두면 introEntered가 영영 false라 양측이 숨은 채 전투가 진행된다)
+    if (scene.phase === "intro" && !scene.introEntered) enterBoth(scene);
     Object.assign(scene, { phase, actor, duration, multiplier, winner, stepKey, elapsed: 0, burstDone: false, emitDebt: 0, tossBurst: false });
   }, [actor, duration, multiplier, phase, stepKey, winner]);
 
@@ -216,10 +223,7 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, attacker, defende
     if (!scene || !replayKey) return;
     scene.pool.length = 0;
     if (latest.current.phase === "intro" && scene.firstTurn) holdForToss(scene);
-    else {
-      startEntrance(scene.sides.attacker);
-      startEntrance(scene.sides.defender);
-    }
+    else enterBoth(scene);
   }, [replayKey]);
 
   useEffect(() => {
@@ -240,6 +244,12 @@ export function PixiRankingBattleScene({ arenaSeed, firstTurn, attacker, defende
 function setPaused(scene: Scene, paused: boolean) {
   scene.paused = paused;
   scene.app.ticker.maxFPS = paused ? 10 : 0;
+}
+
+function enterBoth(scene: Scene) {
+  scene.introEntered = true;
+  startEntrance(scene.sides.attacker);
+  startEntrance(scene.sides.defender);
 }
 
 /** 선공 연출이 끝날 때까지 양측을 숨긴다. */
@@ -502,11 +512,7 @@ function update(scene: Scene, rawDelta: number) {
       placeBall(scene, winX, winY, 0, p > 0.75 ? "opening" : "closed", ballScale * 1.25);
       stream(scene, delta, 22, () => ({ x: winX + random(-ballScale * 12, ballScale * 12), y: winY + random(-ballScale * 10, ballScale * 10), vx: random(-10, 10), vy: random(-50, -20), gravity: 0, drag: 0.5, maxLife: random(400, 700), size: random(2, 4), color: pick(["#facc15", "#fef08a", "#ffffff"]), shape: "star", spin: random(-3, 3) }));
     }
-    if (scene.elapsed >= TOSS_MS) {
-      scene.introEntered = true;
-      startEntrance(sides.attacker);
-      startEntrance(sides.defender);
-    }
+    if (scene.elapsed >= TOSS_MS) enterBoth(scene);
   }
 
   // 등장: 몬스터볼 투척 → 섬광 → 포켓몬
