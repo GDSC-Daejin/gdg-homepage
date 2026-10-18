@@ -56,6 +56,7 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
   const isEdit = Boolean(event);
   const [type, setType] = useState<EventType>(event?.type ?? "session");
   const [error, setError] = useState<string>();
+  const [warning, setWarning] = useState<string>();
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -107,7 +108,11 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
         return;
       }
 
-      if (onSuccess) {
+      if (result?.warning) {
+        // 이벤트는 만들어졌다. 경고를 읽을 수 있게 이동하지 않고 안내를 보여준다.
+        router.refresh();
+        setWarning(result.warning);
+      } else if (onSuccess) {
         router.refresh();
         onSuccess();
       } else if (event) {
@@ -170,7 +175,7 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
 
       <Input
         name="title"
-        label={isEdit ? "제목" : <>제목 <RequiredMark /></>}
+        label={<>제목 <RequiredMark /></>}
         placeholder="예) Flutter로 앱 만들기 4주차"
         defaultValue={event?.title}
         required
@@ -297,7 +302,17 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
           {error}
         </div>
       )}
+      {warning && (
+        <div role="status" className="rounded-md border border-warning bg-warning-soft px-3 py-2.5 text-sm text-warning">
+          이벤트는 만들어졌어요. 다만 {warning}
+        </div>
+      )}
       <div className="mt-2 flex items-center gap-3">
+        {warning ? (
+          <Button type="button" variant="primary" onClick={() => (onSuccess ? onSuccess() : router.push("/admin/events"))}>
+            확인
+          </Button>
+        ) : (
         <Button type="submit" variant="primary" disabled={pending}>
           {pending ? (
             <span className="flex items-center gap-2">
@@ -310,6 +325,7 @@ export function EventForm({ event, places = [], defaultDate, onSuccess }: EventF
             "생성"
           )}
         </Button>
+        )}
         {event && (
           <span
             className={cn(

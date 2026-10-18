@@ -7,6 +7,7 @@ import { eventSchema } from "@/lib/schemas";
 import { shiftToDateKst } from "@/lib/calendar";
 import { toKoreanError } from "@/lib/errors";
 import { isDemoMode } from "@/lib/demo";
+import { sendEventNoticeDraft } from "@/lib/event-notice-draft-send";
 import type { ActionResult } from "@/lib/types";
 
 function parseEventForm(formData: FormData) {
@@ -54,15 +55,30 @@ export async function createEvent(formData: FormData): Promise<ActionResult> {
 
   const supabase = await createClient();
   const snapshot = await placeSnapshot(supabase, parsed.data.place_id);
-  const { error } = await supabase
+  const { data: created, error } = await supabase
     .from("events")
-    .insert({ ...parsed.data, ...snapshot, created_by: profile.id });
+    .insert({ ...parsed.data, ...snapshot, created_by: profile.id })
+    .select("id")
+    .single();
 
   if (error) return { error: toKoreanError(error) };
 
   revalidatePath("/admin/events");
   revalidatePath("/");
-  return {};
+
+  // 이벤트는 이미 만들어졌으므로 초안 발송이 실패해도 생성은 성공으로 두고 경고만 돌려준다.
+  const draftError = await sendEventNoticeDraft(created.id, {
+    type: parsed.data.type,
+    title: parsed.data.title,
+    description: parsed.data.description,
+    eventDate: parsed.data.event_date ?? null,
+    startTime: parsed.data.start_time ?? null,
+    endTime: parsed.data.end_time ?? null,
+    location: snapshot.location,
+    address: snapshot.address,
+    speaker: parsed.data.speaker,
+  });
+  return draftError ? { warning: draftError } : {};
 }
 
 export async function updateEvent(
